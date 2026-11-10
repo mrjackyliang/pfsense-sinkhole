@@ -250,11 +250,11 @@ and no environment variable can replace the installed signing-key path.
 
 ### Workspace Inventory
 
-| Path                  | Name                     | Role    | Policy        | Responsibility               |
-|-----------------------|--------------------------|---------|---------------|------------------------------|
-| `./`                  | pfsense-sinkhole-project | project | freezable     | Root tooling and tests       |
-| `./packages/sinkhole` | pfsense-pkg-sinkhole     | package | distributable | The pfSense package and port |
-| `./apps/docs`         | pfsense-sinkhole-docs    | docs    | freezable     | The documentation site       |
+| Path                  | Name                     | Role    | Policy    | Responsibility               |
+|-----------------------|--------------------------|---------|-----------|------------------------------|
+| `./`                  | pfsense-sinkhole-project | project | freezable | Root tooling and tests       |
+| `./packages/sinkhole` | pfsense-pkg-sinkhole     | package | trackable | The pfSense package and port |
+| `./apps/docs`         | pfsense-sinkhole-docs    | docs    | freezable | The documentation site       |
 
 ### Versioning and Release Model
 

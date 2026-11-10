@@ -5,7 +5,7 @@
       "title": "Sinkhole for pfSense"
     },
     "description": {
-      "short": "Sinkhole blocks unwanted websites on your pfSense network, with separate block lists for each network or device.",
+      "short": "Sinkhole blocks unwanted websites on your pfSense network, with separate block lists for each network or device",
       "long": "Sinkhole for pfSense is a native package that blocks unwanted websites with block lists for the whole network, each VLAN or a single device. It keeps the lists on the firewall, so DNS answers right after a restart or reload while updates download in the background, and alerts arrive through pfSense's own notifications only where you set them."
     },
     "keywords": [
@@ -171,7 +171,7 @@
         "issue-comment",
         "issues"
       ],
-      "runsOn": "ubuntu-latest",
+      "runsOn": "ubuntu-24.04",
       "timeoutMinutes": 5
     },
     {
@@ -180,7 +180,7 @@
       "triggers": [
         "schedule-weekly"
       ],
-      "runsOn": "ubuntu-latest",
+      "runsOn": "ubuntu-24.04",
       "timeoutMinutes": 5
     },
     {
@@ -189,16 +189,21 @@
       "triggers": [
         "release"
       ],
-      "runsOn": "ubuntu-latest",
+      "runsOn": "ubuntu-24.04",
       "timeoutMinutes": 15,
       "build": [
+        "./packages/sinkhole",
         "./apps/docs"
       ],
       "deploy": [
         {
           "to": "github-pages",
           "path": "./apps/docs",
-          "artifact": "pfsense-sinkhole-docs"
+          "artifact": "documentation"
+        },
+        {
+          "to": "pfsense",
+          "path": "./packages/sinkhole"
         }
       ]
     }
@@ -232,7 +237,7 @@
     "./packages/sinkhole": {
       "name": "pfsense-pkg-sinkhole",
       "role": "package",
-      "policy": "distributable"
+      "policy": "trackable"
     },
     "./apps/docs": {
       "name": "pfsense-sinkhole-docs",
@@ -252,7 +257,7 @@
         }
       ]
     },
-    "pfsense-sinkhole-docs": {
+    "documentation": {
       "build": [
         "./apps/docs"
       ],
@@ -271,7 +276,6 @@
       ],
       "patterns": [
         "/assets/",
-        "!package-lock.json",
         "graphify-out/"
       ]
     }
@@ -314,17 +318,17 @@
         "enabled": true
       },
       "remove-operating-system-files": {
-        "enabled": false,
+        "enabled": true,
         "settings": {
           "linux": {},
           "macos": {
-            "appleDouble": false,
-            "desktopServicesStore": false
+            "appleDouble": true,
+            "desktopServicesStore": true
           },
           "windows": {
-            "enhancedThumbnailDatabase": false,
-            "enhancedVistaThumbnailDatabase": false,
-            "thumbnailDatabase": false
+            "enhancedThumbnailDatabase": true,
+            "enhancedVistaThumbnailDatabase": true,
+            "thumbnailDatabase": true
           }
         }
       }
@@ -496,13 +500,22 @@
     }
   },
   "settings": {
-    "versionStrategy": "semver",
+    "lockStepVersioning": true,
     "runWorkspaces": {
+      "cache": {
+        "enabled": true,
+        "directory": "./node_modules/.cache/nova/run-workspaces",
+        "scripts": [
+          "build",
+          "check"
+        ]
+      },
       "concurrency": {
         "build": 2,
         "check": 2,
         "deploy": 2
       }
-    }
+    },
+    "versionStrategy": "semver"
   }
 }

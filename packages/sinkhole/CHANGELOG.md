@@ -1,5 +1,10 @@
 # pfsense-pkg-sinkhole
 
+## 1.0.1 - 2026-11-10
+
+### UPDATED
+- Release packages are built, signed, and attached to the GitHub release by the same publish workflow that deploys the documentation.
+
 ## 1.0.0 - 2026-11-10
 
 ### ADDED

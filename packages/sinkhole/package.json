@@ -1,15 +1,12 @@
 {
   "name": "pfsense-pkg-sinkhole",
-  "version": "1.0.0",
-  "keywords": [
-    "freebsd",
-    "pfsense",
-    "pfsense-package"
-  ],
+  "version": "1.0.1",
+  "license": "MIT",
   "type": "module",
   "files": [
     "build"
   ],
+  "private": true,
   "scripts": {
     "check": "nova utility run-scripts --sequential \"check:*\"",
     "check:lint-scripts": "eslint ./ --max-warnings=0",
@@ -30,10 +27,10 @@
     "clean:build": "shx rm -rf ./build"
   },
   "engines": {
-    "node": ">=22.3 <23 || ^24 || ^26"
+    "node": "^22 || ^24 || ^26"
   },
   "dependencies": {
-    "@cbnventures/nova": "0.38.0"
+    "@cbnventures/nova": "0.39.0"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
