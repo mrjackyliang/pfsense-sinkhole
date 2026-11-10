@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "Native pfSense package"
+  },
+  "homepage.hero.heading": {
+    "message": "Choose what every network and device can reach."
+  },
+  "homepage.hero.tagline": {
+    "message": "Apply saved DNS lists to the whole network, one VLAN, or one device, with intentional alerts and no second box."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Install Sinkhole"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "Plan your scopes"
+  },
+  "homepage.stats.heading": {
+    "message": "One firewall, policy at every useful level"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole keeps policy local and makes its operating boundaries explicit."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "Policy scopes"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "DNS list formats"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "Catalog cache"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Unbound module slot"
+  },
+  "homepage.features.heading": {
+    "message": "Control that stays on the firewall"
+  },
+  "homepage.features.scopes.title": {
+    "message": "Scope every decision"
+  },
+  "homepage.features.scopes.description": {
+    "message": "Apply lists and allowed domains globally, by interface or VLAN, and by device."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "Keep last-good copies"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "Answer DNS from saved local lists through restarts, reloads, and failed downloads."
+  },
+  "homepage.features.alerts.title": {
+    "message": "Alert on purpose"
+  },
+  "homepage.features.alerts.description": {
+    "message": "Notify only for the lists, networks, and devices selected in each rule."
+  },
+  "homepage.features.redirect.title": {
+    "message": "Redirect ordinary DNS"
+  },
+  "homepage.features.redirect.description": {
+    "message": "Optionally send port 53 traffic on selected interfaces to pfSense with explicit exemptions."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "Search, then decide"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "Search supported catalogs on demand without bundling or recommending a list."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "Block addresses and countries"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "Apply IP lists and GeoLite2 country policy through the isolated sinkhole/ip anchor."
+  }
+}

@@ -1,0 +1,66 @@
+---
+id: updates
+title: Aktualizacje pakietu
+description: Konfiguruj kontrole wydań, odczytuj powiadomienia i pasek aktualizacji About oraz poznaj ograniczone kontrole sumy kontrolnej, podpisu, metadanych, blokady i instalacji.
+keywords:
+  - sinkhole for pfsense
+  - aktualizacje pakietu
+  - automatyczna aktualizacja
+  - weryfikacja sumy kontrolnej
+  - powiadomienia o wydaniach
+tags:
+  - reference
+  - updates
+  - security
+---
+
+import aboutUpdateBar from './_assets_/updates-1.png';
+
+Sinkhole może sprawdzać swoje wydania GitHub, powiadamiać przez pfSense i instalować zweryfikowany nowszy pakiet z karty About.
+
+## Zaplanowane kontrole wydań \{#scheduled-release-checks}
+
+**General → Update Checks** wybiera Daily, Weekly, Monthly lub Never; ustawieniem domyślnym jest Weekly. Sinkhole przechowuje stabilne losowe składniki harmonogramu, aby zapisywanie ustawień nie przesuwało stale czasu kontroli.
+
+Kontrola zapisuje najnowszą wersję, stronę wydania, czas kontroli i ostatni błąd. **About → Check Now** natychmiast uruchamia tę samą kontrolę.
+
+## Powiadomienia o aktualizacjach \{#update-notices}
+
+Każda nowo wykryta wersja tworzy jedno lokalne powiadomienie WebGUI pfSense z łączem do karty About Sinkhole. Powtarzane kontrole nie tworzą duplikatów powiadomień dla tej samej wersji.
+
+Zaznacz **Remote Notifications**, aby używać również usług skonfigurowanych w **System → Advanced → Notifications**. Ustawienie jest domyślnie wyłączone i wpływa na powiadomienia o wersjach, a nie na reguły alertów blokowania list.
+
+## Pasek aktualizacji About \{#about-update-bar}
+
+Pasek aktualizacji pokazuje zainstalowaną wersję, najnowszą sprawdzoną wersję, ostatnią kontrolę, łącze do wydania, błąd i postęp odłączonej aktualizacji. Stan wizualny rozróżnia brak oczekującej aktualizacji, nowsze wydanie, trwającą aktualizację, powodzenie i niepowodzenie.
+
+Przycisk **Update** pojawia się, gdy zapisana najnowsza wersja jest nowsza. Strona odpytuje odłączone zadanie i zgłasza jego wynik bez utrzymywania otwartego żądania przeglądarki.
+
+<img src={aboutUpdateBar} alt="Karta About pokazująca dostępną aktualizację Sinkhole z elementami Update i What's New" width={1024} height={816} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Weryfikacja przed instalacją \{#verification-before-installation}
+
+Automatyczna aktualizacja akceptuje zasoby wyłącznie ze ścieżki pobierania wydań GitHub tego projektu oraz stosuje limity rozmiaru i czasu pobierania. Wymaga stabilnego pakietu i jego pliku `.sha256`, weryfikuje skrót SHA-256, a następnie sprawdza metadane pakietu przed instalacją za pomocą `pkg add -f`.
+
+Gdy `/usr/local/share/pfSense-pkg-Sinkhole/release-signing.pub` zawiera zaufane klucze Ed25519 OpenSSH, odpowiadający oddzielny zasób `.sig` staje się obowiązkowy. Sinkhole weryfikuje ten podpis w przestrzeni nazw wydania, zanim `pkg` uzyska zgodę na sprawdzenie pakietu.
+
+Pusta zainstalowana lista zaufania oznacza, że podpis nie jest wymagany, ale weryfikacja sumy kontrolnej i metadanych pakietu nadal obowiązuje. Brakujący, nieprawidłowo sformatowany, niezaufany, zbyt duży lub niezgodny zasób zatrzymuje aktualizację i pozostawia zainstalowany pakiet na miejscu.
+
+## Blokada aktualizacji \{#update-locking}
+
+Kontrola pakietu i automatyczna aktualizacja współdzielą `/var/run/sinkhole-update.lock` z aktualizacjami list DNS i IP/krajów. Jeśli trwa aktualizacja listy, akcja **Update** w About nie może się rozpocząć do jej zakończenia.
+
+Blokada uniemożliwia zmianę plików pakietu, gdy bieżący pakiet pobiera, analizuje, kompiluje lub stosuje zasady. Spróbuj ponownie z About, gdy Status nie pokazuje już trwającej aktualizacji.
+
+## Ręczna aktualizacja pakietu \{#manual-package-update}
+
+Stabilne polecenie pozostaje dostępne, gdy nie można użyć akcji About:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Przed uruchomieniem pobierz stabilny zasób `.sha256` i porównaj jego skrót z pakietem zgodnie z opisem w sekcji [Instalacja](/docs/installation#verify-the-checksum). Flaga `-f` jest wymagana, aby `pkg` zainstalował nową kompilację nawet wtedy, gdy pochodzi z tego samego stabilnego adresu URL.
+
+Uprawnienie About jest tylko do odczytu. **Check Now** i **Update** są wyświetlane i akceptowane tylko dla zalogowanego użytkownika z uprawnieniem do ustawień General Sinkhole albo uprawnieniem pfSense `page-all`. Użytkownik mający wyłącznie uprawnienie About nadal może odczytać zainstalowaną wersję, stan wydania i łącze do wydania.
+

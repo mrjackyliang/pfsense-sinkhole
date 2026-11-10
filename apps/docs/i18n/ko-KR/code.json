@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "pfSense 네이티브 패키지"
+  },
+  "homepage.hero.heading": {
+    "message": "각 네트워크와 장치가 접근할 수 있는 대상을 선택하세요."
+  },
+  "homepage.hero.tagline": {
+    "message": "저장된 DNS 목록을 전체 네트워크, VLAN 또는 장치에 적용하고 의도적인 알림을 사용하며 두 번째 서버는 필요하지 않습니다."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Sinkhole 설치"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "scopes 계획"
+  },
+  "homepage.stats.heading": {
+    "message": "하나의 방화벽, 모든 유용한 수준의 정책"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole은 정책을 로컬에 유지하고 작동 경계를 명확히 합니다."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "정책 scopes"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "DNS 목록 형식"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "카탈로그 캐시"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Unbound 모듈 슬롯"
+  },
+  "homepage.features.heading": {
+    "message": "방화벽에 남는 제어"
+  },
+  "homepage.features.scopes.title": {
+    "message": "모든 결정의 범위 지정"
+  },
+  "homepage.features.scopes.description": {
+    "message": "목록과 허용 도메인을 전역, 인터페이스 또는 VLAN, 장치별로 적용하세요."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "마지막 유효 사본 유지"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "재시작, 다시 로드 및 다운로드 실패 중에도 로컬 목록에서 DNS에 응답하세요."
+  },
+  "homepage.features.alerts.title": {
+    "message": "의도적으로 알림"
+  },
+  "homepage.features.alerts.description": {
+    "message": "각 규칙에서 선택한 목록, 네트워크 및 장치에 대해서만 알리세요."
+  },
+  "homepage.features.redirect.title": {
+    "message": "DNS 경로 보호"
+  },
+  "homepage.features.redirect.description": {
+    "message": "선택한 인터페이스에서 일반 DNS를 선택적으로 리디렉션하거나 일반적인 암호화 DNS 및 터널 우회를 차단합니다."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "검색한 뒤 결정"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "목록을 포함하거나 추천하지 않고 필요할 때 지원되는 카탈로그를 검색하세요."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "주소와 국가 차단"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "격리된 `sinkhole/ip` 앵커를 통해 IP 목록과 GeoLite2 국가 정책을 적용하세요."
+  }
+}

@@ -1,0 +1,110 @@
+---
+id: troubleshooting
+title: Rozwiązywanie problemów
+description: Diagnozuj nieaktywną integrację z Resolver, nieaktualne zasady, konflikty mapy klientów, stan Bypass, rozbieżność kotwicy IP, tłumienie alertów i nieudane aktualizacje.
+keywords:
+  - sinkhole for pfsense
+  - rozwiązywanie problemów
+  - dns resolver
+  - mapa klientów
+  - nieudana aktualizacja
+tags:
+  - operate
+  - troubleshooting
+  - diagnostics
+---
+
+Śledź problem od panelu Status i dziennika systemowego do konkretnej listy, zakresu, reguły, nasłuchiwania, blokady lub stanu środowiska uruchomieniowego, który go spowodował.
+
+## Gdzie szukać \{#where-to-look}
+
+- **Firewall → Sinkhole → Status** pokazuje stan list, katalogów, mapy klientów, alertów, Bypass, IP, kompilacji, wdrożenia i Resolver.
+- **Status → System Logs → System → General** pokazuje wiersze operacyjne zaczynające się od `Sinkhole:`.
+- `/usr/local/sbin/sinkhole --help` wyświetla obsługiwane tryby konserwacji.
+
+Przed zmianą konfiguracji zaleca się zachowanie wartości Status i odpowiednich wierszy dziennika. Pełne dane wyjściowe `config.xml` mogą zawierać poufne informacje i nie należy ich dołączać do zgłoszenia.
+
+## Sinkhole jest nieaktywny \{#sinkhole-is-inactive}
+
+Użyj przyczyny podanej po **Summary → Sinkhole**:
+
+- **Sinkhole is disabled** — Zaznacz **General → Enable**, gdy Resolver i miejsce na skrypt Python będą gotowe.
+- **DNS Resolver is disabled** — Włącz i zastosuj Resolver przed zapisaniem Sinkhole.
+- **Python script slot is owned** — Wyłącz kolidującą integrację DNSBL/Python albo pozostaw Sinkhole wyłączony; Sinkhole jej nie zastąpi.
+- **Python mode or position changed** — Ponownie zapisz ustawienia General Sinkhole, aby Sync mógł przywrócić tryb Python i `pre_validator`, gdy Sinkhole zajmuje miejsce.
+- **Runtime files unavailable** — Uruchom Sync pakietu, zapisując ustawienia General, albo uruchom ponownie system i pozwól Sync pakietów pfSense przywrócić pliki dysku RAM.
+
+W systemach z `/var` w pamięci Sync pakietów wykonywany przy każdym uruchomieniu przywraca brakujące pliki środowiska uruchomieniowego i w razie potrzeby ponownie uruchamia Unbound po uruchomieniu pakietów. Dlatego plik brakujący krótko po uruchomieniu powinien zostać odtworzony podczas uruchamiania pakietów.
+
+## Domena nie jest blokowana \{#a-domain-is-not-blocked}
+
+1. Sprawdź, czy lista jest włączona i ma zapisane wpisy, a jej ostatnia prawidłowa kopia nie została zastąpiona po błędzie.
+2. Zastosuj [kolejność decyzji](/docs/configure/scopes#decision-order) dla bieżącego urządzenia i sieci klienta.
+3. Sprawdź, czy **Compile Needed** i **Deployment Needed** mają wartość `No`, a następnie porównaj generacje skompilowane, wdrożone i załadowane.
+4. Sprawdź, czy klient wysyła zapytania bezpośrednio do pfSense lub przez **Bypass → Redirect**.
+
+Unbound odpowiada na wbudowane strefy `test.`, `invalid.`, `onion.` i `localhost.` przed modułami Python. Test na żywo w jednej z tych stref nie sprawdza Sinkhole.
+
+Gdy wdrożenie dodaje nazwy lub rozszerza poddrzewo, Sinkhole przeładowuje Unbound po załadowaniu nowej generacji, ponieważ `flush_zone` tylko oznacza wpisy pamięci podręcznej jako wygasłe. Unbound 1.18 może nadal podawać te wpisy po włączeniu **Serve Expired**, natomiast `unbound-control reload` czyści pamięć podręczną komunikatów i zestawów RRset.
+
+## Wynik CNAME wygląda na niepełny \{#a-cname-result-looks-incomplete}
+
+Zapytanie, którego cel CNAME znajduje się na liście, jest blokowane nawet wtedy, gdy pierwotna nazwa nie znajduje się na liście. Jeśli cel na liście nie ma rekordu żądanego typu, takiego jak AAAA, odpowiedź może zachować CNAME bez adresu.
+
+Dozwolona nazwa zapytania pozostaje dozwolona. Zapobiega to zastąpieniu jawnej decyzji o dozwolonej domenie dla nazwy zapytania przez mniej szczegółowy cel CNAME.
+
+## Urządzenie otrzymuje niewłaściwe zasady \{#a-device-gets-the-wrong-policy}
+
+- Uruchom `/usr/local/sbin/sinkhole --refresh-clients` i sprawdź **Status → Scopes**.
+- Sprawdź, czy wiersz sieci pokazuje bieżące podsieci interfejsu, a wiersz urządzenia bieżące adresy urządzenia.
+- Usuń każdą wartość **Conflict**, ponieważ pierwsze urządzenie w kolejności tabeli wygrywa współdzielony adres.
+- W przypadku mapowania statycznego sprawdź zarówno skonfigurowany adres, jak i bieżące adresy zaobserwowane dla jego adresu MAC.
+
+Czasy dzierżaw ISC mogą być w GMT lub w czasie lokalnym zapory, zależnie od ustawienia czasu dzierżawy interfejsu, natomiast czasy dzierżaw Kea są już lokalne. Sinkhole stosuje tę semantykę pfSense podczas określania, czy dzierżawa jest bieżąca.
+
+## Aktualizacja listy lub katalogu nie powiodła się \{#list-or-catalog-update-failed}
+
+Nieudane pobieranie, analiza lub walidacja DNS, Bypass albo IP zachowuje poprzednią zapisaną kopię i rejestruje błąd. DNS nadal korzysta z wdrożonej lokalnej generacji, zamiast czekać na źródło, które zawiodło.
+
+Katalogi są pobierane tylko po otwarciu lub odświeżeniu wyszukiwania, a nieudane pobranie zachowuje zbuforowany ostatni prawidłowy katalog. Przed wymuszeniem kolejnego odświeżenia sprawdź łączność HTTPS, adres URL źródła i błąd w Status.
+
+## Przekierowanie zwykłego DNS jest wstrzymane lub go brakuje \{#plain-dns-redirect-is-paused-or-missing}
+
+- **Paused** — Popraw lub usuń każdy nieprawidłowy wyjątek pokazany w panelu Bypass.
+- **No family address** — Dodaj rodzinę do interfejsu lub zaakceptuj, że dla tej rodziny nie można wygenerować reguły.
+- **Resolver does not listen** — Zmień **DNS Resolver → Network Interfaces** lub usuń wybór przekierowania.
+- **Rules missing or out of date** — Poczekaj na dwie obserwacje minutowe, a następnie sprawdź **Last parse error** i dzienniki systemowe.
+- **Queries are refused** — Dodaj sieć klienta do konfiguracji kontroli dostępu Resolver.
+
+Kontrola minutowa nie przeładowuje filtru, gdy utrzymywana jest blokada pakietu pfSense ani gdy pfSense odrzucił już niezmieniony tekst reguły. Zmiana nieprawidłowej konfiguracji pozwala uzgodnić ją podczas następnych dwóch obserwacji.
+
+Cele przekierowania IPv6 zawsze używają adresu interfejsu, ponieważ zmierzone zachowanie FreeBSD odrzuca ruch przepisany na `::1` z interfejsu innego niż loopback. Wyjątki mieszanych rodzin są emitowane jako oddzielne reguły `inet` i `inet6`, ponieważ zmierzone FreeBSD 14 i 16 zachowywały tylko pierwszą rodzinę z niekwalifikowanej listy mieszanej.
+
+## Blokowanie IP nie odpowiada ustawieniom \{#ip-blocking-does-not-match-settings}
+
+1. Sprawdź, czy **IP and Country Blocking → State** ma wartość `On` oraz czy wymieniono zamierzone interfejsy i kierunki.
+2. Sprawdź końcowe liczby tabel rodzin, pominięte wiersze, ostatnią aktualizację i ostatni błąd.
+3. Sprawdź, czy **IP Anchor** ma wartość `Yes`; `Out of Date` oznacza, że załadowana kotwica nie odpowiada bieżącym plikom lub ustawieniom.
+4. Przejrzyj listę dozwolonych adresów i pamiętaj, że adresy zapory, bram i DNS są usuwane automatycznie.
+
+Kotwica `sinkhole/ip` przetrwa zwykłe przeładowania filtru pfSense i znajduje się przed regułami pass-quick dzięki wczesnemu zaczepowi reguł pakietu. Kontrola minutowa bezpośrednio przeładowuje pustą lub zmienioną kotwicę, a wyłączenie funkcji ją opróżnia.
+
+## Alerty nie docierają \{#alerts-do-not-arrive}
+
+- Sprawdź, czy reguła jest włączona i czy wybór listy oraz wybór klienta pasują do zablokowanej odpowiedzi.
+- Porównaj zdarzenie z oknem powtórzeń reguły oraz limitami 20 na wykonanie, 60 na regułę na godzinę i 50 nieprzeczytanych powiadomień.
+- Sprawdź **Status → Alerts** pod kątem liczby zdarzeń nieaktualnych, wstrzymanych, odrzuconych lub błędnych.
+- Niezależnie przetestuj skonfigurowaną usługę zdalną pfSense w **System → Advanced → Notifications**.
+
+Zdarzenia starsze niż 10 minut są nieaktualne, a wykonanie przestaje wysyłać po upływie budżetu 40 sekund, aby pozostała praca mogła być kontynuowana w następnej minucie. Tekst powiadomienia WebGUI pojawia się również w dzienniku systemowym pfSense za pośrednictwem `file_notice()`.
+
+## Wysokie użycie pamięci \{#memory-use-is-high}
+
+W zmierzonych testach z 300 000 nazwami RSS Unbound wzrósł z 41 MiB do 103 MiB, a szczytowe zużycie pamięci zasad wynosiło około 157 bajtów na nazwę. Rzeczywiste użycie zależy od unikatowych znormalizowanych nazw, przypisań zakresów i działającego Resolver.
+
+Zaleca się porównanie liczby wpisów w Status z pamięcią Unbound przed dodaniem dużego źródła i po nim. Wyłączenie nieużywanej listy usuwa ją z aktywnych zasad przy następnej kompilacji.
+
+## Zgłaszanie problemu \{#report-a-problem}
+
+Otwórz [zgłoszenie GitHub](https://github.com/mrjackyliang/pfsense-sinkhole/issues), podając wersję Sinkhole, edycję i wydanie pfSense, wydanie FreeBSD, dokładny stan Status, kroki odtworzenia oraz oczyszczone wiersze dziennika `Sinkhole:`. Nie dołączaj danych uwierzytelniających MaxMind, pełnych plików konfiguracji, zawartości list ani prywatnych danych klientów lub domen.
+

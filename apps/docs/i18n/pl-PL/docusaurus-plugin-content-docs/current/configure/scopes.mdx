@@ -1,0 +1,81 @@
+---
+id: scopes
+title: Zakresy i dozwolone domeny
+description: Przypisz listy i dozwolone domeny do zakresów globalnych, interfejsów i urządzeń, a następnie stosuj dokładną kolejność od najbardziej szczegółowej decyzji dla każdego zapytania DNS.
+keywords:
+  - sinkhole for pfsense
+  - zakresy
+  - blokowanie vlan
+  - zasady urządzeń
+  - dozwolone domeny
+tags:
+  - configure
+  - scopes
+  - dns
+---
+
+Przypisz listy i dozwolone domeny na poziomie globalnym, sieciowym i urządzenia, aby każdy klient otrzymywał zasady przeznaczone dla swojej bieżącej lokalizacji.
+
+## Dlaczego warto używać zakresów? \{#why-use-scopes}
+
+1. Nadają każdemu interfejsowi pfSense lub VLAN-owi własne zasady, zachowując reguły globalne dla wszystkich.
+2. Zapewniają jednemu urządzeniu bardziej szczegółową decyzję bez konieczności używania oddzielnego serwera DNS.
+3. Pozwalają dozwolonym domenom korygować wyniki fałszywie dodatnie na właściwym poziomie bez usuwania całej listy.
+4. Przechowują adresy klientów oddzielnie od skompilowanych list, dzięki czemu zmiany DHCP, sąsiadów lub interfejsów nie przeładowują Unbound.
+
+## Zakres globalny \{#global-scope}
+
+Lista z zaznaczonym **Global** jest stosowana do każdego klienta po decyzjach urządzenia i sieci. Globalne dozwolone domeny wprowadza się na karcie **Lists**; przepuszczają one wskazaną domenę i jej poddomeny przez listy globalne.
+
+Klient, który nie pasuje do żadnego włączonego zakresu sieci ani urządzenia, otrzymuje tylko ten poziom.
+
+## Zakresy sieci \{#network-scopes}
+
+Otwórz **Firewall → Sinkhole → Scopes**, a następnie wybierz **Add** pod tabelą Networks. Edytor domyślnie wybiera LAN lub pierwszy dostępny interfejs inny niż WAN i pomija interfejsy, które już mają zakres sieci. Klient należy do sieci, gdy jego adres znajduje się w jednej z bieżących podsieci IPv4 lub IPv6 interfejsu.
+
+Każdy wiersz sieci wybiera dodatkowe listy, dozwolone domeny i stan włączenia zakresu. Zapisanie powoduje powrót do Scopes; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować. Urządzenie przeniesione między sieciami otrzymuje zasady sieci pasującej do jego bieżącego adresu.
+
+## Zakresy urządzeń \{#device-scopes}
+
+Wybierz **Add** pod tabelą Devices, podaj nazwę i wybierz jedną metodę identyfikacji. Edytor pokazuje tylko pole identyfikatora właściwe dla wybranej metody:
+
+| Metoda              | Adresy używane dla urządzenia                                                    |
+|---------------------|----------------------------------------------------------------------------------|
+| IP address          | Skonfigurowany adres IPv4 lub IPv6.                                              |
+| DHCP static mapping | Skonfigurowany adres oraz bieżące adresy zaobserwowane dla adresu MAC mapowania. |
+| MAC address         | Bieżące adresy ARP, NDP i dzierżaw DHCP dla tego adresu MAC.                     |
+
+Wiersz urządzenia wybiera jego listy, dozwolone domeny i stan włączenia. Zapisanie powoduje powrót do Scopes; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować. Zadanie w tle odświeża bieżące podsieci i adresy urządzeń co minutę, gdy blokowanie DNS ma włączony zakres sieci lub urządzenia albo gdy ochrona DNS Bypass wymaga rozpoznawania klientów. Sync pakietu uruchamia to samo odświeżanie tylko pod tym warunkiem.
+
+## Kolejność decyzji \{#decision-order}
+
+Najbardziej szczegółowy pasujący poziom rozstrzyga każde zapytanie w następującej dokładnej kolejności:
+
+1. **Device allowed domains** — Natychmiast zezwól, gdy nazwa zapytania pasuje.
+2. **Device lists** — Natychmiast zablokuj, gdy pasuje wybrana lista urządzenia.
+3. **Network allowed domains** — Natychmiast zezwól, gdy pasuje wyjątek sieci.
+4. **Network lists** — Natychmiast zablokuj, gdy pasuje wybrana lista sieci.
+5. **Global allowed domains** — Natychmiast zezwól, gdy pasuje wyjątek globalny.
+6. **Global lists** — Zablokuj, gdy pasuje lista globalna.
+
+Zapytanie jest przepuszczane, gdy żaden krok go nie rozstrzyga. Dozwolone domeny danego poziomu mają pierwszeństwo przed listami dziedziczonymi z mniej szczegółowych poziomów, ale nie przed listami bardziej szczegółowego poziomu, który już podjął decyzję.
+
+## Działanie dozwolonych domen \{#allowed-domain-behavior}
+
+Każdy wpis dozwolonej domeny dotyczy dokładnej domeny i wszystkich poddomen. Na przykład zezwolenie na `service.example` zezwala także na `api.service.example` na tym poziomie.
+
+- Wyjątek urządzenia może przepuścić listy urządzenia, sieci i globalne, ponieważ jest sprawdzany jako pierwszy.
+- Wyjątek sieci może przepuścić listy sieci i globalne, ale nie decyzję listy urządzenia.
+- Wyjątek globalny może przepuścić tylko listy globalne.
+
+## Konflikty adresów \{#address-conflicts}
+
+Gdy dwa wiersze urządzeń zgłaszają ten sam bieżący adres, wygrywa pierwsze urządzenie w kolejności tabeli. **Status → Scopes** pokazuje adres pod **Conflict** dla każdego wiersza objętego problemem, aby można było poprawić kolejność lub identyfikatory.
+
+## Weryfikacja zakresu \{#verify-a-scope}
+
+1. Uruchom `/usr/local/sbin/sinkhole --refresh-clients` lub poczekaj na odświeżenie minutowe.
+2. Otwórz **Status → Scopes** i sprawdź bieżące podsieci sieci oraz bieżące adresy urządzenia.
+3. Wykonaj zapytanie o nazwę z klienta w tym zakresie i porównaj wynik z powyższą kolejnością decyzji.
+4. Przed poleganiem na zachowaniu właściwym dla urządzenia sprawdź, czy nie ma konfliktu adresów.
+

@@ -1,0 +1,66 @@
+---
+id: updates
+title: Pakkeoppdateringer
+description: Konfigurer utgivelseskontroller, les varsler og oppdateringslinjen i About, og forstå de avgrensede kontrollene for kontrollsum, signatur, metadata, lås og installasjon.
+keywords:
+  - sinkhole for pfsense
+  - pakkeoppdateringer
+  - automatisk oppdatering
+  - kontrollsumverifisering
+  - utgivelsesvarsler
+tags:
+  - reference
+  - updates
+  - security
+---
+
+import aboutUpdateBar from './_assets_/updates-1.png';
+
+Sinkhole kan kontrollere GitHub-utgivelsene, varsle gjennom pfSense og installere en verifisert nyere pakke fra fanen About.
+
+## Planlagte utgivelseskontroller \{#scheduled-release-checks}
+
+**General → Update Checks** velger Daily, Weekly, Monthly eller Never. Weekly er standard. Sinkhole lagrer stabile tilfeldige tidsplankomponenter, slik at lagring av innstillinger ikke stadig flytter kontrolltidspunktet.
+
+En kontroll registrerer den nyeste versjonen, utgivelsessiden, kontrolltidspunktet og siste feil. **About → Check Now** kjører den samme kontrollen umiddelbart.
+
+## Oppdateringsvarsler \{#update-notices}
+
+Hver nylig oppdagede versjon oppretter ett lokalt pfSense WebGUI-varsel med lenke til fanen About i Sinkhole. Gjentatte kontroller oppretter ikke dupliserte varsler for samme versjon.
+
+Velg **Remote Notifications** for også å bruke tjenestene som er konfigurert under **System → Advanced → Notifications**. Innstillingen er avslått som standard og påvirker versjonsvarsler, ikke varslingsregler for listeblokkering.
+
+## Oppdateringslinjen i About \{#about-update-bar}
+
+Oppdateringslinjen viser installert versjon, nyeste kontrollerte versjon, siste kontroll, utgivelseslenke, feil og fremdrift for den frakoblede oppdateringen. Den visuelle tilstanden skiller mellom ingen ventende oppdatering, en nyere utgivelse, en oppdatering som kjører, vellykket resultat og feil.
+
+**Update** vises når den registrerte nyeste versjonen er nyere. Siden spør den frakoblede jobben og rapporterer resultatet uten å holde nettleserforespørselen åpen.
+
+<img src={aboutUpdateBar} alt="Fanen About viser en tilgjengelig Sinkhole-oppdatering med kontrollene Update og What's New" width={1024} height={816} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Verifisering før installasjon \{#verification-before-installation}
+
+Automatisk oppdatering godtar bare ressurser fra nedlastingsbanen for GitHub-utgivelser i dette prosjektet og bruker avgrensede nedlastingsstørrelser og tidsavbrudd. Den krever den stabile pakken og den tilhørende `.sha256`-filen, verifiserer SHA-256-sammendraget og undersøker deretter pakkemetadata før installasjon med `pkg add -f`.
+
+Når `/usr/local/share/pfSense-pkg-Sinkhole/release-signing.pub` inneholder klarerte Ed25519 OpenSSH-nøkler, blir den samsvarende separate `.sig`-ressursen obligatorisk. Sinkhole verifiserer signaturen i navnerommet for utgivelsen før `pkg` får undersøke pakken.
+
+En tom installert klareringsliste betyr at ingen signatur er påkrevd, men verifisering av kontrollsum og pakkemetadata gjelder fortsatt. En manglende, feilformet, uklarert, for stor eller ikke-samsvarende ressurs stopper oppdateringen og lar den installerte pakken være på plass.
+
+## Oppdateringslås \{#update-locking}
+
+Pakkekontroll og automatisk oppdatering deler `/var/run/sinkhole-update.lock` med oppdateringer av DNS-lister og IP/land. Hvis en listeoppdatering kjører, kan ikke handlingen **Update** i About starte før jobben er ferdig.
+
+Låsen hindrer at pakkefiler endres mens den gjeldende pakken laster ned, analyserer, kompilerer eller bruker policy. Prøv på nytt fra About når Status ikke lenger viser at en oppdatering kjører.
+
+## Manuell pakkeoppdatering \{#manual-package-update}
+
+Den stabile kommandoen er fortsatt tilgjengelig når handlingen i About ikke kan brukes:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Last ned den stabile `.sha256`-ressursen før du kjører kommandoen, og sammenlign hashverdien med pakken som beskrevet under [Installasjon](/docs/installation#verify-the-checksum). `-f` er påkrevd slik at `pkg` installerer en ny byggversjon selv om den kom fra den samme stabile URL-en.
+
+About-rettigheten er skrivebeskyttet. **Check Now** og **Update** vises og godtas bare for en innlogget bruker med rettigheten for Sinkhole General-innstillinger eller pfSense-rettigheten `page-all`. En bruker som bare har About-rettigheten, kan fortsatt lese installert versjon, utgivelsesstatus og utgivelseslenke.
+

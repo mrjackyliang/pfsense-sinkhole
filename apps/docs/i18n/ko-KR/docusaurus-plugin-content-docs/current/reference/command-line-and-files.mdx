@@ -1,0 +1,106 @@
+---
+id: command-line-and-files
+title: 명령줄과 파일
+description: Sinkhole 유지 관리 모드를 실행하고 영구 저장 목록, 업데이트 상태, 캐시, 잠금, 방화벽 데이터 및 Unbound 런타임 파일을 확인합니다.
+keywords:
+  - sinkhole for pfsense
+  - 명령줄
+  - 파일 경로
+  - 유지 관리
+  - 런타임 파일
+tags:
+  - reference
+  - command-line
+  - files
+---
+
+진단과 cron 및 WebGUI에서 호출하는 동일한 유지 관리 모드에는 고정 명령 `/usr/local/sbin/sinkhole`을 사용합니다.
+
+## 명령 모드 \{#command-modes}
+
+| 명령                           | 동작                                                   |
+|------------------------------|------------------------------------------------------|
+| `sinkhole --update`          | 예약된 DNS, Bypass 및 활성화된 IP/국가 목록 업데이트 경로를 실행합니다.      |
+| `sinkhole --manual`          | **Status → Update Now**에서 사용하는 전체 수동 업데이트를 실행합니다.    |
+| `sinkhole --apply`           | 저장된 구성을 백그라운드에서 적용하고 필요한 다운로드 작업만 수행합니다.             |
+| `sinkhole --refresh-clients` | 클라이언트 맵의 네트워크 서브넷과 장치 주소를 재구성합니다.                    |
+| `sinkhole --alerts`          | 차단 이벤트를 읽고 일치하는 알림 규칙을 처리합니다.                        |
+| `sinkhole --redirect-check`  | 원하는 일반 DNS 리디렉션 규칙과 독립적으로 로드된 Bypass 및 IP 앵커를 조정합니다. |
+| `sinkhole --check-updates`   | 최신 GitHub 릴리스를 확인하고 업데이트 알림을 동기화합니다.                 |
+| `sinkhole --self-update`     | 대기 중인 최신 릴리스를 다운로드, 검증, 검사 및 설치합니다.                  |
+| `sinkhole --help`            | 지원되는 사용법 줄을 출력합니다.                                   |
+
+자동화에서는 `/usr/local/sbin/sinkhole --refresh-clients`와 같이 설치된 경로를 사용합니다. 모드는 상호 배타적이며 공유 업데이트 잠금이 이미 유지된 경우 DNS/Bypass/IP 목록 업데이트 또는 자체 업데이트는 경쟁 작업을 시작하지 않고 종료됩니다.
+
+## `/cf/conf/sinkhole`의 영구 파일 \{#persistent-files}
+
+| 경로                                      | 용도                                          |
+|-----------------------------------------|---------------------------------------------|
+| `lists/<id>.domains`                    | 한 DNS 목록의 정규화된 마지막 정상 도메인입니다.               |
+| `lists/<id>.json`                       | 해당 DNS 목록의 업데이트 메타데이터입니다.                   |
+| `ip-lists/<id>.networks`                | 한 IP 목록의 정규화된 마지막 정상 네트워크입니다.               |
+| `ip-lists/<id>.json`                    | 해당 IP 목록의 업데이트 메타데이터입니다.                    |
+| `bypass-lists/<id>.entries`             | 한 Bypass List의 정규화된 마지막 정상 혼합 항목입니다.        |
+| `bypass-lists/<id>.json`                | 해당 Bypass List의 업데이트 메타데이터입니다.              |
+| `state.json`                            | 컴파일, 배포, 이전 Resolver 설정, 일정 및 제거의 영구 상태입니다. |
+| `updates.json`                          | 최신 릴리스 확인 및 알림 중복 제거 상태입니다.                 |
+| `update-status.json`                    | 분리된 패키지 자체 업데이트 진행 상태입니다.                   |
+| `unbound/sinkhole/`                     | RAM 디스크 복원을 위한 현재 컴파일 세대의 선택적 영구 미러입니다.     |
+| `unbound/sinkhole.d/`                   | 컴파일된 세대 저장소의 선택적 영구 미러입니다.                  |
+| `unbound/sinkhole-clients/clients.json` | 클라이언트 맵의 선택적 영구 미러입니다.                      |
+
+`unbound/` 미러는 pfSense가 `/var`를 RAM 디스크에 보관할 때 사용합니다. Resolver에 필요하기 전에 패키지 Sync가 런타임 트리로 복원합니다.
+
+## `/var/db`의 작업 데이터 \{#working-data}
+
+| 경로                                   | 용도                                 |
+|--------------------------------------|------------------------------------|
+| `sinkhole-alerts.json`               | 알림 반복 간격 및 시간당 한도 상태입니다.           |
+| `sinkhole-catalog-adguard-home.json` | 캐시된 AdGuard Home 목록 레지스트리입니다.      |
+| `sinkhole-catalog-pfblockerng.json`  | 캐시된 pfBlockerNG 피드 카탈로그입니다.        |
+| `sinkhole-block-v4.txt`              | 병합 및 제외가 끝난 최종 IPv4 차단 테이블입니다.     |
+| `sinkhole-block-v6.txt`              | 병합 및 제외가 끝난 최종 IPv6 차단 테이블입니다.     |
+| `sinkhole-bypass-v4.txt`             | 보호된 주소를 제외한 최종 IPv4 Bypass 테이블입니다. |
+| `sinkhole-bypass-v6.txt`             | 보호된 주소를 제외한 최종 IPv6 Bypass 테이블입니다. |
+| `sinkhole-geolite2-country.zip`      | 검증된 GeoLite2 Country 아카이브입니다.      |
+| `sinkhole-geolite2-country.json`     | GeoLite2 업데이트 메타데이터입니다.            |
+
+카탈로그 캐시와 생성된 IP 테이블은 다시 만들 수 있는 작업 데이터입니다. 알림 상태는 분 단위 실행 사이의 중복 전달을 방지합니다.
+
+## `/var/run`의 임시 파일 \{#transient-files}
+
+| 경로                              | 용도                                      |
+|---------------------------------|-----------------------------------------|
+| `sinkhole-update.lock`          | 장시간 실행되는 목록, IP 및 패키지 업데이트의 공유 잠금입니다.   |
+| `sinkhole-runtime.lock`         | 짧은 컴파일, 활성화 및 Resolver 통합 잠금입니다.        |
+| `sinkhole-clients.lock`         | 클라이언트 맵 새로 고침 잠금입니다.                    |
+| `sinkhole-alerts.lock`          | 알림 처리 잠금입니다.                            |
+| `sinkhole-redirect-check.lock`  | 리디렉션 분 단위 검사 잠금입니다.                     |
+| `sinkhole-redirect-check.json`  | 두 번 관찰하는 리디렉션 검사에서 사용하는 첫 번째 불일치 관찰입니다. |
+| `sinkhole-status.json`          | 현재 업데이트, 컴파일, 배포, 클라이언트 및 알림 상태입니다.     |
+| `sinkhole-status.json.lock`     | 상태 파일 조정 잠금입니다.                         |
+| `sinkhole-ip-anchor.conf`       | `sinkhole/ip` 앵커에 대해 현재 생성된 규칙입니다.      |
+| `sinkhole-ip-anchor.sha256`     | 생성된 IP 정책과 로드된 IP 정책을 비교하는 다이제스트입니다.    |
+| `sinkhole-ip-status.json`       | IP 목록, GeoLite2, 테이블 및 앵커 상태입니다.        |
+| `sinkhole-bypass-anchor.conf`   | `sinkhole/bypass` 앵커의 현재 생성된 규칙입니다.     |
+| `sinkhole-bypass-anchor.sha256` | 생성된 Bypass 정책과 로드된 정책을 비교하는 다이제스트입니다.   |
+
+잠금 파일은 작업을 조정합니다. 파일이 존재한다는 사실만으로 실행 중인 프로세스가 잠금을 보유한다고 단정할 수 없습니다. 오래된 잠금으로 판단하기 전에 Status와 명령 출력을 확인합니다.
+
+## `/var/unbound`의 Resolver 런타임 \{#resolver-runtime}
+
+| 경로                                   | 용도                                          |
+|--------------------------------------|---------------------------------------------|
+| `sinkhole.py`                        | 검토 후 Unbound 런타임 루트에 복사된 Python 모듈입니다.      |
+| `sinkhole/`                          | 모듈이 읽는 매니페스트와 활성 세대 데이터입니다.                 |
+| `sinkhole.d/`                        | root 소유의 컴파일된 세대 저장소입니다.                    |
+| `sinkhole.d/<generation>/bypass.tsv` | Bypass DNS 응답용으로 컴파일된 공급자, Tor 및 VPN 이름입니다. |
+| `sinkhole-clients/clients.json`      | 현재 클라이언트 주소와 범위의 매핑입니다.                     |
+| `sinkhole-state/loaded`              | 모듈이 로드했다고 보고한 세대 식별자입니다.                    |
+| `sinkhole-state/events`              | 알림 처리를 기다리는 병합된 차단 응답 이벤트입니다.               |
+| `sinkhole-state/events.processing`   | 알림 처리기가 현재 소유한 이벤트 배치입니다.                   |
+| `sinkhole-state/events-dropped`      | 제한된 큐가 가득 찬 후 삭제된 이벤트 수입니다.                 |
+
+이 파일은 구성이 아니라 런타임 자료입니다. Sinkhole은 패키지 Sync를 통해 복원하거나 다시 생성하며 패키지를 제거할 때 삭제합니다.
+
+분 단위 클라이언트 맵 작업과 Sync 시 백그라운드 새로 고침은 DNS 차단에 활성화된 네트워크 또는 장치 범위가 있거나 Bypass DNS 보호가 클라이언트 식별을 필요로 할 때만 실행됩니다. 모든 Sinkhole 기능을 끄면 다음 Sync가 런타임 클라이언트 맵과 선택적 RAM 디스크 미러를 제거하고 새로 고침을 시작하지 않습니다.

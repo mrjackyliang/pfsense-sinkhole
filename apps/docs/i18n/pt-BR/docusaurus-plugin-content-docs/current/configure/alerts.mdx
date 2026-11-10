@@ -1,0 +1,78 @@
+---
+id: alerts
+title: Alertas
+description: Combine respostas bloqueadas por lista e cliente, entregue por avisos do pfSense ou serviços remotos e entenda os limites de repetição, hora, não lidos e execução.
+keywords:
+  - sinkhole for pfsense
+  - alertas
+  - notificações do pfsense
+  - janela de repetição
+  - limites de notificação
+tags:
+  - configure
+  - alerts
+  - notifications
+---
+
+Envie notificações somente para respostas bloqueadas cuja lista e cliente correspondam a uma regra de alerta ativada.
+
+## Por que usar regras de alerta? \{#why-use-alert-rules}
+
+1. Monitora listas e clientes selecionados, para que bloqueios rotineiros fora dessa política permaneçam silenciosos.
+2. Usa os canais de notificação locais e remotos existentes no pfSense, para que o Sinkhole não precise de um serviço de entrega separado.
+3. Suprime repetições e resume picos, para que um domínio muito ativo não inunde a WebGUI nem uma caixa de entrada.
+4. Mantém os eventos enfileirados limitados e fora do processamento das consultas DNS, para que a entrega nunca atrase uma resposta.
+
+## Crie uma regra \{#create-a-rule}
+
+Abra **Firewall → Sinkhole → Alerts**, selecione **Add** abaixo da tabela de regras de alerta e preencha **Add Alert Rule** na página do editor:
+
+| Campo                | Descrição                                                                                |
+|----------------------|------------------------------------------------------------------------------------------|
+| Description          | Nome local da regra, exibido no texto das notificações e nos resumos.                    |
+| Any block list       | Corresponde a um bloqueio de qualquer lista, em vez de apenas das escolhidas.            |
+| Chosen block lists   | Listas que podem satisfazer a regra quando **Any** está desativado.                      |
+| Everyone             | Corresponde a todos os clientes, em vez de somente redes e dispositivos escolhidos.      |
+| Chosen networks      | Escopos de rede que podem satisfazer a regra quando **Everyone** está desativado.        |
+| Chosen devices       | Escopos de dispositivo que podem satisfazer a regra quando **Everyone** está desativado. |
+| Repeat after         | Minutos até que a mesma regra, cliente, domínio e lista possam notificar novamente.      |
+| WebGUI notice        | Adiciona um aviso local do Sinkhole ao pfSense.                                          |
+| Remote notifications | Usa os serviços remotos configurados no pfSense.                                         |
+| Enabled              | Permite que respostas bloqueadas correspondam a esta regra.                              |
+
+O campo de listas escolhidas fica oculto enquanto **Any block list** está selecionado, e os campos de rede e dispositivo ficam ocultos enquanto **Everyone** está selecionado. Ao salvar, você volta para Alerts; selecione o lápis ou clique duas vezes em uma linha para editá-la.
+
+Um bloqueio só corresponde quando uma das listas que bloquearam o nome é selecionada pela regra e o cliente é selecionado pela mesma regra. A janela de repetição padrão é de 60 minutos, e o intervalo aceito vai de 1 a 1.440 minutos.
+
+## Canais de entrega \{#delivery-channels}
+
+- **WebGUI notice** usa o canal local `file_notice()` do pfSense e inclui um link de volta para a aba Alerts.
+- **Remote notifications** usa os serviços `notify_all_remote()` configurados no pfSense.
+
+O Sinkhole não cria nenhum canal próprio de e-mail, chat, webhook ou outro tipo. Os serviços remotos são configurados e testados em **System → Advanced → Notifications** no pfSense.
+
+## Limites fixos \{#fixed-limits}
+
+| Limite                                    | Comportamento                                                                             |
+|-------------------------------------------|-------------------------------------------------------------------------------------------|
+| 20 mensagens por execução de minuto       | Bloqueios adicionais são agrupados em um ou mais resumos de regra dentro do mesmo limite. |
+| 60 mensagens por regra por hora           | O sexagésimo espaço é reservado para um resumo de excesso por hora.                       |
+| 50 avisos WebGUI não lidos                | Avisos locais adicionais aguardam até que alguns avisos do Sinkhole sejam lidos.          |
+| Orçamento de processamento de 40 segundos | Envios não concluídos ficam para o próximo processo de minuto, sem retê-lo.               |
+| Idade do evento de 10 minutos             | Eventos mais antigos na fila são descartados como obsoletos.                              |
+
+Status conta eventos lidos, eventos obsoletos, notificações enviadas, notificações retidas e eventos descartados pelo módulo. Quando não resta nenhuma regra de alerta ativada, o Sinkhole remove o arquivo de eventos e o estado de repetição.
+
+## Privacidade e registros \{#privacy-and-logging}
+
+O texto do alerta identifica o nome bloqueado, o cliente, a rede, a lista e a regra. Um bloqueio CNAME também identifica o destino CNAME listado.
+
+A função de aviso local do pfSense grava `New alert found: <message>` no registro do sistema, por isso o domínio e o dispositivo também aparecem em **Status → System Logs → System → General**. Recomenda-se tratar tanto os avisos quanto os registros como dados da política de navegação.
+
+## Verifique um alerta \{#verify-an-alert}
+
+1. Confirme que a regra, a lista selecionada e o escopo de cliente selecionado estão ativados.
+2. Confirme em Status que o cliente está mapeado no momento para a rede ou o dispositivo esperado.
+3. Consulte um nome bloqueado pela lista selecionada e verifique o canal configurado no pfSense.
+4. Se um segundo aviso não chegar, compare a tentativa com a janela de repetição e os limites fixos da regra.
+

@@ -1,0 +1,14 @@
+{
+  "item.label.Home": {
+    "message": "Главная",
+    "description": "Navbar item with label \"Home\""
+  },
+  "item.label.Guides": {
+    "message": "Руководства",
+    "description": "Navbar item with label \"Guides\""
+  },
+  "item.label.Troubleshooting": {
+    "message": "Устранение неполадок",
+    "description": "Navbar item with label \"Troubleshooting\""
+  }
+}

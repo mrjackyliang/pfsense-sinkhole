@@ -1,0 +1,33 @@
+---
+id: blocked-services
+title: Blocked Services
+description: Block whole services globally or for one configured network or device from a cached registry, while keeping allowed-domain precedence and repairable saved choices.
+keywords:
+  - sinkhole for pfsense
+  - blocked services
+  - service blocking
+  - network scope
+  - device scope
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Use **Firewall → Sinkhole → Services** when you want to block a whole brand without choosing and maintaining a separate list URL.
+
+## Choose a Scope \{#choose-a-scope}
+
+Select **Global**, a configured network, or a configured device. Search for a service, narrow the tiles with a group chip, select each service's checkbox, then select **Save** beneath the service tiles.
+
+Services covered by a dedicated Bypass protection don't appear in the grid, group counts, or search. Private Relay is configured only on the Bypass tab.
+
+The selection compiles at that scope's existing level. Device allowed domains still win over device service rules, network allowed domains still win over network service rules, and global allowed domains still win over global service rules.
+
+## Registry and Repair \{#registry-and-repair}
+
+Sinkhole fetches the AdGuard Home services registry only when this page opens or you select **Refresh**. It keeps the last good copy under `/var/db` for one day, so compilation never waits for the network.
+
+Service logos are rendered as isolated data-URI images. Missing or oversized logos use a generic image. If a saved service disappears from a newer registry, Sinkhole keeps its ID and shows it under **Needs Repair**; clear its checkbox and save to remove that choice.
+
+The **Status** tab shows the registry's fetch time, last error, and the number of blocked services selected for each configured scope.

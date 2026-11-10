@@ -1,0 +1,100 @@
+---
+id: lists
+title: Listes et copies enregistrées
+description: Ajoutez des listes DNS par URL ou catalogue, utilisez les formats hosts, domaine et adblock, contrôlez la politique globale et conservez les dernières copies valides.
+keywords:
+  - sinkhole for pfsense
+  - listes de blocage
+  - listes enregistrées
+  - recherche de listes populaires
+  - domaines autorisés
+tags:
+  - configure
+  - lists
+  - dns
+---
+
+import catalogSearch from './_assets_/lists-2.png';
+
+Ajoutez des sources de listes fiables et laissez Sinkhole conserver sur le pare-feu des copies normalisées et valides pour une utilisation DNS immédiate.
+
+## Pourquoi utiliser des listes enregistrées ? \{#why-use-saved-lists}
+
+1. Maintient le DNS indépendant d’un hébergeur de liste afin qu’un téléchargement lent ou en échec n’interrompe pas la résolution de noms.
+2. Télécharge chaque source une seule fois afin que la même copie enregistrée serve les portées globales, réseau et appareil.
+3. Conserve la copie valide précédente en cas d’échec d’un nouveau téléchargement ou de son analyse afin qu’une entrée défectueuse ne remplace pas une politique fonctionnelle.
+4. Met les listes à jour en arrière-plan afin qu’un redémarrage ou un rechargement du Resolver n’attende jamais le réseau.
+
+## Ajouter une liste par URL \{#add-a-list-by-url}
+
+Ouvrez **Firewall → Sinkhole → Lists**, sélectionnez **Add** sous la table des listes de blocage, puis remplissez **Add Block List** dans la page d’édition :
+
+| Champ   | Description                                                                           |
+|---------|---------------------------------------------------------------------------------------|
+| Name    | Libellé local affiché dans les attributions, les alertes et Status.                   |
+| URL     | Source HTTP ou HTTPS sans identifiants intégrés.                                      |
+| Enabled | Télécharge la source et la rend disponible aux portées auxquelles elle est attribuée. |
+| Global  | Applique la source à tous les clients après les décisions d’appareil et de réseau.    |
+
+L’enregistrement revient à l’onglet Lists et lance le même chemin d’application validé en arrière-plan. Sélectionnez le crayon d’une ligne ou double-cliquez dessus pour la modifier. Une ligne désactivée reste configurée, mais apparaît atténuée dans la table et n’est utilisée ni par la mise à jour ni par la politique compilée.
+
+## Formats DNS acceptés \{#accepted-dns-formats}
+
+Sinkhole accepte les formats standard ci-dessous et normalise les noms valides dans un seul ensemble de domaines enregistré :
+
+| Format                | Exemple                                       | Comportement                                             |
+|-----------------------|-----------------------------------------------|----------------------------------------------------------|
+| Fichier hosts         | `0.0.0.0 blocked.example`                     | Bloque exactement chaque nom de domaine après l’adresse. |
+| Liste de domaines     | `blocked.example`                             | Bloque exactement le nom de domaine de chaque ligne.     |
+| Règle de type adblock | <code>{'\u007c\u007cblocked.example^'}</code> | Bloque le nom de domaine et tous ses sous-domaines.      |
+
+Utilisez la forme adblock `||name^` lorsqu’une seule entrée doit bloquer le nom et tous ses sous-domaines.
+
+Les filtres cosmétiques et les lignes mal formées ne deviennent pas une politique DNS. Status signale les erreurs de source, tandis qu’une liste en échec qui possède une ancienne copie valide conserve cette copie.
+
+## Rechercher dans les catalogues \{#search-the-catalogs}
+
+Sélectionnez **Add from Catalog** dans l’onglet Lists pour rechercher dans le registre de listes d’AdGuard Home et dans la section DNS du catalogue de flux de pfBlockerNG. Sinkhole ne récupère les deux que lorsque la recherche s’ouvre ou lorsque vous sélectionnez **Refresh** ; aucun catalogue n’est intégré ni téléchargé selon un calendrier.
+
+Les résultats apparaissent sous forme de cartes. Utilisez ensemble les contrôles de recherche, de source et de responsable, sélectionnez une puce de catégorie et basculez **Group by** entre **Category** et **Maintainer**. Les puces de catégorie affichent les nombres correspondant aux filtres actuels de recherche, de source et de responsable, tandis que le menu des responsables place en premier ceux qui possèdent le plus de listes correspondantes.
+
+Chaque carte affiche le nom de la liste, son responsable ou sa catégorie, le catalogue source, une description sur deux lignes, la page d’accueil et l’état **Add** ou **Added**. Les cartes n’affichent aucune note, aucun badge ni recommandation. **Add** crée une ligne de liste ordinaire dont l’URL peut être attribuée comme toute source saisie manuellement.
+
+La ligne **Contents** de chaque carte indique **Domains**. L’ajout d’un résultat du catalogue conserve son nom de catalogue inchangé.
+
+Les copies des catalogues sont mises en cache sous `/var/db` pendant un jour. Une actualisation en échec conserve la dernière copie valide du catalogue et affiche l’erreur de récupération dans Status.
+
+<img src={catalogSearch} alt="Panneau Add from Catalog de l’onglet Lists avec les contrôles de recherche du catalogue et l’état de récupération" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Les flux attribués à la protection contre le contournement Encrypted DNS, Tor ou VPN n'apparaissent pas ici. Ils sont disponibles uniquement avec **Add from Catalog** dans l'onglet Bypass.
+
+## Définir les domaines autorisés globaux \{#set-global-allowed-domains}
+
+La section **Allowed Domains** sous les panneaux de listes et de catalogues définit les exceptions globales. Chaque ligne autorise ce domaine et ses sous-domaines à travers les listes globales héritées. Sélectionnez **Save** sous cette section pour appliquer le réglage commun à la page.
+
+Un domaine autorisé global est vérifié après les règles d’appareil et de réseau. Il ne peut donc pas remplacer une liste qui a déjà bloqué la requête à un niveau appareil ou réseau plus précis.
+
+## Choisir la fréquence de mise à jour \{#choose-the-update-frequency}
+
+Le réglage **General → Update Frequency** contrôle les mises à jour planifiées des listes DNS et fournit également le calendrier lorsque le blocage IP est activé :
+
+| Réglage       | Calendrier                                                                       |
+|---------------|----------------------------------------------------------------------------------|
+| Hourly        | Une fois par heure à la minute stable déterminée aléatoirement pour le pare-feu. |
+| Every 6 hours | Toutes les six heures à cette même minute stable.                                |
+| Daily         | Une fois par jour à cette minute, avec `00` comme heure planifiée.               |
+| Weekly        | Chaque dimanche à cette minute, avec `00` comme heure planifiée.                 |
+
+`Daily` est la valeur par défaut. **Status → Update Now** lance une mise à jour complète manuelle sans modifier le calendrier enregistré.
+
+## Déroulement d’une mise à jour \{#what-happens-during-an-update}
+
+1. Télécharge chaque source activée à l’aide du client de téléchargement limité.
+2. L’analyse et la normalise dans une copie temporaire.
+3. Remplace atomiquement la copie enregistrée uniquement lorsque la nouvelle copie est valide.
+4. Compile les politiques actuelles globales, réseau, appareil, de domaines autorisés et d’alerte.
+5. Déploie une nouvelle génération locale et laisse le module Unbound la charger.
+
+Lorsque de nouveaux noms bloqués étendent la politique, Sinkhole attend que le module charge la génération, puis recharge Unbound une fois afin de vider les réponses en cache. [Fonctionnement des mises à jour](/docs/safety/how-updates-work) décrit le modèle complet de disponibilité et de repli.
+
+Lorsqu’un sous-arbre bloqué est interrogé avec une étiquette DNS inhabituelle mais valide, contenant notamment un espace ou un octet supérieur à `0x7f`, Sinkhole conserve le nom au format filaire dans la réponse et renvoie toujours la réponse normale `0.0.0.0` ou `::`. La requête ne devient pas SERVFAIL uniquement parce que l’étiquette ne ressemble pas à un nom d’hôte.

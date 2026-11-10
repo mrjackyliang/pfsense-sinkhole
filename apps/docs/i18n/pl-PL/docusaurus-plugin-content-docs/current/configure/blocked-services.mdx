@@ -1,0 +1,34 @@
+---
+id: blocked-services
+title: Zablokowane usługi
+description: Blokuj całe usługi globalnie albo dla jednej skonfigurowanej sieci lub urządzenia na podstawie buforowanego rejestru, zachowując pierwszeństwo dozwolonych domen i możliwość naprawy zapisanych wyborów.
+keywords:
+  - sinkhole for pfsense
+  - zablokowane usługi
+  - blokowanie usług
+  - zakres sieci
+  - zakres urządzenia
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Użyj **Firewall → Sinkhole → Services**, gdy chcesz zablokować całą markę bez wybierania i utrzymywania oddzielnego adresu URL listy.
+
+## Wybieranie zakresu \{#choose-a-scope}
+
+Wybierz **Global**, skonfigurowaną sieć lub skonfigurowane urządzenie. Wyszukaj usługę, zawęź kafelki za pomocą znacznika grupy, włącz lub wyłącz usługi, a następnie wybierz **Save** pod kartami usług.
+
+Wybór jest kompilowany na istniejącym poziomie zakresu. Dozwolone domeny urządzenia nadal mają pierwszeństwo przed regułami usług urządzenia, dozwolone domeny sieci nadal mają pierwszeństwo przed regułami usług sieci, a globalne dozwolone domeny nadal mają pierwszeństwo przed globalnymi regułami usług.
+
+Usługi objęte dedykowaną ochroną Bypass nie są wyświetlane w siatce, licznikach grup ani wynikach wyszukiwania. Private Relay konfiguruje się tylko na karcie Bypass.
+
+## Rejestr i naprawa \{#registry-and-repair}
+
+Sinkhole pobiera rejestr usług AdGuard Home tylko po otwarciu tej strony lub wybraniu **Refresh**. Ostatnia prawidłowa kopia jest przechowywana przez jeden dzień w `/var/db`, dzięki czemu kompilacja nigdy nie czeka na sieć.
+
+Logo usług są renderowane jako izolowane obrazy data URI. Brakujące lub zbyt duże logo korzystają z obrazu ogólnego. Jeśli zapisana usługa zniknie z nowszego rejestru, Sinkhole zachowuje jej identyfikator i pokazuje ją w **Needs Repair**; wyłącz ją i zapisz, aby usunąć ten wybór.
+
+Karta **Status** pokazuje czas pobrania rejestru, ostatni błąd i liczbę zablokowanych usług wybranych dla każdego skonfigurowanego zakresu.
+

@@ -1,0 +1,14 @@
+{
+  "item.label.Home": {
+    "message": "Start",
+    "description": "Navbar item with label \"Home\""
+  },
+  "item.label.Guides": {
+    "message": "Handleidingen",
+    "description": "Navbar item with label \"Guides\""
+  },
+  "item.label.Troubleshooting": {
+    "message": "Problemen oplossen",
+    "description": "Navbar item with label \"Troubleshooting\""
+  }
+}

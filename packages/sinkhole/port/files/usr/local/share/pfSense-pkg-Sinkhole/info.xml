@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<pfsensepkgs>
+	<package>
+		<name>Sinkhole</name>
+		<internal_name>Sinkhole</internal_name>
+		<descr><![CDATA[Sinkhole blocks unwanted websites on your pfSense network, with separate block lists for each network or device.]]></descr>
+		<version>%%PKGVERSION%%</version>
+		<configurationfile>sinkhole.xml</configurationfile>
+	</package>
+</pfsensepkgs>

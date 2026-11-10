@@ -1,0 +1,68 @@
+---
+id: package-lifecycle
+title: Package Lifecycle
+description: Understand install, upgrade, boot and WAN Sync, vital-package pfSense upgrade preservation, Keep Settings, Resolver restoration, and complete removal.
+keywords:
+  - sinkhole for pfsense
+  - package lifecycle
+  - keep settings
+  - pfsense upgrade
+  - uninstall
+tags:
+  - reference
+  - lifecycle
+  - removal
+---
+
+Sinkhole follows pfSense package hooks for installation, repeated Sync, upgrade, and removal while preserving the Resolver and saved data deliberately.
+
+## Install and Upgrade \{#install-and-upgrade}
+
+Install or update from the stable release URL:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+The install hook writes package integration before any required service or filter reload. Upgrade hooks are repeatable and retain settings and saved lists while replacing installed program files.
+
+Packages installed directly from GitHub aren't listed on pfSense's **System → Package Manager → Installed Packages** page. Use the command line or Sinkhole's verified About update action rather than looking for a Netgate repository entry.
+
+## Package Sync \{#package-sync}
+
+pfSense calls package Sync at boot and after every WAN address change. Sinkhole uses it to restore schedules, current client addresses, Resolver integration, runtime generations, plain-DNS redirect rules, and the independent Bypass and IP anchors when needed.
+
+A no-change Sync writes no configuration revision, compiles nothing, and leaves Unbound alone. On a RAM-disk system, boot-time Sync restores missing `/var/unbound` content from the persistent mirror and restarts the Resolver only when required.
+
+## Why a pfSense Upgrade Keeps Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
+
+Release packages declare the ABI as `FreeBSD:*` and set the package's vital flag. The wildcard makes one release package installable across FreeBSD major versions, while vital prevents pfSense's upgrade-time autoremove pass from deleting a package absent from Netgate's repository.
+
+That preservation doesn't claim compatibility with an untested pfSense release. Review [Compatibility](/docs/compatibility) and verify the package on a lab firewall after the platform upgrade.
+
+## Keep Settings \{#keep-settings}
+
+**General → Keep Settings** is selected by default. With it selected, package removal preserves Sinkhole's pfSense configuration and `/cf/conf/sinkhole` data so saved lists and policy are available after reinstall.
+
+This default also protects data during a package-manager upgrade that performs a removal followed by an install. Clear it only when the intended outcome is a complete configuration and saved-data deletion.
+
+## Remove Sinkhole \{#remove-sinkhole}
+
+The release package is vital, so force explicit removal while retaining its normal lifecycle hooks:
+
+```sh
+pkg delete -f pfSense-pkg-Sinkhole
+```
+
+Removal stops scheduled jobs, blocks new update work, restores the Resolver's previous Python settings, removes Sinkhole's managed Discovery block from the DNS Resolver's **Custom options**, removes `/var/unbound` runtime content, clears transient locks and status, withdraws plain-DNS redirect rules, flushes the `sinkhole/bypass` and `sinkhole/ip` anchors, and removes Bypass cached lists and table files. It removes the managed Discovery block whether **Keep Settings** is on or off. It also removes the package files installed under `/usr/local`.
+
+When **Keep Settings** is on, configuration and durable saved lists remain for reinstall. When it is off, removal deletes all Sinkhole settings and saved data, including `/cf/conf/sinkhole` and the entire Sinkhole branch in pfSense's package configuration.
+
+## Verify Removal \{#verify-removal}
+
+1. Confirm **Firewall → Sinkhole** is no longer present.
+2. Confirm the DNS Resolver's Python script and order match the values that preceded Sinkhole.
+3. Confirm no Sinkhole cron entries, plain-DNS redirect block, `sinkhole/bypass` anchor, or `sinkhole/ip` anchor remains.
+4. If Keep Settings was off, confirm `/cf/conf/sinkhole` is absent.
+
+If an update was active, the removal marker asks it to stop between bounded stages before persistent data is touched. Removal records the first cleanup failure while still attempting the remaining independent cleanup steps.

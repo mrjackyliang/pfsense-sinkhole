@@ -1,0 +1,80 @@
+---
+id: testing-and-verification
+title: Testiranje i provjera
+description: Provjerite instaliranje, vlasništvo Resolvera, odluke opsega, obavijesti, Bypass zaštitu, IP blokiranje, ažuriranja i sigurno uklanjanje na testnom zidu.
+keywords:
+  - sinkhole for pfsense
+  - testiranje
+  - provjera
+  - testni zaštitni zid
+  - sigurnost izdanja
+tags:
+  - safety
+  - testing
+  - verification
+---
+
+Testirajte Sinkhole na privremenom testnom sistemu pfSensea prije uvođenja njegovih DNS, NAT ili pravila zaštitnog zida u produkcijsku mrežu.
+
+## Provjerite preuzimanje paketa \{#verify-the-package-download}
+
+Preuzmite stabilni paket i `.sha256` datoteku iz istog GitHub izdanja. Uporedite SHA-256 sažetak paketa s jedinim hashom u `pfSense-pkg-Sinkhole.pkg.sha256` prije pokretanja `pkg add -f`.
+
+Samo HTTPS preuzimanje ne zamjenjuje upoređivanje kontrolnog zbira. Držite paket i kontrolni zbir zajedno kada ih putem drugog računara prenosite na zaštitni zid.
+
+## Provjerite osnovno instaliranje \{#verify-a-basic-installation}
+
+1. Potvrdite da se **Firewall → Sinkhole** otvara i da se instalirana verzija prikazuje na **About**.
+2. Potvrdite da je **Services → DNS Resolver** omogućen i da njegovo Python mjesto ne posjeduje drugi paket.
+3. Omogućite Sinkhole, spremite i potvrdite da je **Status → Sinkhole** postavljeno na `Active`.
+4. Nakon prvog uspješnog ažuriranja potvrdite da se identifikatori kompajlirane, postavljene i učitane generacije podudaraju.
+
+Sinkhole odbija zamijeniti pfBlockerNG DNSBL ili drugu skriptu na jedinom mjestu za Python modul u Unboundu. To neaktivno stanje tretirajte kao sukob konfiguracije, a ne neuspjelo instaliranje.
+
+## Provjerite DNS pravila \{#verify-dns-policy}
+
+Koristite izmišljene testne domene s liste kojom upravljate umjesto javne liste. Testirajte jednu po jednu odluku s klijenata čiji su identiteti uređaja i mreže vidljivi na Statusu.
+
+1. Potvrdite da se naziv koji nije na listi normalno razrješava.
+2. Potvrdite da globalna lista blokira svoj testni naziv.
+3. Dodajte dopuštenu mrežnu domenu i potvrdite da prolazi kroz mrežne i globalne liste.
+4. Dodajte odluku uređaja i potvrdite [dokumentirani redoslijed](/docs/configure/scopes#decision-order).
+5. Uklonite testne podatke i potvrdite da sljedeća postavljena generacija vraća očekivani odgovor.
+
+Izbjegavajte `test.`, `invalid.`, `onion.` i `localhost.` jer Unbound na te ugrađene zone odgovara prije Python modula. Između provjera očistite DNS predmemorije na klijentu kada bi se rezultat inače mogao ponovo koristiti.
+
+## Provjerite upozorenja \{#verify-alerts}
+
+Kreirajte jedno usko pravilo za blokiranje izmišljene testne domene i poznatog testnog klijenta. Potvrdite da sljedeći minutni posao bilježi događaj i šalje ga putem konfiguriranog sistema obavijesti pfSensea.
+
+Ponovite unutar perioda ponavljanja pravila kako biste potvrdili da je obavijest potisnuta. Nakon toga uklonite pravilo i potvrdite da Status više ne prijavljuje greške obrade upozorenja.
+
+## Provjerite Bypass zaštitu \{#verify-bypass-protection}
+
+Odaberite jedan izolirani testni interfejs i omogućavajte jednu po jednu Bypass zaštitu. Nakon svakog testa potvrdite da isti klijent na neodabranom interfejsu ostaje netaknut.
+
+1. Omogućite **Redirect**, potvrdite da njegova porodica adresa ima slušač Resolvera i pošaljite obične UDP i TCP upite porta 53 drugom odredištu. Potvrdite da ih pfSense prima.
+2. Dodajte namjerno nevažeći izuzetak samo u jednokratnoj konfiguraciji i potvrdite da preusmjeravanje prelazi u **Paused** umjesto da učitava djelimična pravila. Vratite važeće podatke, pričekajte dva minutna opažanja i potvrdite da se **pfSense loaded rules** vraća na `Yes`.
+3. Omogućite **TLS and QUIC**, zatim potvrdite da su TCP i UDP port 853 prema testnom odredištu blokirani, a saobraćaj prema zaštitnom zidu nije.
+4. Dodajte onemogućenu Bypass List koja sadrži samo izmišljene domene, adrese, CIDR-ove, komentare i neispravne podatke. Omogućite je i odgovarajuću zaštitu, zatim potvrdite da se važeći nazivi i adrese blokiraju, nevažeći redovi preskaču, a kasnije neuspjelo dohvatanje čuva sačuvanu kopiju.
+5. Potvrdite da testni upiti za Firefox i Private Relay primaju `NXDOMAIN`. Potvrdite da DDR vraća prazan odgovor `NOERROR` u načinu **Answer with no records**.
+6. Kada je SSL/TLS usluga Resolvera konfigurirana u testnom okruženju, potvrdite da **Advertise** vraća SVCB s nazivom hosta certifikata, `alpn=dot` i portom `853`. Isključite tu uslugu i potvrdite da spremanje **Advertise** ne prolazi provjeru valjanosti.
+7. Omogućite standardne VPN portove i testirajte TCP i UDP `1194`, UDP `51820`, UDP `500` i `4500` te ESP prema testnom odredištu. Potvrdite da saobraćaj upućen zaštitnom zidu nije blokiran.
+
+Nakon svakog testa zaštitnog zida potvrdite da **Status → Bypass** prikazuje očekivano stanje pravila i da `sinkhole/ip`, kada je zasebno omogućen, ostaje učitan.
+
+## Provjerite blokiranje IP adresa i država \{#verify-ip-and-country-blocking}
+
+Koristite izmišljeni primjer IP liste i adresu koja ne može uticati na administriranje zaštitnog zida, pristupnike ili DNS. Prije testiranja saobraćaja potvrdite konačni broj zapisa tabele porodice, odabrani interfejs i smjer te **IP Anchor → Yes**.
+
+Provjerite da je testni raspon na listi dopuštenih uklonjen iz tabele blokiranja. Ako testirate GeoLite2, koristite vlastiti MaxMind ključ administratora i uklonite ga iz svakog snimljenog izlaza.
+
+## Provjerite ponašanje ažuriranja i uklanjanja \{#verify-update-and-removal-behavior}
+
+Pokrenite ručno ažuriranje lista i potvrdite da DNS nastavlja odgovarati dok Status prolazi kroz stanja ažuriranja, kompajliranja, postavljanja i učitavanja. Namjerno neuspjeli izvor treba zadržati raniju sačuvanu kopiju i prikazati grešku.
+
+Prije uklanjanja odlučite treba li **Keep Settings** sačuvati konfiguraciju i sačuvane liste. Uklonite naredbom `pkg delete -f pfSense-pkg-Sinkhole`, a zatim potvrdite da su uklonjeni integracija Resolvera, zakazani poslovi, pravila preusmjeravanja običnog DNS-a, sidra `sinkhole/bypass` i `sinkhole/ip`, keširani Bypass podaci i privremene izvršne datoteke.
+
+## Zabilježite okruženje \{#record-the-environment}
+
+Za koristan zapis testa zabilježite verziju Sinkholea, izdanje i verziju pfSensea, verziju FreeBSD-a, odabrane funkcije, stanje Statusa i sanitizirane redove sistemskog dnevnika `Sinkhole:`. Trenutno nijedna verzija pfSensea nije navedena kao službeno testirana; testiranje kompatibilnosti provodi se prije svakog izdanja Sinkholea.

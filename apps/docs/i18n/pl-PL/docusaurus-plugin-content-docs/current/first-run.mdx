@@ -1,0 +1,74 @@
+---
+id: first-run
+title: Konfiguracja Sinkhole
+description: Dodaj zaufaną listę, wybierz zasady globalne lub dla zakresu, włącz integrację z Resolver, uruchom pierwszą aktualizację i zweryfikuj aktywną generację Sinkhole.
+keywords:
+  - sinkhole for pfsense
+  - pierwsze uruchomienie
+  - dns resolver
+  - lista blokowania
+  - status
+tags:
+  - setup
+  - first run
+  - dns
+sidebar_position: 3
+---
+
+Skonfiguruj jedną zaufaną listę i sprawdź jej stan zapisany, skompilowany, wdrożony i załadowany, zanim rozszerzysz zasady.
+
+## Sprawdzanie Resolver \{#check-the-resolver}
+
+1. Otwórz **Services → DNS Resolver** i sprawdź, czy Resolver jest włączony.
+2. Jeśli pfBlockerNG DNSBL jest włączony, wybierz pakiet, który będzie zarządzać filtrowaniem DNS, ponieważ oba pakiety nie mogą jednocześnie korzystać z miejsca na moduł Python w Unbound.
+3. Otwórz **Firewall → Sinkhole → General** i pozostaw **Enable** wyłączone podczas przygotowywania pierwszych zasad.
+
+Sinkhole odmawia zapisania **Enable**, gdy miejsce zajmuje inny skrypt Python. Późniejsze wyłączenie Sinkhole przywraca poprzednie ustawienia Python Resolver, jeśli Sinkhole nadal jest ich właścicielem.
+
+## Dodawanie listy \{#add-a-list}
+
+1. Otwórz **Lists** i dodaj adres URL zaufanego źródła albo otwórz **Add from Catalog**, aby przeszukać dwa katalogi na żądanie.
+2. Nadaj źródłu lokalną nazwę i pozostaw **Enabled** zaznaczone, aby Sinkhole je pobierał.
+3. Pozostaw **Global** zaznaczone tylko wtedy, gdy lista ma być stosowana po wszystkich regułach urządzenia i sieci.
+4. Dodaj globalne **Allowed Domains**, po jednej domenie w wierszu, jeśli znany wynik fałszywie dodatni ma być przepuszczany.
+
+Sinkhole nie poleca żadnego źródła. [Listy i zapisane kopie](/docs/configure/lists) objaśnia obsługiwane formaty oraz sposób przekształcania wyników katalogu w zwykłe wiersze list.
+
+## Dodawanie opcjonalnych zakresów \{#add-optional-scopes}
+
+Otwórz **Scopes**, gdy sieć lub urządzenie potrzebuje zasad innych niż poziom globalny:
+
+- Dodaj **Network** dla jednego skonfigurowanego interfejsu pfSense, a następnie wybierz jego listy i dozwolone domeny.
+- Dodaj **Device** według adresu IP, statycznego mapowania DHCP lub adresu MAC, a następnie wybierz jego listy i dozwolone domeny.
+
+Urządzenie dziedziczy sieć, w której aktualnie się znajduje, a sieć dziedziczy listy globalne. [Zakresy i dozwolone domeny](/docs/configure/scopes) przedstawia kolejność decyzji określającą, czy nazwa jest przepuszczana, czy blokowana.
+
+## Włączanie i aktualizowanie \{#enable-and-update}
+
+1. Wróć do **General** i zaznacz **Enable**.
+2. Wybierz **Update Frequency** dla włączonych list DNS i zapisz ustawienia.
+3. Otwórz **Status** i wybierz **Update Now**.
+4. Poczekaj, aż **Update running** ponownie przyjmie wartość `No`.
+
+Przełącznik General włącza zaplanowane aktualizacje list DNS i integrację z DNS Resolver. Włączone Bypass Lists oraz zasady IP/krajów niezależnie korzystają z tego samego harmonogramu aktualizacji; każda ochrona Bypass i IP pozostaje wyłączona, dopóki administrator jej nie włączy.
+
+## Weryfikacja stanu aktywnego \{#verify-the-active-state}
+
+Pierwsza aktualizacja jest gotowa, gdy panele Status pokazują wszystkie następujące wyniki:
+
+- **Lists** pokazuje niezerową liczbę wpisów i **Last Successful Update** dla każdego działającego źródła.
+- **Compile Needed** i **Deployment Needed** mają wartość `No` w **Summary**.
+- **Compiled Generation**, **Deployed Generation** i **Loaded Generation** identyfikują bieżącą generację.
+- **DNS Resolver Python Script Owner** ma wartość `sinkhole`.
+- **Sinkhole** ma wartość `Active` bez podanej przyczyny.
+
+Jeśli strona zgłasza przyczynę nieaktywności lub oczekującą generację, sekcja [Status](/docs/operate/status) wyjaśnia stan, a [Rozwiązywanie problemów](/docs/operate/troubleshooting) opisuje każdą prawdopodobną przyczynę.
+
+## Ostrożne dodawanie alertów i ochrony Bypass \{#add-alerts-and-bypass-protection-carefully}
+
+Przed dodaniem reguły alertu lub ochrony Bypass zaleca się zweryfikowanie odpowiedzi DNS według zakresu. Alerty mogą ujawniać aktywność klientów, a ustawienia Bypass mogą przekierowywać lub blokować ruch przychodzący na wybranych interfejsach.
+
+- [Alerty](/docs/configure/alerts) ogranicza dostarczanie według listy, klienta, okna powtórzeń i stałych limitów.
+- [Ochrona przed omijaniem](/docs/configure/bypass-protection) opisuje przekierowanie zwykłego DNS, sygnały szyfrowanego DNS, listy dostawców i ochronę przed tunelami.
+- [Blokowanie IP i krajów](/docs/configure/ip-and-country-blocking) opisuje niezależny filtr pakietów, który jest domyślnie wyłączony.
+

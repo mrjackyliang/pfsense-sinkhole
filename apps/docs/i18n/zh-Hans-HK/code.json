@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "原生 pfSense 软件包"
+  },
+  "homepage.hero.heading": {
+    "message": "决定每个网络和设备可以访问的内容。"
+  },
+  "homepage.hero.tagline": {
+    "message": "将已保存的 DNS 列表应用于整个网络、某个 VLAN 或单个设备，并提供有意设置的警报，无需第二台设备。"
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "安装 Sinkhole"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "规划作用域"
+  },
+  "homepage.stats.heading": {
+    "message": "一台防火墙，覆盖每个实用层级的策略"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole 将策略保留在本地，并明确网络和设备边界。"
+  },
+  "homepage.stats.policyScopes": {
+    "message": "策略作用域"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "DNS 列表格式"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "目录缓存"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Unbound 模块插槽"
+  },
+  "homepage.features.heading": {
+    "message": "由防火墙掌控"
+  },
+  "homepage.features.scopes.title": {
+    "message": "限定每项决定的作用域"
+  },
+  "homepage.features.scopes.description": {
+    "message": "全局、按接口或 VLAN、按设备应用列表和允许域名。"
+  },
+  "homepage.features.savedLists.title": {
+    "message": "保留最后有效数据"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "从本地已保存列表应答 DNS，因此可经受重启、超时和下载失败。"
+  },
+  "homepage.features.alerts.title": {
+    "message": "有目的地发出警报"
+  },
+  "homepage.features.alerts.description": {
+    "message": "只为每条规则中选择的列表、网络和设备发送通知。"
+  },
+  "homepage.features.redirect.title": {
+    "message": "保护 DNS 路径"
+  },
+  "homepage.features.redirect.description": {
+    "message": "可选择在所选接口上重定向普通 DNS，或拦截常见的加密 DNS 和隧道绕过路径。"
+  },
+  "homepage.features.catalogs.title": {
+    "message": "搜索后自行决定"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "按需搜索受支持的目录，不捆绑或推荐任何列表。"
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "阻止地址和国家或地区"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "通过独立的 sinkhole/ip 锚点应用 IP 列表和 GeoLite2 国家或地区策略。"
+  }
+}

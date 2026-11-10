@@ -1,0 +1,80 @@
+---
+id: scopes
+title: Ambiti e domini consentiti
+description: Assegna liste e domini consentiti ad ambiti globali, di interfaccia e dispositivo, quindi segui l’ordine esatto del livello più specifico per ogni query DNS.
+keywords:
+  - sinkhole for pfsense
+  - ambiti
+  - blocco vlan
+  - criteri del dispositivo
+  - domini consentiti
+tags:
+  - configure
+  - scopes
+  - dns
+---
+
+Assegna liste e domini consentiti a livello globale, di rete e di dispositivo, così ogni client riceve i criteri previsti per la sua posizione corrente.
+
+## Perché usare gli ambiti? \{#why-use-scopes}
+
+1. Assegna a ogni interfaccia pfSense o VLAN i propri criteri, mantenendo regole globali per tutti.
+2. Assegna a un singolo dispositivo una decisione più specifica senza richiedere un server DNS separato.
+3. Consente ai domini consentiti di correggere i falsi positivi al livello in cui sono rilevanti senza rimuovere un’intera lista.
+4. Mantiene gli indirizzi dei client separati dalle liste compilate, così le modifiche DHCP, dei vicini o delle interfacce non ricaricano Unbound.
+
+## Ambito globale \{#global-scope}
+
+Una lista con **Global** selezionato si applica a ogni client dopo le decisioni di dispositivo e rete. I domini consentiti globali vengono inseriti nella scheda **Lists** e consentono al dominio specificato e ai relativi sottodomini di attraversare le liste globali.
+
+Un client che non corrisponde ad alcun ambito di rete o dispositivo abilitato riceve solo questo livello.
+
+## Ambiti di rete \{#network-scopes}
+
+Apri **Firewall → Sinkhole → Scopes**, quindi seleziona **Add** sotto la tabella Networks. Per impostazione predefinita, l’editor seleziona LAN o la prima interfaccia disponibile diversa da WAN e omette le interfacce che hanno già un ambito di rete. Un client appartiene a quella rete quando il suo indirizzo si trova in una delle sottoreti IPv4 o IPv6 correnti dell’interfaccia.
+
+Ogni riga di rete seleziona liste aggiuntive, domini consentiti e lo stato di abilitazione dell’ambito. Il salvataggio riporta a Scopes; seleziona la matita o fai doppio clic su una riga per modificarla. Un dispositivo che passa da una rete all’altra riceve i criteri della rete corrispondente al suo indirizzo corrente.
+
+## Ambiti dei dispositivi \{#device-scopes}
+
+Seleziona **Add** sotto la tabella Devices, specifica un nome e scegli un metodo di identificazione. L’editor mostra solo il campo identificatore relativo al metodo selezionato:
+
+| Metodo              | Indirizzi usati per il dispositivo                                                 |
+|---------------------|------------------------------------------------------------------------------------|
+| IP address          | L’indirizzo IPv4 o IPv6 configurato.                                               |
+| DHCP static mapping | L’indirizzo configurato e gli indirizzi correnti osservati per il MAC del mapping. |
+| MAC address         | Gli indirizzi correnti ARP, NDP e dei lease DHCP per quel MAC.                     |
+
+La riga del dispositivo seleziona liste, domini consentiti e stato di abilitazione. Il salvataggio riporta a Scopes; seleziona la matita o fai doppio clic su una riga per modificarla. Un’attività in background aggiorna ogni minuto le sottoreti e gli indirizzi dei dispositivi quando il blocco DNS ha un ambito di rete o dispositivo abilitato, oppure quando la protezione DNS di Bypass richiede l’identificazione dei client. Sync del pacchetto avvia lo stesso aggiornamento solo in tale condizione.
+
+## Ordine decisionale \{#decision-order}
+
+Il livello corrispondente più specifico decide ogni query in questo ordine esatto:
+
+1. **Domini consentiti del dispositivo** — Consente immediatamente quando il nome della query corrisponde.
+2. **Liste del dispositivo** — Blocca immediatamente quando corrisponde una lista selezionata del dispositivo.
+3. **Domini consentiti della rete** — Consente immediatamente quando l’eccezione di rete corrisponde.
+4. **Liste della rete** — Blocca immediatamente quando corrisponde una lista selezionata della rete.
+5. **Domini consentiti globali** — Consente immediatamente quando l’eccezione globale corrisponde.
+6. **Liste globali** — Blocca quando corrisponde una lista globale.
+
+La query passa quando nessun passaggio prende una decisione. I domini consentiti di un livello ignorano le liste ereditate da livelli meno specifici, ma non le liste di un livello più specifico che ha già deciso.
+
+## Comportamento dei domini consentiti \{#allowed-domain-behavior}
+
+Ogni voce di dominio consentito si applica al dominio esatto e a tutti i sottodomini. Ad esempio, consentire `service.example` consente anche `api.service.example` a quel livello.
+
+- Un’eccezione del dispositivo può attraversare le liste del dispositivo, della rete e globali, perché viene controllata per prima.
+- Un’eccezione di rete può attraversare le liste della rete e globali, ma non una decisione della lista del dispositivo.
+- Un’eccezione globale può attraversare solo le liste globali.
+
+## Conflitti di indirizzo \{#address-conflicts}
+
+Quando due righe di dispositivo rivendicano lo stesso indirizzo corrente, prevale il primo dispositivo nell’ordine della tabella. **Status → Scopes** mostra l’indirizzo in **Conflict** per ogni riga interessata, così è possibile correggere l’ordine o gli identificatori.
+
+## Verificare un ambito \{#verify-a-scope}
+
+1. Esegui `/usr/local/sbin/sinkhole --refresh-clients` o attendi l’aggiornamento ogni minuto.
+2. Apri **Status → Scopes** e verifica le sottoreti correnti della rete e gli indirizzi correnti del dispositivo.
+3. Interroga un nome da un client in quell’ambito e confronta il risultato con l’ordine decisionale precedente.
+4. Verifica la presenza di conflitti di indirizzo prima di fare affidamento sul comportamento specifico del dispositivo.

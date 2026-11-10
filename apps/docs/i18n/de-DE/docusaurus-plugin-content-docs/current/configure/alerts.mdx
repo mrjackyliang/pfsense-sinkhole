@@ -1,0 +1,77 @@
+---
+id: alerts
+title: Alarme
+description: Ordne blockierte Antworten Listen und Clients zu, stelle sie über pfSense zu und verstehe Wiederholungs-, Stunden-, Ungelesen- und Laufgrenzen.
+keywords:
+  - sinkhole for pfsense
+  - alarme
+  - pfsense-benachrichtigungen
+  - wiederholungsfenster
+  - benachrichtigungsgrenzen
+tags:
+  - configure
+  - alerts
+  - notifications
+---
+
+Sende Benachrichtigungen nur für blockierte Antworten, deren Liste und Client mit einer aktivierten Alarmregel übereinstimmen.
+
+## Warum Alarmregeln verwenden? \{#why-use-alert-rules}
+
+1. Überwacht ausgewählte Listen und Clients, sodass routinemäßige Blockierungen außerhalb dieser Richtlinie still bleiben.
+2. Verwendet die vorhandenen lokalen und externen Benachrichtigungskanäle von pfSense, sodass Sinkhole keinen eigenen Zustelldienst benötigt.
+3. Unterdrückt Wiederholungen und fasst Häufungen zusammen, damit eine häufig abgefragte Domain weder die WebGUI noch ein Postfach überfluten kann.
+4. Hält Ereigniswarteschlangen begrenzt und außerhalb der DNS-Abfrageverarbeitung, sodass die Zustellung eine Antwort nie verzögert.
+
+## Regel erstellen \{#create-a-rule}
+
+Öffne **Firewall → Sinkhole → Alerts**, wähle unter der Tabelle der Alarmregeln **Add** aus und fülle anschließend auf der Editorseite **Add Alert Rule** aus:
+
+| Feld                 | Beschreibung                                                                                                    |
+|----------------------|-----------------------------------------------------------------------------------------------------------------|
+| Description          | Lokaler Regelname, der in Benachrichtigungstexten und Zusammenfassungen angezeigt wird.                         |
+| Any block list       | Stimmt mit einer Blockierung aus jeder Liste überein, statt nur mit den ausgewählten Listen.                    |
+| Chosen block lists   | Listen, welche die Regel erfüllen können, wenn **Any** deaktiviert ist.                                         |
+| Everyone             | Stimmt mit jedem Client überein, statt nur mit ausgewählten Netzwerken und Geräten.                             |
+| Chosen networks      | Netzwerk-Scopes, welche die Regel erfüllen können, wenn **Everyone** deaktiviert ist.                           |
+| Chosen devices       | Geräte-Scopes, welche die Regel erfüllen können, wenn **Everyone** deaktiviert ist.                             |
+| Repeat after         | Minuten, bevor dieselbe Regel, derselbe Client, dieselbe Domain und dieselbe Liste erneut benachrichtigen kann. |
+| WebGUI notice        | Fügt pfSense einen lokalen Sinkhole-Hinweis hinzu.                                                              |
+| Remote notifications | Verwendet die in pfSense konfigurierten externen Dienste.                                                       |
+| Enabled              | Ermöglicht blockierten Antworten, mit dieser Regel übereinzustimmen.                                            |
+
+Das Feld für ausgewählte Listen ist ausgeblendet, solange **Any block list** ausgewählt ist, und die Netzwerk- und Gerätefelder sind ausgeblendet, solange **Everyone** ausgewählt ist. Nach dem Speichern kehrst du zu Alerts zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile.
+
+Eine Blockierung stimmt nur überein, wenn eine der Listen, die den Namen blockiert haben, durch die Regel ausgewählt ist und derselbe Client von der Regel ausgewählt ist. Das standardmäßige Wiederholungsfenster beträgt 60 Minuten; zulässig sind 1 bis 1.440 Minuten.
+
+## Zustellungskanäle \{#delivery-channels}
+
+- **WebGUI notice** verwendet den lokalen pfSense-Kanal `file_notice()` und verlinkt zurück zum Tab Alerts.
+- **Remote notifications** verwendet die in pfSense konfigurierten Dienste von `notify_all_remote()`.
+
+Sinkhole erstellt keinen eigenen E-Mail-, Chat-, Webhook- oder sonstigen Kanal. Externe Dienste werden in pfSense unter **System → Advanced → Notifications** konfiguriert und getestet.
+
+## Feste Grenzen \{#fixed-limits}
+
+| Grenze                          | Verhalten                                                                                                            |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| 20 Nachrichten pro Minutenlauf  | Zusätzliche Blockierungen werden innerhalb derselben Grenze in einer oder mehreren Regelzusammenfassungen gebündelt. |
+| 60 Nachrichten pro Regel/Stunde | Der sechzigste Platz ist für eine stündliche Überlaufzusammenfassung reserviert.                                     |
+| 50 ungelesene WebGUI-Hinweise   | Weitere lokale Hinweise warten, bis einige Sinkhole-Hinweise gelesen wurden.                                         |
+| 40 Sekunden Verarbeitungszeit   | Nicht abgeschlossene Sendungen bleiben für den nächsten Minutenlauf, statt ihn aufzuhalten.                          |
+| 10 Minuten Ereignisalter        | Ältere Ereignisse in der Warteschlange werden als veraltet verworfen.                                                |
+
+Status zählt gelesene Ereignisse, veraltete Ereignisse, gesendete und zurückgehaltene Benachrichtigungen sowie vom Modul verworfene Ereignisse. Wenn keine aktivierte Alarmregel verbleibt, entfernt Sinkhole die Ereignisdatei und den Wiederholungsstatus.
+
+## Datenschutz und Protokollierung \{#privacy-and-logging}
+
+Der Alarmtext nennt den blockierten Namen, Client, das Netzwerk, die Liste und die Regel. Eine CNAME-Blockierung nennt außerdem das aufgeführte CNAME-Ziel.
+
+Die lokale Hinweisfunktion von pfSense schreibt `New alert found: <message>` in das Systemprotokoll. Domain und Gerät erscheinen daher ebenfalls unter **Status → System Logs → System → General**. Es wird empfohlen, Hinweise und Protokolle als Aufzeichnungen der Browsing-Richtlinie zu behandeln.
+
+## Alarm prüfen \{#verify-an-alert}
+
+1. Bestätige, dass die Regel, die ausgewählte Liste und der ausgewählte Client-Scope aktiviert sind.
+2. Bestätige auf Status, dass der Client derzeit dem vorgesehenen Netzwerk oder Gerät zugeordnet ist.
+3. Frage einen Namen ab, den die ausgewählte Liste blockiert, und prüfe den konfigurierten pfSense-Kanal.
+4. Wenn kein zweiter Hinweis eintrifft, vergleiche den Versuch mit dem Wiederholungsfenster und den festen Grenzen der Regel.

@@ -1,0 +1,80 @@
+---
+id: testing-and-verification
+title: Testing and Verification
+description: Verify installation, Resolver ownership, scoped decisions, notifications, Bypass protection, IP blocking, updates, and safe removal on a lab firewall.
+keywords:
+  - sinkhole for pfsense
+  - testing
+  - verification
+  - lab firewall
+  - release safety
+tags:
+  - safety
+  - testing
+  - verification
+---
+
+Test Sinkhole on a disposable pfSense lab before introducing its DNS, NAT, or firewall policy to a production network.
+
+## Verify the Package Download \{#verify-the-package-download}
+
+Download the stable package and `.sha256` asset from the same GitHub release. Compare the package's SHA-256 digest with the single hash in `pfSense-pkg-Sinkhole.pkg.sha256` before running `pkg add -f`.
+
+An HTTPS download alone doesn't replace the checksum comparison. Keep the package and checksum together when transferring them to a firewall through another machine.
+
+## Verify a Basic Installation \{#verify-a-basic-installation}
+
+1. Confirm **Firewall → Sinkhole** opens and the installed version appears on **About**.
+2. Confirm **Services → DNS Resolver** is enabled and its Python slot isn't owned by another package.
+3. Enable Sinkhole, save, and confirm **Status → Sinkhole** is `Active`.
+4. Confirm compiled, deployed, and loaded generation identifiers match after the first successful update.
+
+Sinkhole refuses to replace pfBlockerNG DNSBL or another script in Unbound's single Python-module slot. Treat that inactive state as a configuration conflict, not an installation failure.
+
+## Verify DNS Policy \{#verify-dns-policy}
+
+Use invented test domains from a list you control rather than a public list. Test one decision at a time from clients whose device and network identities are visible on Status.
+
+1. Confirm an unlisted name resolves normally.
+2. Confirm a global list blocks its test name.
+3. Add a network allowed domain and confirm it passes network and global lists.
+4. Add a device decision and confirm the [documented order](/docs/configure/scopes#decision-order).
+5. Remove the test data and confirm the next deployed generation restores the expected answer.
+
+Avoid `test.`, `invalid.`, `onion.`, and `localhost.` because Unbound answers those built-in zones before Python modules. Clear client-side DNS caches between checks when the result could otherwise be reused.
+
+## Verify Alerts \{#verify-alerts}
+
+Create one narrow rule for an invented test-domain block and a known lab client. Confirm the next minute job records the event and sends it through pfSense's configured notification system.
+
+Repeat within the rule's repeat window to confirm the notice is suppressed. Remove the rule afterward and confirm Status no longer reports alert-processing errors.
+
+## Verify Bypass Protection \{#verify-bypass-protection}
+
+Choose one isolated lab interface and enable one Bypass protection at a time. Confirm an equivalent client on an unselected interface remains untouched after every test.
+
+1. Enable **Redirect**, confirm its address family has a Resolver listener, and send ordinary UDP and TCP port 53 queries to another destination. Confirm pfSense receives them.
+2. Add an intentionally invalid exemption only on a disposable configuration and confirm redirect becomes **Paused** rather than loading partial rules. Restore valid data, wait for two minute observations, and confirm **pfSense loaded rules** returns to `Yes`.
+3. Enable **TLS and QUIC**, then confirm TCP and UDP port 853 to a lab destination is blocked while traffic to the firewall isn't.
+4. Add a disabled Bypass List containing only invented domains, addresses, CIDRs, comments, and junk. Enable it and its matching protection, then confirm valid names and addresses are blocked, invalid lines are skipped, and a later failed fetch preserves the saved copy.
+5. Confirm Firefox and Private Relay test queries receive `NXDOMAIN`. Confirm DDR returns an empty `NOERROR` answer in **Answer with no records** mode.
+6. With the Resolver's SSL/TLS service configured in the lab, confirm **Advertise** returns SVCB with the certificate hostname, `alpn=dot`, and port `853`. Turn that service off and confirm saving **Advertise** fails validation.
+7. Enable standard VPN ports and test TCP and UDP `1194`, UDP `51820`, UDP `500` and `4500`, and ESP against a lab destination. Confirm traffic addressed to the firewall isn't blocked.
+
+After each firewall test, confirm **Status → Bypass** reports the expected rule state and that `sinkhole/ip`, when enabled separately, remains loaded.
+
+## Verify IP and Country Blocking \{#verify-ip-and-country-blocking}
+
+Use an invented IP-list fixture and an address that cannot affect firewall administration, gateways, or DNS. Confirm the final family table count, the selected interface and direction, and **IP Anchor → Yes** before testing traffic.
+
+Verify that an allowlisted test range is removed from the block table. If testing GeoLite2, use the administrator's own MaxMind key and remove it from any captured output.
+
+## Verify Update and Removal Behavior \{#verify-update-and-removal-behavior}
+
+Run a manual list update and confirm DNS continues answering while Status moves through update, compile, deploy, and loaded states. A deliberately failed source should retain its earlier saved copy and display the error.
+
+Before removal, decide whether **Keep Settings** should preserve configuration and saved lists. Remove with `pkg delete -f pfSense-pkg-Sinkhole`, then confirm Resolver integration, scheduled jobs, plain-DNS redirect rules, the `sinkhole/bypass` and `sinkhole/ip` anchors, Bypass cached data, and transient runtime files are gone.
+
+## Record the Environment \{#record-the-environment}
+
+For a useful test record, capture the Sinkhole version, pfSense edition and release, FreeBSD release, selected features, Status state, and sanitized `Sinkhole:` system-log lines. No pfSense release is currently listed as officially tested; compatibility testing is performed before each Sinkhole release.

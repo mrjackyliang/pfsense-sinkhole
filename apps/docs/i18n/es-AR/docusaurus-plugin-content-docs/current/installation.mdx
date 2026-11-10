@@ -1,0 +1,83 @@
+---
+id: installation
+title: Instalar el paquete
+description: Verifique el paquete estable de Sinkhole con su archivo SHA-256, instálelo o actualícelo con pkg y confirme todas las pestañas del paquete en la WebGUI de pfSense.
+keywords:
+  - sinkhole for pfsense
+  - instalación
+  - pkg add
+  - suma de comprobación sha256
+  - versión de github
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+Instale o actualice Sinkhole desde el paquete estable de su versión publicada en GitHub y confirme después que pfSense registró todas las pestañas de la WebGUI.
+
+## Requisitos \{#requirements}
+
+- **Shell de administrador** — Acceso SSH o por consola al shell de pfSense. **Diagnostics → Command Prompt** también puede ejecutar un único comando.
+- **Acceso HTTPS a GitHub** — El firewall debe poder descargar el paquete y la suma de comprobación desde GitHub Releases.
+- **DNS Resolver** — El DNS Resolver de pfSense debe estar activado antes de habilitar la integración DNS de Sinkhole.
+- **Espacio Python disponible** — pfBlockerNG DNSBL u otro script Python no puede ser propietario del único espacio de módulo del Resolver.
+- **Copia de seguridad actual** — Se recomienda descargar `config.xml` desde **Diagnostics → Backup & Restore** antes de instalar un paquete no oficial.
+
+:::warning
+
+Sinkhole se instala desde GitHub en vez del repositorio de paquetes de Netgate, por lo que Netgate no revisa ni ofrece soporte para el paquete.
+
+:::
+
+## Comprobar la versión publicada \{#check-the-release}
+
+La [página GitHub Releases](https://github.com/mrjackyliang/pfsense-sinkhole/releases) publica archivos de paquete con nombre estable y con versión. Los archivos estables usados en esta página son:
+
+| Archivo                           | Finalidad                                        |
+|-----------------------------------|--------------------------------------------------|
+| `pfSense-pkg-Sinkhole.pkg`        | Último paquete de Sinkhole instalable.           |
+| `pfSense-pkg-Sinkhole.pkg.sha256` | Valor SHA-256 sin texto para el paquete estable. |
+
+## Verificar la suma de comprobación \{#verify-the-checksum}
+
+Descargue el paquete estable y su archivo `.sha256` estable en `/tmp` y compare los dos valores mostrados:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg.sha256
+sha256 -q pfSense-pkg-Sinkhole.pkg
+cat pfSense-pkg-Sinkhole.pkg.sha256
+```
+
+Los dos valores coinciden cuando el paquete descargado está intacto. El archivo local comprobado puede instalarse después con `pkg add -f /tmp/pfSense-pkg-Sinkhole.pkg`.
+
+## Instalar o actualizar \{#install-or-update}
+
+El mismo comando instala Sinkhole por primera vez, actualiza una versión anterior o reinstala la versión actual:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+La opción `-f` es obligatoria porque, de lo contrario, la versión de `pkg` de pfSense 2.8 puede omitir una actualización desde la misma URL estable. También conserva los hooks normales de instalación y actualización del paquete.
+
+## Confirmar la WebGUI \{#confirm-the-webgui}
+
+1. Abra **Firewall → Sinkhole**.
+2. Confirme que aparecen **General**, **Lists**, **Services**, **Scopes**, **Alerts**, **Bypass**, **IP**, **Status** y **About**.
+3. Mantenga **General → Enable** desactivado hasta que el DNS Resolver esté activado y su espacio para scripts Python esté disponible.
+4. Abra **About** y confirme que la versión del paquete mostrada coincide con la versión publicada que instaló.
+
+Los paquetes instalados fuera del repositorio de Netgate no aparecen en la página **Installed Packages** de pfSense. Por tanto, las actualizaciones y la eliminación usan los comandos de shell documentados aquí y en [Ciclo de vida del paquete](/docs/reference/package-lifecycle).
+
+## Si falla la instalación \{#if-installation-fails}
+
+- **No encontrado o sin paquete** — Confirme que la última versión de GitHub contiene `pfSense-pkg-Sinkhole.pkg`.
+- **La suma de comprobación difiere** — Mantenga la versión instalada y vuelva a descargar ambos archivos estables de la versión publicada.
+- **Error de DNS, TLS o certificado** — Confirme que pfSense resuelve `github.com`, puede acceder mediante HTTPS y tiene la hora del sistema correcta.
+- **ABI incorrecta** — Instale la última versión publicada. Los paquetes actuales se reconstruyen con la ABI `FreeBSD:*`, mientras que un artefacto antiguo podría no tenerla.
+
+Continúe con [Configurar Sinkhole](/docs/first-run) cuando aparezcan las pestañas.

@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "Native pfSense-pakket"
+  },
+  "homepage.hero.heading": {
+    "message": "Bepaal wat elk netwerk en apparaat kan bereiken."
+  },
+  "homepage.hero.tagline": {
+    "message": "Pas opgeslagen DNS-lijsten toe op het hele netwerk, één VLAN of één apparaat, met gerichte waarschuwingen en zonder tweede server."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Sinkhole installeren"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "Scopes plannen"
+  },
+  "homepage.stats.heading": {
+    "message": "Eén firewall, beleid op elk bruikbaar niveau"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole houdt beleid lokaal en maakt de operationele grenzen duidelijk."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "Beleidsscopes"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "DNS-lijstformaten"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "Cataloguscache"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Unbound-modulepositie"
+  },
+  "homepage.features.heading": {
+    "message": "Beheer dat op de firewall blijft"
+  },
+  "homepage.features.scopes.title": {
+    "message": "Elke beslissing afbakenen"
+  },
+  "homepage.features.scopes.description": {
+    "message": "Pas lijsten en toegestane domeinen globaal, per interface of VLAN en per apparaat toe."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "Laatste geldige kopieën bewaren"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "Beantwoord DNS vanuit lokale lijsten ondanks herstarts, herladingen en mislukte downloads."
+  },
+  "homepage.features.alerts.title": {
+    "message": "Doelgericht waarschuwen"
+  },
+  "homepage.features.alerts.description": {
+    "message": "Meld alleen voor de lijsten, netwerken en apparaten die in elke regel zijn gekozen."
+  },
+  "homepage.features.redirect.title": {
+    "message": "DNS-paden beveiligen"
+  },
+  "homepage.features.redirect.description": {
+    "message": "Leid desgewenst gewone DNS om of blokkeer veelgebruikte omzeilingen via versleutelde DNS en tunnels op geselecteerde interfaces."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "Zoeken en dan beslissen"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "Doorzoek ondersteunde catalogi op aanvraag zonder een lijst mee te leveren of aan te bevelen."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "Adressen en landen blokkeren"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "Pas IP-lijsten en GeoLite2-landbeleid toe via het geïsoleerde anker `sinkhole/ip`."
+  }
+}

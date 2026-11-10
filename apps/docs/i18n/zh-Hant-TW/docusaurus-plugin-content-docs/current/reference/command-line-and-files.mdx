@@ -1,0 +1,106 @@
+---
+id: command-line-and-files
+title: 命令行和檔案
+description: 執行 Sinkhole 維護模式，並識別其持久化已儲存清單、更新狀態、快取、鎖、防火牆資料和 Unbound 執行時檔案。
+keywords:
+  - sinkhole for pfsense
+  - 命令行
+  - 檔案路徑
+  - 維護
+  - 執行時檔案
+tags:
+  - reference
+  - command-line
+  - files
+---
+
+使用固定的 `/usr/local/sbin/sinkhole` 命令進行診斷，並執行 cron 和 WebGUI 呼叫的相同維護模式。
+
+## 命令模式 \{#command-modes}
+
+| 命令                           | 行為                                      |
+|------------------------------|-----------------------------------------|
+| `sinkhole --update`          | 執行排程的 DNS、Bypass 和已啓用 IP/國家或地區清單更新路徑。   |
+| `sinkhole --manual`          | 執行 **Status → Update Now** 使用的完整手動更新。   |
+| `sinkhole --apply`           | 在後台應用已儲存配置，並且只執行其所需的下載工作。               |
+| `sinkhole --refresh-clients` | 重建用戶端映射中的網路子網和設備地址。                     |
+| `sinkhole --alerts`          | 讀取封鎖事件並處理匹配的警報規則。                       |
+| `sinkhole --redirect-check`  | 協調所需的普通 DNS 重定向規則和獨立載入的 Bypass 與 IP 錨點。 |
+| `sinkhole --check-updates`   | 檢查最新 GitHub 版本並同步更新通知。                  |
+| `sinkhole --self-update`     | 下載、驗證、檢查並安裝最新的排隊版本。                     |
+| `sinkhole --help`            | 輸出支持的用法行。                               |
+
+在自動化中使用安裝路徑，例如 `/usr/local/sbin/sinkhole --refresh-clients`。這些模式互斥；如果 DNS/Bypass/IP 清單更新或自更新發現共享更新鎖已被持有，則會退出而不啓動競爭操作。
+
+## `/cf/conf/sinkhole` 下的持久檔案 \{#persistent-files}
+
+| 路徑                                      | 用途                                |
+|-----------------------------------------|-----------------------------------|
+| `lists/<id>.domains`                    | 一個 DNS 清單的規範化最後有效域名。              |
+| `lists/<id>.json`                       | 該 DNS 清單的更新元資料。                   |
+| `ip-lists/<id>.networks`                | 一個 IP 清單的規範化最後有效網路。               |
+| `ip-lists/<id>.json`                    | 該 IP 清單的更新元資料。                    |
+| `bypass-lists/<id>.entries`             | 一個 Bypass List 的正規化上次成功混合項目。      |
+| `bypass-lists/<id>.json`                | 該 Bypass List 的更新元資料。             |
+| `state.json`                            | 持久化的編譯、部署、先前 Resolver 設定、計劃和刪除狀態。 |
+| `updates.json`                          | 最新版本檢查和通知去重狀態。                    |
+| `update-status.json`                    | 分離的套件自更新進度。                       |
+| `unbound/sinkhole/`                     | 當前編譯代次的可選持久鏡像，用於 RAM 磁盤恢復。        |
+| `unbound/sinkhole.d/`                   | 編譯代次存儲的可選持久鏡像。                    |
+| `unbound/sinkhole-clients/clients.json` | 用戶端映射的可選持久鏡像。                     |
+
+當 pfSense 將 `/var` 放在 RAM 磁盤上時，會使用 `unbound/` 鏡像。套件 Sync 會在 Resolver 需要這些內容之前將其恢復到執行時樹中。
+
+## `/var/db` 下的工作資料 \{#working-data}
+
+| 路徑                                   | 用途                         |
+|--------------------------------------|----------------------------|
+| `sinkhole-alerts.json`               | 警報重復窗口和每小時上限狀態。            |
+| `sinkhole-catalog-adguard-home.json` | 快取的 AdGuard Home 清單註冊表。    |
+| `sinkhole-catalog-pfblockerng.json`  | 快取的 pfBlockerNG 源目錄。       |
+| `sinkhole-block-v4.txt`              | 最終合併並扣除後的 IPv4 封鎖表。        |
+| `sinkhole-block-v6.txt`              | 最終合併並扣除後的 IPv6 封鎖表。        |
+| `sinkhole-bypass-v4.txt`             | 扣除受保護地址後的最終 IPv4 Bypass 表。 |
+| `sinkhole-bypass-v6.txt`             | 扣除受保護地址後的最終 IPv6 Bypass 表。 |
+| `sinkhole-geolite2-country.zip`      | 已驗證的 GeoLite2 Country 歸檔。  |
+| `sinkhole-geolite2-country.json`     | GeoLite2 更新元資料。            |
+
+目錄快取和生成的 IP 表都是可重建的工作資料。警報狀態用於防止每分鐘執行之間重復發送。
+
+## `/var/run` 下的臨時檔案 \{#transient-files}
+
+| 路徑                              | 用途                           |
+|---------------------------------|------------------------------|
+| `sinkhole-update.lock`          | 清單、IP 和套件更新共用的長時間執行鎖。        |
+| `sinkhole-runtime.lock`         | 編譯、激活和 Resolver 集成使用的短時鎖。    |
+| `sinkhole-clients.lock`         | 用戶端映射刷新鎖。                    |
+| `sinkhole-alerts.lock`          | 警報處理鎖。                       |
+| `sinkhole-redirect-check.lock`  | 重定向每分鐘檢查鎖。                   |
+| `sinkhole-redirect-check.json`  | 兩次觀察重定向檢查使用的第一次不匹配觀察。        |
+| `sinkhole-status.json`          | 當前更新、編譯、部署、用戶端和警報狀態。         |
+| `sinkhole-status.json.lock`     | 狀態檔案協調鎖。                     |
+| `sinkhole-ip-anchor.conf`       | 為 `sinkhole/ip` 錨點生成的當前規則。   |
+| `sinkhole-ip-anchor.sha256`     | 用於比較已生成和已載入 IP 策略的摘要。        |
+| `sinkhole-ip-status.json`       | IP 清單、GeoLite2、表和錨點狀態。       |
+| `sinkhole-bypass-anchor.conf`   | `sinkhole/bypass` 錨點目前產生的規則。 |
+| `sinkhole-bypass-anchor.sha256` | 用於比較產生和載入的 Bypass 原則的摘要。     |
+
+鎖檔案的存在本身並不能證明某個活動進程持有它們。在將鎖視為過期之前，請使用 Status 和命令輸出進行判斷。
+
+## `/var/unbound` 下的 Resolver 執行時 \{#resolver-runtime}
+
+| 路徑                                   | 用途                                  |
+|--------------------------------------|-------------------------------------|
+| `sinkhole.py`                        | 複製到 Unbound 執行時根目錄的已審查 Python 模塊。   |
+| `sinkhole/`                          | 模塊讀取的清單和活動代次資料。                     |
+| `sinkhole.d/`                        | 由 root 擁有的編譯代次存儲。                   |
+| `sinkhole.d/<generation>/bypass.tsv` | 為 Bypass DNS 回應編譯的供應商、Tor 和 VPN 名稱。 |
+| `sinkhole-clients/clients.json`      | 當前用戶端地址到作用域的映射。                     |
+| `sinkhole-state/loaded`              | 模塊報告為已載入的代次識別碼。                     |
+| `sinkhole-state/events`              | 等待警報處理的合併封鎖回應事件。                    |
+| `sinkhole-state/events.processing`   | 當前由警報處理器持有的事件批次。                    |
+| `sinkhole-state/events-dropped`      | 有界隊列填滿後丟棄的事件數。                      |
+
+這些檔案是執行時材料，而不是配置。Sinkhole 通過套件 Sync 恢復或重新生成它們，並在卸載套件時將其刪除。
+
+僅當 DNS 封鎖具有已啓用的網路或設備範圍，或 Bypass DNS 保護需要識別用戶端時，才會執行每分鐘用戶端映射工作和 Sync 時的後台刷新。關閉所有 Sinkhole 功能後，下一次 Sync 會刪除執行時用戶端映射及其選用的 RAM 磁碟鏡像，且不會啓動刷新。

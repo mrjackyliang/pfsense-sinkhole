@@ -1,0 +1,57 @@
+---
+id: terminology
+title: 용어
+description: Sinkhole WebGUI, Status 패널, 안내서 및 참조 페이지에서 사용하는 DNS, 목록, 범위, 알림 및 Bypass 용어를 정의합니다.
+keywords:
+  - sinkhole for pfsense
+  - 용어
+  - 용어집
+  - dns sinkhole
+  - 차단 목록
+tags:
+  - reference
+  - terminology
+  - glossary
+---
+
+다음 용어는 Sinkhole WebGUI와 문서 전체에서 같은 의미로 사용합니다.
+
+## DNS Sinkhole \{#dns-sinkhole}
+
+차단된 이름에 도달할 수 없는 주소로 응답하여 요청을 중지하는 방식입니다.
+
+## DNS Resolver \{#dns-resolver}
+
+pfSense의 Unbound 기반 DNS 서비스입니다.
+
+## 차단 목록 \{#block-list}
+
+URL 또는 검색에서 추가한 차단할 이름이나 주소의 목록입니다.
+
+## 저장된 목록 \{#saved-list}
+
+방화벽에 보관된 차단 목록의 마지막 정상 사본입니다.
+
+## 범위 \{#scope}
+
+차단 목록이 적용되는 위치로, 전체 네트워크, VLAN 또는 단일 장치입니다.
+
+## 전역 목록 \{#global-lists}
+
+네트워크의 모든 클라이언트에 적용되는 차단 목록입니다.
+
+## 알림 규칙 \{#alert-rule}
+
+차단 시 pfSense 알림을 보내는 목록과 범위입니다.
+
+## 우회 방지 \{#bypass-protection}
+
+일반 DNS를 리디렉션하거나 일반적인 암호화 DNS 및 터널 대안을 차단하여 클라이언트를 Sinkhole이 검사할 수 있는 DNS 경로에 유지하는 선택적 인터페이스별 제어입니다.
+
+## 일반 DNS 리디렉션 \{#plain-dns-redirect}
+
+장치의 일반 TCP 및 UDP 포트 53 쿼리를 방화벽으로 보내는 선택적 Bypass 설정입니다.
+
+## 인기 목록 검색 \{#popular-list-search}
+
+AdGuard Home의 선택 도구와 같이 널리 사용되는 차단 목록을 찾는 WebGUI 검색입니다.

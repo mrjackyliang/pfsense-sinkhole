@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "Нативный пакет pfSense"
+  },
+  "homepage.hero.heading": {
+    "message": "Выберите, к чему может обращаться каждая сеть и каждое устройство."
+  },
+  "homepage.hero.tagline": {
+    "message": "Применяйте сохранённые DNS-списки ко всей сети, VLAN или устройству с целевыми оповещениями и без второго сервера."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Установить Sinkhole"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "Спланировать scopes"
+  },
+  "homepage.stats.heading": {
+    "message": "Один межсетевой экран, политика на каждом полезном уровне"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole хранит политику локально и явно показывает границы работы."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "Области политики"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "Форматы DNS-списков"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "Кэш каталогов"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Слот модуля Unbound"
+  },
+  "homepage.features.heading": {
+    "message": "Управление, остающееся на межсетевом экране"
+  },
+  "homepage.features.scopes.title": {
+    "message": "Определяйте область каждого решения"
+  },
+  "homepage.features.scopes.description": {
+    "message": "Применяйте списки и разрешённые домены глобально, по интерфейсу или VLAN и по устройству."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "Храните последние корректные копии"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "Отвечайте на DNS из локальных списков при перезапусках, перезагрузках и ошибках загрузки."
+  },
+  "homepage.features.alerts.title": {
+    "message": "Оповещайте осознанно"
+  },
+  "homepage.features.alerts.description": {
+    "message": "Отправляйте уведомления только для списков, сетей и устройств, выбранных в правиле."
+  },
+  "homepage.features.redirect.title": {
+    "message": "Защищайте пути DNS"
+  },
+  "homepage.features.redirect.description": {
+    "message": "При необходимости перенаправляйте обычный DNS или блокируйте распространённые обходы через шифрованный DNS и туннели на выбранных интерфейсах."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "Найдите и решите"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "Ищите в поддерживаемых каталогах по запросу, не включая и не рекомендуя списки."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "Блокируйте адреса и страны"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "Применяйте IP-списки и правила GeoLite2 через изолированный якорь `sinkhole/ip`."
+  }
+}

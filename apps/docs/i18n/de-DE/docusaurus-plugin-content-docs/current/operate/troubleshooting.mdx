@@ -1,0 +1,109 @@
+---
+id: troubleshooting
+title: Fehlerbehebung
+description: Diagnostiziere inaktive Resolver-Integration, veraltete Richtlinien, Client-Map-Konflikte, Bypass-Zustand, IP-Ankerabweichungen, Alarme und Updatefehler.
+keywords:
+  - sinkhole for pfsense
+  - fehlerbehebung
+  - dns resolver
+  - client-map
+  - aktualisierungsfehler
+tags:
+  - operate
+  - troubleshooting
+  - diagnostics
+---
+
+Verfolge ein Problem vom Status-Panel und Systemprotokoll bis zu der konkreten Liste, dem Scope, der Regel, dem Listener, der Sperre oder dem Laufzeitzustand, die es verursacht haben.
+
+## Wo du nachsehen kannst \{#where-to-look}
+
+- **Firewall → Sinkhole → Status** zeigt Listen-, Katalog-, Client-Map-, Alarm-, Bypass-, IP-, Kompilierungs-, Bereitstellungs- und Resolver-Zustände.
+- **Status → System Logs → System → General** zeigt Betriebszeilen, die mit `Sinkhole:` beginnen.
+- `/usr/local/sbin/sinkhole --help` gibt die unterstützten Wartungsmodi aus.
+
+Es wird empfohlen, die Statuswerte und relevanten Protokollzeilen zu sichern, bevor du die Konfiguration änderst. Die vollständige Ausgabe von `config.xml` kann Geheimnisse enthalten und sollte einem Bericht nicht angehängt werden.
+
+## Sinkhole ist inaktiv \{#sinkhole-is-inactive}
+
+Verwende den Grund hinter **Summary → Sinkhole**:
+
+- **Sinkhole is disabled** — Wähle **General → Enable**, nachdem Resolver und Python-Platz bereit sind.
+- **DNS Resolver is disabled** — Aktiviere den Resolver und wende die Änderung an, bevor du Sinkhole speicherst.
+- **Python script slot is owned** — Deaktiviere die konkurrierende DNSBL-/Python-Integration oder lasse Sinkhole deaktiviert; Sinkhole ersetzt sie nicht.
+- **Python mode or position changed** — Speichere die allgemeinen Sinkhole-Einstellungen erneut, damit Sync Python-Modus und `pre_validator` wiederherstellen kann, solange Sinkhole den Platz besitzt.
+- **Runtime files unavailable** — Führe Paket-Sync aus, indem du die allgemeinen Einstellungen speicherst, oder starte neu und lasse pfSense-Paket-Sync die RAM-Disk-Dateien wiederherstellen.
+
+Auf Systemen mit `/var` im Arbeitsspeicher stellt der Paket-Sync bei jedem Start fehlende Laufzeitdateien wieder her und startet Unbound nach dem Paketstart bei Bedarf neu. Eine unmittelbar nach dem Start fehlende Laufzeitdatei sollte deshalb beim Paketstart repariert werden.
+
+## Eine Domain wird nicht blockiert \{#a-domain-is-not-blocked}
+
+1. Bestätige, dass die Liste aktiviert ist, gespeicherte Einträge besitzt und ihre letzte gültige Kopie nach einem Fehler nicht ersetzt wurde.
+2. Folge der [Entscheidungsreihenfolge](/docs/configure/scopes#decision-order) für das aktuelle Gerät und Netzwerk des Clients.
+3. Bestätige, dass **Compile Needed** und **Deployment Needed** `No` anzeigen, und vergleiche anschließend kompilierte, bereitgestellte und geladene Generation.
+4. Bestätige, dass der Client pfSense direkt oder über **Bypass → Redirect** abfragt.
+
+Unbound beantwortet seine integrierten Zonen `test.`, `invalid.`, `onion.` und `localhost.` vor Python-Modulen. Ein Live-Test unter einer dieser Zonen führt Sinkhole nicht aus.
+
+Wenn eine Bereitstellung Namen hinzufügt oder einen Teilbaum erweitert, lädt Sinkhole Unbound neu, nachdem die neue Generation geladen wurde, da `flush_zone` Cache-Einträge nur als abgelaufen markiert. Unbound 1.18 kann diese Einträge weiterhin ausliefern, wenn **Serve Expired** aktiviert ist, während `unbound-control reload` Nachrichten- und RRset-Caches leert.
+
+## Ein CNAME-Ergebnis wirkt unvollständig \{#a-cname-result-looks-incomplete}
+
+Eine Abfrage, deren CNAME-Ziel aufgeführt ist, wird auch dann blockiert, wenn der ursprüngliche Name nicht aufgeführt ist. Besitzt das aufgeführte Ziel keinen Datensatz des angefragten Typs, etwa AAAA, kann die Antwort den CNAME beibehalten, aber keine Adresse enthalten.
+
+Ein erlaubter Abfragename bleibt erlaubt. Dadurch kann ein weniger spezifisches CNAME-Ziel eine ausdrückliche Entscheidung für eine erlaubte Domain des Abfragenamens nicht außer Kraft setzen.
+
+## Ein Gerät erhält die falsche Richtlinie \{#a-device-gets-the-wrong-policy}
+
+- Führe `/usr/local/sbin/sinkhole --refresh-clients` aus und prüfe **Status → Scopes**.
+- Bestätige, dass der Netzwerkeintrag die aktuellen Subnetze der Schnittstelle und der Geräteeintrag seine aktuellen Adressen zeigt.
+- Behebe jeden Wert unter **Conflict**, da bei einer gemeinsam verwendeten Adresse das erste Gerät in der Tabellenreihenfolge gewinnt.
+- Prüfe bei einer statischen Zuordnung sowohl ihre konfigurierte Adresse als auch die aktuellen Adressen, die für ihre MAC beobachtet wurden.
+
+ISC-Lease-Zeiten können abhängig von der Lease-Zeiteinstellung der Schnittstelle in GMT oder in der lokalen Firewall-Zeit vorliegen, während Kea-Lease-Zeiten bereits lokal sind. Sinkhole folgt bei der Entscheidung, ob ein Lease aktuell ist, diesen pfSense-Semantiken.
+
+## Listen- oder Katalogaktualisierung fehlgeschlagen \{#list-or-catalog-update-failed}
+
+Ein fehlgeschlagener DNS-, Bypass- oder IP-Download, Parse- oder Validierungsvorgang behält die vorherige gespeicherte Kopie bei und zeichnet den Fehler auf. DNS verwendet weiterhin die bereitgestellte lokale Generation, statt auf die fehlgeschlagene Quelle zu warten.
+
+Kataloge werden nur abgerufen, wenn die Suche geöffnet oder aktualisiert wird; ein fehlgeschlagener Abruf behält den zwischengespeicherten letzten gültigen Katalog. Prüfe HTTPS-Verbindung, Quell-URL und Statusfehler, bevor du eine weitere Aktualisierung erzwingst.
+
+## Klartext-DNS-Umleitung ist pausiert oder fehlt \{#plain-dns-redirect-is-paused-or-missing}
+
+- **Paused** — Korrigiere oder entferne jede ungültige Ausnahme, die im Panel Bypass angezeigt wird.
+- **No family address** — Füge die Familie zur Schnittstelle hinzu oder akzeptiere, dass keine Regel für diese Familie erzeugt werden kann.
+- **Resolver does not listen** — Ändere **DNS Resolver → Network Interfaces** oder entferne diese Umleitungsauswahl.
+- **Rules missing or out of date** — Warte zwei Minutenbeobachtungen ab und prüfe anschließend **Last parse error** und die Systemprotokolle.
+- **Queries are refused** — Füge das Clientnetzwerk zur Zugriffskontrolle des Resolvers hinzu.
+
+Die Minutenprüfung lädt den Filter nicht neu, solange die Paketsperre von pfSense gehalten wird oder pfSense denselben unveränderten Regeltext bereits abgelehnt hat. Nach einer Änderung der ungültigen Konfiguration können die nächsten beiden Beobachtungen sie abgleichen.
+
+IPv6-Umleitungsziele verwenden stets die Schnittstellenadresse, da gemessenes FreeBSD-Verhalten Verkehr verwirft, der von einer Nicht-Loopback-Schnittstelle auf `::1` umgeschrieben wird. Gemischt-familiäre Ausnahmen werden als getrennte `inet`- und `inet6`-Regeln ausgegeben, da die gemessenen FreeBSD-Versionen 14 und 16 in einer nicht qualifizierten gemischten Liste nur die erste Familie beibehielten.
+
+## IP-Blockierung entspricht nicht den Einstellungen \{#ip-blocking-does-not-match-settings}
+
+1. Bestätige, dass **IP and Country Blocking → State** `On` zeigt und die vorgesehenen Schnittstellen und Richtungen aufgeführt sind.
+2. Prüfe die endgültigen Familientabellenzahlen, übersprungenen Zeilen, letzte Aktualisierung und letzten Fehler.
+3. Bestätige, dass **IP Anchor** `Yes` zeigt; `Out of Date` bedeutet, dass der geladene Anker nicht mit aktuellen Dateien oder Einstellungen übereinstimmt.
+4. Prüfe die Allowlist und beachte, dass Firewall-, Gateway- und DNS-Adressen automatisch entfernt werden.
+
+Der Anker `sinkhole/ip` übersteht gewöhnliche pfSense-Filterneuladungen und liegt durch den frühen Paketregel-Hook vor Pass-Quick-Regeln. Die Minutenprüfung lädt einen leeren oder geänderten Anker direkt neu; das Deaktivieren der Funktion leert ihn.
+
+## Alarme treffen nicht ein \{#alerts-do-not-arrive}
+
+- Bestätige, dass die Regel aktiviert ist und sowohl ihre Listen- als auch ihre Clientauswahl mit der blockierten Antwort übereinstimmen.
+- Vergleiche das Ereignis mit dem Wiederholungsfenster der Regel und den Grenzen von 20 pro Lauf, 60 pro Regel und Stunde sowie 50 ungelesenen Hinweisen.
+- Prüfe **Status → Alerts** auf veraltete, zurückgehaltene, verworfene oder fehlerhafte Zähler.
+- Teste den konfigurierten externen pfSense-Dienst unabhängig unter **System → Advanced → Notifications**.
+
+Ereignisse, die älter als 10 Minuten sind, gelten als veraltet, und ein Lauf beendet das Senden nach seinem 40-Sekunden-Budget, damit verbleibende Arbeit in der nächsten Minute fortgesetzt werden kann. Der Text von WebGUI-Hinweisen erscheint durch `file_notice()` auch im pfSense-Systemprotokoll.
+
+## Hoher Speicherverbrauch \{#memory-use-is-high}
+
+Messungen mit 300.000 Namen erhöhten den RSS-Speicher von Unbound von 41 MiB auf 103 MiB, bei einem maximalen Richtlinienspeicher von ungefähr 157 Byte pro Name. Der tatsächliche Verbrauch hängt von eindeutigen normalisierten Namen, Scope-Zuweisungen und dem laufenden Resolver ab.
+
+Es wird empfohlen, die Eintragszahlen in Status und den Unbound-Speicher vor und nach dem Hinzufügen einer großen Quelle zu vergleichen. Wird eine ungenutzte Liste deaktiviert, bleibt sie bei der nächsten Kompilierung außerhalb der aktiven Richtlinie.
+
+## Problem melden \{#report-a-problem}
+
+Erstelle ein [GitHub-Issue](https://github.com/mrjackyliang/pfsense-sinkhole/issues) mit Sinkhole-Version, pfSense-Edition und -Version, FreeBSD-Version, genauem Statuszustand, Reproduktionsschritten und bereinigten `Sinkhole:`-Protokollzeilen. Füge keine MaxMind-Zugangsdaten, vollständigen Konfigurationsdateien, Listeninhalte oder privaten Client-/Domaindaten hinzu.

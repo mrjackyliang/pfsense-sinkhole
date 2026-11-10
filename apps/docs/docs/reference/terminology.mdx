@@ -1,0 +1,57 @@
+---
+id: terminology
+title: Terminology
+description: Define the DNS, list, scope, alert, and Bypass terms used throughout the Sinkhole WebGUI, Status panels, guides, and reference pages.
+keywords:
+  - sinkhole for pfsense
+  - terminology
+  - glossary
+  - dns sinkhole
+  - block list
+tags:
+  - reference
+  - terminology
+  - glossary
+---
+
+These terms carry the same meaning throughout the Sinkhole WebGUI and documentation.
+
+## DNS Sinkhole \{#dns-sinkhole}
+
+Answering a blocked name with an address that leads nowhere, so the request stops.
+
+## DNS Resolver \{#dns-resolver}
+
+pfSense's Unbound-based DNS service.
+
+## Block List \{#block-list}
+
+A list of names or addresses to block, added by URL or from the search.
+
+## Saved List \{#saved-list}
+
+The last good copy of a block list, kept on the firewall.
+
+## Scope \{#scope}
+
+Where a block list applies: the whole network, a VLAN, or a single device.
+
+## Global Lists \{#global-lists}
+
+Block lists that apply to every client on the network.
+
+## Alert Rule \{#alert-rule}
+
+A list and scope whose blocks send a pfSense notification.
+
+## Bypass Protection \{#bypass-protection}
+
+Optional, interface-scoped controls that keep clients on DNS paths Sinkhole can inspect by redirecting plain DNS or blocking common encrypted-DNS and tunnel alternatives.
+
+## Plain-DNS Redirect \{#plain-dns-redirect}
+
+The optional Bypass setting that sends devices' ordinary TCP and UDP port 53 queries to the firewall.
+
+## Popular-List Search \{#popular-list-search}
+
+The WebGUI search of widely used block lists, like AdGuard Home's picker.

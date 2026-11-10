@@ -1,0 +1,58 @@
+---
+id: terminology
+title: Terminologie
+description: Definieer de DNS-, lijst-, scope-, waarschuwings- en Bypass-termen die in de Sinkhole-WebGUI, Status-panelen, handleidingen en naslagpagina's worden gebruikt.
+keywords:
+  - sinkhole voor pfsense
+  - terminologie
+  - woordenlijst
+  - dns-sinkhole
+  - blokkeerlijst
+tags:
+  - reference
+  - terminology
+  - glossary
+---
+
+Deze termen hebben in de volledige Sinkhole-WebGUI en documentatie dezelfde betekenis.
+
+## DNS Sinkhole \{#dns-sinkhole}
+
+Een geblokkeerde naam beantwoorden met een adres dat nergens naartoe leidt, zodat het verzoek stopt.
+
+## DNS Resolver \{#dns-resolver}
+
+De op Unbound gebaseerde DNS-service van pfSense.
+
+## Blokkeerlijst \{#block-list}
+
+Een lijst met te blokkeren namen of adressen, toegevoegd via een URL of vanuit de zoekfunctie.
+
+## Opgeslagen lijst \{#saved-list}
+
+De laatste geldige kopie van een blokkeerlijst die op de firewall wordt bewaard.
+
+## Scope \{#scope}
+
+Waar een blokkeerlijst wordt toegepast: op het hele netwerk, een VLAN of één apparaat.
+
+## Globale lijsten \{#global-lists}
+
+Blokkeerlijsten die op elke client in het netwerk worden toegepast.
+
+## Waarschuwingsregel \{#alert-rule}
+
+Een lijst en scope waarvan de blokkeringen een pfSense-melding verzenden.
+
+## Beveiliging tegen omzeiling \{#bypass-protection}
+
+Optionele instellingen per interface die clients op DNS-paden houden die Sinkhole kan inspecteren door gewone DNS om te leiden of veelgebruikte alternatieven voor versleutelde DNS en tunnels te blokkeren.
+
+## Omleiding van gewone DNS \{#plain-dns-redirect}
+
+De optionele Bypass-instelling die gewone TCP- en UDP-query's op poort 53 van apparaten naar de firewall stuurt.
+
+## Zoeken naar populaire lijsten \{#popular-list-search}
+
+De WebGUI-zoekfunctie voor veelgebruikte blokkeerlijsten, zoals de keuzelijst van AdGuard Home.
+

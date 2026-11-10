@@ -1,0 +1,78 @@
+---
+id: alerts
+title: Varsler
+description: Sammenlign blokkerte svar med liste og klient, lever via pfSense-varsler eller eksterne tjenester, og forstå grenser for gjentakelse, per time, uleste varsler og kjøring.
+keywords:
+  - sinkhole for pfsense
+  - varsler
+  - pfsense-varslinger
+  - gjentakelsesvindu
+  - varslingsgrenser
+tags:
+  - configure
+  - alerts
+  - notifications
+---
+
+Send bare varsler for blokkerte svar der listen og klienten samsvarer med en aktivert varslingsregel.
+
+## Hvorfor bruke varslingsregler? \{#why-use-alert-rules}
+
+1. Overvåker valgte lister og klienter, slik at rutinemessige blokkeringer utenfor denne policyen forblir stille.
+2. Bruker de eksisterende lokale og eksterne varslingskanalene i pfSense, slik at Sinkhole ikke trenger en egen leveringstjeneste.
+3. Undertrykker gjentakelser og oppsummerer topper, slik at et pratsomt domene ikke kan oversvømme WebGUI eller en innboks.
+4. Holder køen med hendelser avgrenset og utenfor håndteringen av DNS-spørringer, slik at levering aldri forsinker et svar.
+
+## Opprett en regel \{#create-a-rule}
+
+Åpne **Firewall → Sinkhole → Alerts**, velg **Add** under tabellen med varslingsregler, og fyll deretter ut **Add Alert Rule** på redigeringssiden:
+
+| Felt                 | Beskrivelse                                                                           |
+|----------------------|---------------------------------------------------------------------------------------|
+| Description          | Lokalt regelnavn som vises i varseltekst og oppsummeringer.                           |
+| Any block list       | Samsvarer med en blokkering fra hvilken som helst liste, ikke bare de valgte listene. |
+| Chosen block lists   | Lister som kan oppfylle regelen når **Any** er avslått.                               |
+| Everyone             | Samsvarer med alle klienter, ikke bare valgte nettverk og enheter.                    |
+| Chosen networks      | Nettverksomfang som kan oppfylle regelen når **Everyone** er avslått.                 |
+| Chosen devices       | Enhetsomfang som kan oppfylle regelen når **Everyone** er avslått.                    |
+| Repeat after         | Minutter før samme regel, klient, domene og liste kan varsle på nytt.                 |
+| WebGUI notice        | Legger til et lokalt Sinkhole-varsel i pfSense.                                       |
+| Remote notifications | Bruker de eksterne tjenestene som er konfigurert i pfSense.                           |
+| Enabled              | Lar blokkerte svar samsvare med denne regelen.                                        |
+
+Feltet for valgte lister er skjult mens **Any block list** er valgt, og nettverks- og enhetsfeltene er skjult mens **Everyone** er valgt. Når du lagrer, går du tilbake til Alerts. Velg blyanten eller dobbeltklikk en rad for å redigere den.
+
+En blokkering samsvarer bare når én av listene som blokkerte navnet, er valgt av regelen, og klienten er valgt av den samme regelen. Standardvinduet for gjentakelse er 60 minutter, og det tillatte området er 1 til og med 1440 minutter.
+
+## Leveringskanaler \{#delivery-channels}
+
+- **WebGUI notice** bruker den lokale kanalen `file_notice()` i pfSense og lenker tilbake til fanen Alerts.
+- **Remote notifications** bruker de konfigurerte `notify_all_remote()`-tjenestene i pfSense.
+
+Sinkhole oppretter ingen egen e-post-, chat-, webhook- eller annen kanal. Eksterne tjenester konfigureres og testes under **System → Advanced → Notifications** i pfSense.
+
+## Faste grenser \{#fixed-limits}
+
+| Grense                        | Virkemåte                                                                              |
+|-------------------------------|----------------------------------------------------------------------------------------|
+| 20 messages per minute run    | Ekstra blokkeringer samles i én eller flere regeloppsummeringer innenfor samme grense. |
+| 60 messages per rule per hour | Den sekstiende plassen er reservert for en timeoppsummering av overskuddet.            |
+| 50 unread WebGUI notices      | Flere lokale varsler venter til noen Sinkhole-varsler er lest.                         |
+| 40-second processing budget   | Uferdige sendinger blir stående til neste minuttjobb i stedet for å holde den igjen.   |
+| 10-minute event age           | Eldre hendelser i køen forkastes som utdaterte.                                        |
+
+Status teller leste hendelser, utdaterte hendelser, sendte varsler, tilbakeholdte varsler og hendelser forkastet av modulen. Når ingen aktivert varslingsregel gjenstår, fjerner Sinkhole hendelsesfilen og gjentakelsesstatusen.
+
+## Personvern og logging \{#privacy-and-logging}
+
+Varselteksten identifiserer det blokkerte navnet, klienten, nettverket, listen og regelen. En CNAME-blokkering identifiserer også CNAME-målet som står på listen.
+
+Den lokale varslingsfunksjonen i pfSense skriver `New alert found: <message>` til systemloggen, slik at domenet og enheten også vises under **Status → System Logs → System → General**. Det anbefales å behandle både varsler og logger som oppføringer om nettleserpolicy.
+
+## Kontroller et varsel \{#verify-an-alert}
+
+1. Bekreft at regelen, den valgte listen og det valgte klientomfanget er aktivert.
+2. Bekreft i Status at klienten for øyeblikket er tilordnet det tilsiktede nettverket eller den tilsiktede enheten.
+3. Slå opp et navn som den valgte listen blokkerer, og kontroller den konfigurerte pfSense-kanalen.
+4. Hvis det ikke kommer et varsel nummer to, sammenligner du forsøket med gjentakelsesvinduet og de faste grensene i regelen.
+

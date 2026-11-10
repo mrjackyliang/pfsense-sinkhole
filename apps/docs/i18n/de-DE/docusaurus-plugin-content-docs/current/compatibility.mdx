@@ -1,0 +1,72 @@
+---
+id: compatibility
+title: Kompatibilität
+description: Prüfe Paket-ABI, pfSense-Testrichtlinie, DNS-Resolver-Anforderungen, Python-Platzkonflikt, Sprachstatus und bekannte Grenzen von Sinkhole.
+keywords:
+  - sinkhole for pfsense
+  - kompatibilität
+  - freebsd abi
+  - pfsense-versionen
+  - unbound python
+tags:
+  - setup
+  - compatibility
+  - pfsense
+sidebar_position: 4
+---
+
+Prüfe die Anforderungen an Paket, Resolver und Netzwerk, bevor du dich bei DNS- oder IP-Richtlinien auf Sinkhole verlässt.
+
+## pfSense und FreeBSD \{#pfsense-and-freebsd}
+
+- Release-Pakete werden mit der im Workflow konfigurierten FreeBSD-Hauptversion gebaut und anschließend mit einer `FreeBSD:*`-ABI neu erstellt, damit sich ein Paket über mehrere FreeBSD-Hauptversionen hinweg installieren lässt.
+- Das Paket ist als vital markiert, sodass es bei der automatischen Entfernung während eines pfSense-Upgrades nicht allein deshalb gelöscht wird, weil es nicht im Netgate-Repository enthalten ist.
+- Die weit gefasste Paket-ABI belegt keine Kompatibilität mit jeder pfSense-Version, da sich pfSense-APIs und mitgelieferte Dienste weiterhin ändern können.
+
+## Getestete Versionen \{#tested-releases}
+
+Die folgenden pfSense-Versionen haben die End-to-End-Prüfung bestanden:
+
+| pfSense-Version      | FreeBSD |
+|----------------------|---------|
+| pfSense CE 2.9.0     | 16.0    |
+| pfSense CE 2.8.1     | 15.0    |
+| pfSense Plus 26.07   | 16.0    |
+| pfSense Plus 26.03.1 | 16.0    |
+
+Jede getestete Version hat Installation, Aktualisierung, einen Blockierungstest und Entfernung durchgehend bestanden.
+
+Der Tab **About** kennzeichnet die passende Version mit **This firewall**. Für eine nicht aufgeführte Firewall wird stattdessen eine Zeile **Not tested** ergänzt, ohne die `FreeBSD:*`-ABI als Supportzusage zu behandeln.
+
+## Anforderungen an den DNS Resolver \{#dns-resolver-requirements}
+
+- Der Unbound-basierte DNS Resolver von pfSense muss aktiviert sein.
+- Der einzige Python-Skriptplatz des Resolvers muss frei sein oder bereits Sinkhole gehören.
+- Sinkhole verwendet die Modulposition `pre_validator` und meldet einen inaktiven Zustand, wenn Python-Modus, Besitzer des Platzes, Position oder Laufzeitdateien nicht übereinstimmen.
+
+pfBlockerNG DNSBL verwendet denselben Python-Skriptplatz wie Sinkhole. Sinkhole weigert sich, diesen Platz zu übernehmen, solange `pfb_unbound` oder ein anderes Skript ihn besitzt.
+
+## Netzwerkanforderungen \{#network-requirements}
+
+- Netzwerk-Scopes verwenden die aktuellen IPv4- und IPv6-Subnetze der konfigurierten pfSense-Schnittstellen.
+- Geräte, die über MAC-Adresse oder statische Zuordnung identifiziert werden, hängen von aktuellen ARP-, NDP-, DHCP-Lease-, statischen Zuordnungs- und Schnittstellendaten ab.
+- Die Klartext-DNS-Umleitung unter **Bypass** benötigt eine Adressfamilie auf der ausgewählten Schnittstelle und einen passenden Listener des Resolvers.
+- Umgeleitete Clients müssen weiterhin durch die Zugriffskontrolle des Resolvers zugelassen sein.
+
+## Optionale Länderdaten \{#optional-country-data}
+
+Für die Länderblockierung sind die eigene MaxMind-Konto-ID und der GeoLite2-Lizenzschlüssel des Administrators erforderlich. Sinkhole liefert und protokolliert keinen Schlüssel; IP-Blockierung funktioniert ohne Länderdaten, wenn nur IP-Listen ausgewählt sind.
+
+## Bekannte Grenzen \{#known-limits}
+
+- Der Bypass-Schutz erfasst nur die ausgewählten Schnittstellen und nur die Protokolle, Signale, Namen, Adressen und Standardports, die ein Administrator aktiviert.
+- Benutzerdefinierte Konfigurationen für verschlüsseltes DNS und Tunnel können DNS-basierte Richtlinien weiterhin umgehen, daher verspricht Sinkhole keinen vollständigen Schutz.
+- Die integrierten lokalen Zonen `test.`, `invalid.`, `onion.` und `localhost.` von Unbound antworten vor Python-Modulen und eignen sich nicht für Live-Filtertests.
+- Bei einem Konflikt um eine Geräteadresse gilt das erste Gerät in der Tabellenreihenfolge; Status meldet den Konflikt.
+- In Messungen mit 300.000 Namen stieg der RSS-Speicher von Unbound von 41 MiB auf 103 MiB, und der maximale Richtlinienspeicher lag bei ungefähr 157 Byte pro Name.
+
+## Sprachen \{#languages}
+
+Das Paket wählt die Formulierungen für WebGUI, Befehlszeile, Validierung, Status und Benachrichtigungen anhand der Spracheinstellung von pfSense. Englisch ist der Quellkatalog; fehlende Übersetzungen fallen derzeit auf Englisch zurück.
+
+Weitere Paketübersetzungen sind in Arbeit, während die Dokumentation in allen 18 pfSense-Locales verfügbar ist. Marken- und Produktnamen wie Sinkhole, pfSense, FreeBSD und MaxMind bleiben unverändert.

@@ -1,0 +1,69 @@
+---
+id: package-lifecycle
+title: Pakkens livssyklus
+description: Forstå installasjon, oppgradering, Sync ved oppstart og WAN-endring, bevaring under pfSense-oppgradering med vital pakke, Keep Settings, gjenoppretting av Resolver og fullstendig fjerning.
+keywords:
+  - sinkhole for pfsense
+  - pakkens livssyklus
+  - keep settings
+  - pfsense-oppgradering
+  - avinstallering
+tags:
+  - reference
+  - lifecycle
+  - removal
+---
+
+Sinkhole følger pakkekrokene i pfSense for installasjon, gjentatt Sync, oppgradering og fjerning, samtidig som Resolver og lagrede data bevares med hensikt.
+
+## Installer og oppgrader \{#install-and-upgrade}
+
+Installer eller oppdater fra den stabile utgivelses-URL-en:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Installasjonskroken skriver pakkeintegrasjonen før eventuell nødvendig omlasting av tjeneste eller filter. Oppgraderingskroker kan gjentas og beholder innstillinger og lagrede lister mens installerte programfiler erstattes.
+
+Pakker som installeres direkte fra GitHub, vises ikke på siden **System → Package Manager → Installed Packages** i pfSense. Bruk kommandolinjen eller den verifiserte oppdateringshandlingen i About i Sinkhole i stedet for å lete etter en oppføring i Netgate-pakkelageret.
+
+## Pakke-Sync \{#package-sync}
+
+pfSense kaller pakke-Sync ved oppstart og etter hver endring av WAN-adressen. Sinkhole bruker dette til å gjenopprette tidsplaner, gjeldende klientadresser, Resolver-integrasjon, kjøretidsgenerasjoner, regler for omdirigering av vanlig DNS og de uavhengige Bypass- og IP-ankrene ved behov.
+
+En Sync uten endringer skriver ingen konfigurasjonsrevisjon, kompilerer ingenting og lar Unbound være i fred. På et system med RAM-disk gjenoppretter Sync ved oppstart manglende innhold i `/var/unbound` fra det vedvarende speilet og starter Resolver på nytt bare når det er nødvendig.
+
+## Derfor beholder en pfSense-oppgradering Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
+
+Utgivelsespakker deklarerer ABI-en som `FreeBSD:*` og angir at pakken er vital. Jokertegnet gjør én utgivelsespakke installerbar på tvers av FreeBSD-hovedversjoner, mens vital-statusen hindrer automatisk fjerning under pfSense-oppgradering i å slette en pakke som mangler i pakkelageret til Netgate.
+
+Denne bevaringen erklærer ikke kompatibilitet med en utestet pfSense-utgivelse. Se [Kompatibilitet](/docs/compatibility), og kontroller pakken på en laboratoriebrannmur etter plattformoppgraderingen.
+
+## Keep Settings \{#keep-settings}
+
+**General → Keep Settings** er valgt som standard. Når alternativet er valgt, bevarer pakkefjerning Sinkhole-konfigurasjonen i pfSense og dataene i `/cf/conf/sinkhole`, slik at lagrede lister og policy er tilgjengelige etter ny installasjon.
+
+Denne standardinnstillingen beskytter også data under en oppgradering med pakkebehandleren som først fjerner og deretter installerer. Fjern valget bare når målet er fullstendig sletting av konfigurasjon og lagrede data.
+
+## Fjern Sinkhole \{#remove-sinkhole}
+
+Utgivelsespakken er vital, så tving eksplisitt fjerning samtidig som de normale livssykluskrokene beholdes:
+
+```sh
+pkg delete -f pfSense-pkg-Sinkhole
+```
+
+Fjerningen stopper planlagte jobber, blokkerer nytt oppdateringsarbeid, gjenoppretter de tidligere Python-innstillingene i Resolver, fjerner Sinkholes administrerte Discovery-blokk fra DNS Resolverens **Custom options**, fjerner kjøretidsinnhold i `/var/unbound`, rydder midlertidige låser og status, trekker tilbake reglene for omdirigering av vanlig DNS, tømmer ankrene `sinkhole/bypass` og `sinkhole/ip` og fjerner bufrede Bypass Lists og tabellfiler. Den administrerte Discovery-blokken fjernes enten **Keep Settings** er på eller av. Fjerningen tar også bort pakkefilene som er installert under `/usr/local`.
+
+Når **Keep Settings** er på, beholdes konfigurasjonen og vedvarende lagrede lister for ny installasjon. Når alternativet er av, sletter fjerningen alle Sinkhole-innstillinger og lagrede data, inkludert `/cf/conf/sinkhole` og hele Sinkhole-grenen i pakkekonfigurasjonen i pfSense.
+
+## Kontroller fjerningen \{#verify-removal}
+
+1. Bekreft at **Firewall → Sinkhole** ikke lenger finnes.
+2. Bekreft at Python-skriptet og rekkefølgen i DNS Resolver samsvarer med verdiene som var angitt før Sinkhole.
+3. Bekreft at ingen Sinkhole-oppføringer i cron, blokk for omdirigering av vanlig DNS, `sinkhole/bypass`-anker eller `sinkhole/ip`-anker gjenstår.
+4. Hvis Keep Settings var avslått, bekrefter du at `/cf/conf/sinkhole` ikke finnes.
+
+Hvis en oppdatering var aktiv, ber fjerningsmarkøren den stoppe mellom avgrensede trinn før vedvarende data berøres. Fjerningen registrerer den første oppryddingsfeilen, samtidig som den fortsatt prøver de gjenværende uavhengige oppryddingstrinnene.
+

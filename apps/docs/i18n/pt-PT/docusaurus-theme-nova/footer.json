@@ -1,0 +1,36 @@
+{
+  "layout.learn.title": {
+    "message": "Guias"
+  },
+  "layout.resources.title": {
+    "message": "Recursos"
+  },
+  "sections.learn.0.label": {
+    "message": "Instalar o Sinkhole"
+  },
+  "sections.learn.1.label": {
+    "message": "Listas e cópias guardadas"
+  },
+  "sections.learn.2.label": {
+    "message": "Definir o âmbito da política DNS"
+  },
+  "sections.learn.4.label": {
+    "message": "Resolução de problemas"
+  },
+  "sections.resources.0.label": {
+    "message": "Como funcionam as atualizações"
+  },
+  "sections.resources.1.label": {
+    "message": "Testes e verificação"
+  },
+  "sections.resources.2.label": {
+    "message": "Documentação pfSense"
+  },
+  "sections.resources.3.label": {
+    "message": "Código-fonte"
+  },
+  "copyright": {
+    "message": "Copyright © 2026 Jacky Liang. MIT.",
+    "description": "The footer copyright text"
+  }
+}

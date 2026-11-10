@@ -1,0 +1,84 @@
+---
+id: build-and-release
+title: Build and Release
+description: Set up the repository, run Nova checks and builds, build the pfSense package on FreeBSD, record changelog entries, and publish a release.
+keywords:
+  - sinkhole for pfsense
+  - contributing
+  - build
+  - release
+  - nova changelog
+tags:
+  - contributing
+  - build
+  - release
+---
+
+Build, test, and release Sinkhole through the root Nova workspace so the package and documentation follow the same checked workflow.
+
+## Prerequisites \{#prerequisites}
+
+- Use the Node.js version range in the root `package.json` and the npm version selected by its `packageManager` field.
+- Use FreeBSD with a pfSense ports checkout for the final `.pkg` build.
+- Use a disposable pfSense lab for install, upgrade, blocking, and removal verification.
+
+Set `PFSENSE_PORTS_DIR` to the pfSense FreeBSD-ports checkout before packaging. The checkout must contain `Mk/bsd.port.mk`, and the destination `sysutils/pfSense-pkg-Sinkhole` must be free for the temporary build copy.
+
+## Install Dependencies \{#install-dependencies}
+
+From the repository root:
+
+```sh
+npm install
+```
+
+Nova reads the workspaces from `nova.config.json`. Run workspace commands from the root unless a narrower package command is intentionally being diagnosed.
+
+## Check Every Change \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` lints, type-checks, and tests the root, package, and docs workspaces. `npm run build` stages the pfSense port and creates the production documentation build under `build/`.
+
+When the host has no usable PHP runtime, `SINKHOLE_SKIP_PHP_TESTS=1 npm run check` runs every available check but doesn't replace the required package tests before release. Package changes also require the offline PHP, Python, restore, and cross-language suites described in the repository rules.
+
+## Build the Release Package \{#build-the-release-package}
+
+Run the final packaging command on FreeBSD after `npm run build`:
+
+```sh
+npm run deploy
+```
+
+The deploy script runs `make package` in the configured ports checkout, rebuilds the manifest as vital with `FreeBSD:*`, verifies both properties, and writes versioned and stable `.pkg` files plus SHA-256 files under `packages/sinkhole/build/release/`.
+
+The command intentionally fails on non-FreeBSD hosts or without `PFSENSE_PORTS_DIR`. Never substitute a package built on another operating system for the release artifact.
+
+## Record the Change \{#record-the-change}
+
+Use Nova's changelog workflow as changes land:
+
+```sh
+npm run changelog
+```
+
+Select the affected workspace and the release-note category that matches the user-visible change. Keep one coherent entry per change and use the repository's imperative, present-tense release-note style.
+
+## Cut a Release \{#cut-a-release}
+
+1. Run `npm run check` and `npm run build` from a clean release candidate.
+2. Run `nova utility changelog --release` to select the version, update package versions, and write changelogs.
+3. Run `npm run deploy` on the configured FreeBSD builder.
+4. Install, upgrade, test blocking, and remove the artifact on a disposable pfSense lab.
+5. Publish the GitHub release with the versioned and stable package and checksum assets.
+
+Publishing a release triggers the package-artifact workflow and the documentation deployment workflow. A pfSense release isn't listed as supported until that complete lab verification has passed.
+
+## Documentation Changes \{#documentation-changes}
+
+Use explicit English heading IDs such as `{#build-and-release}` so translated pages can keep stable anchors. Format Markdown tables with `npx nova recipe misc fix-markdown-tables`, then run the same root check and build commands.
+
+The English pages are the source for all 17 translated locales. Keep product names untranslated, preserve code, paths, and English anchors exactly, and don't promise features that aren't already implemented.

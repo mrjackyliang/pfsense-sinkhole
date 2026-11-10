@@ -1,0 +1,87 @@
+---
+id: ip-and-country-blocking
+title: Blokowanie IP i krajów
+description: Blokuj wybrane sieci źródłowe lub docelowe za pomocą list IP i krajów GeoLite2, odejmuj chronione adresy i zarządzaj kotwicą sinkhole/ip.
+keywords:
+  - sinkhole for pfsense
+  - blokowanie ip
+  - blokowanie krajów
+  - geolite2
+  - kotwica pf
+tags:
+  - configure
+  - ip blocking
+  - firewall
+---
+
+Blokuj wybrane źródła lub cele IP niezależnie od zasad DNS przy użyciu tabel zarządzanych przez pakiet w kotwicy pf `sinkhole/ip`.
+
+## Dlaczego warto używać blokowania IP? \{#why-use-ip-blocking}
+
+1. Obejmuje ruch według adresu lub kraju, gdy nazwa DNS nie bierze udziału.
+2. Jest stosowane niezależnie na wybranych interfejsach i w wybranych kierunkach, dzięki czemu zasady WAN i sieci klienckich mogą się różnić.
+3. Przechowuje znormalizowane ostatnie prawidłowe kopie IP i niepodzielnie aktualizuje aktywne tabele.
+4. Chroni adresy zapory, bramy i DNS przed przypadkowym uwzględnieniem na liście źródłowej.
+
+## Włączanie funkcji \{#enable-the-feature}
+
+Otwórz **Firewall → Sinkhole → IP** i zaznacz **Enable** dopiero po wybraniu interfejsów i kierunków. Blokowanie IP i krajów jest domyślnie wyłączone i nie zależy od przełącznika DNS w General.
+
+| Ustawienie | Działanie                                                                                        |
+|------------|--------------------------------------------------------------------------------------------------|
+| Interfaces | Generuje reguły na wybranych interfejsach wejściowych.                                           |
+| Inbound    | Blokuje pakiety przychodzące z adresu źródłowego na liście, zwykle na interfejsie WAN.           |
+| Outbound   | Blokuje pakiety przychodzące w kierunku adresu docelowego na liście, zwykle w sieciach klientów. |
+
+Kotwica zawiera reguły `block drop in quick` i nie zawiera reguł przepuszczania. Sinkhole odwołuje się do niej przez wczesną pozycję reguł pakietu pfSense, dzięki czemu blokady działają przed zwykłymi regułami pass-quick. Strona najpierw pokazuje panele list IP i katalogu, a następnie ustawienia IP i krajów obejmujące całą stronę z **Save** pod panelem.
+
+## Dodawanie list IP \{#add-ip-lists}
+
+Wybierz **Add** pod tabelą IP Lists, aby otworzyć edytor list IP. Wiersz używa adresu URL HTTP lub HTTPS, wybiera IPv4, IPv6 albo obie rodziny i steruje włączeniem źródła. Zapisanie powoduje powrót do karty IP; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować.
+
+Listy można również znaleźć w sekcjach IP katalogu źródeł pfBlockerNG.
+
+Prawidłowe wiersze to pojedyncze adresy IPv4 lub IPv6 i sieci CIDR. Nieprawidłowe wiersze są pomijane i zliczane; pobranie bez prawidłowego wpisu nie zastępuje ostatniej prawidłowej zapisanej kopii.
+
+Katalog jest pobierany tylko po otwarciu lub odświeżeniu wyszukiwania i korzysta z tej samej jednodniowej pamięci podręcznej ostatniej prawidłowej kopii co wyszukiwanie katalogu DNS. Dodanie wyniku tworzy zwykły wiersz listy IP bez oceny lub rekomendacji.
+
+Źródła obejścia Encrypted DNS, Tor i VPN są wykluczone z katalogu IP i pojawiają się tylko na karcie Bypass.
+
+Wiersz **Contents** na każdej karcie wskazuje **IPv4 addresses** lub **IPv6 addresses**. Po dodaniu wyniku pfBlockerNG Sinkhole dodaje ` (IPv4)` lub ` (IPv6)` do zapisanej nazwy, w razie potrzeby skracając tylko nazwę bazową.
+
+## Dodawanie krajów \{#add-countries}
+
+Kraje pochodzą z danych CSV MaxMind GeoLite2 Country i są wprowadzane jako dwuliterowe kody ISO. Ich sieci są dołączane do zablokowanych tabel rodzin.
+
+- **MaxMind Account ID** jest wymagany po wybraniu krajów.
+- **MaxMind License Key** jest dostarczany przez administratora, przechowywany jak pole hasła pfSense i nigdy nie jest wyświetlany po zapisaniu.
+- **Clear License Key** jawnie usuwa zapisany sekret.
+
+Sinkhole weryfikuje i importuje archiwum GeoLite2 oraz aktualizuje je najwyżej raz w tygodniu. Pakiet nigdy nie zawiera konta ani klucza licencyjnego MaxMind.
+
+## Zezwalanie na adresy i ich ochrona \{#allow-and-protect-addresses}
+
+**IP Allowlist** akceptuje adresy IPv4 lub IPv6, sieci CIDR i istniejące aliasy hosta/sieci. Dozwolone zakresy są odejmowane od scalonego zbioru zablokowanego przed zapisaniem plików tabel.
+
+Sinkhole automatycznie odejmuje również następujące chronione adresy:
+
+- Każdy adres przypisany do zapory.
+- Adresy bram, w tym uzyskane przez DHCP lub PPP.
+- Adresy serwerów DNS, w tym uzyskane przez DHCP lub PPP.
+
+Odejmowanie może podzielić zablokowany CIDR na mniejsze sieci, dzięki czemu przepuszczany jest tylko chroniony adres.
+
+## Działanie kotwicy \{#understand-the-anchor}
+
+Pakiet samodzielnie ładuje `sinkhole/ip` z dwiema trwałymi tabelami rodzin i regułami wybranych interfejsów. Aktualizacje list zastępują tylko tabele wewnątrz tej kotwicy, natomiast Sync i kontrola minutowa mogą załadować całą kotwicę.
+
+Zawartość kotwicy przetrwa zwykłe przeładowania filtru pfSense i nie jest częścią czyszczenia tabel głównego zestawu reguł. Wyłączenie blokowania IP lub usunięcie Sinkhole opróżnia kotwicę.
+
+## Weryfikacja stanu \{#verify-the-state}
+
+**Status → IP and Country Blocking** pokazuje stan włączenia, interfejsy, kierunki, kraje, stan klucza, rozmiary tabel, pominięte wiersze, ostatnią udaną aktualizację, czas aktualizacji GeoLite2, stan kotwicy, liczbę reguł i ostatni błąd. Każdy wiersz listy IP pokazuje również rodzinę, wpisy, pominięte wiersze, ostatnie pobranie i błąd.
+
+Stan kotwicy **Out of Date** oznacza, że załadowany tekst lub tabele nie są zgodne z bieżącymi ustawieniami. Uzgadnianie minutowe natychmiast ładuje pustą lub zmienioną kotwicę; [Rozwiązywanie problemów](/docs/operate/troubleshooting#ip-blocking-does-not-match-settings) opisuje kontrole.
+
+Wpisy list IP szersze niż IPv4 `/8` lub IPv6 `/16` są pomijane i zliczane; sieci graniczne `/8` i `/16` są akceptowane. Limit nie dotyczy IP Allowlist, ponieważ może ona jedynie zmniejszać zakres blokowania. Przed zapisaniem tabel Sinkhole zawsze odejmuje wszystkie adresy IPv4 i IPv6 interfejsów zapory, pełne podsieci interfejsów wybranych do blokowania IP, wirtualne adresy CARP i IP Alias oraz skonfigurowane bramy i serwery DNS.
+

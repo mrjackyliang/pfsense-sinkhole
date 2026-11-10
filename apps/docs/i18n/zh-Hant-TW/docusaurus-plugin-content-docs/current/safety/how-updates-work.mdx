@@ -1,0 +1,65 @@
+---
+id: how-updates-work
+title: 更新的工作方式
+description: 瞭解已儲存清單更新、原子化最後有效回退、本地編譯和部署、Resolver 快取處理以及共享更新鎖定。
+keywords:
+  - sinkhole for pfsense
+  - 清單更新
+  - 最後有效副本
+  - unbound 重新載入
+  - 更新鎖
+tags:
+  - safety
+  - updates
+  - availability
+---
+
+Sinkhole 將下載與 DNS 服務分離，因此遠程來源永遠不會位於 Resolver 查詢路徑中。
+
+## DNS 清單更新流程 \{#dns-list-update-flow}
+
+對於每個已啓用的 DNS 清單，Sinkhole 會：
+
+1. 在有界的時間和大小限制內下載來源。
+2. 將支持的 hosts、純域名和 adblock 風格項目解析為臨時規範化集合。
+3. 僅在新內容通過驗證後原子替換已儲存副本。
+4. 從本地已儲存資料編譯全局、網路、設備、允許域名和警報策略。
+5. 在 `/var/unbound` 下部署一個代次，供已載入的 Python 模塊發現。
+
+下載、解析或驗證失敗會記錄錯誤，但不會替換最後有效副本。整個嘗試期間，DNS 會繼續使用已部署的本地代次。
+
+## 部署和 Resolver 快取 \{#deployment-and-resolver-caches}
+
+Unbound 模塊會在查詢之間檢查新清單，並且只在引用的每個檔案都準備就緒後切換到完整代次。Status 分別顯示編譯、部署和載入代次識別碼，以便驗證每個階段。
+
+當策略增加封鎖名稱或擴大封鎖子樹時，Sinkhole 會等待模塊報告新代次，然後重新載入 Unbound 一次。重新載入會清除 `flush_zone` 單獨處理後仍可能符合 **Serve Expired** 條件的消息和 RRset 快取。
+
+## 用戶端映射刷新 \{#client-map-refreshes}
+
+網路子網和設備地址與編譯域名資料分開存儲。當 DNS 封鎖具有已啓用的網路或設備作用域，或 Bypass DNS 保護需要識別用戶端時，Sinkhole 會每分鐘刷新用戶端映射，而無需重新載入 Unbound。
+
+套件 Sync 也只會在相同條件下啓動此刷新。這可涵蓋在清單更新之外發生的介面、DHCP 租約、鄰居和靜態映射變化。關閉所有 Sinkhole 功能後，下一次 Sync 會刪除執行時用戶端映射及其選用的 RAM 磁碟鏡像。
+
+## IP 和國家或地區更新流程 \{#ip-and-country-update-flow}
+
+啓用 IP 和國家或地區封鎖後，同一個計劃或手動更新會下載已啓用的 IP 清單並刷新符合條件的 GeoLite2 資料。Sinkhole 解析並合併每個地址族，扣除管理員允許清單和受保護的防火牆地址，然後原子替換地址族表檔案。
+
+更新成功後，現有的 `sinkhole/ip` 錨點可通過僅表格的 `pfctl -T replace` 接收新內容。當規則或表缺失或不同時，Sync 和每分鐘完整性檢查會載入完整錨點。
+
+## 計劃和鎖定 \{#schedules-and-locking}
+
+預設清單更新頻率為 Daily。Hourly、Every 6 hours、Daily 和 Weekly 計劃使用穩定的隨機分鐘組成部分，因此防火牆不會在每次儲存時改變作業時間。
+
+DNS 清單更新、IP/國家或地區更新、目錄相關應用工作和套件自更新通過 `/var/run/sinkhole-update.lock` 進行協調。套件 Update 操作會等待活動清單更新完成，而不會在其下方更改已安裝套件。
+
+## 目錄刷新相互獨立 \{#catalog-refreshes-are-separate}
+
+AdGuard Home 註冊表和 pfBlockerNG 源目錄只在目錄搜索打開或選擇 **Refresh** 時獲取。它們的最後有效快取可重復使用一天，獲取失敗不會改變已配置清單。
+
+目錄結果是發現元資料，不是策略。只有在將結果作為普通配置清單新增並完成正常更新流程後，它才會影響 DNS 或 IP 封鎖。
+
+## 讀取更新狀態 \{#read-update-state}
+
+打開 **Firewall → Sinkhole → Status**，比較來源錯誤、已儲存項目數、更新執行標誌以及編譯、部署和載入代次。對於 IP 封鎖，還要比較表計數和 `sinkhole/ip` 錨點狀態。
+
+有關套件版本檢查和自更新行為，請參閱[更新](/docs/reference/updates)。某個階段報告錯誤或持續待處理時，請參閱[故障排除](/docs/operate/troubleshooting)。

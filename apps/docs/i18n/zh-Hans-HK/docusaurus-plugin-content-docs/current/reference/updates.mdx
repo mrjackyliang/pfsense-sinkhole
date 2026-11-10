@@ -1,0 +1,65 @@
+---
+id: updates
+title: 软件包更新
+description: 配置版本检查，阅读通知和 About 更新栏，并了解有界的校验和、签名、元数据、锁和安装检查。
+keywords:
+  - sinkhole for pfsense
+  - 软件包更新
+  - 自更新
+  - 校验和验证
+  - 版本通知
+tags:
+  - reference
+  - updates
+  - security
+---
+
+import aboutUpdateBar from './_assets_/updates-1.png';
+
+Sinkhole 可以检查其 GitHub 版本、通过 pfSense 发出通知，并从 About 选项卡安装经过验证的较新软件包。
+
+## 计划版本检查 \{#scheduled-release-checks}
+
+**General → Update Checks** 可选择 Daily、Weekly、Monthly 或 Never；默认值为 Weekly。Sinkhole 会存储稳定的随机计划组成部分，因此保存设置不会不断移动检查时间。
+
+一次检查会记录最新版本、版本页面、检查时间和上次错误。**About → Check Now** 会立即运行相同检查。
+
+## 更新通知 \{#update-notices}
+
+每个新检测到的版本只会创建一条本地 pfSense WebGUI 通知，并链接到 Sinkhole 的 About 选项卡。重复检查不会为同一版本创建重复通知。
+
+选择 **Remote Notifications** 还会使用 **System → Advanced → Notifications** 下配置的服务。该设置默认关闭，只影响版本通知，不影响列表阻止警报规则。
+
+## About 更新栏 \{#about-update-bar}
+
+更新栏显示已安装版本、最近检查到的版本、上次检查、版本链接、错误和分离更新进度。其视觉状态可区分没有待处理更新、存在较新版本、更新正在运行、成功和失败。
+
+记录的最新版本更新时会显示 **Update**。页面会轮询分离作业并报告结果，而不会保持浏览器请求打开。
+
+<img src={aboutUpdateBar} alt="About 选项卡显示可用的 Sinkhole 更新以及 Update 和 What's New 控件" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 安装前验证 \{#verification-before-installation}
+
+自更新只接受来自本项目 GitHub 版本下载路径的资源，并应用有界下载大小和超时。它要求稳定软件包及其 `.sha256`，验证 SHA-256 摘要，然后在使用 `pkg add -f` 安装前检查软件包元数据。
+
+当 `/usr/local/share/pfSense-pkg-Sinkhole/release-signing.pub` 包含受信任的 Ed25519 OpenSSH 密钥时，匹配的分离 `.sig` 资源会成为必需项。Sinkhole 会在其版本命名空间中验证该签名，然后才允许 `pkg` 检查软件包。
+
+安装的信任列表为空时无需签名，但仍会进行校验和和软件包元数据验证。缺失、格式错误、不受信任、过大或不匹配的资源会停止更新，并保留已安装软件包。
+
+## 更新锁定 \{#update-locking}
+
+软件包检查和自更新与 DNS 列表及 IP/国家或地区更新共享 `/var/run/sinkhole-update.lock`。如果列表更新正在进行，About 中的 **Update** 操作必须等到该作业完成后才能开始。
+
+该锁可防止当前软件包正在下载、解析、编译或应用策略时软件包文件发生变化。Status 不再显示更新运行后，请从 About 重试。
+
+## 手动软件包更新 \{#manual-package-update}
+
+无法使用 About 操作时，仍可使用稳定命令：
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+运行前，请下载稳定的 `.sha256` 资源，并按照[安装](/docs/installation#verify-the-checksum)中的说明将其哈希值与软件包进行比较。`-f` 是必需的，以便 `pkg` 即使从同一个稳定 URL 获取，也能安装新构建。
+
+About 權限為唯讀。僅當已登入使用者具有 Sinkhole General 設定權限或 pfSense 的 `page-all` 權限時，才會顯示並接受 **Check Now** 和 **Update** 操作。只有 About 權限的使用者仍可查看已安裝版本、發行狀態和發行連結。

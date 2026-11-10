@@ -1,0 +1,80 @@
+---
+id: testing-and-verification
+title: 테스트 및 검증
+description: 실습용 방화벽에서 설치, Resolver 소유권, 범위별 판단, 알림, Bypass 보호, IP 차단, 업데이트 및 안전한 제거를 검증합니다.
+keywords:
+  - sinkhole for pfsense
+  - 테스트
+  - 검증
+  - 실습용 방화벽
+  - 릴리스 안전성
+tags:
+  - safety
+  - testing
+  - verification
+---
+
+프로덕션 네트워크에 Sinkhole의 DNS, NAT 또는 방화벽 정책을 도입하기 전에 폐기 가능한 pfSense 실습 환경에서 테스트합니다.
+
+## 패키지 다운로드 검증 \{#verify-the-package-download}
+
+동일한 GitHub 릴리스에서 안정 패키지와 `.sha256` 자산을 다운로드합니다. 패키지의 SHA-256 다이제스트를 `pfSense-pkg-Sinkhole.pkg.sha256`의 단일 해시와 비교한 다음 `pkg add -f`를 실행합니다.
+
+HTTPS 다운로드만으로 체크섬 비교를 대체할 수 없습니다. 다른 컴퓨터를 통해 방화벽으로 전송할 때 패키지와 체크섬을 함께 보관합니다.
+
+## 기본 설치 검증 \{#verify-a-basic-installation}
+
+1. **Firewall → Sinkhole**이 열리고 설치된 버전이 **About**에 표시되는지 확인합니다.
+2. **Services → DNS Resolver**가 활성화되어 있고 다른 패키지가 Python 슬롯을 소유하지 않는지 확인합니다.
+3. Sinkhole을 활성화하고 저장한 다음 **Status → Sinkhole**이 `Active`인지 확인합니다.
+4. 첫 정상 업데이트 후 컴파일, 배포 및 로드된 세대 식별자가 일치하는지 확인합니다.
+
+Sinkhole은 Unbound의 단일 Python 모듈 슬롯에서 pfBlockerNG DNSBL이나 다른 스크립트를 대체하지 않습니다. 이 비활성 상태를 설치 실패가 아닌 구성 충돌로 취급합니다.
+
+## DNS 정책 검증 \{#verify-dns-policy}
+
+공개 목록 대신 직접 관리하는 목록의 가상 테스트 도메인을 사용합니다. Status에서 장치 및 네트워크 ID를 확인할 수 있는 클라이언트로 한 번에 한 판단씩 테스트합니다.
+
+1. 목록에 없는 이름이 정상적으로 확인되는지 확인합니다.
+2. 전역 목록이 해당 테스트 이름을 차단하는지 확인합니다.
+3. 네트워크 허용 도메인을 추가하고 네트워크 및 전역 목록을 통과하는지 확인합니다.
+4. 장치 판단을 추가하고 [문서화된 순서](/docs/configure/scopes#decision-order)를 확인합니다.
+5. 테스트 데이터를 제거하고 다음 배포 세대에서 예상 응답이 복원되는지 확인합니다.
+
+Unbound는 Python 모듈보다 먼저 기본 제공 영역 `test.`, `invalid.`, `onion.`, `localhost.`에 응답하므로 사용하지 않습니다. 결과가 재사용될 수 있는 경우 검사 사이에 클라이언트 측 DNS 캐시를 지웁니다.
+
+## 알림 검증 \{#verify-alerts}
+
+가상 테스트 도메인 차단과 알려진 실습용 클라이언트에 대해 좁은 규칙 하나를 만듭니다. 다음 분 작업에서 이벤트를 기록하고 pfSense에 구성된 알림 시스템을 통해 보내는지 확인합니다.
+
+규칙의 반복 간격 내에 다시 시도하여 알림이 억제되는지 확인합니다. 이후 규칙을 제거하고 Status에 알림 처리 오류가 더 이상 표시되지 않는지 확인합니다.
+
+## Bypass 보호 검증 \{#verify-bypass-protection}
+
+격리된 실습용 인터페이스 하나를 선택하고 Bypass 보호를 한 번에 하나씩 활성화합니다. 각 테스트 후 선택하지 않은 인터페이스의 동일한 클라이언트가 영향을 받지 않는지 확인합니다.
+
+1. **Redirect**를 활성화하고 해당 주소 패밀리에 Resolver 리스너가 있는지 확인한 다음 다른 목적지에 일반 UDP 및 TCP 포트 53 쿼리를 보냅니다. pfSense가 수신하는지 확인합니다.
+2. 폐기 가능한 구성에서만 의도적으로 잘못된 예외를 추가하고 부분 규칙을 로드하는 대신 리디렉션이 **Paused** 상태가 되는지 확인합니다. 올바른 데이터를 복원하고 두 번의 분 단위 관찰을 기다린 다음 **pfSense loaded rules**가 `Yes`로 돌아오는지 확인합니다.
+3. **TLS and QUIC**를 활성화한 다음 실습용 목적지로 향하는 TCP 및 UDP 포트 853은 차단되고 방화벽으로 향하는 트래픽은 차단되지 않는지 확인합니다.
+4. 만든 도메인, 주소, CIDR, 주석 및 잘못된 데이터만 포함하는 비활성화된 Bypass List를 추가합니다. 이 목록과 일치하는 보호를 활성화한 다음 유효한 이름과 주소가 차단되고, 잘못된 줄은 건너뛰며, 나중에 가져오기가 실패해도 저장된 복사본이 유지되는지 확인합니다.
+5. Firefox 및 Private Relay 테스트 쿼리가 `NXDOMAIN`을 받는지 확인합니다. **Answer with no records** 모드에서 DDR이 비어 있는 `NOERROR` 응답을 반환하는지 확인합니다.
+6. 실습 환경에서 Resolver의 SSL/TLS 서비스를 구성한 상태로 **Advertise**가 인증서 호스트 이름, `alpn=dot` 및 포트 `853`이 포함된 SVCB를 반환하는지 확인합니다. 해당 서비스를 끄고 **Advertise** 저장이 유효성 검사에 실패하는지 확인합니다.
+7. 표준 VPN 포트를 활성화하고 실습용 목적지에 대해 TCP 및 UDP `1194`, UDP `51820`, UDP `500` 및 `4500`, ESP를 테스트합니다. 방화벽으로 주소가 지정된 트래픽은 차단되지 않는지 확인합니다.
+
+각 방화벽 테스트 후 **Status → Bypass**가 예상 규칙 상태를 보고하며 별도로 활성화된 `sinkhole/ip`가 로드된 상태인지 확인합니다.
+
+## IP 및 국가 차단 검증 \{#verify-ip-and-country-blocking}
+
+가상 IP 목록 테스트 데이터와 방화벽 관리, 게이트웨이 또는 DNS에 영향을 줄 수 없는 주소를 사용합니다. 트래픽을 테스트하기 전에 최종 패밀리 테이블 수, 선택한 인터페이스와 방향 및 **IP Anchor → Yes**를 확인합니다.
+
+허용 목록의 테스트 범위가 차단 테이블에서 제거되는지 확인합니다. GeoLite2를 테스트하는 경우 관리자의 자체 MaxMind 키를 사용하고 캡처된 모든 출력에서 제거합니다.
+
+## 업데이트 및 제거 동작 검증 \{#verify-update-and-removal-behavior}
+
+수동 목록 업데이트를 실행하고 Status가 업데이트, 컴파일, 배포 및 로드 상태를 거치는 동안에도 DNS가 계속 응답하는지 확인합니다. 의도적으로 실패시킨 출처는 이전 저장 사본을 유지하고 오류를 표시해야 합니다.
+
+제거하기 전에 **Keep Settings**가 구성과 저장된 목록을 보존해야 하는지 결정합니다. `pkg delete -f pfSense-pkg-Sinkhole`로 제거한 다음 Resolver 통합, 예약 작업, 일반 DNS 리디렉션 규칙, `sinkhole/bypass` 및 `sinkhole/ip` 앵커, 캐시된 Bypass 데이터와 임시 런타임 파일이 사라졌는지 확인합니다.
+
+## 환경 기록 \{#record-the-environment}
+
+유용한 테스트 기록을 위해 Sinkhole 버전, pfSense 에디션과 릴리스, FreeBSD 릴리스, 선택한 기능, Status 상태 및 민감 정보를 제거한 `Sinkhole:` 시스템 로그 줄을 기록합니다. 현재 공식적으로 테스트되었다고 나열된 pfSense 릴리스는 없으며 호환성 테스트는 각 Sinkhole 릴리스 전에 수행됩니다.

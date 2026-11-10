@@ -1,0 +1,73 @@
+---
+id: first-run
+title: Postavljanje Sinkholea
+description: Dodajte pouzdanu listu, odaberite globalna ili ciljana pravila, omogućite integraciju Resolvera, pokrenite prvo ažuriranje i provjerite aktivnu generaciju Sinkholea.
+keywords:
+  - sinkhole for pfsense
+  - prvo pokretanje
+  - dns resolver
+  - lista za blokiranje
+  - status
+tags:
+  - setup
+  - first run
+  - dns
+sidebar_position: 3
+---
+
+Postavite jednu pouzdanu listu i provjerite njeno sačuvano, kompajlirano, postavljeno i učitano stanje prije proširivanja pravila.
+
+## Provjerite Resolver \{#check-the-resolver}
+
+1. Otvorite **Services → DNS Resolver** i potvrdite da je Resolver omogućen.
+2. Ako je pfBlockerNG DNSBL omogućen, odaberite koji će paket upravljati DNS filtriranjem jer oba paketa ne mogu istovremeno koristiti Python mjesto u Unboundu.
+3. Otvorite **Firewall → Sinkhole → General** i ostavite **Enable** isključenim dok pripremate prva pravila.
+
+Sinkhole odbija sačuvati **Enable** dok druga Python skripta zauzima mjesto. Ako kasnije onemogućite Sinkhole, vraćaju se ranije Python postavke Resolvera kada su još uvijek u vlasništvu Sinkholea.
+
+## Dodajte listu \{#add-a-list}
+
+1. Otvorite **Lists** i dodajte URL pouzdanog izvora ili otvorite **Add from Catalog** kako biste pretražili dva kataloga na zahtjev.
+2. Izvoru dajte lokalni naziv i ostavite **Enabled** odabranim kako bi ga Sinkhole preuzeo.
+3. Ostavite **Global** odabranim samo kada se lista treba primijeniti nakon svakog pravila uređaja i mreže.
+4. Dodajte sve globalne **Allowed Domains**, jednu domenu po redu, kada treba propustiti poznati lažno pozitivni rezultat.
+
+Sinkhole ne preporučuje nijedan izvor. [Liste i sačuvane kopije](/docs/configure/lists) objašnjavaju prihvaćene formate i način na koji rezultati kataloga postaju obični redovi liste.
+
+## Dodajte opcionalne opsege \{#add-optional-scopes}
+
+Otvorite **Scopes** kada mreža ili uređaj trebaju pravila izvan globalnog nivoa:
+
+- Dodajte **Network** za jedan konfigurirani interfejs pfSensea, a zatim odaberite njegove liste i dopuštene domene.
+- Dodajte **Device** prema IP adresi, DHCP statičkom mapiranju ili MAC adresi, a zatim odaberite njegove liste i dopuštene domene.
+
+Uređaj nasljeđuje mrežu na kojoj se trenutno nalazi, a mreža nasljeđuje globalne liste. [Opsezi i dopuštene domene](/docs/configure/scopes) prikazuju redoslijed odlučivanja koji određuje hoće li se naziv propustiti ili blokirati.
+
+## Omogućite i ažurirajte \{#enable-and-update}
+
+1. Vratite se na **General** i odaberite **Enable**.
+2. Odaberite **Update Frequency** za omogućene DNS liste i sačuvajte.
+3. Otvorite **Status** i odaberite **Update Now**.
+4. Pričekajte da se **Update running** vrati na `No`.
+
+Prekidač General omogućava zakazana ažuriranja DNS lista i integraciju DNS Resolvera. Omogućene Bypass Lists i pravila za IP/države nezavisno koriste isti raspored ažuriranja; svaka Bypass i IP zaštita ostaje isključena dok je administrator ne omogući.
+
+## Provjerite aktivno stanje \{#verify-the-active-state}
+
+Prvo ažuriranje je spremno kada paneli Statusa prikazuju sve sljedeće rezultate:
+
+- **Lists** prikazuje broj zapisa veći od nule i **Last Successful Update** za svaki ispravni izvor.
+- **Compile Needed** i **Deployment Needed** prikazuju `No` u odjeljku **Summary**.
+- **Compiled Generation**, **Deployed Generation** i **Loaded Generation** označavaju trenutnu generaciju.
+- **DNS Resolver Python Script Owner** prikazuje `sinkhole`.
+- **Sinkhole** prikazuje `Active` bez razloga.
+
+Ako stranica prijavi razlog neaktivnosti ili generaciju na čekanju, [Status](/docs/operate/status) objašnjava stanje, a [Rješavanje problema](/docs/operate/troubleshooting) obrađuje svaki vjerovatan uzrok.
+
+## Pažljivo dodajte upozorenja i Bypass zaštitu \{#add-alerts-and-bypass-protection-carefully}
+
+Preporučuje se provjeriti DNS odgovore po opsegu prije dodavanja pravila upozorenja ili Bypass zaštite. Upozorenja mogu otkriti aktivnost klijenata, dok Bypass postavke mogu preusmjeravati ili blokirati saobraćaj koji stiže na odabranim interfejsima.
+
+- [Upozorenja](/docs/configure/alerts) ograničavaju isporuku prema listi, klijentu, periodu ponavljanja i fiksnim ograničenjima.
+- [Zaštita od zaobilaženja](/docs/configure/bypass-protection) obuhvata preusmjeravanje običnog DNS-a, signale šifriranog DNS-a, liste pružalaca i zaštitu od tunela.
+- [Blokiranje IP adresa i država](/docs/configure/ip-and-country-blocking) obuhvata nezavisni paketni filter koji je prema zadanim postavkama isključen.

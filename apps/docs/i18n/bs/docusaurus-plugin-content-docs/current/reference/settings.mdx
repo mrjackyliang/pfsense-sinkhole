@@ -1,0 +1,146 @@
+---
+id: settings
+title: Referenca postavki
+description: Pronađite polja Sinkholea, zadane vrijednosti, rasporede, izbore lista i opsega, ograničenja upozorenja, Bypass zaštitu, IP pravila i ponašanje jezika.
+keywords:
+  - sinkhole for pfsense
+  - postavke
+  - zadane vrijednosti
+  - webgui
+  - konfiguracija
+tags:
+  - reference
+  - settings
+  - webgui
+---
+
+Pronađite namjenu i zadano ponašanje svakog područja konfiguracije Sinkholea pod **Firewall → Sinkhole**.
+
+## General \{#general}
+
+| Polje            | Zadano | Opis                                                                                                 |
+|------------------|--------|------------------------------------------------------------------------------------------------------|
+| Enable           | Off    | Omogućava zakazana ažuriranja lista i integraciju DNS Resolvera Sinkholea.                           |
+| Update Frequency | Daily  | Bira raspored Hourly, Every 6 hours, Daily ili Weekly za DNS, Bypass i ažuriranja lista IP-a/država. |
+| Keep Settings    | On     | Čuva konfiguraciju i trajne sačuvane podatke kada se paket ukloni.                                   |
+
+Zakazana vremena koriste stabilne nasumične komponente. Hourly se pokreće u jednoj stabilnoj minuti, Every 6 hours koristi istu minutu svakog šestog sata, Daily se pokreće u `00:<minute>`, a Weekly nedjeljom u `00:<minute>`.
+
+## Package Updates \{#package-updates}
+
+| Polje                | Zadano | Opis                                                                                      |
+|----------------------|--------|-------------------------------------------------------------------------------------------|
+| Update Checks        | Weekly | Bira provjere novih GitHub izdanja Daily, Weekly, Monthly ili Never.                      |
+| Remote Notifications | Off    | Šalje i svaku obavijest o novoj verziji putem udaljenih usluga konfiguriranih u pfSenseu. |
+
+Svaka nova verzija kreira jednu lokalnu obavijest pfSensea. **About → Check Now** odmah pokreće istu ograničenu provjeru izdanja bez promjene rasporeda.
+
+## Lists \{#lists}
+
+| Polje           | Zadano | Opis                                                                                        |
+|-----------------|--------|---------------------------------------------------------------------------------------------|
+| Name            | Empty  | Lokalna oznaka koju koriste dodjele, upozorenja i Status.                                   |
+| URL             | Empty  | HTTP ili HTTPS izvor bez ugrađenih vjerodajnica.                                            |
+| Enabled         | On     | Uključuje izvor u ažuriranja i kompajlirana pravila kada je dodijeljen.                     |
+| Global          | On     | Primjenjuje listu na svakog klijenta nakon odluka uređaja i mreže.                          |
+| Allowed Domains | Empty  | Jedna globalna dopuštena domena po redu; svaki unos dopušta tačnu domenu i svaku poddomenu. |
+
+**Add from Catalog** na zahtjev pretražuje registar lista AdGuard Homea i katalog izvora pfBlockerNG-a. Dodavanje rezultata kreira isti obični red kao i ručni unos URL-a.
+
+Izvori za zaobilaženje isključeni su iz ovog kataloga.
+
+## Usluge \{#services}
+
+Odabiri usluga su prema zadanim postavkama prazni za svaki opseg. Usluga registra obuhvaćena posebnom Bypass zaštitom skrivena je iz Usluga i uklanja se iz spremljenih odabira; Private Relay se konfigurira samo na kartici Bypass.
+
+## Network Scopes \{#network-scopes}
+
+| Polje           | Zadano | Opis                                                                                                                       |
+|-----------------|--------|----------------------------------------------------------------------------------------------------------------------------|
+| Interface       | Empty  | Konfigurirani interfejs pfSensea čije trenutne IPv4 i IPv6 podmreže identificiraju mrežu.                                  |
+| Lists           | Empty  | Dodatne DNS liste koje blokiraju klijente u mreži.                                                                         |
+| Allowed Domains | Empty  | Jedan mrežni izuzetak po redu; svaki dopušta tačnu domenu i svaku poddomenu prije lista te mreže i svih globalnih pravila. |
+| Enabled         | On     | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                            |
+
+Svaki interfejs može se pojaviti samo jednom. Nedostupan sačuvani interfejs ostaje vidljiv za ispravak umjesto da se odbaci.
+
+## Device Scopes \{#device-scopes}
+
+| Polje               | Zadano     | Opis                                                                                                               |
+|---------------------|------------|--------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty      | Lokalna oznaka prikazana u pravilima i Statusu.                                                                    |
+| Identified By       | IP address | Bira IP address, DHCP static mapping ili MAC address.                                                              |
+| IP or MAC Address   | Empty      | Tačan identifikator kada je odabran IP address ili MAC address.                                                    |
+| DHCP Static Mapping | Empty      | Postojeće mapiranje odabrano kada se koristi taj način identifikacije.                                             |
+| Lists               | Empty      | Dodatne DNS liste koje blokiraju ovaj uređaj.                                                                      |
+| Allowed Domains     | Empty      | Jedan izuzetak uređaja po redu; svaki dopušta tačnu domenu i svaku poddomenu prije svake mrežne i globalne odluke. |
+| Enabled             | On         | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                    |
+
+Statička mapiranja koriste svoju konfiguriranu adresu i trenutne adrese opažene za MAC mapiranja. MAC red koristi trenutne podatke ARP-a, NDP-a i DHCP zakupa.
+
+## Alert Rules \{#alert-rules}
+
+| Polje                | Zadano   | Opis                                                                                              |
+|----------------------|----------|---------------------------------------------------------------------------------------------------|
+| Description          | Empty    | Lokalna oznaka pravila.                                                                           |
+| Lists                | Any      | Podudara bilo koju listu ili samo odabrane konfigurirane liste.                                   |
+| Clients              | Everyone | Podudara sve ili odabrane mrežne i uređajske opsege.                                              |
+| Repeat After         | 60       | Minute prije ponovne obavijesti za isto pravilo, klijenta, domenu i listu; prihvata od 1 do 1440. |
+| WebGUI Notice        | On       | Dodaje obavijest pfSensea kada se pravilo podudara.                                               |
+| Remote Notifications | On       | Koristi usluge obavijesti konfigurirane u pfSenseu kada se pravilo podudara.                      |
+| Enabled              | On       | Uključuje pravilo u kompajlirana pravila upozorenja.                                              |
+
+Minutni procesor šalje najviše 20 poruka po pokretanju i 60 poruka po pravilu na sat, a zatim sažima višak. Čuva najviše 50 nepročitanih Sinkhole WebGUI obavijesti i koristi budžet pokretanja od 40 sekundi; događaji stariji od 10 minuta su zastarjeli.
+
+## Bypass zaštita \{#bypass-protection}
+
+| Polje               | Zadano | Opis                                                                                                        |
+|---------------------|--------|-------------------------------------------------------------------------------------------------------------|
+| Apply to            | Empty  | Interfejsi dolaznog saobraćaja klijenata koje dijele sve Bypass zaštite.                                    |
+| Redirect            | Off    | Šalje obični UDP i TCP saobraćaj porta 53 na odabranim interfejsima zaštitnom zidu.                         |
+| Exempt Sources      | Empty  | Jedna IP adresa, CIDR, alias ili unos `This Firewall` po redu koji zaobilazi preusmjeravanje običnog DNS-a. |
+| Exempt Destinations | Empty  | Jedna odredišna IP adresa, CIDR ili alias po redu koji zaobilazi preusmjeravanje običnog DNS-a.             |
+| TLS and QUIC        | Off    | Blokira TCP i UDP port 853 prema odredištima koja nisu zaštitni zid.                                        |
+| Providers           | Off    | Blokira nazive i adrese iz omogućenih Bypass Lists vrste **Encrypted DNS**.                                 |
+| Firefox             | Off    | Vraća `NXDOMAIN` za Firefoxov kanarski naziv automatskog DNS-over-HTTPS-a i njegove poddomene.              |
+| Private Relay       | Off    | Vraća `NXDOMAIN` za dva Appleova naziva dostupnosti usluge Private Relay.                                   |
+| Discovery           | Off    | Ostavlja DDR nepromijenjenim, oglašava DNS over TLS zaštitnog zida ili odgovara s `NOERROR` bez zapisa.     |
+| Tor                 | Off    | Blokira nazive i adrese iz omogućenih Bypass Lists vrste **Tor**.                                           |
+| VPN providers       | Off    | Blokira nazive i adrese iz omogućenih Bypass Lists vrste **VPN**.                                           |
+| Standard VPN ports  | Off    | Blokira UDP portove OpenVPN-a, WireGuarda i IPsec-a te ESP prema odredištima koja nisu zaštitni zid.        |
+
+Svaki sačuvani izuzetak preusmjeravanja mora biti važeći prije upotrebe bilo kojeg pravila preusmjeravanja. IPv4 cilja `127.0.0.1` samo kada Resolver tamo sluša, a inače koristi adresu interfejsa; IPv6 uvijek koristi adresu interfejsa. **Discovery → Advertise** zahtijeva SSL/TLS uslugu DNS Resolvera i naziv hosta certifikata.
+
+### Bypass Lists \{#bypass-lists}
+
+| Polje   | Zadano        | Opis                                                                              |
+|---------|---------------|-----------------------------------------------------------------------------------|
+| Name    | Empty         | Lokalna oznaka prikazana na karticama Bypass i Status.                            |
+| Kind    | Encrypted DNS | Odabire pravilo **Encrypted DNS**, **Tor** ili **VPN**.                           |
+| URL     | Empty         | HTTP ili HTTPS izvor koji sadrži pomiješane domene, adrese i CIDR-ove.            |
+| Enabled | Off           | Uključuje sačuvanu listu u zakazana preuzimanja i odgovarajuću omogućenu zaštitu. |
+
+Unos za Bypass List koristi jedan unos po redu i komentare s `#`. Neuspjelo preuzimanje zadržava posljednju dobru sačuvanu kopiju. Odluke o dozvoljenim domenama liste imaju prednost nad nazivima iz Bypass List, ali ne i nad signalima Firefox, Private Relay ili Discovery.
+
+**Add from Catalog** pretražuje izvore za zaobilaženje iz registra AdGuard Homea i DNS, IPv4 i IPv6 odjeljaka pfBlockerNG-a samo kada se otvori ili osvježi. Svaki rezultat ima fiksnu vrstu **Encrypted DNS**, **Tor** ili **VPN** i dodaje se kao omogućena Bypass lista.
+
+## IP and Country Blocking \{#ip-and-country-blocking}
+
+| Polje               | Zadano | Opis                                                                                    |
+|---------------------|--------|-----------------------------------------------------------------------------------------|
+| Enable              | Off    | Omogućava nezavisno učitano sidro zaštitnog zida `sinkhole/ip`.                         |
+| Interfaces          | Empty  | Dolazni interfejsi na kojima se primjenjuju pravila blokiranja.                         |
+| Directions          | Empty  | Bira ulazno blokiranje izvora, izlazno blokiranje odredišta ili oboje.                  |
+| Countries           | Empty  | Jedan dvoslovni kod države GeoLite2 po redu.                                            |
+| MaxMind Account ID  | Empty  | Račun koji se koristi za pribavljanje arhive GeoLite2 Country.                          |
+| MaxMind License Key | Unset  | Ključ samo za zapis koji daje administrator; prazno polje zadržava sačuvanu vrijednost. |
+| Clear License Key   | Off    | Briše sačuvani MaxMind ključ pri spremanju.                                             |
+| IP Allowlist        | Empty  | Jedna IP adresa ili CIDR po redu, oduzeta od konačnih tabela blokiranja.                |
+
+Svaki red IP liste ima naziv, URL, odabir porodice IPv4/IPv6/Both i prekidač Enabled. Sinkhole iz konačnih tabela uklanja i adrese interfejsa zaštitnog zida, pristupnika i DNS-a kako njegova pravila ne bi blokirala zaštićenu infrastrukturu.
+
+IP katalog isključuje svaki izvor za Encrypted DNS, Tor i VPN koji pripada Bypass katalogu.
+
+## Jezik \{#language}
+
+WebGUI Sinkholea prati jezičku postavku pfSensea, s potpunim katalozima za svih 18 podržanih lokaliteta. Ako ključ kataloga neočekivano nedostaje, Sinkhole za taj ključ koristi engleski.

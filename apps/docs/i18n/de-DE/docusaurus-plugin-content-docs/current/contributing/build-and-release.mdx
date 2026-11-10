@@ -1,0 +1,84 @@
+---
+id: build-and-release
+title: Build und Release
+description: Richte das Repository ein, führe Nova-Prüfungen und Builds aus, baue das pfSense-Paket unter FreeBSD, erfasse Änderungen und veröffentliche ein Release.
+keywords:
+  - sinkhole for pfsense
+  - mitwirken
+  - build
+  - release
+  - nova changelog
+tags:
+  - contributing
+  - build
+  - release
+---
+
+Baue, teste und veröffentliche Sinkhole über den Nova-Workspace im Stammverzeichnis, damit Paket und Dokumentation demselben geprüften Ablauf folgen.
+
+## Voraussetzungen \{#prerequisites}
+
+- Verwende den Node.js-Versionsbereich aus der `package.json` im Stammverzeichnis und die npm-Version aus deren Feld `packageManager`.
+- Verwende FreeBSD mit einem Checkout der pfSense-Ports für den abschließenden `.pkg`-Build.
+- Verwende eine wegwerfbare pfSense-Testumgebung für die Prüfung von Installation, Upgrade, Blockierung und Entfernung.
+
+Setze `PFSENSE_PORTS_DIR` vor dem Paketieren auf den Checkout der pfSense-FreeBSD-Ports. Der Checkout muss `Mk/bsd.port.mk` enthalten, und das Ziel `sysutils/pfSense-pkg-Sinkhole` muss für die temporäre Build-Kopie frei sein.
+
+## Abhängigkeiten installieren \{#install-dependencies}
+
+Führe im Stammverzeichnis des Repositorys Folgendes aus:
+
+```sh
+npm install
+```
+
+Nova liest die Workspaces aus `nova.config.json`. Führe Workspace-Befehle im Stammverzeichnis aus, sofern nicht gezielt ein engerer Paketbefehl diagnostiziert wird.
+
+## Jede Änderung prüfen \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` führt Linting, Typprüfung und Tests für Stamm-, Paket- und Dokumentations-Workspace aus. `npm run build` stellt den pfSense-Port bereit und erzeugt den produktiven Dokumentations-Build unter `build/`.
+
+Wenn auf dem Host keine nutzbare PHP-Laufzeit verfügbar ist, führt `SINKHOLE_SKIP_PHP_TESTS=1 npm run check` alle verfügbaren Prüfungen aus, ersetzt aber nicht die erforderlichen Pakettests vor einem Release. Paketänderungen erfordern außerdem die in den Repository-Regeln beschriebenen Offline-PHP-, Python-, Restore- und sprachübergreifenden Testsuiten.
+
+## Release-Paket bauen \{#build-the-release-package}
+
+Führe den abschließenden Paketierungsbefehl nach `npm run build` unter FreeBSD aus:
+
+```sh
+npm run deploy
+```
+
+Das Deploy-Skript führt `make package` im konfigurierten Ports-Checkout aus, erstellt das Manifest als vital mit `FreeBSD:*` neu, prüft beide Eigenschaften und schreibt versionierte sowie stabile `.pkg`-Dateien samt SHA-256-Dateien nach `packages/sinkhole/build/release/`.
+
+Der Befehl schlägt auf Nicht-FreeBSD-Hosts oder ohne `PFSENSE_PORTS_DIR` absichtlich fehl. Ersetze das Release-Artefakt niemals durch ein Paket, das auf einem anderen Betriebssystem gebaut wurde.
+
+## Änderung erfassen \{#record-the-change}
+
+Verwende Novas Changelog-Ablauf, während Änderungen umgesetzt werden:
+
+```sh
+npm run changelog
+```
+
+Wähle den betroffenen Workspace und die Release-Note-Kategorie, die zur sichtbaren Änderung passt. Verwende pro Änderung einen zusammenhängenden Eintrag und den imperativen Release-Note-Stil des Repositorys im Präsens.
+
+## Release erstellen \{#cut-a-release}
+
+1. Führe `npm run check` und `npm run build` für einen sauberen Release-Kandidaten aus.
+2. Führe `nova utility changelog --release` aus, um die Version auszuwählen, Paketversionen zu aktualisieren und Changelogs zu schreiben.
+3. Führe `npm run deploy` auf dem konfigurierten FreeBSD-Builder aus.
+4. Installiere das Artefakt in einer wegwerfbaren pfSense-Testumgebung, führe ein Upgrade und einen Blockierungstest aus und entferne es wieder.
+5. Veröffentliche das GitHub-Release mit den versionierten und stabilen Paket- und Prüfsummen-Assets.
+
+Die Veröffentlichung eines Releases löst den Workflow für Paketartefakte und den Workflow zur Bereitstellung der Dokumentation aus. Eine pfSense-Version wird erst als unterstützt aufgeführt, nachdem diese vollständige Laborprüfung bestanden wurde.
+
+## Dokumentationsänderungen \{#documentation-changes}
+
+Verwende ausdrückliche englische Überschriften-IDs wie `{#build-and-release}`, damit übersetzte Seiten stabile Anker behalten. Formatiere Markdown-Tabellen mit `npx nova recipe misc fix-markdown-tables` und führe danach dieselben Befehle zur Prüfung und zum Build im Stammverzeichnis aus.
+
+Die englischen Seiten sind die Quelle für alle 17 übersetzten Locales. Lasse Produktnamen unübersetzt, bewahre Code, Pfade und englische Anker exakt und verspreche keine Funktionen, die noch nicht implementiert sind.

@@ -1,0 +1,14 @@
+{
+  "item.label.Home": {
+    "message": "首頁"
+  },
+  "item.label.Guides": {
+    "message": "文檔"
+  },
+  "item.label.Status": {
+    "message": "狀態"
+  },
+  "item.label.Troubleshooting": {
+    "message": "故障排除"
+  }
+}

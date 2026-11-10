@@ -1,0 +1,34 @@
+---
+id: blocked-services
+title: Blokkerte tjenester
+description: Blokker hele tjenester globalt eller for ett konfigurert nettverk eller én enhet fra et bufret register, samtidig som prioriteten til tillatte domener og reparerbare lagrede valg beholdes.
+keywords:
+  - sinkhole for pfsense
+  - blokkerte tjenester
+  - tjenesteblokkering
+  - nettverksomfang
+  - enhetsomfang
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Bruk **Firewall → Sinkhole → Services** når du vil blokkere et helt merke uten å velge og vedlikeholde en egen liste-URL.
+
+## Velg et omfang \{#choose-a-scope}
+
+Velg **Global**, et konfigurert nettverk eller en konfigurert enhet. Søk etter en tjeneste, begrens flisene med en gruppebrikke, slå tjenestene av eller på, og velg deretter **Save** under tjenestekortene.
+
+Valget kompileres på det eksisterende nivået for omfanget. Tillatte domener for enheter har fortsatt prioritet over tjenesteregler for enheter, tillatte domener for nettverk har fortsatt prioritet over tjenesteregler for nettverk, og globale tillatte domener har fortsatt prioritet over globale tjenesteregler.
+
+Tjenester som dekkes av en egen Bypass-beskyttelse, vises ikke i rutenettet, gruppetellingene eller søket. Private Relay konfigureres bare på Bypass-fanen.
+
+## Register og reparasjon \{#registry-and-repair}
+
+Sinkhole henter tjenesteregisteret til AdGuard Home bare når denne siden åpnes eller du velger **Refresh**. Den siste gyldige kopien beholdes under `/var/db` i én dag, slik at kompilering aldri venter på nettverket.
+
+Tjenestelogoer gjengis som isolerte data-URI-bilder. Manglende eller for store logoer bruker et generisk bilde. Hvis en lagret tjeneste forsvinner fra et nyere register, beholder Sinkhole ID-en og viser den under **Needs Repair**. Slå den av og lagre for å fjerne valget.
+
+Fanen **Status** viser hentetidspunktet for registeret, siste feil og antallet blokkerte tjenester som er valgt for hvert konfigurert omfang.
+

@@ -1,0 +1,33 @@
+---
+id: blocked-services
+title: Servicios bloqueados
+description: Bloquee servicios completos globalmente o para una red o dispositivo configurado desde un registro en caché, con prioridad de dominios permitidos y elecciones reparables.
+keywords:
+  - sinkhole for pfsense
+  - servicios bloqueados
+  - bloqueo de servicios
+  - ámbito de red
+  - ámbito de dispositivo
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Use **Firewall → Sinkhole → Services** cuando quiera bloquear una marca completa sin elegir ni mantener la URL de otra lista.
+
+## Elegir un ámbito \{#choose-a-scope}
+
+Seleccione **Global**, una red configurada o un dispositivo configurado. Busque un servicio, limite los mosaicos con una etiqueta de grupo, active o desactive los servicios y seleccione **Save** debajo de las tarjetas de servicios.
+
+La selección se compila en el nivel existente de ese ámbito. Los dominios permitidos del dispositivo siguen teniendo prioridad sobre sus reglas de servicio, los dominios permitidos de la red sobre sus reglas de servicio y los dominios permitidos globales sobre las reglas de servicio globales.
+
+Los servicios cubiertos por una protección de Bypass específica no aparecen en la cuadrícula, los recuentos de grupos ni la búsqueda. Private Relay se configura solo en la pestaña Bypass.
+
+## Registro y reparación \{#registry-and-repair}
+
+Sinkhole obtiene el registro de servicios de AdGuard Home solo cuando se abre esta página o se selecciona **Refresh**. Conserva la última copia válida en `/var/db` durante un día para que la compilación nunca espere a la red.
+
+Los logotipos de los servicios se representan como imágenes Data URI aisladas. Si faltan o son demasiado grandes, se usa una imagen genérica. Si un servicio guardado desaparece de un registro más reciente, Sinkhole conserva su ID y lo muestra en **Needs Repair**; desactívelo y guarde para eliminar esa selección.
+
+La pestaña **Status** muestra la hora de obtención del registro, el último error y el número de servicios bloqueados seleccionados para cada ámbito configurado.

@@ -1,0 +1,131 @@
+---
+id: status
+title: Stanje
+description: Čitajte svaki panel Statusa Sinkholea, razlikujte aktivna, na čekanju, pauzirana, učitana, nedostajuća i zastarjela stanja te pokrenite ručno ažuriranje.
+keywords:
+  - sinkhole for pfsense
+  - status
+  - aktivno stanje
+  - generacija postavljanja
+  - Bypass zaštita
+tags:
+  - operate
+  - status
+  - diagnostics
+---
+
+import ipStatus from './_assets_/status-4.png';
+import listsScopesStatus from './_assets_/status-1.png';
+import summaryStatus from './_assets_/status-2.png';
+
+Čitajte stanje sačuvanih lista, opsega, upozorenja, Bypass zaštite, IP-a, kompajliranja, postavljanja i Resolvera u jednom operativnom prikazu.
+
+## Paneli Statusa \{#status-panels}
+
+Otvorite **Firewall → Sinkhole → Status** da biste vidjeli ove panele:
+
+| Panel                   | Šta prikazuje                                                                                                                                    |
+|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| Summary                 | Kompajliranje, postavljanje, generaciju, operaciju, vlasnika Resolvera, ukupno stanje Sinkholea i **Update Now** ispod panela.                   |
+| Lists                   | URL DNS liste, broj sačuvanih zapisa, posljednje uspješno ažuriranje i posljednju grešku.                                                        |
+| Popular-List Catalogs   | Posljednje dohvatanje i posljednju grešku za kataloške izvore AdGuard Homea i pfBlockerNG-a.                                                     |
+| Invalid Saved Rows      | Neispravne redove lista koji ostaju dostupni za popravak; prikazuje se samo kada takvi redovi postoje.                                           |
+| Scopes                  | Vrijeme i grešku ponovne izgradnje mape klijenata, nakon čega slijede zasebni paneli Networks i Devices.                                         |
+| Alerts                  | Posljednje pokretanje, pročitane ili zastarjele događaje, poslane ili zadržane obavijesti, odbačene događaje i posljednju grešku.                |
+| Bypass                  | Svaku zaštitu, interfejse, stanje pravila preusmjeravanja, stanje i brojanja Bypass sidra, nakon čega slijede Bypass Lists i paneli za popravak. |
+| IP and Country Blocking | Odabire pravila, broj tabela i pravila, ažuriranja, greške i stanje sidra, nakon čega slijedi zasebni panel IP Lists.                            |
+
+Onemogućeni redovi lista i opsega prikazuju se prigušeno. Izvor s greškom i dalje može prikazivati zapise i ranije uspješno ažuriranje jer posljednja ispravna kopija ostaje aktivna.
+
+<img src={listsScopesStatus} alt="Kartica Status prikazuje ažuriranja sačuvane demonstracijske liste, mrežne podmreže i trenutne adrese demonstracijskog uređaja" width={1024} height={949} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Stanje Sinkholea \{#sinkhole-state}
+
+Posljednji red **Sinkhole** u panelu Summary najbrža je provjera integracije Resolvera:
+
+| Stanje                                   | Značenje                                                                                                       |
+|------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| `Active`                                 | Sinkhole je omogućen, vlasnik je Python mjesta, koristi Python način i `pre_validator` te ima izvršne podatke. |
+| `Inactive: Sinkhole is disabled.`        | **Enable** u Generalu je isključen.                                                                            |
+| `Inactive: DNS Resolver is disabled.`    | DNS Resolver u pfSenseu je isključen.                                                                          |
+| `Inactive: ... slot is owned by ...`     | Druga Python skripta, poput pfBlockerNG DNSBL-a, posjeduje jedino mjesto.                                      |
+| `Inactive: Sinkhole does not own ...`    | Konfigurirana skripta nije Sinkhole iako nije prijavljen drugi vlasnik.                                        |
+| `Inactive: ... Python mode is disabled.` | Python način više nije omogućen u Resolveru.                                                                   |
+| `Inactive: ... pre-validator position.`  | Redoslijed modula više ne postavlja Sinkhole na `pre_validator`.                                               |
+| `Inactive: ... runtime files ...`        | Nedostaje skripta ili trenutna kompajlirana generacija.                                                        |
+
+Kada je Sinkhole namjerno onemogućen, **Deployment Needed** je `No`, **Loaded Generation** je `Module not loaded.`, a stranica ne prikazuje upozorenje o postavljanju. Drugo neaktivno stanje integracije postavlja **Deployment Needed** na `Yes` i **Loaded Generation** na `Module not loaded.`. Ispravite navedeni razlog prije nego kompajlirane podatke smatrate aktivnim.
+
+## Stanje kompajliranja i postavljanja \{#compile-and-deployment-state}
+
+| Polje               | Značenje                                                                                       |
+|---------------------|------------------------------------------------------------------------------------------------|
+| Compile Needed      | Sačuvana pravila su promijenjena ili posljednje kompajliranje nije uspješno završeno.          |
+| Compiled Generation | Identifikator nastao posljednjim uspješnim kompajliranjem.                                     |
+| Deployment Needed   | Kompajlirani sadržaj nije sadržaj postavljen za Unbound ili je integracija neaktivna.          |
+| Deployed Generation | Identifikator u trenutno postavljenom manifestu izvršnog okruženja.                            |
+| Loaded Generation   | Identifikator koji Unbound modul prijavljuje kao učitan.                                       |
+| Update Running      | Prikazuje se samo dok ažuriranje lista ili IP-a posjeduje zajedničko zaključavanje ažuriranja. |
+| Removal in Progress | Prikazuje se samo dok je trajna oznaka uklanjanja postavljena i integracija se povlači.        |
+| Python Script Owner | Trenutna vrijednost jedinog mjesta `python_script` u Resolveru ili `None`.                     |
+
+Stranica prikazuje okvir upozorenja kada kompajliranje ili postavljanje čeka, uključujući zabilježeni razlog. Podudarni identifikatori kompajlirane, postavljene i učitane generacije pokazuju da su sačuvana pravila stigla do pokrenutog modula.
+
+<img src={summaryStatus} alt="Panel Status Summary prikazuje podudarne kompajlirane, postavljene i učitane generacije uz aktivan Sinkhole" width={1024} height={914} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Stanje opsega i upozorenja \{#scope-and-alert-state}
+
+Sažetak Scopes prikazuje stanje ponovne izgradnje mape klijenata. Zasebni paneli **Networks** i **Devices** prikazuju trenutne CIDR-ove svakog interfejsa i trenutne adrese svakog uređaja. Sukob navodi adresu na koju polaže pravo više uređaja; prvi uređaj po redoslijedu u tabeli posjeduje tu adresu za pravila.
+
+Panel **Alerts** opisuje samo posljednji minutni posao. **Notifications held back** obuhvata potiskivanje zbog ograničenja ili nepročitanih obavijesti, dok **Events dropped by module** znači da se napunio ograničeni red događaja u memoriji ili na disku.
+
+## Stanje Bypass zaštite \{#bypass-state}
+
+Panel Bypass prikazuje `On` ili `Off` za TLS and QUIC, liste pružatelja, Firefox, Private Relay, Tor, liste VPN pružatelja i standardne VPN portove. **Discovery** prikazuje odabrani način rada. **Interfaces** potvrđuje zajednički izbor interfejsa usmjerenih prema klijentima.
+
+Nezavisno sidro zaštitnog zida prikazuje:
+
+| Polje                   | Značenje                                                                                                     |
+|-------------------------|--------------------------------------------------------------------------------------------------------------|
+| Firewall rules loaded   | Postoji li sidro `sinkhole/bypass` kada ga trenutne postavke zahtijevaju.                                    |
+| Firewall rules current  | Odgovaraju li učitani sažetak, pravila i tabele trenutnim postavkama i posljednjim ispravnim podacima lista. |
+| Firewall rule count     | Broj aktivnih pravila u Bypass sidru.                                                                        |
+| IPv4/IPv6 table entries | Konačni broj adresa pružatelja, Tora i VPN-a nakon uklanjanja zaštićenih adresa zaštitnog zida.              |
+
+Tabela **Bypass Lists** prikazuje vrstu, omogućeno stanje, broj sačuvanih zapisa, posljednje dohvatanje i posljednju grešku svakog reda. Neuspjelo dohvatanje stoga može prikazivati grešku zajedno sa zapisima iz zadržane posljednje ispravne kopije.
+
+### Stanje preusmjeravanja običnog DNS-a \{#plain-dns-redirect-state}
+
+| Stanje | Značenje                                                                                                     |
+|--------|--------------------------------------------------------------------------------------------------------------|
+| Off    | Preusmjeravanje običnog DNS-a je onemogućeno.                                                                |
+| On     | Redirect je omogućen i svaki sačuvani izuzetak je važeći.                                                    |
+| Paused | Najmanje jedan sačuvani izuzetak izvora ili odredišta je nevažeći, pa se pravila preusmjeravanja ne koriste. |
+
+Polje **pfSense loaded rules** ima tri stanja:
+
+| Stanje      | Značenje                                                                                            |
+|-------------|-----------------------------------------------------------------------------------------------------|
+| Yes         | `/tmp/rules.debug` sadrži tačno blok preusmjeravanja koji Sinkhole trenutno želi.                   |
+| No          | Željeni blok nije učitan.                                                                           |
+| Out of Date | Sinkhole blok je učitan, ali njegov tekst ne odgovara trenutnim postavkama ili slušačima Resolvera. |
+
+Cilj svake porodice je odabrana adresa slušača ili razlog zbog kojeg se pravilo ne može izgraditi. **Last parse error** prikazuje se samo dok trenutni blok nedostaje nakon što ga je pfSense odbio.
+
+## Stanje IP-a i država \{#ip-and-country-state}
+
+Glavno stanje IP panela je **On** ili **Off**. Njegov **IP Anchor** koristi **Yes**, **No** i **Out of Date** s istom razlikom između učitanog i trenutnog stanja kao Bypass sidro.
+
+Broj zapisa tabele prikazuje konačne spojene IPv4 i IPv6 mreže nakon oduzimanja dopuštenih i zaštićenih adresa.
+
+**Skipped Lines** broji nevažeći unos IP liste. Redovi s komentarima i prazni redovi se ne broje.
+
+**GeoLite2 Last Update** nezavisan je od posljednjeg ažuriranja liste.
+
+<img src={ipStatus} alt="Panel Status IP and Country Blocking prikazuje broj zapisa tabele, stanje ažuriranja, učitano sidro i red demonstracijske IP liste" width={1024} height={1022} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Pokrenite Update Now \{#run-update-now}
+
+Odabir **Update Now** ispod panela Summary pokreće `/usr/local/sbin/sinkhole --manual` u pozadini i odmah se vraća. Dugme ne prenosi izlaz, pa rezultat prikazuju **Update Running**, redovi DNS/Bypass/IP lista, polja kompajliranja i posljednje greške.
+
+Ručni posao koristi isto zajedničko zaključavanje ažuriranja kao zakazana ažuriranja lista i samoažuriranje paketa. Ako ga drugo ažuriranje već posjeduje, postojeći posao se nastavlja, a primjena na čekanju ostaje sačuvana.

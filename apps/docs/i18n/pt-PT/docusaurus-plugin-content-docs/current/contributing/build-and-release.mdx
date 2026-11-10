@@ -1,0 +1,85 @@
+---
+id: build-and-release
+title: Compilação e lançamento
+description: Configure o repositório, execute as verificações e compilações do Nova, compile o pacote pfSense no FreeBSD, registre entradas do changelog e publique uma versão.
+keywords:
+  - sinkhole for pfsense
+  - contribuição
+  - compilação
+  - lançamento
+  - changelog do nova
+tags:
+  - contributing
+  - build
+  - release
+---
+
+Compile, teste e publique o Sinkhole pelo espaço de trabalho raiz do Nova para que o pacote e a documentação sigam o mesmo fluxo de trabalho verificado.
+
+## Pré-requisitos \{#prerequisites}
+
+- Use o intervalo de versões do Node.js indicado no `package.json` raiz e a versão do npm selecionada pelo campo `packageManager`.
+- Use o FreeBSD com um checkout dos ports do pfSense para a compilação final do ficheiro `.pkg`.
+- Use um laboratório pfSense descartável para verificar instalação, atualização, bloqueio e remoção.
+
+Defina `PFSENSE_PORTS_DIR` como o checkout dos FreeBSD ports do pfSense antes de empacotar. O checkout deve conter `Mk/bsd.port.mk`, e o destino `sysutils/pfSense-pkg-Sinkhole` deve estar livre para a cópia temporária da compilação.
+
+## Instalar dependências \{#install-dependencies}
+
+Na raiz do repositório:
+
+```sh
+npm install
+```
+
+O Nova lê os espaços de trabalho de `nova.config.json`. Execute os comandos dos espaços de trabalho a partir da raiz, a menos que um comando de pacote mais restrito esteja sendo diagnosticado intencionalmente.
+
+## Verificar todas as alterações \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` executa lint, verificação de tipos e testes nos espaços de trabalho raiz, do pacote e da documentação. `npm run build` prepara o port do pfSense e cria a compilação de produção da documentação em `build/`.
+
+Quando o host não tem um runtime PHP utilizável, `SINKHOLE_SKIP_PHP_TESTS=1 npm run check` executa todas as verificações disponíveis, mas não substitui os testes obrigatórios do pacote antes do lançamento. Alterações no pacote também exigem as suítes offline de PHP, Python, restauração e entre linguagens descritas nas regras do repositório.
+
+## Compilar o pacote de lançamento \{#build-the-release-package}
+
+Execute o comando final de empacotamento no FreeBSD depois de `npm run build`:
+
+```sh
+npm run deploy
+```
+
+O script de implementação executa `make package` no checkout de ports configurado, reconstrói o manifesto como vital com `FreeBSD:*`, verifica ambas as propriedades e grava ficheiros `.pkg` versionados e estáveis, além dos ficheiros SHA-256, em `packages/sinkhole/build/release/`.
+
+O comando falha intencionalmente em hosts que não usam FreeBSD ou quando `PFSENSE_PORTS_DIR` não está definido. Nunca substitua o artefato de lançamento por um pacote compilado em outro sistema operacional.
+
+## Registrar a alteração \{#record-the-change}
+
+Use o fluxo de trabalho de changelog do Nova conforme as alterações são incorporadas:
+
+```sh
+npm run changelog
+```
+
+Selecione o espaço de trabalho afetado e a categoria de nota da versão que corresponde à alteração visível para o utilizador. Mantenha uma entrada coerente por alteração e use o estilo imperativo e no presente definido pelo repositório para notas de versão.
+
+## Criar uma versão \{#cut-a-release}
+
+1. Execute `npm run check` e `npm run build` a partir de um candidato a lançamento limpo.
+2. Execute `nova utility changelog --release` para selecionar a versão, atualizar as versões dos pacotes e gravar os changelogs.
+3. Execute `npm run deploy` no compilador FreeBSD configurado.
+4. Instale, atualize, teste o bloqueio e remova o artefato num laboratório pfSense descartável.
+5. Publique a versão no GitHub com os ativos versionados e estáveis do pacote e da soma de verificação.
+
+A publicação de uma versão aciona o fluxo de trabalho de artefatos do pacote e o fluxo de trabalho de implementação da documentação. Uma versão do pfSense só é listada como compatível depois que toda essa verificação em laboratório é aprovada.
+
+## Alterações na documentação \{#documentation-changes}
+
+Use IDs explícitos de títulos em inglês, como `{#build-and-release}`, para que as páginas traduzidas mantenham âncoras estáveis. Formate as tabelas Markdown com `npx nova recipe misc fix-markdown-tables` e depois execute os mesmos comandos de verificação e compilação na raiz.
+
+As páginas em inglês são a origem para todos os 17 locais traduzidos. Mantenha os nomes dos produtos sem tradução, preserve exatamente o código, os caminhos e as âncoras em inglês e não prometa recursos que ainda não estejam implementados.
+

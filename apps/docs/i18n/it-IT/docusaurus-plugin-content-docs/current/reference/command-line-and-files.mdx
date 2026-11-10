@@ -1,0 +1,106 @@
+---
+id: command-line-and-files
+title: Riga di comando e file
+description: Esegui le modalità di manutenzione e individua liste persistenti, stati, cache, lock, dati del firewall e file runtime di Unbound di Sinkhole.
+keywords:
+  - sinkhole for pfsense
+  - riga di comando
+  - percorsi dei file
+  - manutenzione
+  - file runtime
+tags:
+  - reference
+  - command-line
+  - files
+---
+
+Usa il comando fisso `/usr/local/sbin/sinkhole` per la diagnostica e le stesse modalità di manutenzione richiamate da cron e dalla WebGUI.
+
+## Modalità del comando \{#command-modes}
+
+| Comando                      | Comportamento                                                                                                        |
+|------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `sinkhole --update`          | Esegue il percorso pianificato di aggiornamento delle liste DNS, Bypass e IP/paesi abilitate.                        |
+| `sinkhole --manual`          | Esegue l’aggiornamento manuale completo usato da **Status → Update Now**.                                            |
+| `sinkhole --apply`           | Applica in background la configurazione salvata ed esegue solo i download necessari.                                 |
+| `sinkhole --refresh-clients` | Ricostruisce le sottoreti e gli indirizzi dei dispositivi nella mappa dei client.                                    |
+| `sinkhole --alerts`          | Legge gli eventi di blocco ed elabora le regole di avviso corrispondenti.                                            |
+| `sinkhole --redirect-check`  | Riconcilia le regole desiderate di reindirizzamento DNS normale e gli anchor Bypass e IP caricati indipendentemente. |
+| `sinkhole --check-updates`   | Controlla l’ultima release GitHub e sincronizza l’avviso di aggiornamento.                                           |
+| `sinkhole --self-update`     | Scarica, verifica, esamina e installa l’ultima release messa in coda.                                                |
+| `sinkhole --help`            | Stampa la riga di utilizzo supportata.                                                                               |
+
+Usa il percorso installato nelle automazioni, ad esempio `/usr/local/sbin/sinkhole --refresh-clients`. Le modalità si escludono a vicenda e un aggiornamento di liste DNS/Bypass/IP o del pacchetto che trova il lock condiviso già detenuto termina senza avviare un’operazione concorrente.
+
+## File persistenti in `/cf/conf/sinkhole` \{#persistent-files}
+
+| Percorso                                | Scopo                                                                                                               |
+|-----------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `lists/<id>.domains`                    | Domini normalizzati dell’ultima copia valida di una lista DNS.                                                      |
+| `lists/<id>.json`                       | Metadati di aggiornamento della lista DNS.                                                                          |
+| `ip-lists/<id>.networks`                | Reti normalizzate dell’ultima copia valida di una lista IP.                                                         |
+| `ip-lists/<id>.json`                    | Metadati di aggiornamento della lista IP.                                                                           |
+| `bypass-lists/<id>.entries`             | Voci miste normalizzate dell’ultima copia valida di una Bypass List.                                                |
+| `bypass-lists/<id>.json`                | Metadati di aggiornamento della Bypass List.                                                                        |
+| `state.json`                            | Stato persistente di compilazione, distribuzione, impostazioni precedenti del Resolver, pianificazione e rimozione. |
+| `updates.json`                          | Stato del controllo dell’ultima release e della deduplicazione degli avvisi.                                        |
+| `update-status.json`                    | Avanzamento dell’aggiornamento automatico separato del pacchetto.                                                   |
+| `unbound/sinkhole/`                     | Mirror persistente facoltativo della generazione compilata corrente per il ripristino del disco RAM.                |
+| `unbound/sinkhole.d/`                   | Mirror persistente facoltativo dello storage delle generazioni compilate.                                           |
+| `unbound/sinkhole-clients/clients.json` | Mirror persistente facoltativo della mappa dei client.                                                              |
+
+Il mirror `unbound/` viene usato quando pfSense mantiene `/var` su un disco RAM. Sync del pacchetto lo ripristina nell’albero runtime prima che il Resolver ne abbia bisogno.
+
+## Dati di lavoro in `/var/db` \{#working-data}
+
+| Percorso                             | Scopo                                                                    |
+|--------------------------------------|--------------------------------------------------------------------------|
+| `sinkhole-alerts.json`               | Stato delle finestre di ripetizione e dei limiti orari.                  |
+| `sinkhole-catalog-adguard-home.json` | Registro delle liste AdGuard Home nella cache.                           |
+| `sinkhole-catalog-pfblockerng.json`  | Catalogo dei feed pfBlockerNG nella cache.                               |
+| `sinkhole-block-v4.txt`              | Tabella di blocco IPv4 finale unita e sottratta.                         |
+| `sinkhole-block-v6.txt`              | Tabella di blocco IPv6 finale unita e sottratta.                         |
+| `sinkhole-bypass-v4.txt`             | Tabella Bypass IPv4 finale dopo la sottrazione degli indirizzi protetti. |
+| `sinkhole-bypass-v6.txt`             | Tabella Bypass IPv6 finale dopo la sottrazione degli indirizzi protetti. |
+| `sinkhole-geolite2-country.zip`      | Archivio GeoLite2 Country verificato.                                    |
+| `sinkhole-geolite2-country.json`     | Metadati di aggiornamento GeoLite2.                                      |
+
+Le cache dei cataloghi e le tabelle IP generate sono dati di lavoro riproducibili. Lo stato degli avvisi impedisce consegne ripetute tra le esecuzioni al minuto.
+
+## File temporanei in `/var/run` \{#transient-files}
+
+| Percorso                        | Scopo                                                                                            |
+|---------------------------------|--------------------------------------------------------------------------------------------------|
+| `sinkhole-update.lock`          | Lock condiviso per aggiornamenti lunghi di liste, IP e pacchetto.                                |
+| `sinkhole-runtime.lock`         | Lock breve per compilazione, attivazione e integrazione del Resolver.                            |
+| `sinkhole-clients.lock`         | Lock di aggiornamento della mappa dei client.                                                    |
+| `sinkhole-alerts.lock`          | Lock di elaborazione degli avvisi.                                                               |
+| `sinkhole-redirect-check.lock`  | Lock del controllo ogni minuto del reindirizzamento.                                             |
+| `sinkhole-redirect-check.json`  | Prima osservazione della differenza usata dal controllo del reindirizzamento a due osservazioni. |
+| `sinkhole-status.json`          | Stato corrente di aggiornamento, compilazione, distribuzione, client e avvisi.                   |
+| `sinkhole-status.json.lock`     | Lock di coordinamento del file di stato.                                                         |
+| `sinkhole-ip-anchor.conf`       | Regole generate correnti per l’anchor `sinkhole/ip`.                                             |
+| `sinkhole-ip-anchor.sha256`     | Digest usato per confrontare i criteri IP generati e caricati.                                   |
+| `sinkhole-ip-status.json`       | Stato di liste IP, GeoLite2, tabelle e anchor.                                                   |
+| `sinkhole-bypass-anchor.conf`   | Regole generate correnti per l’anchor `sinkhole/bypass`.                                         |
+| `sinkhole-bypass-anchor.sha256` | Digest usato per confrontare i criteri Bypass generati e caricati.                               |
+
+La sola esistenza dei file di lock non dimostra che un processo attivo li detenga. Usa Status e l’output dei comandi prima di considerarne uno obsoleto.
+
+## Runtime del Resolver in `/var/unbound` \{#resolver-runtime}
+
+| Percorso                             | Scopo                                                                           |
+|--------------------------------------|---------------------------------------------------------------------------------|
+| `sinkhole.py`                        | Modulo Python revisionato copiato nella radice runtime di Unbound.              |
+| `sinkhole/`                          | Manifesto e dati della generazione attiva letti dal modulo.                     |
+| `sinkhole.d/`                        | Storage delle generazioni compilate di proprietà di root.                       |
+| `sinkhole.d/<generation>/bypass.tsv` | Nomi compilati di provider, Tor e VPN per le risposte DNS di Bypass.            |
+| `sinkhole-clients/clients.json`      | Mappa corrente dagli indirizzi dei client agli ambiti.                          |
+| `sinkhole-state/loaded`              | Identificatore della generazione segnalata come caricata dal modulo.            |
+| `sinkhole-state/events`              | Eventi di risposte bloccate aggregati in attesa dell’elaborazione degli avvisi. |
+| `sinkhole-state/events.processing`   | Lotto di eventi attualmente posseduto dal processore degli avvisi.              |
+| `sinkhole-state/events-dropped`      | Numero di eventi scartati dopo il riempimento della coda limitata.              |
+
+Questi file sono materiale runtime, non configurazione. Sinkhole li ripristina o rigenera tramite Sync del pacchetto e li rimuove alla disinstallazione.
+
+Il processo al minuto della mappa client e l’aggiornamento in background durante Sync vengono eseguiti solo quando il blocco DNS ha un ambito di rete o dispositivo abilitato, oppure quando la protezione DNS di Bypass richiede l’identificazione dei client. Dopo aver disabilitato tutte le funzioni di Sinkhole, il Sync successivo rimuove la mappa client runtime e la sua copia facoltativa su RAM disk e non avvia alcun aggiornamento.

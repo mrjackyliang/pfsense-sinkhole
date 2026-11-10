@@ -1,0 +1,131 @@
+---
+id: status
+title: 상태
+description: Sinkhole의 모든 Status 패널을 읽고 활성, 대기, 일시 중지, 로드, 누락 및 오래된 상태를 구분하며 수동 목록 업데이트를 실행합니다.
+keywords:
+  - sinkhole for pfsense
+  - status
+  - 활성 상태
+  - 배포 세대
+  - Bypass 보호
+tags:
+  - operate
+  - status
+  - diagnostics
+---
+
+import ipStatus from './_assets_/status-4.png';
+import listsScopesStatus from './_assets_/status-1.png';
+import summaryStatus from './_assets_/status-2.png';
+
+하나의 운영 화면에서 저장된 목록, 범위, 알림, Bypass, IP, 컴파일, 배포 및 Resolver 상태를 확인합니다.
+
+## Status 패널 \{#status-panels}
+
+다음 패널을 보려면 **Firewall → Sinkhole → Status**를 엽니다.
+
+| 패널                      | 표시 내용                                                                         |
+|-------------------------|-------------------------------------------------------------------------------|
+| Summary                 | 컴파일, 배포, 세대, 작업, Resolver 소유자, 전체 Sinkhole 상태 및 패널 아래의 **Update Now**입니다.     |
+| Lists                   | DNS 목록 URL, 저장된 항목 수, 마지막 정상 업데이트 및 마지막 오류입니다.                                |
+| Popular-List Catalogs   | AdGuard Home 및 pfBlockerNG 카탈로그 출처의 마지막 가져오기와 마지막 오류입니다.                      |
+| Invalid Saved Rows      | 복구할 수 있도록 유지된 잘못된 목록 행이며, 해당 행이 있을 때만 표시됩니다.                                  |
+| Scopes                  | 클라이언트 맵 재구성 시간과 오류이며, 별도의 Networks 및 Devices 패널이 이어집니다.                       |
+| Alerts                  | 마지막 실행, 읽거나 만료된 이벤트, 보내거나 보류된 알림, 삭제된 이벤트 및 마지막 오류입니다.                        |
+| Bypass                  | 각 보호, 인터페이스, 리디렉션 규칙 상태, Bypass 앵커 상태 및 개수이며, 이어서 Bypass Lists와 복구 패널이 표시됩니다. |
+| IP and Country Blocking | 정책 선택, 테이블 및 규칙 수, 업데이트, 오류 및 앵커 상태이며, 별도의 IP Lists 패널이 이어집니다.                |
+
+비활성화된 목록 및 범위 행은 흐리게 표시됩니다. 오류가 있는 출처도 항목과 이전 정상 업데이트를 표시할 수 있습니다. 마지막 정상 사본이 계속 활성 상태이기 때문입니다.
+
+<img src={listsScopesStatus} alt="저장된 데모 목록 업데이트, 네트워크 서브넷 및 현재 데모 장치 주소를 표시하는 Status 탭" width={1024} height={929} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Sinkhole 상태 \{#sinkhole-state}
+
+Summary의 마지막 **Sinkhole** 행에서 Resolver 통합 상태를 가장 빠르게 확인할 수 있습니다.
+
+| 상태                                       | 의미                                                                              |
+|------------------------------------------|---------------------------------------------------------------------------------|
+| `Active`                                 | Sinkhole이 활성화되어 Python 슬롯을 소유하고 Python 모드와 `pre_validator`를 사용하며 런타임 데이터가 있습니다. |
+| `Inactive: Sinkhole is disabled.`        | General의 **Enable**이 꺼져 있습니다.                                                   |
+| `Inactive: DNS Resolver is disabled.`    | pfSense DNS Resolver가 꺼져 있습니다.                                                  |
+| `Inactive: ... slot is owned by ...`     | pfBlockerNG DNSBL과 같은 다른 Python 스크립트가 단일 슬롯을 소유합니다.                             |
+| `Inactive: Sinkhole does not own ...`    | 다른 소유자가 보고되지 않았지만 구성된 스크립트가 Sinkhole이 아닙니다.                                     |
+| `Inactive: ... Python mode is disabled.` | Resolver에서 Python 모드가 더 이상 활성화되어 있지 않습니다.                                       |
+| `Inactive: ... pre-validator position.`  | 모듈 순서에서 Sinkhole이 더 이상 `pre_validator` 위치에 있지 않습니다.                             |
+| `Inactive: ... runtime files ...`        | 스크립트나 현재 컴파일된 세대가 없습니다.                                                         |
+
+Sinkhole을 의도적으로 비활성화하면 **Deployment Needed**는 `No`, **Loaded Generation**은 `Module not loaded.`가 되고 페이지에 배포 경고가 표시되지 않습니다. 다른 통합 비활성 상태에서는 **Deployment Needed**가 `Yes`, **Loaded Generation**이 `Module not loaded.`로 강제됩니다. 컴파일된 데이터가 활성 상태라고 판단하기 전에 표시된 원인을 해결합니다.
+
+## 컴파일 및 배포 상태 \{#compile-and-deployment-state}
+
+| 필드                  | 의미                                                 |
+|---------------------|----------------------------------------------------|
+| Compile Needed      | 저장된 정책이 변경되었거나 마지막 컴파일이 정상적으로 완료되지 않았습니다.          |
+| Compiled Generation | 가장 최근 정상 컴파일에서 생성된 식별자입니다.                         |
+| Deployment Needed   | 컴파일된 내용이 Unbound에 배포된 내용과 다르거나 통합이 비활성 상태입니다.      |
+| Deployed Generation | 현재 배포된 런타임 매니페스트의 식별자입니다.                          |
+| Loaded Generation   | Unbound 모듈이 로드했다고 보고한 식별자입니다.                      |
+| Update Running      | 목록 또는 IP 업데이트가 공유 업데이트 잠금을 소유하는 동안에만 표시됩니다.        |
+| Removal in Progress | 영구 제거 마커가 설정되어 통합을 철회하는 동안에만 표시됩니다.                |
+| Python Script Owner | Resolver의 단일 `python_script` 슬롯 현재 값 또는 `None`입니다. |
+
+컴파일이나 배포가 대기 중이면 기록된 이유와 함께 경고 상자가 표시됩니다. 컴파일, 배포 및 로드된 식별자가 일치하면 저장된 정책이 실행 중인 모듈에 도달한 것입니다.
+
+<img src={summaryStatus} alt="컴파일, 배포 및 로드된 세대가 일치하고 Sinkhole이 활성 상태인 Status Summary 패널" width={1024} height={814} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 범위 및 알림 상태 \{#scope-and-alert-state}
+
+Scopes 요약은 클라이언트 맵 재구성 상태를 표시합니다. 별도의 **Networks** 및 **Devices** 패널에는 각 인터페이스의 현재 CIDR과 각 장치의 현재 주소가 표시됩니다. 여러 장치가 같은 주소를 요청하면 충돌로 표시되며, 표에서 첫 번째 장치가 정책상 해당 주소를 소유합니다.
+
+**Alerts** 패널은 가장 최근의 분 단위 작업만 설명합니다. **Notifications held back**에는 한도 또는 미확인 알림 억제가 포함되며, **Events dropped by module**은 제한된 메모리 내 또는 디스크 이벤트 큐가 가득 찼음을 의미합니다.
+
+## Bypass 상태 \{#bypass-state}
+
+Bypass 패널은 TLS and QUIC, 공급자 목록, Firefox, Private Relay, Tor, VPN 공급자 목록 및 표준 VPN 포트에 대해 `On` 또는 `Off`를 보고합니다. **Discovery**는 선택한 모드를 보고합니다. **Interfaces**는 공유 클라이언트 측 인터페이스 선택을 확인합니다.
+
+독립 방화벽 앵커는 다음을 보고합니다.
+
+| 필드                      | 의미                                                      |
+|-------------------------|---------------------------------------------------------|
+| Firewall rules loaded   | 현재 설정에 필요할 때 `sinkhole/bypass` 앵커가 존재하는지 여부입니다.         |
+| Firewall rules current  | 로드된 다이제스트, 규칙 및 테이블이 현재 설정과 마지막 정상 목록 데이터에 일치하는지 여부입니다. |
+| Firewall rule count     | Bypass 앵커의 활성 규칙 수입니다.                                  |
+| IPv4/IPv6 table entries | 보호된 방화벽 주소를 제거한 후의 최종 공급자, Tor 및 VPN 주소 수입니다.           |
+
+**Bypass Lists** 표는 각 행의 종류, 활성화 상태, 저장된 항목 수, 마지막 가져오기 및 마지막 오류를 보고합니다. 따라서 가져오기에 실패하면 유지된 마지막 정상 복사본의 항목과 함께 오류가 표시될 수 있습니다.
+
+### 일반 DNS 리디렉션 상태 \{#plain-dns-redirect-state}
+
+| 상태     | 의미                                                |
+|--------|---------------------------------------------------|
+| Off    | 일반 DNS 리디렉션이 비활성화되어 있습니다.                         |
+| On     | Redirect가 활성화되어 있으며 저장된 모든 예외가 유효합니다.             |
+| Paused | 저장된 출발지 또는 목적지 예외가 하나 이상 잘못되어 리디렉션 규칙을 사용하지 않습니다. |
+
+**pfSense loaded rules** 필드에는 세 가지 상태가 있습니다.
+
+| 상태          | 의미                                                           |
+|-------------|--------------------------------------------------------------|
+| Yes         | `/tmp/rules.debug`에 Sinkhole이 현재 원하는 리디렉션 블록이 정확히 포함되어 있습니다. |
+| No          | 원하는 블록이 로드되지 않았습니다.                                          |
+| Out of Date | Sinkhole 블록이 로드되었지만 텍스트가 현재 설정 또는 Resolver 리스너와 일치하지 않습니다.   |
+
+각 패밀리 대상은 선택한 리스너 주소 또는 규칙을 만들 수 없는 이유입니다. **Last parse error**는 pfSense가 현재 블록을 거부하여 블록이 없을 때만 표시됩니다.
+
+## IP 및 국가 상태 \{#ip-and-country-state}
+
+IP 패널의 기본 상태는 **On** 또는 **Off**입니다. **IP Anchor**는 Bypass 앵커와 동일하게 로드된 상태와 현재 상태를 구분하며 **Yes**, **No**, **Out of Date**를 사용합니다.
+
+테이블 항목 수는 허용 목록 및 보호 주소를 제외한 후 최종 병합된 IPv4 및 IPv6 네트워크를 나타냅니다.
+
+**Skipped Lines**는 잘못된 IP 목록 입력을 집계합니다. 주석 줄과 빈 줄은 집계되지 않습니다.
+
+**GeoLite2 Last Update**는 최근 목록 업데이트와 별개입니다.
+
+<img src={ipStatus} alt="테이블 수, 업데이트 상태, 로드된 앵커 및 데모 IP 목록 행을 표시하는 Status IP and Country Blocking 패널" width={1024} height={1002} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Update Now 실행 \{#run-update-now}
+
+Summary 아래의 **Update Now**를 선택하면 `/usr/local/sbin/sinkhole --manual`이 백그라운드에서 시작되고 즉시 돌아옵니다. 버튼은 출력을 스트리밍하지 않으므로 **Update Running**, DNS/Bypass/IP 목록 행, 컴파일 필드 및 마지막 오류에서 결과를 확인합니다.
+
+수동 작업은 예약된 목록 업데이트 및 패키지 자체 업데이트와 동일한 공유 업데이트 잠금을 사용합니다. 다른 업데이트가 잠금을 소유하면 기존 작업이 계속되고 대기 중인 적용 작업도 유지됩니다.

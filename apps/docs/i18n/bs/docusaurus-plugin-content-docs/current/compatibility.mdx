@@ -1,0 +1,72 @@
+---
+id: compatibility
+title: Kompatibilnost
+description: Provjerite ABI FreeBSD paketa Sinkholea, pravila testiranja pfSensea, zahtjeve DNS Resolvera, sukob Python mjesta, jezike i poznata ograničenja.
+keywords:
+  - sinkhole for pfsense
+  - kompatibilnost
+  - freebsd abi
+  - izdanja pfsensea
+  - unbound python
+tags:
+  - setup
+  - compatibility
+  - pfsense
+sidebar_position: 4
+---
+
+Provjerite zahtjeve paketa, Resolvera i mreže prije nego što se oslonite na Sinkhole za DNS ili IP pravila.
+
+## pfSense i FreeBSD \{#pfsense-and-freebsd}
+
+- Paketi izdanja grade se na glavnoj verziji FreeBSD-a konfiguriranoj u radnom toku, a zatim se ponovo grade s ABI-jem `FreeBSD:*`, tako da se jedan paket može instalirati na više glavnih verzija FreeBSD-a.
+- Paket je označen kao vitalan, pa ga pfSenseov postupak automatskog uklanjanja pri nadogradnji ne odbacuje samo zato što nije u Netgateovom repozitoriju.
+- Široki paketni ABI ne dokazuje kompatibilnost sa svakim izdanjem pfSensea jer se API-ji pfSensea i ugrađene usluge ipak mogu promijeniti.
+
+## Testirana izdanja \{#tested-releases}
+
+Sljedeća izdanja pfSensea prošla su provjeru od početka do kraja:
+
+| Izdanje pfSensea     | FreeBSD |
+|----------------------|---------|
+| pfSense CE 2.9.0     | 16.0    |
+| pfSense CE 2.8.1     | 15.0    |
+| pfSense Plus 26.07   | 16.0    |
+| pfSense Plus 26.03.1 | 16.0    |
+
+Svako testirano izdanje prošlo je instaliranje, ažuriranje, test blokiranja i uklanjanje od početka do kraja.
+
+Kartica **About** označava odgovarajuće izdanje kao **This firewall**. Za zaštitni zid koji nije na listi dodaje red **Not tested**, umjesto da ABI `FreeBSD:*` smatra tvrdnjom o podršci.
+
+## Zahtjevi DNS Resolvera \{#dns-resolver-requirements}
+
+- DNS Resolver u pfSenseu, zasnovan na Unboundu, mora biti omogućen.
+- Jedino mjesto za Python skriptu u Resolveru mora biti prazno ili već pripadati Sinkholeu.
+- Sinkhole koristi položaj modula `pre_validator` i prijavljuje neaktivno stanje ako Python način rada, vlasnik mjesta, položaj ili izvršne datoteke ne odgovaraju.
+
+pfBlockerNG DNSBL koristi isto mjesto za Python skriptu kao Sinkhole. Sinkhole odbija zauzeti to mjesto dok ga posjeduje `pfb_unbound` ili bilo koja druga skripta.
+
+## Mrežni zahtjevi \{#network-requirements}
+
+- Mrežni opsezi koriste trenutne IPv4 i IPv6 podmreže konfiguriranih interfejsa pfSensea.
+- Uređaji identificirani MAC adresom ili statičkim mapiranjem zavise od trenutnih podataka ARP-a, NDP-a, DHCP zakupa, statičkih mapiranja i interfejsa.
+- Preusmjeravanje običnog DNS-a na kartici **Bypass** zahtijeva porodicu adresa na odabranom interfejsu i odgovarajući slušač Resolvera.
+- Preusmjereni klijenti i dalje moraju biti dopušteni postavkama kontrole pristupa Resolvera.
+
+## Opcionalni podaci o državama \{#optional-country-data}
+
+Blokiranje država zahtijeva vlastiti ID MaxMind računa i GeoLite2 licencni ključ administratora. Sinkhole ne isporučuje niti bilježi ključ, a IP blokiranje radi bez podataka o državama kada su odabrane samo IP liste.
+
+## Poznata ograničenja \{#known-limits}
+
+- Zaštita Bypass obuhvata samo odabrane interfejse i samo protokole, signale, nazive, adrese i standardne portove koje administrator omogući.
+- Prilagođene konfiguracije šifriranog DNS-a i tunela i dalje mogu zaobići pravila zasnovana na DNS-u, pa Sinkhole ne obećava potpunu zaštitu.
+- Unboundove ugrađene lokalne zone `test.`, `invalid.`, `onion.` i `localhost.` odgovaraju prije Python modula i nisu korisne za testiranje filtriranja uživo.
+- Sukob adrese uređaja dodjeljuje se prvom uređaju po redoslijedu u tabeli, a Status prijavljuje sukob.
+- U mjerenom testiranju s 300.000 naziva, RSS Unbounda porastao je sa 41 MiB na 103 MiB, a vršna memorija pravila iznosila je približno 157 bajtova po nazivu.
+
+## Jezici \{#languages}
+
+Paket bira tekst WebGUI-ja, komandne linije, provjere valjanosti, Statusa i obavijesti prema jezičkoj postavci pfSensea. Engleski je izvorni katalog, a prijevodi koji nedostaju trenutno se zamjenjuju engleskim.
+
+Dodatni prijevodi paketa su u izradi, dok je dokumentacija dostupna u svih 18 lokaliteta pfSensea. Nazivi brendova i proizvoda, kao što su Sinkhole, pfSense, FreeBSD i MaxMind, ostaju nepromijenjeni.

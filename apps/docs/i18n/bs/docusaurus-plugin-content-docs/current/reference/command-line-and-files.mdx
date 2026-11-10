@@ -1,0 +1,106 @@
+---
+id: command-line-and-files
+title: Komandna linija i datoteke
+description: Pokrenite načine održavanja Sinkholea i pronađite njegove trajne liste, stanje ažuriranja, predmemorije, zaključavanja, podatke zaštitnog zida i Unbound datoteke.
+keywords:
+  - sinkhole for pfsense
+  - komandna linija
+  - putanje datoteka
+  - održavanje
+  - izvršne datoteke
+tags:
+  - reference
+  - command-line
+  - files
+---
+
+Koristite fiksnu naredbu `/usr/local/sbin/sinkhole` za dijagnostiku i iste načine održavanja koje pozivaju cron i WebGUI.
+
+## Načini naredbe \{#command-modes}
+
+| Naredba                      | Ponašanje                                                                                      |
+|------------------------------|------------------------------------------------------------------------------------------------|
+| `sinkhole --update`          | Pokreće zakazani tok ažuriranja DNS, Bypass i omogućenih IP/državnih lista.                    |
+| `sinkhole --manual`          | Pokreće potpuno ručno ažuriranje koje koristi **Status → Update Now**.                         |
+| `sinkhole --apply`           | Primjenjuje sačuvanu konfiguraciju u pozadini i izvršava samo potrebna preuzimanja.            |
+| `sinkhole --refresh-clients` | Ponovo izgrađuje mrežne podmreže i adrese uređaja u mapi klijenata.                            |
+| `sinkhole --alerts`          | Čita događaje blokiranja i obrađuje odgovarajuća pravila upozorenja.                           |
+| `sinkhole --redirect-check`  | Usklađuje željena pravila preusmjeravanja običnog DNS-a i nezavisno učitana Bypass i IP sidra. |
+| `sinkhole --check-updates`   | Provjerava najnovije GitHub izdanje i usklađuje obavijest o ažuriranju.                        |
+| `sinkhole --self-update`     | Preuzima, provjerava, pregledava i instalira najnovije izdanje u redu.                         |
+| `sinkhole --help`            | Ispisuje podržani red upotrebe.                                                                |
+
+U automatizaciji koristite instaliranu putanju, na primjer `/usr/local/sbin/sinkhole --refresh-clients`. Načini se međusobno isključuju, a ažuriranje DNS/Bypass/IP lista ili samoažuriranje koje zatekne zauzeto zajedničko zaključavanje ažuriranja završava bez pokretanja konkurentne operacije.
+
+## Trajne datoteke pod `/cf/conf/sinkhole` \{#persistent-files}
+
+| Putanja                                 | Namjena                                                                                          |
+|-----------------------------------------|--------------------------------------------------------------------------------------------------|
+| `lists/<id>.domains`                    | Normalizirane posljednje ispravne domene jedne DNS liste.                                        |
+| `lists/<id>.json`                       | Metapodaci ažuriranja te DNS liste.                                                              |
+| `ip-lists/<id>.networks`                | Normalizirane posljednje ispravne mreže jedne IP liste.                                          |
+| `ip-lists/<id>.json`                    | Metapodaci ažuriranja te IP liste.                                                               |
+| `bypass-lists/<id>.entries`             | Normalizirani posljednji ispravni miješani zapisi jedne Bypass List.                             |
+| `bypass-lists/<id>.json`                | Metapodaci ažuriranja te Bypass List.                                                            |
+| `state.json`                            | Trajno stanje kompajliranja, postavljanja, prethodne postavke Resolvera, rasporeda i uklanjanja. |
+| `updates.json`                          | Stanje provjere najnovijeg izdanja i sprečavanja duplih obavijesti.                              |
+| `update-status.json`                    | Napredak odvojenog samoažuriranja paketa.                                                        |
+| `unbound/sinkhole/`                     | Opcionalna trajna kopija trenutne kompajlirane generacije za oporavak RAM diska.                 |
+| `unbound/sinkhole.d/`                   | Opcionalna trajna kopija spremišta kompajliranih generacija.                                     |
+| `unbound/sinkhole-clients/clients.json` | Opcionalna trajna kopija mape klijenata.                                                         |
+
+Kopija `unbound/` koristi se kada pfSense drži `/var` na RAM disku. Sync paketa vraća je u izvršno stablo prije nego što zatreba Resolveru.
+
+## Radni podaci pod `/var/db` \{#working-data}
+
+| Putanja                              | Namjena                                                        |
+|--------------------------------------|----------------------------------------------------------------|
+| `sinkhole-alerts.json`               | Stanje perioda ponavljanja upozorenja i ograničenja po satu.   |
+| `sinkhole-catalog-adguard-home.json` | Predmemorirani registar lista AdGuard Homea.                   |
+| `sinkhole-catalog-pfblockerng.json`  | Predmemorirani katalog izvora pfBlockerNG-a.                   |
+| `sinkhole-block-v4.txt`              | Konačna spojena i umanjena IPv4 tabela blokiranja.             |
+| `sinkhole-block-v6.txt`              | Konačna spojena i umanjena IPv6 tabela blokiranja.             |
+| `sinkhole-bypass-v4.txt`             | Konačna IPv4 Bypass tabela nakon oduzimanja zaštićenih adresa. |
+| `sinkhole-bypass-v6.txt`             | Konačna IPv6 Bypass tabela nakon oduzimanja zaštićenih adresa. |
+| `sinkhole-geolite2-country.zip`      | Provjerena arhiva GeoLite2 Country.                            |
+| `sinkhole-geolite2-country.json`     | Metapodaci ažuriranja GeoLite2.                                |
+
+Predmemorije kataloga i generirane IP tabele ponovljivi su radni podaci. Stanje upozorenja sprečava ponovljenu isporuku između minutnih pokretanja.
+
+## Privremene datoteke pod `/var/run` \{#transient-files}
+
+| Putanja                         | Namjena                                                                           |
+|---------------------------------|-----------------------------------------------------------------------------------|
+| `sinkhole-update.lock`          | Zajedničko zaključavanje dugih ažuriranja lista, IP-a i paketa.                   |
+| `sinkhole-runtime.lock`         | Kratko zaključavanje kompajliranja, aktiviranja i integracije Resolvera.          |
+| `sinkhole-clients.lock`         | Zaključavanje osvježavanja mape klijenata.                                        |
+| `sinkhole-alerts.lock`          | Zaključavanje obrade upozorenja.                                                  |
+| `sinkhole-redirect-check.lock`  | Zaključavanje minutne provjere preusmjeravanja.                                   |
+| `sinkhole-redirect-check.json`  | Prvo opažanje nepodudaranja koje koristi provjera preusmjeravanja s dva opažanja. |
+| `sinkhole-status.json`          | Trenutno stanje ažuriranja, kompajliranja, postavljanja, klijenata i upozorenja.  |
+| `sinkhole-status.json.lock`     | Zaključavanje za usklađivanje datoteke stanja.                                    |
+| `sinkhole-ip-anchor.conf`       | Trenutno generirana pravila za sidro `sinkhole/ip`.                               |
+| `sinkhole-ip-anchor.sha256`     | Sažetak za poređenje generiranih i učitanih IP pravila.                           |
+| `sinkhole-ip-status.json`       | Stanje IP lista, GeoLite2, tabela i sidra.                                        |
+| `sinkhole-bypass-anchor.conf`   | Trenutna generirana pravila za sidro `sinkhole/bypass`.                           |
+| `sinkhole-bypass-anchor.sha256` | Sažetak za poređenje generiranih i učitanih Bypass pravila.                       |
+
+Datoteke zaključavanja usklađuju poslove; samo njihovo postojanje ne dokazuje da ih aktivni proces drži. Provjerite Status i izlaz naredbe prije nego zaključavanje proglasite zastarjelim.
+
+## Izvršno okruženje Resolvera pod `/var/unbound` \{#resolver-runtime}
+
+| Putanja                              | Namjena                                                              |
+|--------------------------------------|----------------------------------------------------------------------|
+| `sinkhole.py`                        | Pregledani Python modul kopiran u izvršni korijen Unbounda.          |
+| `sinkhole/`                          | Manifest i podaci aktivne generacije koje modul čita.                |
+| `sinkhole.d/`                        | Spremište kompajliranih generacija u vlasništvu root korisnika.      |
+| `sinkhole.d/<generation>/bypass.tsv` | Kompajlirani nazivi pružatelja, Tora i VPN-a za Bypass DNS odgovore. |
+| `sinkhole-clients/clients.json`      | Trenutna mapa adresa klijenata u opsege.                             |
+| `sinkhole-state/loaded`              | Identifikator generacije koju modul prijavljuje kao učitanu.         |
+| `sinkhole-state/events`              | Spojeni događaji blokiranih odgovora koji čekaju obradu upozorenja.  |
+| `sinkhole-state/events.processing`   | Skup događaja koji trenutno posjeduje procesor upozorenja.           |
+| `sinkhole-state/events-dropped`      | Broj događaja odbačenih nakon popunjavanja ograničenog reda.         |
+
+Ove datoteke su izvršni materijal, a ne konfiguracija. Sinkhole ih vraća ili ponovo generira putem Synca paketa i uklanja ih pri deinstaliranju paketa.
+
+Minutni zadatak za mapu klijenata i pozadinsko osvježavanje tokom Sync-a pokreću se samo dok DNS blokiranje ima omogućeni mrežni ili uređajski opseg, ili dok Bypass DNS zaštita zahtijeva prepoznavanje klijenta. Nakon što se onemoguće sve Sinkhole funkcije, sljedeći Sync uklanja izvršnu mapu klijenata i njenu opcionalnu kopiju za RAM disk i ne pokreće osvježavanje.

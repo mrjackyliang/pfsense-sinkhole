@@ -1,0 +1,86 @@
+---
+id: ip-and-country-blocking
+title: Bloqueo IP y por país
+description: Bloquee redes de origen o destino con listas IP y países GeoLite2, reste direcciones protegidas y administre el ancla sinkhole/ip.
+keywords:
+  - sinkhole for pfsense
+  - bloqueo ip
+  - bloqueo por país
+  - geolite2
+  - ancla pf
+tags:
+  - configure
+  - ip blocking
+  - firewall
+---
+
+Bloquee orígenes o destinos IP seleccionados independientemente de la política DNS mediante tablas gestionadas por el paquete en el ancla pf `sinkhole/ip`.
+
+## ¿Por qué usar el bloqueo IP? \{#why-use-ip-blocking}
+
+1. Cubre el tráfico por dirección o país cuando no interviene un nombre DNS.
+2. Se aplica de forma independiente en las interfaces y los sentidos seleccionados para que las políticas de WAN y de redes de clientes puedan diferir.
+3. Conserva copias IP normalizadas y válidas y actualiza las tablas activas de forma atómica.
+4. Protege las direcciones del firewall, las puertas de enlace y los servidores DNS frente a su inclusión accidental en una lista de origen.
+
+## Activar la función \{#enable-the-feature}
+
+Abra **Firewall → Sinkhole → IP** y seleccione **Enable** solo después de elegir las interfaces y los sentidos. El bloqueo IP y por país está desactivado de forma predeterminada y no depende del interruptor DNS de General.
+
+| Opción     | Comportamiento                                                                                               |
+|------------|--------------------------------------------------------------------------------------------------------------|
+| Interfaces | Genera reglas en las interfaces de llegada seleccionadas.                                                    |
+| Inbound    | Bloquea paquetes que llegan desde una dirección de origen incluida, normalmente en una WAN.                  |
+| Outbound   | Bloquea paquetes que llegan dirigidos a una dirección de destino incluida, normalmente en redes de clientes. |
+
+El ancla contiene reglas `block drop in quick` y ninguna regla pass. Sinkhole la referencia mediante la posición temprana de reglas de paquete de pfSense para que los bloqueos se ejecuten antes que las reglas pass-quick ordinarias. La página muestra primero los paneles de listas IP y catálogos, seguidos de las opciones IP y de país comunes a la página, con **Save** debajo del panel.
+
+## Añadir listas IP \{#add-ip-lists}
+
+Seleccione **Add** debajo de la tabla IP Lists para abrir el editor de listas IP. Una fila usa una URL HTTP o HTTPS, elige IPv4, IPv6 o ambas familias y controla si la fuente está activada. Al guardar se vuelve a la pestaña IP; seleccione el lápiz o haga doble clic en una fila para editarla.
+
+También pueden encontrarse listas en las secciones IP del catálogo de fuentes de pfBlockerNG.
+
+Las líneas válidas son direcciones IPv4 o IPv6 individuales y redes CIDR. Las líneas no válidas se omiten y cuentan; una descarga sin entradas válidas no sustituye la última copia válida guardada.
+
+El catálogo solo se descarga cuando se abre o actualiza su búsqueda y usa la misma caché de un día para la última copia válida que la búsqueda del catálogo DNS. Añadir un resultado crea una fila de lista IP ordinaria sin puntuación ni recomendación.
+
+Las fuentes de bypass de Encrypted DNS, Tor y VPN se excluyen del catálogo de IP y solo aparecen en la pestaña Bypass.
+
+La línea **Contents** de cada tarjeta muestra **IPv4 addresses** o **IPv6 addresses**. Al añadir un resultado de pfBlockerNG, Sinkhole agrega ` (IPv4)` o ` (IPv6)` al nombre guardado y, cuando es necesario, recorta solo el nombre base.
+
+## Añadir países \{#add-countries}
+
+Los países proceden de los datos CSV de MaxMind GeoLite2 Country y se introducen como códigos ISO de dos letras. Sus redes se incorporan a las tablas de familias bloqueadas.
+
+- **MaxMind Account ID** es obligatorio cuando se seleccionan países.
+- **MaxMind License Key** la proporciona el administrador, se guarda como un campo de contraseña de pfSense y nunca se muestra después de guardar.
+- **Clear License Key** elimina expresamente el secreto guardado.
+
+Sinkhole verifica e importa el archivo GeoLite2 y lo actualiza como máximo una vez por semana. El paquete nunca incluye una cuenta ni una clave de licencia de MaxMind.
+
+## Permitir y proteger direcciones \{#allow-and-protect-addresses}
+
+La **IP Allowlist** acepta direcciones IPv4 o IPv6, redes CIDR y alias de host/red existentes. Los intervalos permitidos se restan del conjunto bloqueado combinado antes de escribir los archivos de tablas.
+
+Sinkhole también resta automáticamente estas direcciones protegidas:
+
+- Todas las direcciones asignadas al firewall.
+- Las direcciones de las puertas de enlace, incluidas las obtenidas mediante DHCP o PPP.
+- Las direcciones de los servidores DNS, incluidas las obtenidas mediante DHCP o PPP.
+
+La resta puede dividir un CIDR bloqueado en redes más pequeñas para que solo pase la dirección protegida.
+
+## Comprender el ancla \{#understand-the-anchor}
+
+El paquete carga `sinkhole/ip` directamente con dos tablas persistentes por familia y las reglas de las interfaces seleccionadas. Las actualizaciones de listas sustituyen solo las tablas dentro del ancla, mientras que Sync y la comprobación por minuto pueden cargar el ancla completa.
+
+El contenido del ancla sobrevive a las recargas normales del filtro de pfSense y no forma parte de la limpieza de tablas del conjunto de reglas principal. Desactivar el bloqueo IP o eliminar Sinkhole vacía el ancla.
+
+## Verificar el estado \{#verify-the-state}
+
+**Status → IP and Country Blocking** muestra el estado de activación, las interfaces, los sentidos, los países, el estado de la clave, el tamaño de las tablas, las líneas omitidas, la última actualización correcta, la hora de actualización de GeoLite2, el estado del ancla, el número de reglas y el último error. Cada fila de lista IP también muestra su familia, sus entradas, las líneas omitidas, la última obtención y el error.
+
+Un estado de ancla **Out of Date** significa que el texto o las tablas cargados no coinciden con la configuración actual. La conciliación por minuto carga de inmediato un ancla vacía o modificada; [Solución de problemas](/docs/operate/troubleshooting#ip-blocking-does-not-match-settings) explica las comprobaciones.
+
+Las entradas de listas IP más amplias que IPv4 `/8` o IPv6 `/16` se omiten y se cuentan; se aceptan las redes límite `/8` y `/16`. Este límite no se aplica a IP Allowlist porque solo reduce el bloqueo. Antes de escribir las tablas, Sinkhole siempre resta todas las direcciones IPv4 e IPv6 de las interfaces del firewall, las subredes completas de las interfaces seleccionadas para el bloqueo IP, las direcciones virtuales CARP e IP Alias, y los gateways y servidores DNS configurados.

@@ -1,0 +1,73 @@
+---
+id: compatibility
+title: Kompatibilitet
+description: Kontroller FreeBSD-ABI-en for Sinkhole-pakken, testpolicyen for pfSense, kravene til DNS Resolver, konflikten om Python-plassen, språkstatus og kjente begrensninger.
+keywords:
+  - sinkhole for pfsense
+  - kompatibilitet
+  - freebsd-abi
+  - pfsense-utgivelser
+  - unbound python
+tags:
+  - setup
+  - compatibility
+  - pfsense
+sidebar_position: 4
+---
+
+Kontroller kravene til pakken, Resolver og nettverket før du bruker Sinkhole som grunnlag for DNS- eller IP-policy.
+
+## pfSense og FreeBSD \{#pfsense-and-freebsd}
+
+- Utgivelsespakker bygges på FreeBSD-hovedversjonen som er konfigurert i arbeidsflyten, og bygges deretter på nytt med ABI-en `FreeBSD:*`, slik at én pakke kan installeres på tvers av FreeBSD-hovedversjoner.
+- Pakken er merket som vital, slik at automatisk fjerning under en pfSense-oppgradering ikke forkaster den bare fordi den ikke finnes i pakkelageret til Netgate.
+- Den brede pakke-ABI-en beviser ikke kompatibilitet med alle pfSense-utgivelser, fordi API-er i pfSense og medfølgende tjenester fortsatt kan endres.
+
+## Testede utgivelser \{#tested-releases}
+
+Følgende pfSense-utgivelser besto fullstendig ende-til-ende-verifisering:
+
+| pfSense-utgivelse    | FreeBSD |
+|----------------------|---------|
+| pfSense CE 2.9.0     | 16.0    |
+| pfSense CE 2.8.1     | 15.0    |
+| pfSense Plus 26.07   | 16.0    |
+| pfSense Plus 26.03.1 | 16.0    |
+
+Hver testede utgivelse besto installasjon, oppdatering, en blokkeringstest og fjerning fra ende til ende.
+
+Fanen **About** merker den samsvarende utgivelsen som **This firewall**. Den legger til en rad **Not tested** for en brannmur som ikke står på listen, i stedet for å behandle ABI-en `FreeBSD:*` som en erklæring om støtte.
+
+## Krav til DNS Resolver \{#dns-resolver-requirements}
+
+- Den Unbound-baserte DNS Resolver i pfSense må være aktivert.
+- Den eneste plassen for Python-skript i Resolver må være tom eller allerede eid av Sinkhole.
+- Sinkhole bruker modulposisjonen `pre_validator` og rapporterer en inaktiv status hvis Python-modus, eieren av plassen, posisjonen eller kjøretidsfilene ikke samsvarer.
+
+pfBlockerNG DNSBL bruker den samme plassen for Python-skript som Sinkhole. Sinkhole nekter å ta plassen mens `pfb_unbound` eller et annet skript eier den.
+
+## Nettverkskrav \{#network-requirements}
+
+- Nettverksomfang bruker gjeldende IPv4- og IPv6-delnett for konfigurerte pfSense-grensesnitt.
+- Enheter som identifiseres med MAC-adresse eller statisk tilordning, er avhengige av gjeldende data for ARP, NDP, DHCP-leie, statisk tilordning og grensesnitt.
+- Omdirigering av vanlig DNS under **Bypass** krever en adressefamilie på det valgte grensesnittet og en samsvarende lytter i Resolver.
+- Omdirigerte klienter må fortsatt tillates av innstillingene for tilgangskontroll i Resolver.
+
+## Valgfrie landdata \{#optional-country-data}
+
+Landblokkering krever administratorens egen MaxMind-konto-ID og GeoLite2-lisensnøkkel. Sinkhole leverer eller logger ingen nøkkel, og IP-blokkering fungerer uten landdata når bare IP-lister er valgt.
+
+## Kjente begrensninger \{#known-limits}
+
+- Bypass-beskyttelse dekker bare de valgte grensesnittene og bare protokollene, signalene, navnene, adressene og standardportene som en administrator aktiverer.
+- Egendefinerte konfigurasjoner for kryptert DNS og tunneler kan fortsatt omgå DNS-basert policy, så Sinkhole lover ikke fullstendig beskyttelse.
+- De innebygde lokale sonene `test.`, `invalid.`, `onion.` og `localhost.` i Unbound svarer før Python-moduler og er ikke nyttige for direkte filtreringstester.
+- En konflikt mellom enhetsadresser går til den første enheten i tabellrekkefølgen, og Status rapporterer konflikten.
+- Med 300 000 navn i målte tester økte Unbound RSS fra 41 MiB til 103 MiB, og toppminnet for policyen var omtrent 157 byte per navn.
+
+## Språk \{#languages}
+
+Pakken velger ordlyden for WebGUI, kommandolinjen, validering, Status og varsler fra språkinnstillingen i pfSense. Engelsk er kildekatalogen, og manglende oversettelser faller for tiden tilbake til engelsk.
+
+Flere pakkeoversettelser er under arbeid, mens dokumentasjonen er tilgjengelig på alle de 18 pfSense-språkvariantene. Merke- og produktnavn som Sinkhole, pfSense, FreeBSD og MaxMind forblir uendret.
+

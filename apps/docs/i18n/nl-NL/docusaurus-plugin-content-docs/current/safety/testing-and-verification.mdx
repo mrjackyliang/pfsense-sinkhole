@@ -1,0 +1,81 @@
+---
+id: testing-and-verification
+title: Testen en verifiëren
+description: Verifieer installatie, eigendom van de Resolver, beslissingen per scope, meldingen, Bypass-beveiliging, IP-blokkering, updates en veilige verwijdering op een labfirewall.
+keywords:
+  - sinkhole voor pfsense
+  - testen
+  - verificatie
+  - labfirewall
+  - releaseveiligheid
+tags:
+  - safety
+  - testing
+  - verification
+---
+
+Test Sinkhole in een tijdelijke pfSense-labomgeving voordat u het DNS-, NAT- of firewallbeleid in een productienetwerk invoert.
+
+## De pakketdownload verifiëren \{#verify-the-package-download}
+
+Download het stabiele pakket en de `.sha256`-asset uit dezelfde GitHub-release. Vergelijk de SHA-256-samenvatting van het pakket met de enige hash in `pfSense-pkg-Sinkhole.pkg.sha256` voordat u `pkg add -f` uitvoert.
+
+Alleen een HTTPS-download vervangt de vergelijking van de controlesom niet. Houd het pakket en de controlesom bij elkaar wanneer u ze via een andere machine naar een firewall overbrengt.
+
+## Een basisinstallatie verifiëren \{#verify-a-basic-installation}
+
+1. Controleer of **Firewall → Sinkhole** wordt geopend en de geïnstalleerde versie onder **About** verschijnt.
+2. Controleer of **Services → DNS Resolver** is ingeschakeld en de Python-positie niet aan een ander pakket toebehoort.
+3. Schakel Sinkhole in, sla op en controleer of **Status → Sinkhole** `Active` is.
+4. Controleer na de eerste geslaagde update of de ID's van de gecompileerde, uitgerolde en geladen generaties overeenkomen.
+
+Sinkhole weigert pfBlockerNG DNSBL of een ander script in de enige Python-modulepositie van Unbound te vervangen. Behandel die inactieve status als een configuratieconflict, niet als een installatiefout.
+
+## DNS-beleid verifiëren \{#verify-dns-policy}
+
+Gebruik bedachte testdomeinen uit een lijst die u beheert, niet uit een openbare lijst. Test één beslissing tegelijk vanaf clients waarvan de apparaat- en netwerkidentiteit in Status zichtbaar is.
+
+1. Controleer of een naam die niet in een lijst staat normaal wordt omgezet.
+2. Controleer of een globale lijst de testnaam blokkeert.
+3. Voeg een toegestaan netwerkdomein toe en controleer of dit netwerk- en globale lijsten passeert.
+4. Voeg een apparaatbeslissing toe en controleer de [gedocumenteerde volgorde](/docs/configure/scopes#decision-order).
+5. Verwijder de testgegevens en controleer of de volgende uitgerolde generatie het verwachte antwoord herstelt.
+
+Vermijd `test.`, `invalid.`, `onion.` en `localhost.`, omdat Unbound deze ingebouwde zones vóór Python-modules beantwoordt. Wis DNS-caches aan de clientzijde tussen controles wanneer het resultaat anders kan worden hergebruikt.
+
+## Waarschuwingen verifiëren \{#verify-alerts}
+
+Maak één beperkte regel voor een blokkering van een bedacht testdomein en een bekende labclient. Controleer of de volgende taak per minuut de gebeurtenis vastlegt en via het geconfigureerde meldingssysteem van pfSense verzendt.
+
+Herhaal dit binnen het herhaalvenster van de regel om te controleren of de melding wordt onderdrukt. Verwijder de regel daarna en controleer of Status geen fouten in de waarschuwingverwerking meer meldt.
+
+## Bypass-beveiliging verifiëren \{#verify-bypass-protection}
+
+Kies één geïsoleerde labinterface en schakel telkens één Bypass-beveiliging in. Controleer na elke test of een gelijkwaardige client op een niet-geselecteerde interface onaangetast blijft.
+
+1. Schakel **Redirect** in, controleer of de adresfamilie een Resolver-luisteraar heeft en verzend gewone UDP- en TCP-poort 53-query's naar een andere bestemming. Controleer of pfSense ze ontvangt.
+2. Voeg alleen in een tijdelijke configuratie een bewust ongeldige uitzondering toe en controleer of omleiding **Paused** wordt in plaats van gedeeltelijke regels te laden. Herstel geldige gegevens, wacht op de twee observaties per minuut en controleer of **pfSense loaded rules** terugkeert naar `Yes`.
+3. Schakel **TLS and QUIC** in en controleer vervolgens of TCP- en UDP-poort 853 naar een labbestemming wordt geblokkeerd, terwijl verkeer naar de firewall niet wordt geblokkeerd.
+4. Voeg een uitgeschakelde Bypass List toe die alleen verzonnen domeinen, adressen, CIDR's, opmerkingen en ongeldige gegevens bevat. Schakel deze en de bijbehorende beveiliging in en controleer vervolgens of geldige namen en adressen worden geblokkeerd, ongeldige regels worden overgeslagen en een latere mislukte ophaalactie de opgeslagen kopie behoudt.
+5. Controleer of testquery's voor Firefox en Private Relay `NXDOMAIN` ontvangen. Controleer of DDR een leeg `NOERROR`-antwoord teruggeeft in de modus **Answer with no records**.
+6. Controleer met de SSL/TLS-service van de Resolver geconfigureerd in het lab of **Advertise** SVCB teruggeeft met de certificaathostnaam, `alpn=dot` en poort `853`. Schakel die service uit en controleer of het opslaan van **Advertise** de validatie niet doorstaat.
+7. Schakel standaard VPN-poorten in en test TCP en UDP `1194`, UDP `51820`, UDP `500` en `4500`, en ESP tegen een labbestemming. Controleer of verkeer dat aan de firewall is geadresseerd niet wordt geblokkeerd.
+
+Controleer na elke firewalltest of **Status → Bypass** de verwachte regelstatus meldt en of `sinkhole/ip`, indien afzonderlijk ingeschakeld, geladen blijft.
+
+## IP- en landblokkering verifiëren \{#verify-ip-and-country-blocking}
+
+Gebruik een bedachte IP-lijstfixture en een adres dat geen invloed kan hebben op firewallbeheer, gateways of DNS. Controleer het uiteindelijke tabelaantal voor de familie, de geselecteerde interface en richting en **IP Anchor → Yes** voordat u verkeer test.
+
+Controleer of een toegestaan testbereik uit de blokkeertabel wordt verwijderd. Als u GeoLite2 test, gebruikt u de eigen MaxMind-sleutel van de beheerder en verwijdert u deze uit alle vastgelegde uitvoer.
+
+## Update- en verwijderingsgedrag verifiëren \{#verify-update-and-removal-behavior}
+
+Voer een handmatige lijstupdate uit en controleer of DNS blijft antwoorden terwijl Status de fasen update, compilatie, uitrol en geladen status doorloopt. Een bewust mislukte bron moet de eerdere opgeslagen kopie behouden en de fout weergeven.
+
+Bepaal vóór verwijdering of **Keep Settings** de configuratie en opgeslagen lijsten moet behouden. Verwijder het pakket met `pkg delete -f pfSense-pkg-Sinkhole` en controleer daarna of Resolver-integratie, geplande taken, gewone DNS-omleidingsregels, de ankers `sinkhole/bypass` en `sinkhole/ip`, gecachte Bypass-gegevens en tijdelijke runtimebestanden zijn verdwenen.
+
+## De omgeving vastleggen \{#record-the-environment}
+
+Leg voor een bruikbaar testverslag de Sinkhole-versie, pfSense-editie en -release, FreeBSD-release, geselecteerde functies, Status-status en opgeschoonde `Sinkhole:`-regels uit het systeemlogboek vast. Er staat momenteel geen pfSense-release als officieel getest vermeld; compatibiliteitstests worden vóór elke Sinkhole-release uitgevoerd.
+

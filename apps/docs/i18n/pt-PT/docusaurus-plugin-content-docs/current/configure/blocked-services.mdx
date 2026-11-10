@@ -1,0 +1,34 @@
+---
+id: blocked-services
+title: Serviços bloqueados
+description: Bloqueie serviços inteiros globalmente ou para uma rede ou dispositivo configurado usando um registo em cache, sem perder a precedência dos domínios permitidos.
+keywords:
+  - sinkhole for pfsense
+  - serviços bloqueados
+  - bloqueio de serviços
+  - âmbito de rede
+  - âmbito de dispositivo
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Use **Firewall → Sinkhole → Services** quando quiser bloquear uma marca inteira sem escolher e manter uma URL de lista separada.
+
+## Escolha um âmbito \{#choose-a-scope}
+
+Selecione **Global**, uma rede configurada ou um dispositivo configurado. Pesquise um serviço, restrinja os blocos com um chip de grupo, ative ou desative os serviços e selecione **Save** abaixo dos cartões de serviço.
+
+A seleção é compilada no nível já existente desse âmbito. Os domínios permitidos do dispositivo continuam prevalecendo sobre as regras de serviço do dispositivo, os domínios permitidos da rede sobre as regras de serviço da rede e os domínios permitidos globais sobre as regras de serviço globais.
+
+Os serviços abrangidos por uma proteção de Bypass dedicada não aparecem na grelha, nas contagens de grupos nem na pesquisa. O Private Relay é configurado apenas no separador Bypass.
+
+## Registo e reparação \{#registry-and-repair}
+
+O Sinkhole obtém o registo de serviços do AdGuard Home apenas quando esta página é aberta ou quando seleciona **Refresh**. Ele mantém a última cópia válida em `/var/db` por um dia, para que a compilação nunca espere pela rede.
+
+Os logotipos dos serviços são renderizados como imagens data URI isoladas. Logotipos ausentes ou grandes demais usam uma imagem genérica. Se um serviço guardado desaparecer de um registo mais recente, o Sinkhole mantém seu ID e o mostra em **Needs Repair**; desative-o e salve para remover essa escolha.
+
+O separador **Status** mostra o horário de busca do registo, o último erro e o número de serviços bloqueados selecionados para cada âmbito configurado.
+

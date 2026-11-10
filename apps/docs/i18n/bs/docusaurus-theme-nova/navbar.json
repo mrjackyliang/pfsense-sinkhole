@@ -1,0 +1,14 @@
+{
+  "item.label.Home": {
+    "message": "Početna",
+    "description": "Navbar item with label \"Home\""
+  },
+  "item.label.Guides": {
+    "message": "Vodiči",
+    "description": "Navbar item with label \"Guides\""
+  },
+  "item.label.Troubleshooting": {
+    "message": "Rješavanje problema",
+    "description": "Navbar item with label \"Troubleshooting\""
+  }
+}

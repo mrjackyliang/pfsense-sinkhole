@@ -1,0 +1,80 @@
+---
+id: testing-and-verification
+title: 测试和验证
+description: 在实验室防火墙上验证安装、Resolver 所有权、作用域决定、通知、Bypass 保护、IP 阻止、更新和安全删除。
+keywords:
+  - sinkhole for pfsense
+  - 测试
+  - 验证
+  - 实验室防火墙
+  - 版本安全
+tags:
+  - safety
+  - testing
+  - verification
+---
+
+在将 Sinkhole 的 DNS、NAT 或防火墙策略引入生产网络之前，请先在可丢弃的 pfSense 实验室中进行测试。
+
+## 验证软件下载 \{#verify-the-package-download}
+
+从同一个 GitHub 版本下载稳定软件包和 `.sha256` 资源。运行 `pkg add -f` 前，将软件包的 SHA-256 摘要与 `pfSense-pkg-Sinkhole.pkg.sha256` 中的单个哈希值进行比较。
+
+仅使用 HTTPS 下载不能替代校验和比较。通过另一台计算机将文件传输到防火墙时，请将软件包和校验和放在一起。
+
+## 验证基本安装 \{#verify-a-basic-installation}
+
+1. 确认 **Firewall → Sinkhole** 可以打开，并且已安装版本显示在 **About** 中。
+2. 确认 **Services → DNS Resolver** 已启用，并且其 Python 插槽未被另一个软件包占用。
+3. 启用 Sinkhole、保存，并确认 **Status → Sinkhole** 为 `Active`。
+4. 确认首次成功更新后，编译、部署和加载代次标识符一致。
+
+Sinkhole 拒绝替换 Unbound 唯一 Python 模块插槽中的 pfBlockerNG DNSBL 或其他脚本。应将这种非活动状态视为配置冲突，而不是安装失败。
+
+## 验证 DNS 策略 \{#verify-dns-policy}
+
+使用您控制的列表中的虚构测试域名，而不是公共列表。从设备和网络身份在 Status 中可见的客户端逐项测试决定。
+
+1. 确认未列出的名称可正常解析。
+2. 确认全局列表会阻止其测试名称。
+3. 添加网络允许域名，并确认它可绕过网络和全局列表。
+4. 添加设备决定，并确认符合[文档所述顺序](/docs/configure/scopes#decision-order)。
+5. 删除测试数据，并确认下一个已部署代次恢复预期应答。
+
+避免使用 `test.`、`invalid.`、`onion.` 和 `localhost.`，因为 Unbound 会先于 Python 模块应答这些内置区域。如果结果可能被重复使用，请在检查之间清除客户端 DNS 缓存。
+
+## 验证警报 \{#verify-alerts}
+
+为一个虚构测试域名阻止和已知实验室客户端创建一条范围较窄的规则。确认下一次每分钟作业记录事件，并通过 pfSense 配置的通知系统发送。
+
+在规则的重复时间窗口内重复操作，确认通知受到抑制。随后删除规则，并确认 Status 不再报告警报处理错误。
+
+## 验证 Bypass 保护 \{#verify-bypass-protection}
+
+选择一个隔离的实验室接口，每次启用一项 Bypass 保护。每次测试后，确认未选择接口上的同等客户端不受影响。
+
+1. 启用 **Redirect**，确认其地址族有 Resolver 监听地址，并向其他目标发送普通 UDP 和 TCP 端口 53 查询。确认 pfSense 收到这些查询。
+2. 只在可丢弃配置中添加故意无效的豁免，并确认重定向变为 **Paused**，而不是加载部分规则。恢复有效数据，等待两次每分钟观察，并确认 **pfSense loaded rules** 恢复为 `Yes`。
+3. 启用 **TLS and QUIC**，然后确认前往实验室目标的 TCP 和 UDP 端口 853 被阻止，而前往防火墙的流量不受阻止。
+4. 添加一个已禁用的 Bypass List，其中仅包含虚构域名、地址、CIDR、注释和无效数据。启用该列表及其对应保护，然后确认有效名称和地址被阻止、无效行被跳过，且后续获取失败会保留已保存副本。
+5. 确认 Firefox 和 Private Relay 测试查询收到 `NXDOMAIN`。确认 DDR 在 **Answer with no records** 模式下返回空的 `NOERROR` 响应。
+6. 在实验室中配置 Resolver 的 SSL/TLS 服务后，确认 **Advertise** 返回包含证书主机名、`alpn=dot` 和端口 `853` 的 SVCB。关闭该服务并确认保存 **Advertise** 无法通过验证。
+7. 启用标准 VPN 端口，并针对实验室目标测试 TCP 和 UDP `1194`、UDP `51820`、UDP `500` 和 `4500` 以及 ESP。确认发往防火墙的流量未被阻止。
+
+每次防火墙测试后，确认 **Status → Bypass** 报告预期的规则状态，并且单独启用的 `sinkhole/ip` 仍保持加载。
+
+## 验证 IP 和国家或地区阻止 \{#verify-ip-and-country-blocking}
+
+使用虚构的 IP 列表测试夹具，以及不会影响防火墙管理、网关或 DNS 的地址。测试流量前，请确认最终地址族表计数、所选接口和方向以及 **IP Anchor → Yes**。
+
+验证加入允许列表的测试范围已从阻止表中移除。如果测试 GeoLite2，请使用管理员自己的 MaxMind 密钥，并从任何捕获输出中将其删除。
+
+## 验证更新和删除行为 \{#verify-update-and-removal-behavior}
+
+运行手动列表更新，并确认 Status 经过更新、编译、部署和加载状态时 DNS 仍继续应答。故意失败的来源应保留其先前已保存副本并显示错误。
+
+删除前，请决定 **Keep Settings** 是否应保留配置和已保存列表。使用 `pkg delete -f pfSense-pkg-Sinkhole` 删除，然后确认 Resolver 集成、计划任务、普通 DNS 重定向规则、`sinkhole/bypass` 和 `sinkhole/ip` 锚点、缓存的 Bypass 数据以及临时运行时文件均已消失。
+
+## 记录环境 \{#record-the-environment}
+
+有用的测试记录应包含 Sinkhole 版本、pfSense 版本和版本号、FreeBSD 版本、所选功能、Status 状态以及经过清理的 `Sinkhole:` 系统日志行。目前没有任何 pfSense 版本列为正式测试版本；每个 Sinkhole 版本发布前都会进行兼容性测试。

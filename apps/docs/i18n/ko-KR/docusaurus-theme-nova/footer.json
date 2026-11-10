@@ -1,0 +1,36 @@
+{
+  "layout.learn.title": {
+    "message": "가이드"
+  },
+  "layout.resources.title": {
+    "message": "리소스"
+  },
+  "sections.learn.0.label": {
+    "message": "Sinkhole 설치"
+  },
+  "sections.learn.1.label": {
+    "message": "목록과 저장된 사본"
+  },
+  "sections.learn.2.label": {
+    "message": "DNS 정책 범위 지정"
+  },
+  "sections.learn.4.label": {
+    "message": "문제 해결"
+  },
+  "sections.resources.0.label": {
+    "message": "업데이트 작동 방식"
+  },
+  "sections.resources.1.label": {
+    "message": "테스트 및 검증"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense 문서"
+  },
+  "sections.resources.3.label": {
+    "message": "소스 코드"
+  },
+  "copyright": {
+    "message": "Copyright © 2026 Jacky Liang. MIT.",
+    "description": "The footer copyright text"
+  }
+}

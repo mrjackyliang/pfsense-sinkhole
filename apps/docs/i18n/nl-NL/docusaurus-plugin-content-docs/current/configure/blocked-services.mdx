@@ -1,0 +1,34 @@
+---
+id: blocked-services
+title: Geblokkeerde services
+description: Blokkeer volledige services globaal of voor één geconfigureerd netwerk of apparaat vanuit een gecachet register, met behoud van de voorrang van toegestane domeinen en herstelbare opgeslagen keuzes.
+keywords:
+  - sinkhole voor pfsense
+  - geblokkeerde services
+  - serviceblokkering
+  - netwerkscope
+  - apparaatscope
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Gebruik **Firewall → Sinkhole → Services** wanneer u een volledig merk wilt blokkeren zonder een afzonderlijke lijst-URL te kiezen en te onderhouden.
+
+## Een scope kiezen \{#choose-a-scope}
+
+Selecteer **Global**, een geconfigureerd netwerk of een geconfigureerd apparaat. Zoek naar een service, beperk de tegels met een groepschip, schakel services in of uit en selecteer vervolgens **Save** onder de servicekaarten.
+
+De selectie wordt op het bestaande niveau van die scope gecompileerd. Toegestane domeinen van apparaten hebben nog steeds voorrang op serviceregels van apparaten, toegestane domeinen van netwerken hebben nog steeds voorrang op serviceregels van netwerken en globale toegestane domeinen hebben nog steeds voorrang op globale serviceregels.
+
+Diensten die onder een specifieke Bypass-beveiliging vallen, verschijnen niet in het raster, de groepstellingen of de zoekresultaten. Private Relay wordt alleen op het tabblad Bypass geconfigureerd.
+
+## Register en herstel \{#registry-and-repair}
+
+Sinkhole haalt het serviceregister van AdGuard Home alleen op wanneer deze pagina wordt geopend of wanneer u **Refresh** selecteert. De laatste geldige kopie wordt één dag onder `/var/db` bewaard, zodat de compilatie nooit op het netwerk wacht.
+
+Servicelogo's worden als geïsoleerde data-URI-afbeeldingen weergegeven. Ontbrekende of te grote logo's gebruiken een algemene afbeelding. Als een opgeslagen service uit een nieuwer register verdwijnt, behoudt Sinkhole de ID en wordt deze onder **Needs Repair** weergegeven; schakel de service uit en sla op om die keuze te verwijderen.
+
+Het tabblad **Status** toont wanneer het register is opgehaald, de laatste fout en het aantal geblokkeerde services dat voor elke geconfigureerde scope is geselecteerd.
+

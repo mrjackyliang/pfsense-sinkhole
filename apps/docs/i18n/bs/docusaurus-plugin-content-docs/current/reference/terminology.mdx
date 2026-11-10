@@ -1,0 +1,57 @@
+---
+id: terminology
+title: Terminologija
+description: Definirajte termine za DNS, liste, opsege, upozorenja i Bypass koji se koriste u Sinkhole WebGUI-ju, panelima Status, vodičima i referencama.
+keywords:
+  - sinkhole for pfsense
+  - terminologija
+  - rječnik
+  - dns sinkhole
+  - lista za blokiranje
+tags:
+  - reference
+  - terminology
+  - glossary
+---
+
+Ovi termini imaju isto značenje u cijelom Sinkhole WebGUI-ju i dokumentaciji.
+
+## DNS Sinkhole \{#dns-sinkhole}
+
+Odgovaranje na blokirani naziv adresom koja ne vodi nikamo, čime se zahtjev zaustavlja.
+
+## DNS Resolver \{#dns-resolver}
+
+DNS usluga pfSensea zasnovana na Unboundu.
+
+## Lista za blokiranje \{#block-list}
+
+Lista naziva ili adresa za blokiranje, dodana putem URL-a ili pretrage.
+
+## Sačuvana lista \{#saved-list}
+
+Posljednja ispravna kopija liste za blokiranje, sačuvana na zaštitnom zidu.
+
+## Opseg \{#scope}
+
+Mjesto primjene liste za blokiranje: cijela mreža, VLAN ili jedan uređaj.
+
+## Globalne liste \{#global-lists}
+
+Liste za blokiranje koje se primjenjuju na svakog klijenta u mreži.
+
+## Pravilo upozorenja \{#alert-rule}
+
+Lista i opseg čija blokiranja šalju obavijest pfSensea.
+
+## Zaštita od zaobilaženja \{#bypass-protection}
+
+Opcionalne kontrole po interfejsu koje zadržavaju klijente na DNS putanjama koje Sinkhole može pregledati preusmjeravanjem običnog DNS-a ili blokiranjem uobičajenih alternativa šifriranog DNS-a i tunela.
+
+## Preusmjeravanje običnog DNS-a \{#plain-dns-redirect}
+
+Opcionalna postavka Bypass koja šalje obične TCP i UDP upite uređaja na portu 53 zaštitnom zidu.
+
+## Pretraga popularnih lista \{#popular-list-search}
+
+WebGUI pretraga široko korištenih lista za blokiranje, poput birača AdGuard Homea.

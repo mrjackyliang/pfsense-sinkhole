@@ -1,0 +1,74 @@
+---
+id: intro
+title: 개요
+description: 별도의 DNS 호스트를 추가하지 않고 pfSense에서 전체 네트워크, 각 VLAN 또는 단일 장치에 서로 다른 정책을 적용해 원치 않는 웹사이트를 차단합니다.
+keywords:
+  - sinkhole for pfsense
+  - 개요
+  - dns 차단
+  - 네트워크 정책
+  - 차단 목록
+tags:
+  - setup
+  - overview
+  - dns
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+pfSense 안에서 전체 네트워크, 한 VLAN 또는 한 장치에 서로 다른 정책을 적용해 원치 않는 웹사이트를 차단합니다.
+
+## Sinkhole의 기능 \{#what-sinkhole-does}
+
+Sinkhole for pfSense를 사용하면 부모와 고용주가 네트워크의 각 부분에 어떤 <Terminology title="차단 대상으로 선택한 이름 또는 주소" to="/docs/reference/terminology#block-list">차단 목록</Terminology>을 적용할지 제어할 수 있습니다. 마지막으로 정상 확인된 사본을 방화벽에 보관하므로 재시작하거나 다시 로드한 직후에도 DNS가 응답하며, 새 사본은 백그라운드에서 다운로드됩니다.
+
+차단된 이름에는 `0.0.0.0` 또는 `::`으로 응답합니다. 차단된 이름에 도달하는 CNAME 체인도 차단하지만, 판단을 내리는 수준에서 허용된 이름은 계속 허용합니다.
+
+## Sinkhole을 사용하는 이유 \{#why-use-sinkhole}
+
+1. 전역, 네트워크 및 장치 <Terminology title="차단 목록이 적용되는 위치" to="/docs/reference/terminology#scope">범위</Terminology>에 정책을 적용하여 자녀, 방문자, 직원 및 개별 장치마다 다른 목록을 사용할 수 있습니다.
+2. <Terminology title="방화벽에 보관된 마지막 정상 차단 목록 사본" to="/docs/reference/terminology#saved-list">저장된 목록</Terminology>을 사용하므로 DNS가 다운로드를 기다리지 않고 업데이트 실패 후에도 정상 목록을 잃지 않습니다.
+3. pfSense의 자체 알림 시스템을 통해 선택한 목록과 클라이언트에 대해서만 <Terminology title="목록과 클라이언트가 일치할 때 알림을 보내는 규칙" to="/docs/reference/terminology#alert-rule">알림 규칙</Terminology>을 전송합니다.
+4. 일반 DNS, 암호화 DNS 검색 및 공급자, Tor 릴레이, VPN 공급자 또는 포트에 대한 선택적 <Terminology title="선택한 클라이언트를 검사되는 DNS 경로에 유지하는 제어" to="/docs/reference/terminology#bypass-protection">우회 방지</Terminology>를 제공합니다.
+5. DNS 필터링으로 충분하지 않을 때 별도의 IP 및 국가 차단을 추가하며, 두 번째 호스트나 클라우드 서비스가 필요하지 않습니다.
+
+## DNS 통합 작동 방식 \{#how-dns-integration-works}
+
+Sinkhole은 pfSense의 Unbound 기반 <Terminology title="pfSense의 Unbound DNS 서비스" to="/docs/reference/terminology#dns-resolver">DNS Resolver</Terminology> 내부에서 Python 모듈로 실행됩니다. 이 모듈은 Unbound가 시작될 때 로컬에 컴파일된 파일만 로드하고, DNS 쿼리를 지연시키지 않으면서 더 새로운 로컬 세대를 감시합니다.
+
+DNS Resolver는 Python 스크립트 슬롯을 하나만 제공합니다. Sinkhole은 슬롯이 비어 있거나 이미 Sinkhole이 소유한 경우에만 이를 사용하며, pfBlockerNG의 DNSBL 모듈과 같은 다른 소유자를 대체하지 않습니다.
+
+:::warning
+
+Sinkhole과 pfBlockerNG DNSBL은 모두 Resolver의 단일 Python 스크립트 슬롯이 필요하므로 DNS를 동시에 필터링할 수 없습니다.
+
+:::
+
+## 사용자가 제어하는 항목 \{#what-stays-under-your-control}
+
+- **Lists** — 신뢰하는 출처를 URL로 추가하거나 중립적인 <Terminology title="WebGUI에서 필요할 때 실행하는 카탈로그 검색" to="/docs/reference/terminology#popular-list-search">인기 목록 검색</Terminology>으로 찾습니다. Sinkhole은 어떤 목록도 게시하거나 추천하지 않습니다.
+- **Scopes** — 전역 목록, 한 pfSense 인터페이스나 VLAN의 목록, IP 주소·DHCP 정적 매핑·MAC 주소로 식별한 장치의 목록을 선택합니다.
+- **Allowed domains** — 전체 목록을 제거하지 않고 전역, 네트워크 또는 장치 수준에서 도메인과 그 하위 도메인을 허용합니다.
+- **Alerts** — 로컬 WebGUI 알림을 만들거나 pfSense에 구성된 원격 알림 서비스를 사용할 목록과 클라이언트 조합을 선택합니다.
+- **Bypass** — 모든 제어를 꺼 두거나 클라이언트 측 인터페이스를 선택하고 일반 DNS 리디렉션, 암호화 DNS 신호, 공급자 목록 또는 터널 보호를 명시적으로 활성화합니다.
+- **IP blocking** — 꺼진 상태로 두거나 IP 목록, 국가, 인터페이스, 방향 및 허용 목록 주소를 선택합니다.
+
+## 제한 사항 \{#limits}
+
+DNS 차단은 완전한 트래픽 제어가 아닙니다. 우회 방지는 각 제어가 활성화된 경우에만 일반적인 대체 경로를 다루며 모든 암호화 터널이나 사용자 지정 터널을 식별할 수는 없습니다.
+
+차단 이벤트와 알림에는 클라이언트가 접근하려 한 대상이 드러납니다. 사용자가 pfSense를 통해 보내도록 선택한 알림을 제외하면 이 정보는 방화벽에 남습니다.
+
+## 언어 \{#languages}
+
+WebGUI는 pfSense에서 선택한 언어를 따르며 아직 번역이 없으면 영어로 대체합니다. 추가 WebGUI 번역은 진행 중이며 각 카탈로그의 검토가 끝날 때까지 영어 대체 문구를 사용합니다.
+
+문서 사이트는 영어와 그 밖의 pfSense 로캘 17개를 제공합니다. 번역된 페이지는 영어 앵커를 유지하므로 모든 언어에서 링크가 같은 섹션으로 이동합니다.
+
+## 다음 단계 \{#next-steps}
+
+- **[패키지 설치](/docs/installation)** — 안정 릴리스 패키지를 검증하고 설치합니다.
+- **[Sinkhole 설정](/docs/first-run)** — 첫 번째 목록을 추가하고 범위를 선택한 다음 활성 세대를 확인합니다.
+- **[범위 이해](/docs/configure/scopes)** — 장치, 네트워크, 전역 순서로 이루어지는 정확한 판단 절차를 확인합니다.
+- **[안전 모델 검토](/docs/safety/how-updates-work)** — 저장된 사본과 원자적 배포가 DNS 가용성을 유지하는 방식을 확인합니다.

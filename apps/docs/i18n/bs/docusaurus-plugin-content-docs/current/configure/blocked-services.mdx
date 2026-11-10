@@ -1,0 +1,33 @@
+---
+id: blocked-services
+title: Blokirane usluge
+description: Blokirajte cijele usluge globalno ili za jednu konfiguriranu mrežu ili uređaj iz predmemoriranog registra, uz prvenstvo dopuštenih domena.
+keywords:
+  - sinkhole for pfsense
+  - blokirane usluge
+  - blokiranje usluga
+  - mrežni opseg
+  - opseg uređaja
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Koristite **Firewall → Sinkhole → Services** kada želite blokirati cijeli brend bez odabiranja i održavanja zasebnog URL-a liste.
+
+## Odaberite opseg \{#choose-a-scope}
+
+Odaberite **Global**, konfiguriranu mrežu ili konfigurirani uređaj. Potražite uslugu, suzite pločice pomoću oznake grupe, označite potvrdni okvir svake usluge, a zatim odaberite **Save** ispod pločica usluga.
+
+Odabir se kompajlira na postojećem nivou tog opsega. Dopuštene domene uređaja i dalje imaju prednost nad pravilima usluga uređaja, dopuštene domene mreže nad pravilima usluga mreže, a globalne dopuštene domene nad globalnim pravilima usluga.
+
+Usluge obuhvaćene posebnom Bypass zaštitom ne prikazuju se u mreži, brojevima grupa ni pretrazi. Private Relay se konfigurira samo na kartici Bypass.
+
+## Registar i popravak \{#registry-and-repair}
+
+Sinkhole dohvaća registar usluga AdGuard Homea samo kada se ova stranica otvori ili kada odaberete **Refresh**. Posljednju ispravnu kopiju čuva jedan dan u `/var/db`, pa kompajliranje nikada ne čeka mrežu.
+
+Logotipi usluga prikazuju se kao izolirane data-URI slike. Za nedostajuće ili prevelike logotipe koristi se generička slika. Ako sačuvana usluga nestane iz novijeg registra, Sinkhole zadržava njen ID i prikazuje je pod **Needs Repair**; poništite njen potvrdni okvir i spremite da biste uklonili taj odabir.
+
+Kartica **Status** prikazuje vrijeme dohvatanja registra, posljednju grešku i broj blokiranih usluga odabranih za svaki konfigurirani opseg.

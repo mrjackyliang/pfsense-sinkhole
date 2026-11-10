@@ -1,0 +1,84 @@
+---
+id: build-and-release
+title: Izgradnja i izdavanje
+description: Postavite repozitorij, pokrenite Nova provjere i izgradnju, izgradite pfSense paket na FreeBSD-u, zabilježite stavke dnevnika promjena i objavite izdanje.
+keywords:
+  - sinkhole for pfsense
+  - doprinos
+  - izgradnja
+  - izdanje
+  - nova dnevnik promjena
+tags:
+  - contributing
+  - build
+  - release
+---
+
+Izgradite, testirajte i izdajite Sinkhole kroz korijenski Nova radni prostor kako bi paket i dokumentacija pratili isti provjereni tok rada.
+
+## Preduvjeti \{#prerequisites}
+
+- Koristite raspon verzija Node.js-a iz korijenskog `package.json` i verziju npm-a odabranu njegovim poljem `packageManager`.
+- Koristite FreeBSD s radnom kopijom pfSense ports stabla za konačnu izgradnju `.pkg` paketa.
+- Koristite jednokratno pfSense laboratorijsko okruženje za provjeru instalacije, nadogradnje, blokiranja i uklanjanja.
+
+Prije pakovanja postavite `PFSENSE_PORTS_DIR` na radnu kopiju pfSense FreeBSD ports stabla. Radna kopija mora sadržavati `Mk/bsd.port.mk`, a odredište `sysutils/pfSense-pkg-Sinkhole` mora biti slobodno za privremenu kopiju za izgradnju.
+
+## Instaliranje zavisnosti \{#install-dependencies}
+
+Iz korijena repozitorija:
+
+```sh
+npm install
+```
+
+Nova čita radne prostore iz `nova.config.json`. Pokrećite komande radnog prostora iz korijena, osim kada namjerno dijagnosticirate komandu užeg paketa.
+
+## Provjeravanje svake promjene \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` pokreće linting, provjeru tipova i testove za korijenski radni prostor te radne prostore paketa i dokumentacije. `npm run build` priprema pfSense port i stvara produkcijsku izgradnju dokumentacije u direktoriju `build/`.
+
+Kada sistem nema upotrebljivo PHP izvršno okruženje, `SINKHOLE_SKIP_PHP_TESTS=1 npm run check` pokreće sve dostupne provjere, ali ne zamjenjuje obavezne testove paketa prije izdanja. Promjene paketa zahtijevaju i izvanmrežne PHP i Python testove, testove vraćanja te testove između jezika opisane u pravilima repozitorija.
+
+## Izgradnja paketa izdanja \{#build-the-release-package}
+
+Pokrenite konačnu komandu za pakovanje na FreeBSD-u nakon `npm run build`:
+
+```sh
+npm run deploy
+```
+
+Skripta za isporuku pokreće `make package` u konfiguriranoj radnoj kopiji ports stabla, ponovo gradi manifest kao vital uz `FreeBSD:*`, provjerava oba svojstva i zapisuje verzionirane i stabilne `.pkg` datoteke te SHA-256 datoteke u `packages/sinkhole/build/release/`.
+
+Komanda namjerno ne uspijeva na sistemima koji nisu FreeBSD ili bez `PFSENSE_PORTS_DIR`. Nikada nemojte zamijeniti artefakt izdanja paketom izgrađenim na drugom operativnom sistemu.
+
+## Bilježenje promjene \{#record-the-change}
+
+Koristite Nova tok rada dnevnika promjena kako promjene pristižu:
+
+```sh
+npm run changelog
+```
+
+Odaberite zahvaćeni radni prostor i kategoriju napomene o izdanju koja odgovara promjeni vidljivoj korisniku. Zadržite jednu povezanu stavku po promjeni i koristite stil napomena o izdanju ovog repozitorija u imperativu i sadašnjem vremenu.
+
+## Priprema izdanja \{#cut-a-release}
+
+1. Pokrenite `npm run check` i `npm run build` iz čistog kandidata za izdanje.
+2. Pokrenite `nova utility changelog --release` kako biste odabrali verziju, ažurirali verzije paketa i zapisali dnevnike promjena.
+3. Pokrenite `npm run deploy` na konfiguriranom FreeBSD sistemu za izgradnju.
+4. Instalirajte i nadogradite artefakt, testirajte blokiranje i uklonite ga u jednokratnom pfSense laboratorijskom okruženju.
+5. Objavite GitHub izdanje s verzioniranim i stabilnim paketom te artefaktima kontrolnih suma.
+
+Objavljivanje izdanja pokreće tok rada artefakta paketa i tok rada isporuke dokumentacije. Izdanje pfSense-a ne navodi se kao podržano dok ne prođe ta potpuna laboratorijska provjera.
+
+## Promjene dokumentacije \{#documentation-changes}
+
+Koristite eksplicitne engleske ID-ove naslova kao što je `{#build-and-release}` kako bi prevedene stranice mogle zadržati stabilne sidrene veze. Formatirajte Markdown tabele pomoću `npx nova recipe misc fix-markdown-tables`, a zatim pokrenite iste korijenske komande za provjeru i izgradnju.
+
+Engleske stranice su izvor za svih 17 prevedenih lokalizacija. Nazive proizvoda nemojte prevoditi, kod, putanje i engleske sidrene veze sačuvajte tačno i nemojte obećavati funkcije koje još nisu implementirane.

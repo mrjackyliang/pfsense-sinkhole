@@ -1,0 +1,86 @@
+---
+id: ip-and-country-blocking
+title: Blokiranje IP adresa i država
+description: Blokirajte odabrane izvorne ili odredišne mreže IP listama i državama GeoLite2, oduzmite zaštićene adrese i upravljajte sidrom sinkhole/ip.
+keywords:
+  - sinkhole for pfsense
+  - ip blokiranje
+  - blokiranje država
+  - geolite2
+  - pf sidro
+tags:
+  - configure
+  - ip blocking
+  - firewall
+---
+
+Blokirajte odabrane IP izvore ili odredišta nezavisno od DNS pravila pomoću tabela kojima upravlja paket u pf sidru `sinkhole/ip`.
+
+## Zašto koristiti IP blokiranje? \{#why-use-ip-blocking}
+
+1. Obuhvata saobraćaj prema adresi ili državi kada DNS naziv nije uključen.
+2. Primjenjuje se nezavisno na odabranim interfejsima i smjerovima, pa se pravila WAN-a i mreže klijenata mogu razlikovati.
+3. Čuva normalizirane posljednje ispravne IP kopije i atomski ažurira aktivne tabele.
+4. Štiti adrese zaštitnog zida, pristupnika i DNS-a od slučajnog uključivanja u izvornu listu.
+
+## Omogućite funkciju \{#enable-the-feature}
+
+Otvorite **Firewall → Sinkhole → IP** i odaberite **Enable** tek nakon odabira interfejsa i smjerova. Blokiranje IP adresa i država prema zadanim je postavkama isključeno i ne zavisi od prekidača General za DNS.
+
+| Postavka   | Ponašanje                                                                                 |
+|------------|-------------------------------------------------------------------------------------------|
+| Interfaces | Generira pravila na odabranim dolaznim interfejsima.                                      |
+| Inbound    | Blokira pakete koji stižu s navedene izvorne adrese, obično na WAN-u.                     |
+| Outbound   | Blokira pakete koji stižu prema navedenoj odredišnoj adresi, obično na mrežama klijenata. |
+
+Sidro sadrži pravila `block drop in quick` i nema pravila propuštanja. Sinkhole ga navodi na ranom položaju pravila paketa u pfSenseu, tako da se blokiranja izvršavaju prije običnih pravila pass-quick. Stranica prvo prikazuje panele IP lista i kataloga, a nakon njih postavke IP adresa i država za cijelu stranicu s dugmetom **Save** ispod panela.
+
+## Dodajte IP liste \{#add-ip-lists}
+
+Odaberite **Add** ispod tabele IP Lists da biste otvorili uređivač IP lista. Red koristi HTTP ili HTTPS URL, bira IPv4, IPv6 ili obje porodice i određuje je li izvor omogućen. Spremanje vraća na karticu IP; odaberite olovku ili dvaput kliknite red da biste ga uredili.
+
+Liste se mogu pronaći i u IP odjeljcima kataloga izvora pfBlockerNG-a.
+
+Važeći redovi su pojedinačne IPv4 ili IPv6 adrese i CIDR mreže. Nevažeći redovi se preskaču i broje; preuzimanje bez ijednog važećeg zapisa ne zamjenjuje posljednju ispravnu sačuvanu kopiju.
+
+Katalog se preuzima samo kada se otvori ili osvježi njegova pretraga i koristi istu jednodnevnu predmemoriju posljednje ispravne kopije kao pretraga DNS kataloga. Dodavanje rezultata kreira obični red IP liste bez ocjene ili preporuke.
+
+Izvori za zaobilaženje Encrypted DNS-a, Tora i VPN-a isključeni su iz IP kataloga i prikazuju se samo na kartici Bypass.
+
+Red **Contents** na svakoj kartici prikazuje **IPv4 addresses** ili **IPv6 addresses**. Kada dodate rezultat iz pfBlockerNG-a, Sinkhole dodaje ` (IPv4)` ili ` (IPv6)` njegovom sačuvanom nazivu i po potrebi skraćuje samo osnovni naziv.
+
+## Dodajte države \{#add-countries}
+
+Države dolaze iz CSV podataka MaxMind GeoLite2 Country i unose se kao dvoslovni ISO kodovi. Njihove mreže pridružuju se tabelama blokiranih porodica.
+
+- **MaxMind Account ID** je obavezan kada su države odabrane.
+- **MaxMind License Key** daje administrator, čuva se poput polja lozinke u pfSenseu i nikada se ne prikazuje nakon spremanja.
+- **Clear License Key** izričito uklanja sačuvanu tajnu.
+
+Sinkhole provjerava i uvozi GeoLite2 arhivu te je ažurira najviše jednom sedmično. Paket nikada ne isporučuje MaxMind račun niti licencni ključ.
+
+## Dopustite i zaštitite adrese \{#allow-and-protect-addresses}
+
+**IP Allowlist** prihvata IPv4 ili IPv6 adrese, CIDR mreže i postojeće host/mrežne aliase. Dopušteni rasponi oduzimaju se od spojenog blokiranog skupa prije zapisivanja datoteka tabele.
+
+Sinkhole automatski oduzima i ove zaštićene adrese:
+
+- Svaku adresu dodijeljenu zaštitnom zidu.
+- Adrese pristupnika, uključujući one dobijene putem DHCP-a ili PPP-a.
+- Adrese DNS servera, uključujući one dobijene putem DHCP-a ili PPP-a.
+
+Oduzimanje može podijeliti blokirani CIDR na manje mreže, tako da prolazi samo zaštićena adresa.
+
+## Razumijte sidro \{#understand-the-anchor}
+
+Paket sam učitava `sinkhole/ip` s dvije trajne tabele porodica i pravilima odabranih interfejsa. Ažuriranja lista zamjenjuju samo tabele unutar tog sidra, dok Sync i minutna provjera mogu učitati cijelo sidro.
+
+Sadržaj sidra preživljava uobičajena ponovna učitavanja filtera pfSensea i nije dio čišćenja tabela glavnog skupa pravila. Isključivanje IP blokiranja ili uklanjanje Sinkholea prazni sidro.
+
+## Provjerite stanje \{#verify-the-state}
+
+**Status → IP and Country Blocking** prikazuje omogućeno stanje, interfejse, smjerove, države, stanje ključa, veličine tabela, preskočene redove, posljednje uspješno ažuriranje, vrijeme ažuriranja GeoLite2, stanje sidra, broj pravila i posljednju grešku. Svaki red IP liste također prikazuje porodicu, zapise, preskočene redove, posljednje dohvatanje i grešku.
+
+Stanje sidra **Out of Date** znači da učitani tekst ili tabele ne odgovaraju trenutnim postavkama. Minutno usklađivanje odmah učitava prazno ili promijenjeno sidro; [Rješavanje problema](/docs/operate/troubleshooting#ip-blocking-does-not-match-settings) obuhvata provjere.
+
+Unosi IP liste širi od IPv4 `/8` ili IPv6 `/16` preskaču se i broje; granične mreže `/8` i `/16` se prihvataju. Ovo ograničenje ne važi za IP Allowlist jer ona samo smanjuje blokiranje. Prije pisanja tabela Sinkhole uvijek oduzima sve IPv4 i IPv6 adrese interfejsa zaštitnog zida, potpune podmreže interfejsa odabranih za IP blokiranje, CARP i IP Alias virtuelne adrese, konfigurisane gatewaye i DNS servere.

@@ -1,0 +1,87 @@
+---
+id: ip-and-country-blocking
+title: IP- og landblokkering
+description: Blokker valgte kilde- eller målnettverk med IP-lister og GeoLite2-land, trekk fra beskyttede adresser og administrer sinkhole/ip-ankeret.
+keywords:
+  - sinkhole for pfsense
+  - ip-blokkering
+  - landblokkering
+  - geolite2
+  - pf-anker
+tags:
+  - configure
+  - ip blocking
+  - firewall
+---
+
+Blokker valgte IP-kilder eller -mål uavhengig av DNS-policyen med pakkestyrte tabeller i pf-ankeret `sinkhole/ip`.
+
+## Hvorfor bruke IP-blokkering? \{#why-use-ip-blocking}
+
+1. Dekker trafikk etter adresse eller land når et DNS-navn ikke er involvert.
+2. Brukes uavhengig på valgte grensesnitt og i valgte retninger, slik at policyen for WAN og klientnettverk kan være forskjellig.
+3. Beholder normaliserte, siste gyldige IP-kopier og oppdaterer aktive tabeller atomisk.
+4. Beskytter brannmur-, gateway- og DNS-adresser mot utilsiktet inkludering i en kildeliste.
+
+## Aktiver funksjonen \{#enable-the-feature}
+
+Åpne **Firewall → Sinkhole → IP**, og velg **Enable** først etter at du har valgt grensesnitt og retninger. IP- og landblokkering er avslått som standard og er ikke avhengig av General-bryteren for DNS.
+
+| Innstilling | Virkemåte                                                                           |
+|-------------|-------------------------------------------------------------------------------------|
+| Interfaces  | Genererer regler på de valgte ankomstgrensesnittene.                                |
+| Inbound     | Blokkerer pakker som kommer fra en oppført kildeadresse, vanligvis på et WAN.       |
+| Outbound    | Blokkerer pakker som kommer mot en oppført måladresse, vanligvis på klientnettverk. |
+
+Ankeret inneholder `block drop in quick`-regler og ingen pass-regler. Sinkhole refererer til det gjennom den tidlige posisjonen for pakkeregler i pfSense, slik at blokkeringene kjører før vanlige pass-quick-regler. Siden viser panelene for IP-lister og katalog først, etterfulgt av de sideomfattende innstillingene for IP og land med **Save** under panelet.
+
+## Legg til IP-lister \{#add-ip-lists}
+
+Velg **Add** under tabellen IP Lists for å åpne redigeringsprogrammet for IP-lister. En rad bruker en HTTP- eller HTTPS-URL, velger IPv4, IPv6 eller begge familier og styrer om kilden er aktivert. Når du lagrer, går du tilbake til fanen IP. Velg blyanten eller dobbeltklikk en rad for å redigere den.
+
+Lister kan også finnes i IP-delene av feedkatalogen til pfBlockerNG.
+
+Gyldige linjer er enkeltstående IPv4- eller IPv6-adresser og CIDR-nettverk. Ugyldige linjer hoppes over og telles. En nedlasting uten en gyldig oppføring erstatter ikke den siste gyldige lagrede kopien.
+
+Katalogen lastes bare ned når søket åpnes eller oppdateres, og bruker samme éndagsbuffer med siste gyldige kopi som DNS-katalogsøket. Når du legger til et resultat, opprettes en vanlig IP-listerad uten vurdering eller anbefaling.
+
+Omgåelsesfeeder for Encrypted DNS, Tor og VPN er utelatt fra IP-katalogen og vises bare på Bypass-fanen.
+
+Linjen **Contents** på hvert kort viser **IPv4 addresses** eller **IPv6 addresses**. Når du legger til et pfBlockerNG-resultat, legger Sinkhole til ` (IPv4)` eller ` (IPv6)` i det lagrede navnet og forkorter bare grunnnavnet når det er nødvendig.
+
+## Legg til land \{#add-countries}
+
+Land kommer fra CSV-dataene i MaxMind GeoLite2 Country og angis som ISO-koder på to bokstaver. Nettverkene deres legges til i de blokkerte familietabellene.
+
+- **MaxMind Account ID** er påkrevd når land er valgt.
+- **MaxMind License Key** oppgis av administratoren, lagres som et pfSense-passordfelt og vises aldri etter lagring.
+- **Clear License Key** fjerner den lagrede hemmeligheten eksplisitt.
+
+Sinkhole verifiserer og importerer GeoLite2-arkivet og oppdaterer det høyst én gang i uken. Pakken inneholder aldri en MaxMind-konto eller lisensnøkkel.
+
+## Tillat og beskytt adresser \{#allow-and-protect-addresses}
+
+**IP Allowlist** godtar IPv4- eller IPv6-adresser, CIDR-nettverk og eksisterende verts-/nettverksaliaser. Tillatte områder trekkes fra det sammenslåtte blokkerte settet før tabellfilene skrives.
+
+Sinkhole trekker også fra disse beskyttede adressene automatisk:
+
+- Alle adresser som er tilordnet brannmuren.
+- Gatewayadresser, inkludert de som er mottatt via DHCP eller PPP.
+- DNS-serveradresser, inkludert de som er mottatt via DHCP eller PPP.
+
+Fratrekket kan dele et blokkert CIDR i mindre nettverk, slik at bare den beskyttede adressen slippes gjennom.
+
+## Forstå ankeret \{#understand-the-anchor}
+
+Pakken laster `sinkhole/ip` selv med to vedvarende familietabeller og reglene for de valgte grensesnittene. Listeoppdateringer erstatter bare tabellene i ankeret, mens Sync og minuttkontrollen kan laste hele ankeret.
+
+Innholdet i ankeret overlever vanlige omlastinger av pfSense-filteret og er ikke en del av oppryddingen av tabeller i hovedregelsettet. Hvis IP-blokkering slås av eller Sinkhole fjernes, tømmes ankeret.
+
+## Kontroller tilstanden \{#verify-the-state}
+
+**Status → IP and Country Blocking** viser aktiveringsstatus, grensesnitt, retninger, land, nøkkelstatus, tabellstørrelser, linjer som er hoppet over, siste vellykkede oppdatering, oppdateringstidspunkt for GeoLite2, ankerstatus, antall regler og siste feil. Hver IP-listerad viser også familie, oppføringer, linjer som er hoppet over, siste henting og feil.
+
+Ankerstatusen **Out of Date** betyr at den lastede teksten eller tabellene ikke samsvarer med gjeldende innstillinger. Minuttavstemmingen laster et tomt eller endret anker umiddelbart. [Feilsøking](/docs/operate/troubleshooting#ip-blocking-does-not-match-settings) beskriver kontrollene.
+
+IP-listeoppføringer som er bredere enn IPv4 `/8` eller IPv6 `/16`, hoppes over og telles; grensenettverkene `/8` og `/16` godtas. Grensen gjelder ikke IP Allowlist, fordi den bare kan redusere blokkeringen. Før tabellene skrives, trekker Sinkhole alltid fra alle IPv4- og IPv6-adresser på brannmurgrensesnitt, hele delnettene til grensesnitt som er valgt for IP-blokkering, virtuelle CARP- og IP Alias-adresser samt konfigurerte gatewayer og DNS-servere.
+

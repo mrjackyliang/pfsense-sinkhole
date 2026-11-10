@@ -1,0 +1,83 @@
+---
+id: installation
+title: Instaliranje paketa
+description: Provjerite stabilni paket Sinkholea prema njegovoj SHA-256 datoteci, instalirajte ga ili ažurirajte pomoću pkg-a i potvrdite svaku karticu paketa u pfSense WebGUI-ju.
+keywords:
+  - sinkhole for pfsense
+  - instaliranje
+  - pkg add
+  - sha256 kontrolni zbir
+  - github izdanje
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+Instalirajte ili ažurirajte Sinkhole iz stabilnog paketa izdanja na GitHubu, a zatim potvrdite da je pfSense registrirao svaku WebGUI karticu.
+
+## Zahtjevi \{#requirements}
+
+- **Administrator shell** — SSH ili konzolni pristup ljusci pfSensea. **Diagnostics → Command Prompt** također može izvršiti jednu naredbu.
+- **HTTPS access to GitHub** — Zaštitni zid mora moći preuzeti paket i kontrolni zbir iz GitHub Releases.
+- **DNS Resolver** — DNS Resolver u pfSenseu mora biti omogućen prije nego što se može omogućiti DNS integracija Sinkholea.
+- **Available Python slot** — pfBlockerNG DNSBL ili druga Python skripta ne smije zauzimati jedino mjesto za modul u Resolveru.
+- **Current backup** — Preporučuje se preuzeti `config.xml` iz **Diagnostics → Backup & Restore** prije instaliranja neslužbenog paketa.
+
+:::warning
+
+Sinkhole se instalira s GitHuba, a ne iz Netgateovog repozitorija paketa, pa Netgate ne pregledava niti podržava paket.
+
+:::
+
+## Provjerite izdanje \{#check-the-release}
+
+[Stranica GitHub Releases](https://github.com/mrjackyliang/pfsense-sinkhole/releases) objavljuje pakete sa stabilnim nazivom i nazivom s verzijom. Stabilne datoteke koje se koriste na ovoj stranici su:
+
+| Datoteka                          | Namjena                                             |
+|-----------------------------------|-----------------------------------------------------|
+| `pfSense-pkg-Sinkhole.pkg`        | Najnoviji paket Sinkholea koji se može instalirati. |
+| `pfSense-pkg-Sinkhole.pkg.sha256` | Samo SHA-256 vrijednost hasha za stabilni paket.    |
+
+## Provjerite kontrolni zbir \{#verify-the-checksum}
+
+Preuzmite stabilni paket i njegovu stabilnu `.sha256` datoteku u `/tmp`, a zatim uporedite dvije ispisane vrijednosti:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg.sha256
+sha256 -q pfSense-pkg-Sinkhole.pkg
+cat pfSense-pkg-Sinkhole.pkg.sha256
+```
+
+Dvije vrijednosti se podudaraju kada je preuzeti paket netaknut. Provjerena lokalna datoteka zatim se može instalirati naredbom `pkg add -f /tmp/pfSense-pkg-Sinkhole.pkg`.
+
+## Instalirajte ili ažurirajte \{#install-or-update}
+
+Ista naredba prvi put instalira Sinkhole, ažurira stariju verziju ili ponovo instalira trenutnu verziju:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Opcija `-f` je potrebna jer verzija alata `pkg` na pfSenseu 2.8 inače može preskočiti ažuriranje s istog stabilnog URL-a. Također zadržava uobičajene kuke paketa za instaliranje i nadogradnju.
+
+## Potvrdite WebGUI \{#confirm-the-webgui}
+
+1. Otvorite **Firewall → Sinkhole**.
+2. Potvrdite da se prikazuju **General**, **Lists**, **Services**, **Scopes**, **Alerts**, **Bypass**, **IP**, **Status** i **About**.
+3. Ostavite **General → Enable** isključenim dok DNS Resolver ne bude omogućen i njegovo mjesto za Python skriptu ne bude dostupno.
+4. Otvorite **About** i potvrdite da prikazana verzija paketa odgovara izdanju koje ste instalirali.
+
+Paketi instalirani izvan Netgateovog repozitorija ne pojavljuju se na stranici **Installed Packages** u pfSenseu. Ažuriranje i uklanjanje zato koriste naredbe ljuske dokumentirane ovdje i u odjeljku [Životni ciklus paketa](/docs/reference/package-lifecycle).
+
+## Ako instaliranje ne uspije \{#if-installation-fails}
+
+- **Not found or no package asset** — Potvrdite da najnovije GitHub izdanje sadrži `pfSense-pkg-Sinkhole.pkg`.
+- **Checksum differs** — Zadržite instaliranu verziju i ponovo preuzmite obje stabilne datoteke iz izdanja.
+- **DNS, TLS, or certificate error** — Potvrdite da pfSense razrješava `github.com`, pristupa mu putem HTTPS-a i ima tačno sistemsko vrijeme.
+- **Wrong ABI** — Instalirajte najnovije izdanje. Trenutni paketi ponovo se grade s ABI-jem `FreeBSD:*`, dok stariji artefakt možda nije.
+
+Nakon što se kartice pojave, nastavite na [Postavljanje Sinkholea](/docs/first-run).

@@ -1,0 +1,109 @@
+---
+id: troubleshooting
+title: 故障排除
+description: 診斷非活動的 Resolver 整合、過期策略、用戶端映射衝突、Bypass 狀態、IP 錨點偏差、警報抑制和更新失敗。
+keywords:
+  - sinkhole for pfsense
+  - 故障排除
+  - dns resolver
+  - 用戶端映射
+  - 更新失敗
+tags:
+  - operate
+  - troubleshooting
+  - diagnostics
+---
+
+從 Status 面板和系統日誌追蹤問題，定位導致問題的具體清單、作用域、規則、監聽地址、鎖或執行時狀態。
+
+## 查看位置 \{#where-to-look}
+
+- **Firewall → Sinkhole → Status** 顯示清單、目錄、用戶端映射、警報、Bypass、IP、編譯、部署和 Resolver 狀態。
+- **Status → System Logs → System → General** 顯示以 `Sinkhole:` 開頭的執行日誌行。
+- `/usr/local/sbin/sinkhole --help` 輸出支持的維護模式。
+
+建議在更改配置之前保留 Status 值和相關日誌行。完整的 `config.xml` 輸出可能包含機密信息，不應附加到報告中。
+
+## Sinkhole 處於非活動狀態 \{#sinkhole-is-inactive}
+
+根據 **Summary → Sinkhole** 後面的原因處理：
+
+- **Sinkhole is disabled** — 在 Resolver 和 Python 插槽準備就緒後選擇 **General → Enable**。
+- **DNS Resolver is disabled** — 在儲存 Sinkhole 之前啓用並應用 Resolver。
+- **Python script slot is owned** — 禁用衝突的 DNSBL/Python 集成，或讓 Sinkhole 保持禁用；Sinkhole 不會替換它。
+- **Python mode or position changed** — 再次儲存 Sinkhole 的 General 設定，以便 Sync 在 Sinkhole 擁有插槽時恢復 Python 模式和 `pre_validator`。
+- **Runtime files unavailable** — 通過儲存 General 設定執行套件 Sync，或重新啓動並讓 pfSense 的套件 Sync 恢復 RAM 磁盤檔案。
+
+在 `/var` 位於記憶體中的系統上，每次啓動時的套件 Sync 會恢復缺失的執行時檔案，並在套件啓動後按需重啓 Unbound。因此，啓動後立即缺失的早期執行時檔案應在套件啓動期間自動恢復。
+
+## 某個域名未被封鎖 \{#a-domain-is-not-blocked}
+
+1. 確認清單已啓用且具有已儲存項目，並且錯誤沒有替換其最後有效副本。
+2. 按用戶端當前設備和網路遵循[決策順序](/docs/configure/scopes#decision-order)。
+3. 確認 **Compile Needed** 和 **Deployment Needed** 均為 `No`，然後比較編譯、部署和載入代次。
+4. 確認用戶端直接查詢 pfSense，或透過 **Bypass → Redirect** 查詢。
+
+Unbound 會先於 Python 模塊回應內置的 `test.`、`invalid.`、`onion.` 和 `localhost.` 區域。在這些區域下進行實時測試不會執行 Sinkhole。
+
+當部署增加名稱或擴大子樹時，Sinkhole 會在新代次載入後重新載入 Unbound，因為 `flush_zone` 只會把快取項目標記為過期。啓用 **Serve Expired** 時，Unbound 1.18 仍可能提供這些項目，而 `unbound-control reload` 會清除消息和 RRset 快取。
+
+## CNAME 結果看起來不完整 \{#a-cname-result-looks-incomplete}
+
+如果查詢的 CNAME 目標已列入清單，即使原始名稱未列入清單，該查詢也會被封鎖。如果列入清單的目標沒有所請求類型的記錄（例如 AAAA），回應可以保留 CNAME 但不包含地址。
+
+明確允許的查詢名稱仍會保持允許。這樣可防止不太具體的 CNAME 目標覆蓋對所查詢名稱的顯式允許域名決定。
+
+## 設備獲得了錯誤策略 \{#a-device-gets-the-wrong-policy}
+
+- 執行 `/usr/local/sbin/sinkhole --refresh-clients` 並檢查 **Status → Scopes**。
+- 確認網路行顯示介面的當前子網，設備行顯示其當前地址。
+- 解決所有 **Conflict** 值，因為按表格順序出現的第一個設備會贏得共享地址。
+- 對於靜態映射，請同時檢查其配置地址以及為其 MAC 觀察到的當前地址。
+
+ISC 租約時間可能採用 GMT 或防火牆本地時間，具體取決於介面的租約時間設定；Kea 租約時間已經是本地時間。Sinkhole 在判斷租約是否為當前租約時遵循這些 pfSense 語義。
+
+## 清單或目錄更新失敗 \{#list-or-catalog-update-failed}
+
+DNS、Bypass 或 IP 下載、解析或驗證失敗時會保留之前的已儲存副本並記錄錯誤。DNS 繼續使用已部署的本地代次，而不會等待失敗的來源。
+
+目錄只在搜索打開或刷新時獲取；獲取失敗會保留快取的最後有效目錄。強制再次刷新前，請確認 HTTPS 連接、來源 URL 和 Status 錯誤。
+
+## 普通 DNS 重定向已暫停或缺失 \{#plain-dns-redirect-is-paused-or-missing}
+
+- **Paused** — 修復或刪除 Bypass 面板中顯示的每個無效豁免。
+- **No family address** — 為介面新增該地址族，或接受無法為其生成規則。
+- **Resolver does not listen** — 更改 **DNS Resolver → Network Interfaces**，或移除該重定向選擇。
+- **Rules missing or out of date** — 等待兩次每分鐘觀察，然後檢查 **Last parse error** 和系統日誌。
+- **Queries are refused** — 將用戶端網路新增到 Resolver 的訪問控制配置。
+
+當 pfSense 的套件鎖被持有，或 pfSense 已拒絕未改變的規則文本時，每分鐘檢查不會重新載入過濾器。更正無效配置後，接下來的兩次觀察會進行協調。
+
+IPv6 重定向目標始終使用介面地址，因為實測 FreeBSD 會丟棄從非回環介面重寫到 `::1` 的流量。混合地址族豁免會分別生成 `inet` 和 `inet6` 規則，因為實測 FreeBSD 14 和 16 在不限定地址族的混合清單中只保留第一個地址族。
+
+## IP 封鎖與設定不符 \{#ip-blocking-does-not-match-settings}
+
+1. 確認 **IP and Country Blocking → State** 為 `On`，並列出了預期介面和方向。
+2. 檢查最終地址族表計數、跳過行數、上次更新和上次錯誤。
+3. 確認 **IP Anchor** 為 `Yes`；`Out of date` 表示已載入錨點與當前檔案或設定不匹配。
+4. 檢查允許清單，並記住系統會自動移除防火牆、網關和 DNS 地址。
+
+`sinkhole/ip` 錨點可在普通 pfSense 過濾器重新載入後繼續存在，並通過早期套件規則掛鈎位於 pass-quick 規則之前。每分鐘檢查會直接重新載入空白或發生變化的錨點，而關閉該功能會清空錨點。
+
+## 未收到警報 \{#alerts-do-not-arrive}
+
+- 確認規則已啓用，並且其清單選擇和用戶端選擇都與被封鎖回應匹配。
+- 將事件與規則的重復時間窗口、每次執行 20 條、每條規則每小時 60 條和 50 條未讀通知上限進行比較。
+- 檢查 **Status → Alerts** 是否有過期、受抑制、已丟棄或錯誤計數。
+- 在 **System → Advanced → Notifications** 下單獨測試 pfSense 配置的遠程服務。
+
+超過 10 分鐘的事件視為過期；一次執行達到 40 秒預算後會停止發送，以便剩餘工作在下一分鐘繼續。WebGUI 通知文本也會通過 `file_notice()` 出現在 pfSense 系統日誌中。
+
+## 記憶體使用量很高 \{#memory-use-is-high}
+
+對 300,000 個名稱的實測使 Unbound RSS 從 41 MiB 增至 103 MiB，策略記憶體峰值約為每個名稱 157 字節。實際用量取決於唯一規範化名稱、作用域分配和正在執行的 Resolver。
+
+建議在新增大型來源前後，將 Status 項目計數與 Unbound 記憶體進行比較。禁用未使用的清單後，它會在下一次編譯時退出活動策略。
+
+## 報告問題 \{#report-a-problem}
+
+請創建 [GitHub issue](https://github.com/mrjackyliang/pfsense-sinkhole/issues)，並附上 Sinkhole 版本、pfSense 版本和版本號、FreeBSD 版本、準確的 Status 狀態、復現步驟以及經過清理的 `Sinkhole:` 日誌行。不要包含 MaxMind 憑據、完整配置檔案、清單內容或私有用戶端/域名資料。

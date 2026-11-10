@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "Natywny pakiet pfSense"
+  },
+  "homepage.hero.heading": {
+    "message": "Wybierz, do czego może dotrzeć każda sieć i każde urządzenie."
+  },
+  "homepage.hero.tagline": {
+    "message": "Stosuj zapisane listy DNS do całej sieci, jednego VLAN-u lub urządzenia, z celowymi alertami i bez drugiego serwera."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Zainstaluj Sinkhole"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "Zaplanuj scopes"
+  },
+  "homepage.stats.heading": {
+    "message": "Jedna zapora, zasady na każdym użytecznym poziomie"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole utrzymuje zasady lokalnie i jasno pokazuje granice działania."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "Zakresy zasad"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "Formaty list DNS"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "Pamięć podręczna katalogów"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Miejsce modułu Unbound"
+  },
+  "homepage.features.heading": {
+    "message": "Kontrola pozostająca na zaporze"
+  },
+  "homepage.features.scopes.title": {
+    "message": "Określ zakres każdej decyzji"
+  },
+  "homepage.features.scopes.description": {
+    "message": "Stosuj listy i dozwolone domeny globalnie, według interfejsu lub VLAN-u i według urządzenia."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "Zachowuj ostatnie prawidłowe kopie"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "Odpowiadaj na DNS z lokalnych list mimo restartów, przeładowań i nieudanych pobrań."
+  },
+  "homepage.features.alerts.title": {
+    "message": "Alerty z zamiarem"
+  },
+  "homepage.features.alerts.description": {
+    "message": "Powiadamiaj tylko o listach, sieciach i urządzeniach wybranych w każdej regule."
+  },
+  "homepage.features.redirect.title": {
+    "message": "Chroń ścieżki DNS"
+  },
+  "homepage.features.redirect.description": {
+    "message": "Opcjonalnie przekierowuj zwykły DNS lub blokuj typowe obejścia przez szyfrowany DNS i tunele na wybranych interfejsach."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "Wyszukaj i zdecyduj"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "Przeszukuj obsługiwane katalogi na żądanie bez dołączania ani polecania listy."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "Blokuj adresy i kraje"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "Stosuj listy IP i zasady krajów GeoLite2 przez izolowaną kotwicę `sinkhole/ip`."
+  }
+}

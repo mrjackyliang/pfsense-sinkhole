@@ -1,0 +1,83 @@
+---
+id: installation
+title: Install the Package
+description: Verify Sinkhole's stable package against its SHA-256 file, install or update it with pkg, and confirm every package tab in the pfSense WebGUI.
+keywords:
+  - sinkhole for pfsense
+  - installation
+  - pkg add
+  - sha256 checksum
+  - github release
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+Install or update Sinkhole from its stable GitHub release package, then confirm that pfSense registered every WebGUI tab.
+
+## Requirements \{#requirements}
+
+- **Administrator shell** — SSH or console access to the pfSense shell. **Diagnostics → Command Prompt** can also run a single command.
+- **HTTPS access to GitHub** — The firewall needs to download the package and checksum from GitHub Releases.
+- **DNS Resolver** — The pfSense DNS Resolver needs to be enabled before Sinkhole's DNS integration can be enabled.
+- **Available Python slot** — pfBlockerNG DNSBL or another Python script can't own the Resolver's single module slot.
+- **Current backup** — It is recommended to download `config.xml` from **Diagnostics → Backup & Restore** before installing an unofficial package.
+
+:::warning
+
+Sinkhole is installed from GitHub rather than Netgate's package repository, so Netgate doesn't review or support the package.
+
+:::
+
+## Check the Release \{#check-the-release}
+
+The [GitHub Releases page](https://github.com/mrjackyliang/pfsense-sinkhole/releases) publishes stable-named and versioned package files. The stable files used on this page are:
+
+| File                              | Purpose                                         |
+|-----------------------------------|-------------------------------------------------|
+| `pfSense-pkg-Sinkhole.pkg`        | Latest installable Sinkhole package.            |
+| `pfSense-pkg-Sinkhole.pkg.sha256` | Hash-only SHA-256 value for the stable package. |
+
+## Verify the Checksum \{#verify-the-checksum}
+
+Download the stable package and its stable `.sha256` file to `/tmp`, then compare the two printed values:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg.sha256
+sha256 -q pfSense-pkg-Sinkhole.pkg
+cat pfSense-pkg-Sinkhole.pkg.sha256
+```
+
+The two values match when the downloaded package is intact. The checked local file can then be installed with `pkg add -f /tmp/pfSense-pkg-Sinkhole.pkg`.
+
+## Install or Update \{#install-or-update}
+
+The same command installs Sinkhole for the first time, updates an older version, or reinstalls the current version:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+The `-f` flag is required because the `pkg` version on pfSense 2.8 can otherwise skip an update from the same stable URL. It also preserves the package's normal install and upgrade hooks.
+
+## Confirm the WebGUI \{#confirm-the-webgui}
+
+1. Open **Firewall → Sinkhole**.
+2. Confirm that **General**, **Lists**, **Services**, **Scopes**, **Alerts**, **Bypass**, **IP**, **Status**, and **About** appear.
+3. Leave **General → Enable** off until the DNS Resolver is enabled and its Python script slot is available.
+4. Open **About** and confirm that the displayed package version matches the release you installed.
+
+Packages installed outside Netgate's repository don't appear on pfSense's **Installed Packages** page. Updates and removal therefore use the shell commands documented here and in [Package Lifecycle](/docs/reference/package-lifecycle).
+
+## If Installation Fails \{#if-installation-fails}
+
+- **Not found or no package asset** — Confirm that the latest GitHub release contains `pfSense-pkg-Sinkhole.pkg`.
+- **Checksum differs** — Keep the installed version and download both stable files again from the release.
+- **DNS, TLS, or certificate error** — Confirm that pfSense resolves `github.com`, reaches it over HTTPS, and has the correct system time.
+- **Wrong ABI** — Install the latest release. Current packages are rebuilt with the `FreeBSD:*` ABI, while an older artifact may not be.
+
+Continue with [Set Up Sinkhole](/docs/first-run) after the tabs appear.

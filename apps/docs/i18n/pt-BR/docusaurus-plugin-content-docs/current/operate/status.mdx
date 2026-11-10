@@ -1,0 +1,132 @@
+---
+id: status
+title: Status
+description: Leia cada painel de Status do Sinkhole, diferencie estados ativos, pendentes, pausados, carregados, ausentes e desatualizados e execute uma atualização manual.
+keywords:
+  - sinkhole for pfsense
+  - status
+  - estado ativo
+  - geração de implantação
+  - proteção bypass
+tags:
+  - operate
+  - status
+  - diagnostics
+---
+
+import ipStatus from './_assets_/status-4.png';
+import listsScopesStatus from './_assets_/status-1.png';
+import summaryStatus from './_assets_/status-2.png';
+
+Consulte o estado das listas salvas, escopos, alertas, Bypass, IP, compilação, implantação e Resolver em uma única visão operacional.
+
+## Painéis de Status \{#status-panels}
+
+Abra **Firewall → Sinkhole → Status** para ver estes painéis:
+
+| Painel                  | O que informa                                                                                                                                         |
+|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Summary                 | Compilação, implantação, geração, operação, proprietário do Resolver, estado geral do Sinkhole e **Update Now** abaixo do painel.                     |
+| Lists                   | URL da lista DNS, contagem de entradas salvas, última atualização bem-sucedida e último erro.                                                         |
+| Popular-List Catalogs   | Última busca e último erro das fontes de catálogo do AdGuard Home e do pfBlockerNG.                                                                   |
+| Invalid Saved Rows      | Linhas de lista malformadas que continuam disponíveis para reparo; exibido somente quando existem.                                                    |
+| Scopes                  | Hora e erro da reconstrução do mapa de clientes, seguidos por painéis separados de Networks e Devices.                                                |
+| Alerts                  | Última execução, eventos lidos ou obsoletos, notificações enviadas ou retidas, eventos descartados e último erro.                                     |
+| Bypass                  | Cada proteção, interfaces, estado das regras de redirecionamento, estado e contagens da âncora Bypass, seguidos por Bypass Lists e painéis de reparo. |
+| IP and Country Blocking | Seleções de política, contagens de tabelas e regras, atualizações, erros e estado da âncora, seguidos por um painel IP Lists separado.                |
+
+Linhas de lista e escopo desativadas aparecem esmaecidas. Uma fonte com erro ainda pode mostrar entradas e uma atualização bem-sucedida anterior porque a última cópia válida permanece ativa.
+
+<img src={listsScopesStatus} alt="Aba Status mostrando atualizações de uma lista de demonstração salva, sub-redes e endereços atuais de um dispositivo de demonstração" width={1024} height={949} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Estado do Sinkhole \{#sinkhole-state}
+
+A última linha **Sinkhole** em Summary é a verificação mais rápida da integração com o Resolver:
+
+| Estado                                   | Significado                                                                                                     |
+|------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| `Active`                                 | O Sinkhole está ativado, ocupa o espaço Python, usa o modo Python e `pre_validator` e possui dados de execução. |
+| `Inactive: Sinkhole is disabled.`        | General **Enable** está desativado.                                                                             |
+| `Inactive: DNS Resolver is disabled.`    | O DNS Resolver do pfSense está desativado.                                                                      |
+| `Inactive: ... slot is owned by ...`     | Outro script Python, como o DNSBL do pfBlockerNG, ocupa o único espaço.                                         |
+| `Inactive: Sinkhole does not own ...`    | O script configurado não é o Sinkhole, mesmo sem outro proprietário informado.                                  |
+| `Inactive: ... Python mode is disabled.` | O modo Python não está mais ativado no Resolver.                                                                |
+| `Inactive: ... pre-validator position.`  | A ordem dos módulos não posiciona mais o Sinkhole em `pre_validator`.                                           |
+| `Inactive: ... runtime files ...`        | O script ou a geração compilada atual está ausente.                                                             |
+
+Quando o Sinkhole está desativado intencionalmente, **Deployment Needed** é `No`, **Loaded Generation** é `Module not loaded.` e a página não exibe um aviso de implantação. Outro estado de integração inativa força **Deployment Needed** para `Yes` e **Loaded Generation** para `Module not loaded.`. Corrija o motivo informado antes de considerar os dados compilados ativos.
+
+## Estado de compilação e implantação \{#compile-and-deployment-state}
+
+| Campo               | Significado                                                                                                  |
+|---------------------|--------------------------------------------------------------------------------------------------------------|
+| Compile Needed      | A política salva mudou ou a última compilação não foi concluída com sucesso.                                 |
+| Compiled Generation | Identificador produzido pela compilação bem-sucedida mais recente.                                           |
+| Deployment Needed   | O conteúdo compilado não é o conteúdo implantado no Unbound, ou a integração está inativa.                   |
+| Deployed Generation | Identificador no manifesto de execução implantado no momento.                                                |
+| Loaded Generation   | Identificador que o módulo do Unbound informa ter carregado.                                                 |
+| Update Running      | Exibido somente enquanto uma atualização de lista ou IP mantém o lock compartilhado.                         |
+| Removal in Progress | Exibido somente enquanto o marcador persistente de remoção está definido e a integração está sendo retirada. |
+| Python Script Owner | Valor atual do único espaço `python_script` do Resolver, ou `None`.                                          |
+
+A página exibe uma caixa de aviso quando a compilação ou a implantação está pendente, incluindo o motivo registrado. Identificadores iguais de compilação, implantação e carregamento mostram que a política salva chegou ao módulo em execução.
+
+<img src={summaryStatus} alt="Painel Summary de Status mostrando gerações compilada, implantada e carregada iguais, com o Sinkhole ativo" width={1024} height={854} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Estado de escopos e alertas \{#scope-and-alert-state}
+
+O resumo Scopes informa o estado da reconstrução do mapa de clientes. Os painéis separados **Networks** e **Devices** informam os CIDRs atuais de cada interface e os endereços atuais de cada dispositivo. Um conflito identifica um endereço reivindicado por vários dispositivos; o primeiro dispositivo na ordem da tabela fica com esse endereço para a política.
+
+O painel **Alerts** descreve somente o processo de minuto mais recente. **Notifications held back** inclui a supressão por limite ou por avisos não lidos, enquanto **Events dropped by module** indica que a fila limitada de eventos na memória ou no disco ficou cheia.
+
+## Estado do Bypass \{#bypass-state}
+
+O painel Bypass informa `On` ou `Off` para TLS and QUIC, listas de provedores, Firefox, Private Relay, Tor, listas de provedores VPN e portas VPN padrão. **Discovery** informa o modo selecionado. **Interfaces** confirma a seleção compartilhada voltada aos clientes.
+
+A âncora independente do firewall informa:
+
+| Campo                   | Significado                                                                                                                 |
+|-------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| Firewall rules loaded   | Se a âncora `sinkhole/bypass` existe quando as configurações atuais a exigem.                                               |
+| Firewall rules current  | Se o resumo, as regras e as tabelas carregados correspondem às configurações atuais e aos últimos dados válidos das listas. |
+| Firewall rule count     | Número de regras ativas na âncora Bypass.                                                                                   |
+| IPv4/IPv6 table entries | Contagens finais de endereços de provedores, Tor e VPN após a remoção dos endereços protegidos do firewall.                 |
+
+A tabela **Bypass Lists** informa o tipo, estado habilitado, contagem de entradas salvas, última busca e último erro de cada linha. Assim, uma busca com falha pode mostrar um erro junto com entradas da última cópia válida mantida.
+
+### Estado do redirecionamento de DNS comum \{#plain-dns-redirect-state}
+
+| Estado | Significado                                                                                       |
+|--------|---------------------------------------------------------------------------------------------------|
+| Off    | O redirecionamento de DNS comum está desativado.                                                  |
+| On     | Redirect está ativado e todas as exceções salvas são válidas.                                     |
+| Paused | Pelo menos uma exceção salva de origem ou destino é inválida, portanto nenhuma regra é utilizada. |
+
+O campo **pfSense loaded rules** tem três estados:
+
+| Estado      | Significado                                                                                                              |
+|-------------|--------------------------------------------------------------------------------------------------------------------------|
+| Yes         | `/tmp/rules.debug` contém exatamente o bloco de redirecionamento que o Sinkhole deseja no momento.                       |
+| No          | O bloco desejado não está carregado.                                                                                     |
+| Out of Date | Um bloco do Sinkhole está carregado, mas seu texto não corresponde às configurações ou aos listeners atuais do Resolver. |
+
+Cada destino de família é o endereço de listener selecionado ou o motivo pelo qual nenhuma regra pode ser criada. **Last parse error** aparece somente enquanto o bloco atual está ausente depois de o pfSense rejeitá-lo.
+
+## Estado de IP e país \{#ip-and-country-state}
+
+O estado principal do painel IP é **On** ou **Off**. O campo **IP Anchor** usa **Yes**, **No** e **Out of Date** com a mesma distinção entre carregado e atual usada pela âncora Bypass.
+
+As contagens de entradas das tabelas mostram as redes IPv4 e IPv6 finais, depois da subtração da lista de permissões e dos endereços protegidos.
+
+**Skipped Lines** conta entradas inválidas das listas de IP. As linhas de comentário e as linhas em branco não são contabilizadas.
+
+**GeoLite2 Last Update** é independente da atualização de lista mais recente.
+
+<img src={ipStatus} alt="Painel IP and Country Blocking de Status mostrando contagens das tabelas, estado da atualização, uma âncora carregada e uma linha de lista IP de demonstração" width={1024} height={1082} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Execute Update Now \{#run-update-now}
+
+Selecionar **Update Now** abaixo de Summary inicia `/usr/local/sbin/sinkhole --manual` em segundo plano e retorna imediatamente. O botão não transmite a saída, portanto **Update Running**, as linhas de listas DNS/Bypass/IP, os campos de compilação e os últimos erros fornecem o resultado.
+
+O processo manual usa o mesmo lock de atualização compartilhado que as atualizações agendadas de lista e a atualização automática do pacote. Se outra atualização mantiver o lock, o processo existente continuará e o trabalho de aplicação pendente será preservado.
+

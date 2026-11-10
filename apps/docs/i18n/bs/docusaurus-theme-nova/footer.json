@@ -1,0 +1,36 @@
+{
+  "layout.learn.title": {
+    "message": "Vodiči"
+  },
+  "layout.resources.title": {
+    "message": "Resursi"
+  },
+  "sections.learn.0.label": {
+    "message": "Instaliranje Sinkholea"
+  },
+  "sections.learn.1.label": {
+    "message": "Liste i sačuvane kopije"
+  },
+  "sections.learn.2.label": {
+    "message": "Određivanje opsega DNS pravila"
+  },
+  "sections.learn.4.label": {
+    "message": "Rješavanje problema"
+  },
+  "sections.resources.0.label": {
+    "message": "Kako rade ažuriranja"
+  },
+  "sections.resources.1.label": {
+    "message": "Testiranje i provjera"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense dokumentacija"
+  },
+  "sections.resources.3.label": {
+    "message": "Izvorni kod"
+  },
+  "copyright": {
+    "message": "Copyright © 2026 Jacky Liang. MIT.",
+    "description": "The footer copyright text"
+  }
+}

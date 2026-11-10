@@ -1,0 +1,146 @@
+---
+id: settings
+title: Référence des réglages
+description: Consultez les champs, valeurs, calendriers, listes et portées, limites d’alerte, protection Bypass, politique IP, contrôles de version et langues de Sinkhole.
+keywords:
+  - sinkhole for pfsense
+  - réglages
+  - valeurs par défaut
+  - webgui
+  - configuration
+tags:
+  - reference
+  - settings
+  - webgui
+---
+
+Consultez le rôle et le comportement par défaut de chaque zone de configuration de Sinkhole sous **Firewall → Sinkhole**.
+
+## General \{#general}
+
+| Champ            | Valeur par défaut | Description                                                                                             |
+|------------------|-------------------|---------------------------------------------------------------------------------------------------------|
+| Enable           | Off               | Active les mises à jour planifiées des listes et l’intégration de Sinkhole au DNS Resolver.             |
+| Update Frequency | Daily             | Choisit Hourly, Every 6 hours, Daily ou Weekly pour la planification des listes DNS, Bypass et IP/pays. |
+| Keep Settings    | On                | Conserve la configuration et les données durables enregistrées lorsque le paquet est supprimé.          |
+
+Les horaires planifiés utilisent des composants aléatoires stables. Hourly s’exécute à une minute stable, Every 6 hours utilise cette même minute toutes les six heures, Daily s’exécute à `00:<minute>` et Weekly le dimanche à `00:<minute>`.
+
+## Package Updates \{#package-updates}
+
+| Champ                | Valeur par défaut | Description                                                                                     |
+|----------------------|-------------------|-------------------------------------------------------------------------------------------------|
+| Update Checks        | Weekly            | Choisit Daily, Weekly, Monthly ou Never pour rechercher de nouvelles versions GitHub.           |
+| Remote Notifications | Off               | Envoie aussi chaque avis de nouvelle version par les services distants configurés dans pfSense. |
+
+Chaque nouvelle version crée un avis pfSense local. **About → Check Now** exécute immédiatement le même contrôle borné sans modifier le calendrier.
+
+## Lists \{#lists}
+
+| Champ           | Valeur par défaut | Description                                                                                               |
+|-----------------|-------------------|-----------------------------------------------------------------------------------------------------------|
+| Name            | Empty             | Libellé local utilisé dans les attributions, les alertes et Status.                                       |
+| URL             | Empty             | Source HTTP ou HTTPS sans identifiants intégrés.                                                          |
+| Enabled         | On                | Inclut la source dans les mises à jour et la politique compilée lorsqu’elle est attribuée.                |
+| Global          | On                | Applique la liste à chaque client après les décisions d’appareil et de réseau.                            |
+| Allowed Domains | Empty             | Un domaine global autorisé par ligne ; chaque entrée autorise le domaine exact et tous ses sous-domaines. |
+
+**Add from Catalog** recherche à la demande dans le registre de listes d’AdGuard Home et le catalogue de flux de pfBlockerNG. L’ajout d’un résultat crée la même ligne ordinaire que la saisie manuelle de son URL.
+
+Les flux de contournement sont exclus de ce catalogue.
+
+## Services \{#services}
+
+Les sélections de services sont vides par défaut pour chaque portée. Un service du registre couvert par une protection Bypass dédiée est masqué dans Services et supprimé des sélections enregistrées ; Private Relay se configure uniquement dans l'onglet Bypass.
+
+## Network Scopes \{#network-scopes}
+
+| Champ           | Valeur par défaut | Description                                                                                                                                               |
+|-----------------|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface       | Empty             | Interface pfSense configurée dont les sous-réseaux IPv4 et IPv6 actuels identifient le réseau.                                                            |
+| Lists           | Empty             | Listes DNS supplémentaires qui bloquent les clients du réseau.                                                                                            |
+| Allowed Domains | Empty             | Une exception réseau par ligne ; chacune autorise le domaine exact et tous ses sous-domaines avant les listes de ce réseau et toute la politique globale. |
+| Enabled         | On                | Inclut la ligne dans la correspondance des clients et la politique compilée.                                                                              |
+
+Chaque interface ne peut apparaître qu’une fois. Une interface enregistrée devenue indisponible reste visible pour être corrigée au lieu d’être supprimée.
+
+## Device Scopes \{#device-scopes}
+
+| Champ               | Valeur par défaut | Description                                                                                                                              |
+|---------------------|-------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty             | Libellé local affiché dans la politique et Status.                                                                                       |
+| Identified By       | IP address        | Choisit IP address, DHCP static mapping ou MAC address.                                                                                  |
+| IP or MAC Address   | Empty             | Identifiant exact lorsque IP address ou MAC address est sélectionné.                                                                     |
+| DHCP Static Mapping | Empty             | Association existante choisie lorsque cette méthode d’identification est utilisée.                                                       |
+| Lists               | Empty             | Listes DNS supplémentaires qui bloquent cet appareil.                                                                                    |
+| Allowed Domains     | Empty             | Une exception d’appareil par ligne ; chacune autorise le domaine exact et tous ses sous-domaines avant toute décision réseau ou globale. |
+| Enabled             | On                | Inclut la ligne dans la correspondance des clients et la politique compilée.                                                             |
+
+Les associations statiques utilisent leur adresse configurée et les adresses actuelles observées pour leur MAC. Une ligne MAC utilise les données actuelles ARP, NDP et des baux DHCP.
+
+## Alert Rules \{#alert-rules}
+
+| Champ                | Valeur par défaut | Description                                                                                                       |
+|----------------------|-------------------|-------------------------------------------------------------------------------------------------------------------|
+| Description          | Empty             | Libellé local de la règle.                                                                                        |
+| Lists                | Any               | Correspond à toute liste ou uniquement aux listes configurées sélectionnées.                                      |
+| Clients              | Everyone          | Correspond à tous les clients ou uniquement aux portées réseau et appareil sélectionnées.                         |
+| Repeat After         | 60                | Minutes avant que la même règle, le même client, domaine et liste puissent notifier à nouveau ; accepte 1 à 1440. |
+| WebGUI Notice        | On                | Ajoute un avis pfSense lorsque la règle correspond.                                                               |
+| Remote Notifications | On                | Utilise les services de notification configurés dans pfSense lorsque la règle correspond.                         |
+| Enabled              | On                | Inclut la règle dans la politique d’alerte compilée.                                                              |
+
+Le processeur minute envoie au maximum 20 messages par exécution et 60 messages par règle et par heure, puis résume le dépassement. Il conserve au plus 50 avis WebGUI Sinkhole non lus et dispose d’un budget de 40 secondes ; les événements de plus de 10 minutes sont périmés.
+
+## Protection Bypass \{#bypass-protection}
+
+| Champ               | Valeur par défaut | Description                                                                                                              |
+|---------------------|-------------------|--------------------------------------------------------------------------------------------------------------------------|
+| Apply to            | Empty             | Interfaces d’arrivée côté client partagées par toutes les protections Bypass.                                            |
+| Redirect            | Off               | Envoie au pare-feu le trafic DNS ordinaire des ports UDP et TCP 53 sur les interfaces sélectionnées.                     |
+| Exempt Sources      | Empty             | Une adresse IP, un CIDR, un alias ou une entrée `This Firewall` par ligne qui contourne la redirection du DNS ordinaire. |
+| Exempt Destinations | Empty             | Une adresse IP de destination, un CIDR ou un alias par ligne qui contourne la redirection du DNS ordinaire.              |
+| TLS and QUIC        | Off               | Bloque les ports TCP et UDP 853 vers les destinations autres que le pare-feu.                                            |
+| Providers           | Off               | Bloque les noms et adresses des Bypass Lists **Encrypted DNS** activées.                                                 |
+| Firefox             | Off               | Renvoie `NXDOMAIN` pour le nom canari du DNS-over-HTTPS automatique de Firefox et ses sous-domaines.                     |
+| Private Relay       | Off               | Renvoie `NXDOMAIN` pour les deux noms de disponibilité du Private Relay d’Apple.                                         |
+| Discovery           | Off               | Laisse DDR inchangé, annonce le DNS over TLS du pare-feu ou répond `NOERROR` sans enregistrement.                        |
+| Tor                 | Off               | Bloque les noms et adresses des Bypass Lists **Tor** activées.                                                           |
+| VPN providers       | Off               | Bloque les noms et adresses des Bypass Lists **VPN** activées.                                                           |
+| Standard VPN ports  | Off               | Bloque les ports UDP d’OpenVPN, WireGuard et IPsec ainsi que ESP vers les destinations autres que le pare-feu.           |
+
+Toutes les exemptions de redirection enregistrées doivent être valides avant l’utilisation des règles de redirection. IPv4 cible `127.0.0.1` uniquement lorsque le Resolver y écoute et utilise sinon l’adresse de l’interface ; IPv6 utilise toujours l’adresse de l’interface. **Discovery → Advertise** nécessite le service SSL/TLS du DNS Resolver et le nom d’hôte du certificat.
+
+### Bypass Lists \{#bypass-lists}
+
+| Champ   | Valeur par défaut | Description                                                                                      |
+|---------|-------------------|--------------------------------------------------------------------------------------------------|
+| Name    | Empty             | Libellé local affiché dans Bypass et Status.                                                     |
+| Kind    | Encrypted DNS     | Sélectionne la politique **Encrypted DNS**, **Tor** ou **VPN**.                                  |
+| URL     | Empty             | Source HTTP ou HTTPS contenant un mélange de domaines, d’adresses et de CIDR.                    |
+| Enabled | Off               | Inclut la liste enregistrée dans les récupérations planifiées et sa protection activée associée. |
+
+La saisie d’une Bypass List utilise une entrée par ligne et des commentaires `#`. Une récupération échouée conserve la dernière copie valide enregistrée. Les décisions d’autorisation de domaines des listes ont priorité sur les noms des Bypass Lists, mais pas sur les signaux Firefox, Private Relay ou Discovery.
+
+**Add from Catalog** recherche les flux de contournement du registre d'AdGuard Home et des sections DNS, IPv4 et IPv6 de pfBlockerNG uniquement à l'ouverture ou à l'actualisation. Chaque résultat a un type fixe **Encrypted DNS**, **Tor** ou **VPN** et est ajouté comme Bypass List activée.
+
+## IP and Country Blocking \{#ip-and-country-blocking}
+
+| Champ               | Valeur par défaut | Description                                                                                        |
+|---------------------|-------------------|----------------------------------------------------------------------------------------------------|
+| Enable              | Off               | Active l’ancre de pare-feu `sinkhole/ip` chargée indépendamment.                                   |
+| Interfaces          | Empty             | Interfaces d’arrivée sur lesquelles les règles de blocage s’appliquent.                            |
+| Directions          | Empty             | Sélectionne le blocage des sources entrantes, des destinations sortantes ou les deux.              |
+| Countries           | Empty             | Un code pays GeoLite2 à deux lettres par ligne.                                                    |
+| MaxMind Account ID  | Empty             | Compte utilisé pour obtenir l’archive GeoLite2 Country.                                            |
+| MaxMind License Key | Unset             | Clé en écriture seule fournie par l’administrateur ; un champ vide conserve la valeur enregistrée. |
+| Clear License Key   | Off               | Supprime la clé MaxMind enregistrée lors de l’enregistrement.                                      |
+| IP Allowlist        | Empty             | Une adresse IP ou un CIDR par ligne soustrait des tables de blocage finales.                       |
+
+Chaque ligne de liste IP possède un nom, une URL, une sélection de famille IPv4/IPv6/Both et un commutateur Enabled. Sinkhole retire également les adresses des interfaces du pare-feu, des passerelles et des serveurs DNS des tables finales afin que ses propres règles ne bloquent pas l’infrastructure protégée.
+
+Le catalogue IP exclut tous les flux Encrypted DNS, Tor et VPN qui appartiennent au catalogue Bypass.
+
+## Langue \{#language}
+
+Le WebGUI Sinkhole suit le réglage de langue de pfSense et dispose de catalogues complets pour les 18 paramètres régionaux pris en charge. Si une clé de catalogue manque de façon inattendue, Sinkhole utilise l’anglais pour cette clé.

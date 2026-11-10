@@ -1,0 +1,65 @@
+---
+id: how-updates-work
+title: Kako rade ažuriranja
+description: Razumijte ažuriranja sačuvanih lista, atomski povratak na posljednju ispravnu kopiju, lokalno kompajliranje i postavljanje, predmemorije Resolvera i zaključavanje.
+keywords:
+  - sinkhole for pfsense
+  - ažuriranja lista
+  - posljednja ispravna kopija
+  - ponovno učitavanje unbounda
+  - zaključavanje ažuriranja
+tags:
+  - safety
+  - updates
+  - availability
+---
+
+Sinkhole odvaja preuzimanje od DNS usluge, tako da udaljeni izvor nikada nije u putanji upita Resolvera.
+
+## Tok ažuriranja DNS lista \{#dns-list-update-flow}
+
+Za svaku omogućenu DNS listu Sinkhole:
+
+1. Preuzima izvor uz ograničenja vremena i veličine.
+2. Parsira podržane zapise hosts, običnih domena i adblock stila u privremeni normalizirani skup.
+3. Atomski zamjenjuje sačuvanu kopiju tek nakon što novi sadržaj prođe provjeru.
+4. Kompajlira globalna, mrežna i uređajska pravila te pravila dopuštenih domena i upozorenja iz lokalno sačuvanih podataka.
+5. Postavlja generaciju pod `/var/unbound` kako bi je već učitani Python modul otkrio.
+
+Neuspjelo preuzimanje, parsiranje ili provjera bilježi grešku bez zamjene posljednje ispravne kopije. DNS tokom cijelog pokušaja nastavlja koristiti postavljenu lokalnu generaciju.
+
+## Postavljanje i predmemorije Resolvera \{#deployment-and-resolver-caches}
+
+Unbound modul između upita provjerava postoji li novi manifest i prelazi na potpunu generaciju tek nakon što svaka navedena datoteka bude spremna. Status odvaja identifikatore kompajlirane, postavljene i učitane generacije, tako da se svaka faza može provjeriti.
+
+Kada pravila dodaju blokirane nazive ili prošire blokirano podstablo, Sinkhole čeka da modul prijavi novu generaciju, a zatim jednom ponovo učitava Unbound. Ponovno učitavanje čisti predmemorije poruka i RRsetova koje sam `flush_zone` može ostaviti dostupnim za **Serve Expired**.
+
+## Osvježavanje mape klijenata \{#client-map-refreshes}
+
+Mrežne podmreže i adrese uređaja čuvaju se odvojeno od kompajliranih podataka domena. Kada DNS blokiranje ima omogućeni mrežni ili uređajski opseg, ili Bypass DNS zaštita zahtijeva prepoznavanje klijenta, Sinkhole osvježava ovu mapu klijenata svake minute bez ponovnog učitavanja Unbounda.
+
+Sync paketa pokreće isto osvježavanje samo pod tim uslovom. Time su obuhvaćene promjene interfejsa, DHCP zakupa, susjeda i statičkih mapiranja koje se dogode izvan ažuriranja liste. Nakon što se onemoguće sve Sinkhole funkcije, sljedeći Sync uklanja izvršnu mapu klijenata i njenu opcionalnu kopiju za RAM disk.
+
+## Tok ažuriranja IP-a i država \{#ip-and-country-update-flow}
+
+Kada je blokiranje IP adresa i država omogućeno, isto zakazano ili ručno ažuriranje preuzima omogućene IP liste i osvježava odgovarajuće GeoLite2 podatke. Sinkhole parsira i spaja svaku porodicu adresa, oduzima administratorovu listu dopuštenih i zaštićene adrese zaštitnog zida, a zatim atomski zamjenjuje datoteke tabela porodica.
+
+Postojeće sidro `sinkhole/ip` nakon uspješnog ažuriranja može primiti samo zamjenu tabele putem `pfctl -T replace`. Sync i minutna provjera integriteta učitavaju cijelo sidro kada pravila ili tabele nedostaju ili se razlikuju.
+
+## Rasporedi i zaključavanje \{#schedules-and-locking}
+
+Zadana učestalost ažuriranja lista je Daily. Rasporedi Hourly, Every 6 hours, Daily i Weekly koriste stabilne nasumične minute, tako da zaštitni zid ne mijenja vrijeme posla nakon svakog spremanja.
+
+Ažuriranja DNS lista, ažuriranja IP-a/država, primjena povezana s katalogom i samoažuriranje paketa usklađuju se putem `/var/run/sinkhole-update.lock`. Radnja Update paketa čeka završetak aktivnog ažuriranja liste umjesto da mijenja instalirani paket ispod njega.
+
+## Osvježavanje kataloga je odvojeno \{#catalog-refreshes-are-separate}
+
+Registar AdGuard Homea i katalog izvora pfBlockerNG-a dohvaćaju se samo kada se otvori pretraga kataloga ili se odabere **Refresh**. Njihova predmemorija posljednje ispravne kopije može se ponovo koristiti jedan dan, a neuspjelo dohvatanje ne mijenja konfigurirane liste.
+
+Rezultati kataloga su metapodaci za otkrivanje, a ne pravila. Rezultat utiče na DNS ili IP blokiranje tek nakon što se doda kao obična konfigurirana lista i završi uobičajeni tok ažuriranja.
+
+## Čitajte stanje ažuriranja \{#read-update-state}
+
+Otvorite **Firewall → Sinkhole → Status** i uporedite greške izvora, broj sačuvanih zapisa, oznaku pokrenutog ažuriranja te kompajliranu, postavljenu i učitanu generaciju. Za IP blokiranje uporedite i broj zapisa tabela i stanje sidra `sinkhole/ip`.
+
+Za provjere verzije paketa i ponašanje samoažuriranja koristite [Ažuriranja](/docs/reference/updates). Kada neka faza prijavi grešku ili ostane na čekanju, koristite [Rješavanje problema](/docs/operate/troubleshooting).

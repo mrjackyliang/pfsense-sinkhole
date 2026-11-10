@@ -1,0 +1,81 @@
+---
+id: scopes
+title: Omfang og tillatte domener
+description: Tilordne lister og tillatte domener til globale omfang, grensesnittsomfang og enhetsomfang, og følg deretter den nøyaktige rekkefølgen fra mest spesifikk for hver DNS-spørring.
+keywords:
+  - sinkhole for pfsense
+  - omfang
+  - vlan-blokkering
+  - enhetspolicy
+  - tillatte domener
+tags:
+  - configure
+  - scopes
+  - dns
+---
+
+Tilordne lister og tillatte domener på globalt nivå, nettverksnivå og enhetsnivå, slik at hver klient får policyen som er ment for den gjeldende plasseringen.
+
+## Hvorfor bruke omfang? \{#why-use-scopes}
+
+1. Gir hvert pfSense-grensesnitt eller VLAN en egen policy, samtidig som globale regler beholdes for alle.
+2. Gir én enhet en mer spesifikk avgjørelse uten å kreve en egen DNS-server.
+3. Lar tillatte domener rette falske positiver på nivået der det er relevant, uten å fjerne en hel liste.
+4. Holder klientadresser atskilt fra kompilerte lister, slik at endringer i DHCP, naboer eller grensesnitt ikke laster Unbound på nytt.
+
+## Globalt omfang \{#global-scope}
+
+En liste der **Global** er valgt, gjelder for alle klienter etter avgjørelser for enhet og nettverk. Globale tillatte domener angis på fanen **Lists** og slipper det navngitte domenet og underdomenene gjennom globale lister.
+
+En klient som ikke samsvarer med et aktivert nettverks- eller enhetsomfang, mottar bare dette nivået.
+
+## Nettverksomfang \{#network-scopes}
+
+Åpne **Firewall → Sinkhole → Scopes**, og velg deretter **Add** under tabellen Networks. Redigeringsprogrammet bruker LAN som standard, eller det første tilgjengelige grensesnittet som ikke er WAN, og utelater grensesnitt som allerede har et nettverksomfang. En klient tilhører nettverket når adressen er innenfor et av de gjeldende IPv4- eller IPv6-delnettene til grensesnittet.
+
+Hver nettverksrad velger tilleggslister, tillatte domener og om omfanget er aktivert. Når du lagrer, går du tilbake til Scopes. Velg blyanten eller dobbeltklikk en rad for å redigere den. En enhet som flyttes mellom nettverk, mottar policyen for nettverket som samsvarer med den gjeldende adressen.
+
+## Enhetsomfang \{#device-scopes}
+
+Velg **Add** under tabellen Devices, oppgi et navn og velg én identifikasjonsmetode. Redigeringsprogrammet viser bare identifikatorfeltet som gjelder for den valgte metoden:
+
+| Metode              | Adresser som brukes for enheten                                                                        |
+|---------------------|--------------------------------------------------------------------------------------------------------|
+| IP address          | Den konfigurerte IPv4- eller IPv6-adressen.                                                            |
+| DHCP static mapping | Den konfigurerte adressen pluss gjeldende adresser som er observert for MAC-adressen til tilordningen. |
+| MAC address         | Gjeldende ARP-, NDP- og DHCP-leieadresser for denne MAC-adressen.                                      |
+
+Enhetsraden velger listene, de tillatte domenene og aktiveringsstatusen. Når du lagrer, går du tilbake til Scopes. Velg blyanten eller dobbeltklikk en rad for å redigere den. En bakgrunnsjobb oppdaterer gjeldende delnett og enhetsadresser hvert minutt når DNS-blokkering har et aktivert nettverks- eller enhetsomfang, eller når Bypass DNS-beskyttelse trenger klientgjenkjenning. Pakke-Sync starter den samme oppdateringen bare under denne betingelsen.
+
+## Avgjørelsesrekkefølge \{#decision-order}
+
+Det mest spesifikke samsvarende nivået avgjør hver spørring i denne nøyaktige rekkefølgen:
+
+1. **Device allowed domains** — Tillat umiddelbart når spørringsnavnet samsvarer.
+2. **Device lists** — Blokker umiddelbart når en valgt enhetsliste samsvarer.
+3. **Network allowed domains** — Tillat umiddelbart når nettverksunntaket samsvarer.
+4. **Network lists** — Blokker umiddelbart når en valgt nettverksliste samsvarer.
+5. **Global allowed domains** — Tillat umiddelbart når det globale unntaket samsvarer.
+6. **Global lists** — Blokker når en global liste samsvarer.
+
+Spørringen slippes gjennom når ingen trinn avgjør den. Tillatte domener på et nivå overstyrer lister som er arvet fra mindre spesifikke nivåer, men de overstyrer ikke lister på et mer spesifikt nivå som allerede har avgjort.
+
+## Virkemåten til tillatte domener \{#allowed-domain-behavior}
+
+Hver oppføring for et tillatt domene gjelder for det nøyaktige domenet og alle underdomener. Hvis du for eksempel tillater `service.example`, tillates også `api.service.example` på dette nivået.
+
+- Et enhetsunntak kan slippe gjennom enhetslister, nettverkslister og globale lister fordi det kontrolleres først.
+- Et nettverksunntak kan slippe gjennom nettverkslister og globale lister, men ikke en avgjørelse fra en enhetsliste.
+- Et globalt unntak kan bare slippe gjennom globale lister.
+
+## Adressekonflikter \{#address-conflicts}
+
+Når to enhetsrader krever samme gjeldende adresse, vinner den første enheten i tabellrekkefølgen. **Status → Scopes** viser adressen under **Conflict** for hver berørte rad, slik at rekkefølgen eller identifikatorene kan rettes.
+
+## Kontroller et omfang \{#verify-a-scope}
+
+1. Kjør `/usr/local/sbin/sinkhole --refresh-clients`, eller vent på minuttoppdateringen.
+2. Åpne **Status → Scopes**, og bekreft nettverkets gjeldende delnett og enhetens gjeldende adresser.
+3. Slå opp et navn fra en klient i dette omfanget, og sammenlign resultatet med avgjørelsesrekkefølgen ovenfor.
+4. Kontroller om det finnes en adressekonflikt før du stoler på enhetsspesifikk virkemåte.
+

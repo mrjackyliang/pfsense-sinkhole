@@ -1,0 +1,65 @@
+---
+id: how-updates-work
+title: 更新的工作方式
+description: 了解已保存列表更新、原子化最后有效回退、本地编译和部署、Resolver 缓存处理以及共享更新锁定。
+keywords:
+  - sinkhole for pfsense
+  - 列表更新
+  - 最后有效副本
+  - unbound 重新加载
+  - 更新锁
+tags:
+  - safety
+  - updates
+  - availability
+---
+
+Sinkhole 将下载与 DNS 服务分离，因此远程来源永远不会位于 Resolver 查询路径中。
+
+## DNS 列表更新流程 \{#dns-list-update-flow}
+
+对于每个已启用的 DNS 列表，Sinkhole 会：
+
+1. 在有界的时间和大小限制内下载来源。
+2. 将支持的 hosts、纯域名和 adblock 风格条目解析为临时规范化集合。
+3. 仅在新内容通过验证后原子替换已保存副本。
+4. 从本地已保存数据编译全局、网络、设备、允许域名和警报策略。
+5. 在 `/var/unbound` 下部署一个代次，供已加载的 Python 模块发现。
+
+下载、解析或验证失败会记录错误，但不会替换最后有效副本。整个尝试期间，DNS 会继续使用已部署的本地代次。
+
+## 部署和 Resolver 缓存 \{#deployment-and-resolver-caches}
+
+Unbound 模块会在查询之间检查新清单，并且只在引用的每个文件都准备就绪后切换到完整代次。Status 分别显示编译、部署和加载代次标识符，以便验证每个阶段。
+
+当策略增加阻止名称或扩大阻止子树时，Sinkhole 会等待模块报告新代次，然后重新加载 Unbound 一次。重新加载会清除 `flush_zone` 单独处理后仍可能符合 **Serve Expired** 条件的消息和 RRset 缓存。
+
+## 客户端映射刷新 \{#client-map-refreshes}
+
+网络子网和设备地址与编译域名数据分开存储。当 DNS 阻止具有已启用的网络或设备作用域，或 Bypass DNS 保护需要识别客户端时，Sinkhole 会每分钟刷新客户端映射，而无需重新加载 Unbound。
+
+软件包 Sync 也只会在相同条件下启动此刷新。这可涵盖在列表更新之外发生的接口、DHCP 租约、邻居和静态映射变化。关闭所有 Sinkhole 功能后，下一次 Sync 会删除运行时客户端映射及其可选的 RAM 磁盘镜像。
+
+## IP 和国家或地区更新流程 \{#ip-and-country-update-flow}
+
+启用 IP 和国家或地区阻止后，同一个计划或手动更新会下载已启用的 IP 列表并刷新符合条件的 GeoLite2 数据。Sinkhole 解析并合并每个地址族，扣除管理员允许列表和受保护的防火墙地址，然后原子替换地址族表文件。
+
+更新成功后，现有的 `sinkhole/ip` 锚点可通过仅表格的 `pfctl -T replace` 接收新内容。当规则或表缺失或不同时，Sync 和每分钟完整性检查会加载完整锚点。
+
+## 计划和锁定 \{#schedules-and-locking}
+
+默认列表更新频率为 Daily。Hourly、Every 6 hours、Daily 和 Weekly 计划使用稳定的随机分钟组成部分，因此防火墙不会在每次保存时改变作业时间。
+
+DNS 列表更新、IP/国家或地区更新、目录相关应用工作和软件包自更新通过 `/var/run/sinkhole-update.lock` 进行协调。软件包 Update 操作会等待活动列表更新完成，而不会在其下方更改已安装软件包。
+
+## 目录刷新相互独立 \{#catalog-refreshes-are-separate}
+
+AdGuard Home 注册表和 pfBlockerNG 源目录只在目录搜索打开或选择 **Refresh** 时获取。它们的最后有效缓存可重复使用一天，获取失败不会改变已配置列表。
+
+目录结果是发现元数据，不是策略。只有在将结果作为普通配置列表添加并完成正常更新流程后，它才会影响 DNS 或 IP 阻止。
+
+## 读取更新状态 \{#read-update-state}
+
+打开 **Firewall → Sinkhole → Status**，比较来源错误、已保存条目数、更新运行标志以及编译、部署和加载代次。对于 IP 阻止，还要比较表计数和 `sinkhole/ip` 锚点状态。
+
+有关软件包版本检查和自更新行为，请参阅[更新](/docs/reference/updates)。某个阶段报告错误或持续待处理时，请参阅[故障排除](/docs/operate/troubleshooting)。

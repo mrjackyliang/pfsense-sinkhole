@@ -1,0 +1,65 @@
+---
+id: updates
+title: Package Updates
+description: Configure release checks, read notices and the About update bar, and understand the bounded checksum, signature, metadata, lock, and install checks.
+keywords:
+  - sinkhole for pfsense
+  - package updates
+  - self update
+  - checksum verification
+  - release notices
+tags:
+  - reference
+  - updates
+  - security
+---
+
+import aboutUpdateBar from './_assets_/updates-1.png';
+
+Sinkhole can check its GitHub releases, notify through pfSense, and install a verified newer package from the About tab.
+
+## Scheduled Release Checks \{#scheduled-release-checks}
+
+**General → Update Checks** selects Daily, Weekly, Monthly, or Never; Weekly is the default. Sinkhole stores stable randomized schedule components so saving settings doesn't continually move the check time.
+
+A check records the latest version, release page, check time, and last error. **About → Check Now** runs the same check immediately.
+
+## Update Notices \{#update-notices}
+
+Each newly detected version creates one local pfSense WebGUI notice that links to Sinkhole's About tab. Repeated checks don't create duplicate notices for the same version.
+
+Select **Remote Notifications** to also use the services configured under **System → Advanced → Notifications**. The setting is off by default and affects version notices, not list-block alert rules.
+
+## About Update Bar \{#about-update-bar}
+
+The update bar shows the installed version, latest checked version, last check, release link, error, and detached update progress. Its visual state distinguishes no pending update, a newer release, a running update, success, and failure.
+
+**Update** appears when the recorded latest version is newer. The page polls the detached job and reports its result without keeping the browser request open.
+
+The About privilege is read-only. **Check Now** and **Update** are shown and accepted only for a logged-in user with the Sinkhole General settings privilege or pfSense's `page-all` privilege. An About-only user can still read the installed version, release status, and release link.
+
+<img src={aboutUpdateBar} alt="About tab showing an available Sinkhole update with Update and What's New controls" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Verification Before Installation \{#verification-before-installation}
+
+Self-update accepts assets only from this project's GitHub release-download path and applies bounded download sizes and timeouts. It requires the stable package plus its `.sha256`, verifies the SHA-256 digest, then inspects package metadata before installing with `pkg add -f`.
+
+When `/usr/local/share/pfSense-pkg-Sinkhole/release-signing.pub` contains trusted Ed25519 OpenSSH keys, the matching detached `.sig` asset becomes mandatory. Sinkhole verifies that signature in its release namespace before `pkg` is allowed to inspect the package.
+
+An empty installed trust list means no signature is required, but checksum and package-metadata verification still apply. A missing, malformed, untrusted, oversized, or mismatched asset stops the update and leaves the installed package in place.
+
+## Update Locking \{#update-locking}
+
+Package checking and self-update share `/var/run/sinkhole-update.lock` with DNS-list and IP/country updates. If a list update is in progress, the About **Update** action can't begin until that job finishes.
+
+The lock prevents package files from changing while the current package is downloading, parsing, compiling, or applying policy. Retry from About after Status no longer shows an update running.
+
+## Manual Package Update \{#manual-package-update}
+
+The stable command remains available when the About action can't be used:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Before running it, download the stable `.sha256` asset and compare its hash with the package as described in [Installation](/docs/installation#verify-the-checksum). The `-f` is required so `pkg` installs a new build even when it came from the same stable URL.

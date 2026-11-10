@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "Paquet pfSense natif"
+  },
+  "homepage.hero.heading": {
+    "message": "Choisissez ce que chaque réseau et appareil peut atteindre."
+  },
+  "homepage.hero.tagline": {
+    "message": "Appliquez des listes DNS enregistrées à tout le réseau, à un VLAN ou à un appareil, avec des alertes choisies et sans second serveur."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Installer Sinkhole"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "Planifier les scopes"
+  },
+  "homepage.stats.heading": {
+    "message": "Un pare-feu, une politique à chaque niveau utile"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole conserve la politique localement et rend ses limites de fonctionnement explicites."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "Scopes de politique"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "Formats de listes DNS"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "Cache des catalogues"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Emplacement du module Unbound"
+  },
+  "homepage.features.heading": {
+    "message": "Un contrôle qui reste sur le pare-feu"
+  },
+  "homepage.features.scopes.title": {
+    "message": "Définir chaque décision"
+  },
+  "homepage.features.scopes.description": {
+    "message": "Appliquez listes et domaines autorisés globalement, par interface ou VLAN et par appareil."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "Conserver la dernière copie valide"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "Répondez au DNS depuis les listes locales malgré redémarrages, rechargements et échecs de téléchargement."
+  },
+  "homepage.features.alerts.title": {
+    "message": "Alerter volontairement"
+  },
+  "homepage.features.alerts.description": {
+    "message": "Notifiez uniquement pour les listes, réseaux et appareils choisis dans chaque règle."
+  },
+  "homepage.features.redirect.title": {
+    "message": "Protéger les chemins DNS"
+  },
+  "homepage.features.redirect.description": {
+    "message": "Redirigez facultativement le DNS en clair ou bloquez les contournements courants par DNS chiffré et tunnel sur les interfaces sélectionnées."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "Rechercher, puis décider"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "Recherchez les catalogues pris en charge à la demande sans intégrer ni recommander de liste."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "Bloquer adresses et pays"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "Appliquez les listes IP et la politique GeoLite2 via l’ancre isolée `sinkhole/ip`."
+  }
+}

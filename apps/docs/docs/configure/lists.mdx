@@ -1,0 +1,100 @@
+---
+id: lists
+title: Lists and Saved Copies
+description: Add DNS lists by URL or catalog, use hosts, domain, and adblock-style formats, control global policy, and keep last-good copies through failures.
+keywords:
+  - sinkhole for pfsense
+  - block lists
+  - saved lists
+  - popular list search
+  - allowed domains
+tags:
+  - configure
+  - lists
+  - dns
+---
+
+import catalogSearch from './_assets_/lists-2.png';
+
+Add list sources you trust and let Sinkhole keep normalized, last-good copies on the firewall for immediate DNS use.
+
+## Why Use Saved Lists? \{#why-use-saved-lists}
+
+1. Keeps DNS independent from a list host so a slow or failed download doesn't interrupt name resolution.
+2. Downloads each source once so the same saved copy can serve global, network, and device scopes.
+3. Preserves the previous valid copy when a new download or parse fails so broken input doesn't replace working policy.
+4. Updates lists in the background so a Resolver restart or reload never waits for the network.
+
+## Add a List by URL \{#add-a-list-by-url}
+
+Open **Firewall → Sinkhole → Lists**, select **Add** below the block-list table, then complete **Add Block List** on the editor page:
+
+| Field   | Description                                                            |
+|---------|------------------------------------------------------------------------|
+| Name    | Local label shown in assignments, alerts, and Status.                  |
+| URL     | HTTP or HTTPS source without embedded credentials.                     |
+| Enabled | Downloads the source and makes it available to assigned scopes.        |
+| Global  | Applies the source to every client after device and network decisions. |
+
+Saving returns to the Lists tab and starts the same validated background apply path. Select a row's pencil or double-click the row to edit it. A disabled row remains configured but is muted in the table and isn't used by the updater or compiled policy.
+
+## Accepted DNS Formats \{#accepted-dns-formats}
+
+Sinkhole accepts the standard forms below and normalizes valid names into one saved domain set:
+
+| Format             | Example                                       | Behavior                                           |
+|--------------------|-----------------------------------------------|----------------------------------------------------|
+| Hosts file         | `0.0.0.0 blocked.example`                     | Blocks exactly each domain name after the address. |
+| Plain domain list  | `blocked.example`                             | Blocks exactly the domain name on each line.       |
+| Adblock-style rule | <code>{'\u007c\u007cblocked.example^'}</code> | Blocks the domain name and every subdomain.        |
+
+Use the adblock-style `||name^` form when you want one entry to block the name and every subdomain.
+
+Cosmetic filters and malformed lines don't become DNS policy. Status reports source errors, while a failed list with a previous valid copy keeps that copy.
+
+When a blocked subtree is queried with an unusual but valid DNS label, including a space or a byte above `0x7f`, Sinkhole preserves the wire-format name in the response and still returns the normal `0.0.0.0` or `::` answer. Such a query doesn't become SERVFAIL just because its label isn't a hostname-style label.
+
+## Search the Catalogs \{#search-the-catalogs}
+
+Select **Add from Catalog** on the Lists tab to search AdGuard Home's list registry and the DNS section of pfBlockerNG's feed catalog. Sinkhole fetches both only when the search opens or you select **Refresh**; neither catalog is bundled or downloaded on a schedule.
+
+Feeds assigned to Encrypted DNS, Tor, or VPN bypass protection don't appear here. They are available only through **Add from Catalog** on the Bypass tab.
+
+Results appear as cards. Use the search, source, and maintainer controls together, select a category chip, and switch **Group by** between **Category** and **Maintainer**. Category chips show counts for the current search, source, and maintainer filters, while the maintainer menu puts the owners with the most matching lists first.
+
+Each card shows the list name, its maintainer or category, source catalog, a two-line description, homepage, and **Add** or **Added** state. The cards don't show ratings, badges, or recommendations. Selecting **Add** creates an ordinary list row whose URL can be assigned like any manually entered source.
+
+Each card's **Contents** line says **Domains**. Adding a catalog result keeps its catalog name unchanged.
+
+Catalog copies are cached under `/var/db` for one day. A failed refresh keeps the last good catalog copy and shows the fetch error on Status.
+
+<img src={catalogSearch} alt="Lists tab Add from Catalog panel showing catalog search controls and fetch status" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Set Global Allowed Domains \{#set-global-allowed-domains}
+
+The **Allowed Domains** section below the list and catalog panels defines global exceptions. Each line allows that domain and its subdomains through inherited global lists. Select **Save** beneath that section to apply the page-wide setting.
+
+A global allowed domain is checked after device and network rules. It therefore can't override a list that already blocked the query at a more specific device or network level.
+
+## Choose the Update Frequency \{#choose-the-update-frequency}
+
+The **General → Update Frequency** setting controls scheduled DNS-list updates and also supplies the update schedule when IP blocking is enabled:
+
+| Setting       | Schedule                                                          |
+|---------------|-------------------------------------------------------------------|
+| Hourly        | Once each hour at the firewall's stable randomized minute.        |
+| Every 6 hours | Every six hours at the same stable randomized minute.             |
+| Daily         | Once daily at that minute, with `00` as the scheduled hour.       |
+| Weekly        | Once each Sunday at that minute, with `00` as the scheduled hour. |
+
+`Daily` is the default. **Status → Update Now** starts a manual full update without changing the saved schedule.
+
+## What Happens During an Update \{#what-happens-during-an-update}
+
+1. Downloads each enabled source through the bounded download client.
+2. Parses and normalizes it into a temporary copy.
+3. Replaces the saved copy atomically only when the new copy is valid.
+4. Compiles current global, network, device, allowed-domain, and alert policy.
+5. Deploys a new local generation and lets the Unbound module load it.
+
+When new blocked names widen policy, Sinkhole waits for the module to load the generation and then reloads Unbound once to clear cached answers. [How Updates Work](/docs/safety/how-updates-work) covers the complete availability and fallback model.

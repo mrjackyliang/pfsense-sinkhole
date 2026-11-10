@@ -1,0 +1,109 @@
+---
+id: bypass-protection
+title: Beskyttelse mot omgåelse
+description: Hold valgte klientgrensesnitt på DNS-baner kontrollert av Sinkhole med valgfri omdirigering av vanlig DNS, krypterte DNS-signaler, leverandørlister og tunnelblokkering.
+keywords:
+  - sinkhole for pfsense
+  - beskyttelse mot omgåelse
+  - dns-omdirigering
+  - kryptert dns
+  - vpn-blokkering
+tags:
+  - configure
+  - bypass
+  - dns
+---
+
+import bypassProtection from './_assets_/bypass-protection-1.png';
+
+Hold DNS-forespørsler fra valgte klientgrensesnitt på baner som Sinkhole kan inspisere. All beskyttelse er av som standard, ingen grensesnitt er valgt som standard, og en oppgradering aktiverer ingen beskyttelse eller liste.
+
+## Velg grensesnittene \{#choose-the-interfaces}
+
+Åpne **Firewall → Sinkhole → Bypass** og velg grensesnitt under **Apply to** før du aktiverer en beskyttelse. Dette ene valget gjelder for alle innstillinger på siden. Beskyttelsen inspiserer bare trafikk som kommer fra klienter på disse grensesnittene. Den påvirker ikke brannmurens egne oppslag eller utgående trafikk.
+
+Nettverks- og enhetssamsvar bruker de gjeldende delnettene til disse grensesnittene, akkurat som vanlige Sinkhole-omfang. En klient utenfor de valgte delnettene mottar ikke noe Bypass-DNS-svar.
+
+<img src={bypassProtection} alt="Bypass-fanen med LAN valgt, omdirigering av vanlig DNS slått av, beskyttelse for kryptert DNS og tunneler slått på, Discovery satt til Answer with no records og tre demonstrasjonslister for Bypass" width={1024} height={1326} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Omdiriger vanlig DNS \{#redirect-plain-dns}
+
+Velg **Redirect → Send port 53 to the firewall** for å sende vanlig TCP- og UDP-DNS-trafikk på de valgte grensesnittene til pfSense. Sinkhole beholder kildeadressen, slik at nettverks- og enhetspolicy fortsatt gjelder.
+
+Omdirigeringen beholder eksisterende lytteravhengige mål og unntak:
+
+| Familie | Mål                                                                                |
+|---------|------------------------------------------------------------------------------------|
+| IPv4    | `127.0.0.1` mens Resolver lytter på localhost, ellers grensesnittets IPv4-adresse. |
+| IPv6    | Grensesnittets IPv6-adresse, aldri `::1`.                                          |
+
+- **Exempt Sources** fortsetter å nå en annen resolver.
+- **Exempt Destinations** fortsetter å motta DNS-trafikk, noe som støtter en intern resolver på et annet nettverk.
+
+Hvert unntak godtar én IPv4-adresse, IPv6-adresse, ett CIDR-nettverk eller eksisterende pfSense-verts-/nettverksalias per linje. Et ugyldig lagret unntak setter alle omdirigeringsregler på pause til det blir rettet eller fjernet. Omdirigerte klienter må fortsatt ha tilgang gjennom Resolverens innstillinger for tilgangskontroll.
+
+## Beskytt kryptert DNS \{#protect-encrypted-dns}
+
+Innstillingene for kryptert DNS er uavhengige:
+
+- **TLS and QUIC** blokkerer TCP- og UDP-port 853 til alle mål unntatt brannmuren.
+- **Providers** blokkerer navn og adresser fra aktiverte Bypass Lists av typen **Encrypted DNS**.
+- **Firefox** svarer på `use-application-dns.net` og underdomenene med `NXDOMAIN`, noe som slår av Firefox' automatiske valg av DNS over HTTPS.
+- **Private Relay** svarer på `mask.icloud.com` og `mask-h2.icloud.com` med `NXDOMAIN`, noe som forteller kompatible Apple-enheter at Private Relay ikke er tilgjengelig på dette nettverket.
+
+Navn i leverandørlister blokkeres i DNS. IPv4-adresser, IPv6-adresser og CIDR-er fra de samme listene blokkeres på alle porter og protokoller i det uavhengige brannmurankeret `sinkhole/bypass`. Sinkhole fjerner brannmurens grensesnittadresser samt gateway- og DNS-serveradresser, inkludert adresser mottatt via DHCP eller PPP, fra tabellene før de lastes.
+
+Tillatte domener har prioritet over navneblokkering fra leverandørlister. De overstyrer ikke svarene fra Firefox, Private Relay eller Discovery fordi disse svarene er nettverkssignaler, ikke listeblokkeringer.
+
+## Konfigurer Resolver-oppdagelse \{#configure-resolver-discovery}
+
+Discovery styrer forespørsler for `_dns.resolver.arpa`, Designated Resolver Discovery-navnet som er definert av RFC 9462:
+
+| Valg                                      | Svar                                                                                         |
+|-------------------------------------------|----------------------------------------------------------------------------------------------|
+| **Off**                                   | Lar forespørselen være uendret.                                                              |
+| **Advertise the firewall's DNS over TLS** | Returnerer et SVCB-svar med `alpn=dot`, port `853` og vertsnavnet fra Resolver-sertifikatet. |
+| **Answer with no records**                | Returnerer `NOERROR` med et tomt svar.                                                       |
+
+**Advertise** krever at DNS Resolverens SSL/TLS-tjeneste er aktivert med et brukbart sertifikatvertsnavn. Bypass-siden viser om tjenesten er på, og lagring mislykkes med en tydelig valideringsmelding når den ikke er tilgjengelig.
+
+Når Sinkhole er aktivert og et **Apply to**-grensesnitt er valgt, legges denne administrerte blokken til i DNS Resolverens **Custom options** når Discovery slås på:
+
+```text
+# Sinkhole: begin (managed by the Sinkhole package)
+server:
+local-zone: "_dns.resolver.arpa." transparent
+# Sinkhole: end
+```
+
+Når Discovery slås av eller Sinkhole fjernes, blir blokken fjernet. Sinkhole lar alle andre linjer i **Custom options** være uendret. Klienter utenfor de valgte grensesnittene, inkludert selve brannmuren, fortsetter å motta `NXDOMAIN` for `_dns.resolver.arpa`.
+
+## Beskytt mot tunneler \{#protect-against-tunnels}
+
+- **Tor → Block listed Tor relays** bruker aktiverte Bypass Lists av typen **Tor**.
+- **VPN → Block listed VPN providers** bruker aktiverte Bypass Lists av typen **VPN**.
+- **VPN → Block standard VPN ports** blokkerer TCP og UDP `1194`, UDP `51820`, UDP `500` og `4500`, samt ESP til alle mål unntatt brannmuren.
+
+Navn og adresser i Tor- og VPN-lister bruker samme DNS- og brannmuratferd som leverandørlister for kryptert DNS. Disse kontrollene reduserer vanlige alternative baner, men identifiserer ikke alle krypterte eller egendefinerte tunneler.
+
+## Legg til fra katalogen \{#add-from-catalog}
+
+Åpne **Add from Catalog** på Bypass-fanen for å søke i listeregisteret til AdGuard Home og DNS-, IPv4- og IPv6-delene av feedkatalogen til pfBlockerNG. Resultatene er begrenset til omgåelsesfeeder og har en fast type: **Encrypted DNS**, **Tor** eller **VPN**.
+
+Kildekatalogene hentes bare når du åpner katalogen eller velger **Refresh**. Når du legger til et resultat, opprettes en aktivert Bypass List som følger den vanlige tidsplanen for listeoppdatering.
+
+Linjen **Contents** på hvert kort viser **Domains**, **IPv4 addresses** eller **IPv6 addresses**. Når du legger til et IPv4- eller IPv6-resultat fra pfBlockerNG, legger Sinkhole til ` (IPv4)` eller ` (IPv6)` i det lagrede navnet; domeneresultater beholder det uendrede katalognavnet.
+
+## Legg til Bypass Lists \{#add-bypass-lists}
+
+Velg **Add** under **Bypass Lists**, og skriv deretter inn et lokalt navn, en type og en HTTP- eller HTTPS-URL. Nye rader er deaktivert til de uttrykkelig aktiveres.
+
+Hver kilde godtar én oppføring per linje. En liste kan blande domener, IPv4-adresser, IPv6-adresser og CIDR-er. Tekst etter `#` er en kommentar. Ugyldige og for lange linjer hoppes over. En nedlasting som overskrider den faste bytegrensen eller grensen for godkjente oppføringer, avvises, og den siste gode kopien beholdes.
+
+Bypass Lists oppdateres etter den konfigurerte listeplanen med den samme begrensede nedlastingsklienten som andre lister. En mislykket henting beholder den siste gode lagrede kopien, og **Status → Bypass Lists** viser oppføringer, siste henting og den nyeste feilen for hver rad. Sinkhole leverer eller anbefaler ingen Bypass List.
+
+## Verifiser aktiv tilstand \{#verify-the-active-state}
+
+Etter lagring åpner du **Status → Bypass** og bekrefter at hver tiltenkte beskyttelse er `On`, at de valgte grensesnittene er riktige, og at **Discovery Zone** er `Present` når Discovery er på. Bekreft at **Firewall rules loaded** og **Firewall rules current** er `Yes` for brannmurbeskyttelse. Tabellen Bypass Lists viser antall lagrede oppføringer og siste henting.
+
+Omdirigeringen av vanlig DNS beholder den eksisterende minuttavstemmingen med to observasjoner etter endringer i Resolver-lyttere. Ankeret `sinkhole/bypass` lastes uavhengig av `sinkhole/ip`, slik at deaktivering av én funksjon ikke forstyrrer den andre.

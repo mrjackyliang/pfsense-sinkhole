@@ -1,0 +1,75 @@
+---
+id: intro
+title: Przegląd
+description: Blokuj niechciane witryny w pfSense za pomocą oddzielnych zasad dla całej sieci, każdego VLAN-u lub pojedynczego urządzenia, bez dodawania kolejnego hosta DNS.
+keywords:
+  - sinkhole for pfsense
+  - przegląd
+  - blokowanie dns
+  - zasady sieciowe
+  - listy blokowania
+tags:
+  - setup
+  - overview
+  - dns
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Blokuj niechciane witryny za pomocą oddzielnych zasad dla całej sieci, jednego VLAN-u lub jednego urządzenia, w całości wewnątrz pfSense.
+
+## Działanie Sinkhole \{#what-sinkhole-does}
+
+Sinkhole for pfSense daje rodzicom i pracodawcom kontrolę nad tym, które <Terminology title="nazwy lub adresy wybrane do blokowania" to="/docs/reference/terminology#block-list">listy blokowania</Terminology> mają zastosowanie w poszczególnych częściach sieci. Ostatnie prawidłowe kopie są przechowywane na zaporze, dzięki czemu DNS może odpowiadać natychmiast po ponownym uruchomieniu lub przeładowaniu, podczas gdy nowsze kopie są pobierane w tle.
+
+Zablokowane nazwy zwracają `0.0.0.0` lub `::`. Łańcuch CNAME prowadzący do zablokowanej nazwy również jest blokowany, natomiast nazwa dozwolona na poziomie podejmującym decyzję pozostaje dozwolona.
+
+## Dlaczego warto używać Sinkhole? \{#why-use-sinkhole}
+
+1. Stosuje zasady w globalnych, sieciowych i urządzeniowych <Terminology title="miejsce stosowania listy blokowania" to="/docs/reference/terminology#scope">zakresach</Terminology>, dzięki czemu dzieci, goście, pracownicy i poszczególne urządzenia mogą otrzymywać różne listy.
+2. Używa <Terminology title="ostatnia prawidłowa kopia listy blokowania przechowywana na zaporze" to="/docs/reference/terminology#saved-list">zapisanych list</Terminology>, dzięki czemu DNS nigdy nie czeka na pobieranie ani nie traci działającej listy po nieudanej aktualizacji.
+3. Wysyła <Terminology title="dopasowanie listy i klienta, które wysyła powiadomienie" to="/docs/reference/terminology#alert-rule">regułę alertu</Terminology> tylko dla wybranych list i klientów, za pośrednictwem własnego systemu powiadomień pfSense.
+4. Udostępnia opcjonalną <Terminology title="ustawienia utrzymujące wybranych klientów na kontrolowanych ścieżkach DNS" to="/docs/reference/terminology#bypass-protection">ochronę przed omijaniem</Terminology> dla zwykłego DNS, wykrywania i dostawców szyfrowanego DNS, przekaźników Tor oraz dostawców lub portów VPN.
+5. Dodaje oddzielne blokowanie IP i krajów, gdy filtrowanie DNS nie wystarcza, bez konieczności używania drugiego hosta lub usługi w chmurze.
+
+## Działanie integracji DNS \{#how-dns-integration-works}
+
+Sinkhole działa jako moduł Python wewnątrz opartego na Unbound <Terminology title="usługa DNS Unbound w pfSense" to="/docs/reference/terminology#dns-resolver">DNS Resolver</Terminology> w pfSense. Podczas uruchamiania Unbound moduł ładuje wyłącznie lokalne, skompilowane pliki i obserwuje nowsze lokalne generacje bez wstrzymywania zapytań DNS.
+
+DNS Resolver udostępnia jedno miejsce na skrypt Python. Sinkhole zajmuje je tylko wtedy, gdy jest puste lub już należy do Sinkhole, i odmawia zastąpienia innego właściciela, takiego jak moduł DNSBL pfBlockerNG.
+
+:::warning
+
+Sinkhole i pfBlockerNG DNSBL nie mogą jednocześnie filtrować DNS, ponieważ oba wymagają jedynego miejsca na skrypt Python w Resolver.
+
+:::
+
+## Elementy pozostające pod kontrolą użytkownika \{#what-stays-under-your-control}
+
+- **Lists** — Dodaj zaufane źródła za pomocą adresu URL lub znajdź je przy użyciu neutralnego <Terminology title="wyszukiwanie katalogu na żądanie w WebGUI" to="/docs/reference/terminology#popular-list-search">wyszukiwania popularnych list</Terminology>. Sinkhole nie publikuje ani nie poleca żadnej listy.
+- **Scopes** — Wybierz listy globalne, listy dla jednego interfejsu pfSense lub VLAN-u oraz listy dla urządzenia identyfikowanego za pomocą adresu IP, statycznego mapowania DHCP lub adresu MAC.
+- **Allowed domains** — Zezwól na domenę i jej poddomeny na poziomie globalnym, sieciowym lub urządzenia bez usuwania całej listy.
+- **Alerts** — Wybierz kombinacje list i klientów, które tworzą lokalne powiadomienia WebGUI lub korzystają ze skonfigurowanych zdalnych usług powiadomień pfSense.
+- **Bypass** — Pozostaw wszystkie ustawienia wyłączone lub wybierz interfejsy skierowane do klientów i jawnie włącz przekierowanie zwykłego DNS, sygnały szyfrowanego DNS, listy dostawców lub ochronę przed tunelami.
+- **IP blocking** — Pozostaw wyłączone lub wybierz listy IP, kraje, interfejsy, kierunki i dozwolone adresy.
+
+## Ograniczenia \{#limits}
+
+Blokowanie DNS nie zapewnia pełnej kontroli ruchu. Ochrona przed omijaniem obejmuje typowe alternatywne ścieżki tylko wtedy, gdy każde ustawienie jest włączone, i nie może zidentyfikować każdego szyfrowanego lub niestandardowego tunelu.
+
+Zdarzenia blokowania i powiadomienia ujawniają, do czego klienci próbowali uzyskać dostęp. Te informacje pozostają na zaporze, z wyjątkiem powiadomień wysyłanych przez pfSense zgodnie z wyborem użytkownika.
+
+## Języki \{#languages}
+
+WebGUI używa języka wybranego w pfSense i korzysta z języka angielskiego, gdy tłumaczenie nie jest jeszcze dostępne. Dodatkowe tłumaczenia WebGUI są w przygotowaniu i do czasu przeglądu każdego katalogu nadal korzystają z tego mechanizmu awaryjnego.
+
+Witryna dokumentacji udostępnia język angielski i pozostałe 17 wersji językowych pfSense. Przetłumaczone strony zachowują angielskie kotwice, dzięki czemu łącza prowadzą do tej samej sekcji w każdym języku.
+
+## Następne kroki \{#next-steps}
+
+- **[Zainstaluj pakiet](/docs/installation)** — Zweryfikuj i zainstaluj stabilny pakiet wydania.
+- **[Skonfiguruj Sinkhole](/docs/first-run)** — Dodaj pierwszą listę, wybierz jej zakres i zweryfikuj aktywną generację.
+- **[Poznaj zakresy](/docs/configure/scopes)** — Zastosuj dokładną kolejność decyzji dla urządzenia, sieci i poziomu globalnego.
+- **[Zapoznaj się z modelem bezpieczeństwa](/docs/safety/how-updates-work)** — Zobacz, jak zapisane kopie i niepodzielne wdrożenie utrzymują dostępność DNS.
+

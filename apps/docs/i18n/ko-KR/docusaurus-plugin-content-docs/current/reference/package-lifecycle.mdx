@@ -1,0 +1,68 @@
+---
+id: package-lifecycle
+title: 패키지 수명 주기
+description: 설치, 업그레이드, 부팅 및 WAN Sync, pfSense 업그레이드 시 필수 패키지 보존, Keep Settings, Resolver 복원 및 완전한 제거를 이해합니다.
+keywords:
+  - sinkhole for pfsense
+  - 패키지 수명 주기
+  - keep settings
+  - pfsense 업그레이드
+  - 제거
+tags:
+  - reference
+  - lifecycle
+  - removal
+---
+
+Sinkhole은 설치, 반복 Sync, 업그레이드 및 제거에 pfSense 패키지 훅을 사용하면서 Resolver와 저장된 데이터를 의도대로 보존합니다.
+
+## 설치 및 업그레이드 \{#install-and-upgrade}
+
+안정 릴리스 URL에서 설치하거나 업데이트합니다.
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+설치 훅은 필요한 서비스 또는 필터를 다시 로드하기 전에 패키지 통합을 기록합니다. 업그레이드 훅은 반복 실행할 수 있고 설치된 프로그램 파일을 교체하면서 설정과 저장된 목록을 유지합니다.
+
+GitHub에서 직접 설치한 패키지는 pfSense의 **System → Package Manager → Installed Packages** 페이지에 표시되지 않습니다. Netgate 저장소 항목을 찾지 말고 명령줄 또는 Sinkhole About의 검증된 업데이트 작업을 사용합니다.
+
+## 패키지 Sync \{#package-sync}
+
+pfSense는 부팅할 때와 WAN 주소가 변경될 때마다 패키지 Sync를 호출합니다. Sinkhole은 이를 사용해 필요에 따라 일정, 현재 클라이언트 주소, Resolver 통합, 런타임 세대, 일반 DNS 리디렉션 규칙 및 독립적인 Bypass와 IP 앵커를 복원합니다.
+
+변경 사항이 없으면 Sync는 구성 리비전을 쓰거나 컴파일하지 않으며 Unbound를 건드리지 않습니다. RAM 디스크 시스템에서는 부팅 시 Sync가 영구 미러에서 누락된 `/var/unbound` 내용을 복원하고 필요한 경우에만 Resolver를 재시작합니다.
+
+## pfSense 업그레이드가 Sinkhole을 유지하는 이유 \{#why-a-pfsense-upgrade-keeps-sinkhole}
+
+릴리스 패키지는 ABI를 `FreeBSD:*`로 선언하고 패키지의 필수 플래그를 설정합니다. 와일드카드를 사용하므로 하나의 릴리스 패키지를 여러 FreeBSD 주 버전에 설치할 수 있고, 필수 플래그는 Netgate 저장소에 없는 패키지를 pfSense 업그레이드 중 자동 제거 과정에서 삭제하지 않도록 합니다.
+
+이러한 보존은 테스트하지 않은 pfSense 릴리스와의 호환성을 보장하지 않습니다. [호환성](/docs/compatibility)을 검토하고 플랫폼을 업그레이드한 후 실습용 방화벽에서 패키지를 검증합니다.
+
+## Keep Settings \{#keep-settings}
+
+**General → Keep Settings**는 기본적으로 선택되어 있습니다. 이 설정을 선택하면 패키지를 제거해도 Sinkhole의 pfSense 구성과 `/cf/conf/sinkhole` 데이터가 보존되므로 재설치 후 저장된 목록과 정책을 사용할 수 있습니다.
+
+이 기본값은 제거 후 설치를 수행하는 패키지 관리자 업그레이드 중에도 데이터를 보호합니다. 구성과 저장 데이터를 완전히 삭제하려는 경우에만 선택을 해제합니다.
+
+## Sinkhole 제거 \{#remove-sinkhole}
+
+릴리스 패키지는 필수 패키지이므로 일반 수명 주기 훅을 유지하면서 명시적으로 강제 제거합니다.
+
+```sh
+pkg delete -f pfSense-pkg-Sinkhole
+```
+
+제거 작업은 예약 작업을 중지하고 새 업데이트 작업을 차단하며 Resolver의 이전 Python 설정을 복원하고 DNS Resolver의 **Custom options**에서 Sinkhole의 관리형 Discovery 블록을 삭제하며 `/var/unbound` 런타임 내용을 제거합니다. 또한 임시 잠금과 상태를 지우고 일반 DNS 리디렉션 규칙을 철회하며 `sinkhole/bypass` 및 `sinkhole/ip` 앵커를 비우고 캐시된 Bypass Lists와 테이블 파일을 제거합니다. 관리형 Discovery 블록은 **Keep Settings**의 활성화 여부와 관계없이 삭제됩니다. `/usr/local` 아래에 설치된 패키지 파일도 제거합니다.
+
+**Keep Settings**가 켜져 있으면 구성과 영구 저장 목록이 재설치를 위해 남습니다. 꺼져 있으면 모든 Sinkhole 설정과 저장된 데이터를 삭제하며, 여기에는 `/cf/conf/sinkhole`과 pfSense 패키지 구성의 전체 Sinkhole 분기가 포함됩니다.
+
+## 제거 검증 \{#verify-removal}
+
+1. **Firewall → Sinkhole**이 더 이상 표시되지 않는지 확인합니다.
+2. DNS Resolver의 Python 스크립트와 순서가 Sinkhole 설치 전 값과 일치하는지 확인합니다.
+3. Sinkhole cron 항목, 일반 DNS 리디렉션 블록, `sinkhole/bypass` 앵커 또는 `sinkhole/ip` 앵커가 남아 있지 않은지 확인합니다.
+4. Keep Settings가 꺼져 있었다면 `/cf/conf/sinkhole`이 없는지 확인합니다.
+
+업데이트가 활성 상태였다면 제거 마커가 영구 데이터를 변경하기 전에 제한된 단계 사이에서 중지하도록 요청합니다. 제거 작업은 첫 정리 실패를 기록하면서 나머지 독립적인 정리 단계도 계속 시도합니다.

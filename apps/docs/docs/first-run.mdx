@@ -1,0 +1,73 @@
+---
+id: first-run
+title: Set Up Sinkhole
+description: Add a trusted list, choose global or scoped policy, enable Resolver integration, run the first update, and verify Sinkhole's active generation.
+keywords:
+  - sinkhole for pfsense
+  - first run
+  - dns resolver
+  - block list
+  - status
+tags:
+  - setup
+  - first run
+  - dns
+sidebar_position: 3
+---
+
+Set up one trusted list and verify its saved, compiled, deployed, and loaded state before expanding the policy.
+
+## Check the Resolver \{#check-the-resolver}
+
+1. Open **Services → DNS Resolver** and confirm that the Resolver is enabled.
+2. If pfBlockerNG DNSBL is enabled, choose which package will own DNS filtering because both packages can't use Unbound's Python slot together.
+3. Open **Firewall → Sinkhole → General** and leave **Enable** off while the first policy is prepared.
+
+Sinkhole refuses to save **Enable** while another Python script owns the slot. Disabling Sinkhole later restores the Resolver's earlier Python settings when Sinkhole still owns them.
+
+## Add a List \{#add-a-list}
+
+1. Open **Lists** and add the URL of a source you trust, or open **Add from Catalog** to search the two on-demand catalogs.
+2. Give the source a local name and leave **Enabled** selected so Sinkhole downloads it.
+3. Leave **Global** selected only when the list should apply after every device and network rule.
+4. Add any global **Allowed Domains**, one domain per line, when a known false positive needs to pass.
+
+Sinkhole recommends no source. [Lists and Saved Copies](/docs/configure/lists) explains the accepted formats and how catalog results become ordinary list rows.
+
+## Add Optional Scopes \{#add-optional-scopes}
+
+Open **Scopes** when a network or device needs policy beyond the global level:
+
+- Add a **Network** for one configured pfSense interface, then select its lists and allowed domains.
+- Add a **Device** by IP address, DHCP static mapping, or MAC address, then select its lists and allowed domains.
+
+A device inherits the network it is currently on, and the network inherits global lists. [Scopes and Allowed Domains](/docs/configure/scopes) shows the decision order that determines whether a name passes or is blocked.
+
+## Enable and Update \{#enable-and-update}
+
+1. Return to **General** and select **Enable**.
+2. Choose **Update Frequency** for enabled DNS lists and save.
+3. Open **Status** and select **Update Now**.
+4. Wait for **Update running** to return to `No`.
+
+The General switch enables scheduled DNS-list updates and the DNS Resolver integration. Enabled Bypass Lists and IP/country policy use the same update schedule independently; every Bypass and IP protection remains off until an administrator enables it.
+
+## Verify the Active State \{#verify-the-active-state}
+
+The first update is ready when the Status panels show all of these results:
+
+- **Lists** shows a nonzero entry count and a **Last Successful Update** for each working source.
+- **Compile Needed** and **Deployment Needed** show `No` in **Summary**.
+- **Compiled Generation**, **Deployed Generation**, and **Loaded Generation** identify the current generation.
+- **DNS Resolver Python Script Owner** shows `sinkhole`.
+- **Sinkhole** shows `Active` without a reason.
+
+If the page reports an inactive reason or a pending generation, [Status](/docs/operate/status) explains the state and [Troubleshooting](/docs/operate/troubleshooting) follows each likely cause.
+
+## Add Alerts and Bypass Protection Carefully \{#add-alerts-and-bypass-protection-carefully}
+
+It is recommended to verify scoped DNS answers before adding an alert rule or Bypass protection. Alerts can reveal client activity, while Bypass settings can redirect or block traffic arriving on selected interfaces.
+
+- [Alerts](/docs/configure/alerts) limits delivery by list, client, repeat window, and fixed caps.
+- [Bypass Protection](/docs/configure/bypass-protection) covers plain-DNS redirect, encrypted-DNS signals, provider lists, and tunnel protections.
+- [IP and Country Blocking](/docs/configure/ip-and-country-blocking) covers the independent, off-by-default packet filter.

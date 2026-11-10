@@ -1,0 +1,78 @@
+---
+id: alerts
+title: Waarschuwingen
+description: Koppel geblokkeerde antwoorden aan lijst en client, lever ze via pfSense-meldingen of externe services en begrijp de limieten voor herhaling, per uur, ongelezen meldingen en uitvoertijd.
+keywords:
+  - sinkhole voor pfsense
+  - waarschuwingen
+  - pfsense-meldingen
+  - herhaalvenster
+  - meldingslimieten
+tags:
+  - configure
+  - alerts
+  - notifications
+---
+
+Verzend alleen meldingen voor geblokkeerde antwoorden waarvan de lijst en client overeenkomen met een ingeschakelde waarschuwingsregel.
+
+## Waarom waarschuwingsregels gebruiken? \{#why-use-alert-rules}
+
+1. Bewaakt geselecteerde lijsten en clients, zodat gebruikelijke blokkeringen buiten dat beleid stil blijven.
+2. Gebruikt de bestaande lokale en externe meldingskanalen van pfSense, zodat Sinkhole geen afzonderlijke bezorgservice nodig heeft.
+3. Onderdrukt herhalingen en vat pieken samen, zodat een veelvuldig opgevraagd domein de WebGUI of een postvak niet kan overspoelen.
+4. Houdt de wachtrij met gebeurtenissen begrensd en buiten de afhandeling van DNS-query's, zodat de bezorging een antwoord nooit vertraagt.
+
+## Een regel maken \{#create-a-rule}
+
+Open **Firewall → Sinkhole → Alerts**, selecteer **Add** onder de tabel met waarschuwingsregels en vul vervolgens **Add Alert Rule** op de bewerkingspagina in:
+
+| Veld                 | Beschrijving                                                                          |
+|----------------------|---------------------------------------------------------------------------------------|
+| Description          | Lokale regelnaam die in meldingstekst en samenvattingen wordt weergegeven.            |
+| Any block list       | Komt overeen met een blokkering uit elke lijst, niet alleen de gekozen lijsten.       |
+| Chosen block lists   | Lijsten die aan de regel kunnen voldoen wanneer **Any** is uitgeschakeld.             |
+| Everyone             | Komt overeen met elke client, niet alleen gekozen netwerken en apparaten.             |
+| Chosen networks      | Netwerkscopes die aan de regel kunnen voldoen wanneer **Everyone** is uitgeschakeld.  |
+| Chosen devices       | Apparaatscopes die aan de regel kunnen voldoen wanneer **Everyone** is uitgeschakeld. |
+| Repeat after         | Minuten voordat dezelfde regel, client, domein en lijst opnieuw kunnen melden.        |
+| WebGUI notice        | Voegt een lokale Sinkhole-melding toe aan pfSense.                                    |
+| Remote notifications | Gebruikt de externe services die in pfSense zijn geconfigureerd.                      |
+| Enabled              | Staat toe dat geblokkeerde antwoorden met deze regel overeenkomen.                    |
+
+Het veld voor gekozen lijsten is verborgen wanneer **Any block list** is geselecteerd, en de netwerk- en apparaatvelden zijn verborgen wanneer **Everyone** is geselecteerd. Na opslaan keert u terug naar Alerts; selecteer het potlood of dubbelklik op een rij om deze te bewerken.
+
+Een blokkering komt alleen overeen wanneer een van de lijsten die de naam heeft geblokkeerd door de regel is geselecteerd en de client door dezelfde regel is geselecteerd. Het standaardherhaalvenster is 60 minuten en het geaccepteerde bereik is 1 tot en met 1.440 minuten.
+
+## Bezorgkanalen \{#delivery-channels}
+
+- **WebGUI notice** gebruikt het lokale kanaal `file_notice()` van pfSense en koppelt terug naar het tabblad Alerts.
+- **Remote notifications** gebruikt de geconfigureerde `notify_all_remote()`-services van pfSense.
+
+Sinkhole maakt zelf geen e-mail-, chat-, webhook- of ander kanaal. Externe services worden in pfSense geconfigureerd en getest onder **System → Advanced → Notifications**.
+
+## Vaste limieten \{#fixed-limits}
+
+| Limiet                        | Gedrag                                                                                                 |
+|-------------------------------|--------------------------------------------------------------------------------------------------------|
+| 20 messages per minute run    | Extra blokkeringen worden binnen dezelfde limiet in een of meer regelsamenvattingen samengevoegd.      |
+| 60 messages per rule per hour | De zestigste positie is gereserveerd voor een uurlijkse samenvatting van het overschot.                |
+| 50 unread WebGUI notices      | Aanvullende lokale meldingen wachten totdat enkele Sinkhole-meldingen zijn gelezen.                    |
+| 40-second processing budget   | Niet-voltooide verzendingen blijven staan voor de volgende minuuttaak in plaats van deze op te houden. |
+| 10-minute event age           | Oudere gebeurtenissen in de wachtrij worden als verouderd verwijderd.                                  |
+
+Status telt gelezen gebeurtenissen, verouderde gebeurtenissen, verzonden meldingen, tegengehouden meldingen en door de module verwijderde gebeurtenissen. Als er geen ingeschakelde waarschuwingsregel meer is, verwijdert Sinkhole het gebeurtenisbestand en de herhaalstatus.
+
+## Privacy en logboekregistratie \{#privacy-and-logging}
+
+De waarschuwingstekst vermeldt de geblokkeerde naam, client, netwerk, lijst en regel. Een CNAME-blokkering vermeldt ook het CNAME-doel dat in de lijst staat.
+
+De lokale meldingsfunctie van pfSense schrijft `New alert found: <message>` naar het systeemlogboek. Het domein en apparaat verschijnen daardoor ook onder **Status → System Logs → System → General**. Het wordt aanbevolen zowel meldingen als logboeken als gegevens over surfbeleid te behandelen.
+
+## Een waarschuwing controleren \{#verify-an-alert}
+
+1. Controleer of de regel, de geselecteerde lijst en de geselecteerde clientscope zijn ingeschakeld.
+2. Controleer in Status of de client momenteel aan het bedoelde netwerk of apparaat is gekoppeld.
+3. Vraag een naam op die door de geselecteerde lijst wordt geblokkeerd en controleer het geconfigureerde pfSense-kanaal.
+4. Als er geen tweede melding komt, vergelijkt u de poging met het herhaalvenster en de vaste limieten van de regel.
+

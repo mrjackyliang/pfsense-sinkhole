@@ -1,0 +1,109 @@
+---
+id: troubleshooting
+title: Troubleshooting
+description: Diagnose inactive Resolver integration, stale policy, client-map conflicts, Bypass state, IP anchor drift, alert suppression, and update failures.
+keywords:
+  - sinkhole for pfsense
+  - troubleshooting
+  - dns resolver
+  - client map
+  - update failure
+tags:
+  - operate
+  - troubleshooting
+  - diagnostics
+---
+
+Trace a problem from the Status panel and system log to the specific list, scope, rule, listener, lock, or runtime state that caused it.
+
+## Where to Look \{#where-to-look}
+
+- **Firewall → Sinkhole → Status** shows list, catalog, client-map, alert, Bypass, IP, compile, deployment, and Resolver state.
+- **Status → System Logs → System → General** shows operational lines beginning with `Sinkhole:`.
+- `/usr/local/sbin/sinkhole --help` prints the supported maintenance modes.
+
+It is recommended to preserve the Status values and relevant log lines before changing configuration. Full `config.xml` output can contain secrets and shouldn't be attached to a report.
+
+## Sinkhole Is Inactive \{#sinkhole-is-inactive}
+
+Use the reason after **Summary → Sinkhole**:
+
+- **Sinkhole is disabled** — Select **General → Enable** after the Resolver and Python slot are ready.
+- **DNS Resolver is disabled** — Enable and apply the Resolver before saving Sinkhole.
+- **Python script slot is owned** — Disable the conflicting DNSBL/Python integration or leave Sinkhole disabled; Sinkhole won't replace it.
+- **Python mode or position changed** — Save Sinkhole General settings again so Sync can restore Python mode and `pre_validator` while Sinkhole owns the slot.
+- **Runtime files unavailable** — Run package Sync by saving General settings, or reboot and let pfSense's package Sync restore RAM-disk files.
+
+On systems with `/var` in memory, every-boot package Sync restores missing runtime files and restarts Unbound when needed after packages start. A missing early runtime immediately after boot should therefore heal during package startup.
+
+## A Domain Is Not Blocked \{#a-domain-is-not-blocked}
+
+1. Confirm that the list is enabled and has saved entries without replacing its last-good copy after an error.
+2. Follow the [decision order](/docs/configure/scopes#decision-order) for the client's current device and network.
+3. Confirm **Compile Needed** and **Deployment Needed** are `No`, then compare compiled, deployed, and loaded generations.
+4. Confirm the client is querying pfSense directly or through **Bypass → Redirect**.
+
+Unbound answers its built-in `test.`, `invalid.`, `onion.`, and `localhost.` zones before Python modules. A live test under one of those zones doesn't exercise Sinkhole.
+
+When a deploy adds names or broadens a subtree, Sinkhole reloads Unbound after the new generation loads because `flush_zone` only marks cache entries expired. Unbound 1.18 can still serve those entries when **Serve Expired** is on, while `unbound-control reload` clears the message and RRset caches.
+
+## A CNAME Result Looks Incomplete \{#a-cname-result-looks-incomplete}
+
+A query whose CNAME target is listed is blocked even when the original name isn't listed. If the listed target has no record of the requested type, such as AAAA, the answer can retain the CNAME while containing no address.
+
+An allowed query name remains allowed. This prevents a less-specific CNAME target from overriding an explicit allowed-domain decision for the queried name.
+
+## A Device Gets the Wrong Policy \{#a-device-gets-the-wrong-policy}
+
+- Run `/usr/local/sbin/sinkhole --refresh-clients` and inspect **Status → Scopes**.
+- Confirm that the network row shows the interface's current subnets and that the device row shows its current addresses.
+- Resolve any **Conflict** value because the first device in table order wins a shared address.
+- For a static mapping, check both its configured address and current addresses observed for its MAC.
+
+ISC lease times can be GMT or firewall-local depending on the interface's lease-time setting, while Kea lease times are already local. Sinkhole follows those pfSense semantics when deciding whether a lease is current.
+
+## List or Catalog Update Failed \{#list-or-catalog-update-failed}
+
+A failed DNS, Bypass, or IP download, parse, or validation keeps the previous saved copy and records the error. DNS continues from the deployed local generation rather than waiting for the failed source.
+
+Catalogs are fetched only when search opens or refreshes, and a failed fetch keeps the cached last-good catalog. Confirm HTTPS connectivity, the source URL, and the Status error before forcing another refresh.
+
+## Plain-DNS Redirect Is Paused or Missing \{#plain-dns-redirect-is-paused-or-missing}
+
+- **Paused** — Fix or remove every invalid exemption shown in the Bypass panel.
+- **No family address** — Add the family to the interface or accept that no family rule can be generated.
+- **Resolver does not listen** — Change **DNS Resolver → Network Interfaces** or remove that redirect selection.
+- **Rules missing or out of date** — Wait for two minute observations, then inspect **Last parse error** and system logs.
+- **Queries are refused** — Add the client network to the Resolver's access-control configuration.
+
+The minute check doesn't reload the filter while pfSense's package lock is held or when pfSense already rejected the unchanged rule text. Changing the invalid configuration lets the next two observations reconcile it.
+
+IPv6 redirect targets always use the interface address because measured FreeBSD behavior drops traffic rewritten to `::1` from a non-loopback interface. Mixed-family exemptions are emitted as separate `inet` and `inet6` rules because measured FreeBSD 14 and 16 kept only the first family in an unqualified mixed list.
+
+## IP Blocking Does Not Match Settings \{#ip-blocking-does-not-match-settings}
+
+1. Confirm **IP and Country Blocking → State** is `On` and the intended interfaces and directions are listed.
+2. Check the final family table counts, skipped lines, last update, and last error.
+3. Confirm **IP Anchor** is `Yes`; `Out of Date` means the loaded anchor doesn't match current files or settings.
+4. Review the allowlist and remember that firewall, gateway, and DNS addresses are removed automatically.
+
+The `sinkhole/ip` anchor survives ordinary pfSense filter reloads and sits ahead of pass-quick rules through the early package-rule hook. The minute check reloads an empty or changed anchor directly, while turning the feature off flushes it.
+
+## Alerts Do Not Arrive \{#alerts-do-not-arrive}
+
+- Confirm the rule is enabled and both its list selection and client selection match the blocked answer.
+- Compare the event with the rule's repeat window and the 20-per-run, 60-per-rule-hour, and 50-unread-notice caps.
+- Check **Status → Alerts** for stale, held-back, dropped, or error counts.
+- Test pfSense's configured remote service independently under **System → Advanced → Notifications**.
+
+Events older than 10 minutes are stale, and a run stops sending after its 40-second budget so remaining work can continue next minute. WebGUI notice text also appears in the pfSense system log through `file_notice()`.
+
+## Memory Use Is High \{#memory-use-is-high}
+
+Measured testing with 300,000 names increased Unbound RSS from 41 MiB to 103 MiB, with peak policy memory around 157 bytes per name. Actual use depends on unique normalized names, scope assignments, and the running Resolver.
+
+It is recommended to compare Status entry counts with Unbound memory before and after adding a large source. Disabling an unused list keeps it out of active policy on the next compile.
+
+## Report a Problem \{#report-a-problem}
+
+Open a [GitHub issue](https://github.com/mrjackyliang/pfsense-sinkhole/issues) with the Sinkhole version, pfSense edition and release, FreeBSD release, exact Status state, reproduction steps, and sanitized `Sinkhole:` log lines. Don't include MaxMind credentials, full configuration files, list contents, or private client/domain data.

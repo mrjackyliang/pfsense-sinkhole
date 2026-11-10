@@ -1,0 +1,73 @@
+---
+id: first-run
+title: Sinkhole einrichten
+description: Füge eine vertrauenswürdige Liste hinzu, wähle globale oder begrenzte Richtlinien, aktiviere die Resolver-Integration, aktualisiere und prüfe die aktive Generation.
+keywords:
+  - sinkhole for pfsense
+  - erste einrichtung
+  - dns resolver
+  - blockliste
+  - status
+tags:
+  - setup
+  - first run
+  - dns
+sidebar_position: 3
+---
+
+Richte eine vertrauenswürdige Liste ein und prüfe ihren gespeicherten, kompilierten, bereitgestellten und geladenen Zustand, bevor du die Richtlinie erweiterst.
+
+## Resolver prüfen \{#check-the-resolver}
+
+1. Öffne **Services → DNS Resolver** und bestätige, dass der Resolver aktiviert ist.
+2. Wenn pfBlockerNG DNSBL aktiviert ist, entscheide, welches Paket die DNS-Filterung übernehmen soll, da nicht beide Pakete gleichzeitig den Python-Platz von Unbound verwenden können.
+3. Öffne **Firewall → Sinkhole → General** und lasse **Enable** deaktiviert, während du die erste Richtlinie vorbereitest.
+
+Sinkhole verweigert das Speichern von **Enable**, solange ein anderes Python-Skript den Platz besitzt. Wenn du Sinkhole später deaktivierst, stellt es die vorherigen Python-Einstellungen des Resolvers wieder her, sofern Sinkhole sie noch besitzt.
+
+## Liste hinzufügen \{#add-a-list}
+
+1. Öffne **Lists** und füge die URL einer vertrauenswürdigen Quelle hinzu, oder öffne **Add from Catalog**, um die beiden Kataloge auf Abruf zu durchsuchen.
+2. Vergib einen lokalen Namen für die Quelle und lasse **Enabled** ausgewählt, damit Sinkhole sie herunterlädt.
+3. Lasse **Global** nur ausgewählt, wenn die Liste nach allen Geräte- und Netzwerkregeln gelten soll.
+4. Füge bei Bedarf unter **Allowed Domains** globale Ausnahmen hinzu, eine Domain pro Zeile, damit ein bekannter Fehlalarm zugelassen wird.
+
+Sinkhole empfiehlt keine Quelle. [Listen und gespeicherte Kopien](/docs/configure/lists) beschreibt die akzeptierten Formate und wie Katalogergebnisse zu gewöhnlichen Listeneinträgen werden.
+
+## Optionale Scopes hinzufügen \{#add-optional-scopes}
+
+Öffne **Scopes**, wenn ein Netzwerk oder Gerät zusätzliche Richtlinien über die globale Ebene hinaus benötigt:
+
+- Füge ein **Network** für eine konfigurierte pfSense-Schnittstelle hinzu und wähle anschließend dessen Listen und erlaubte Domains aus.
+- Füge ein **Device** anhand einer IP-Adresse, statischen DHCP-Zuordnung oder MAC-Adresse hinzu und wähle anschließend dessen Listen und erlaubte Domains aus.
+
+Ein Gerät erbt das Netzwerk, in dem es sich aktuell befindet, und das Netzwerk erbt globale Listen. [Scopes und erlaubte Domains](/docs/configure/scopes) zeigt die Entscheidungsreihenfolge, nach der ein Name zugelassen oder blockiert wird.
+
+## Aktivieren und aktualisieren \{#enable-and-update}
+
+1. Kehre zu **General** zurück und wähle **Enable**.
+2. Wähle unter **Update Frequency** den Zeitplan für aktivierte DNS-Listen und speichere.
+3. Öffne **Status** und wähle **Update Now**.
+4. Warte, bis **Update running** wieder `No` anzeigt.
+
+Der Schalter auf General aktiviert geplante DNS-Listenaktualisierungen und die DNS-Resolver-Integration. Aktivierte Bypass Lists sowie IP-/Länderrichtlinien verwenden denselben Aktualisierungszeitplan unabhängig voneinander; jeder Bypass- und IP-Schutz bleibt ausgeschaltet, bis ein Administrator ihn aktiviert.
+
+## Aktiven Zustand prüfen \{#verify-the-active-state}
+
+Die erste Aktualisierung ist abgeschlossen, wenn die Status-Panels alle folgenden Ergebnisse zeigen:
+
+- **Lists** zeigt für jede funktionierende Quelle eine von null verschiedene Eintragszahl und eine **Last Successful Update**.
+- **Compile Needed** und **Deployment Needed** zeigen in **Summary** jeweils `No`.
+- **Compiled Generation**, **Deployed Generation** und **Loaded Generation** nennen die aktuelle Generation.
+- **DNS Resolver Python Script Owner** zeigt `sinkhole`.
+- **Sinkhole** zeigt `Active` ohne Begründung.
+
+Wenn die Seite einen Inaktivitätsgrund oder eine ausstehende Generation meldet, erläutert [Status](/docs/operate/status) den Zustand und [Fehlerbehebung](/docs/operate/troubleshooting) führt durch die wahrscheinlichen Ursachen.
+
+## Alarme und Bypass-Schutz vorsichtig hinzufügen \{#add-alerts-and-bypass-protection-carefully}
+
+Es wird empfohlen, die DNS-Antworten der Scopes zu prüfen, bevor du eine Alarmregel oder einen Bypass-Schutz hinzufügst. Alarme können Clientaktivitäten offenlegen, während Bypass-Einstellungen Datenverkehr umleiten oder blockieren können, der an ausgewählten Schnittstellen eintrifft.
+
+- [Alarme](/docs/configure/alerts) begrenzt die Zustellung nach Liste, Client, Wiederholungsfenster und festen Obergrenzen.
+- [Bypass-Schutz](/docs/configure/bypass-protection) behandelt Klartext-DNS-Umleitung, Signale für verschlüsseltes DNS, Anbieterlisten und Tunnel-Schutzfunktionen.
+- [IP- und Länderblockierung](/docs/configure/ip-and-country-blocking) behandelt den unabhängigen, standardmäßig deaktivierten Paketfilter.

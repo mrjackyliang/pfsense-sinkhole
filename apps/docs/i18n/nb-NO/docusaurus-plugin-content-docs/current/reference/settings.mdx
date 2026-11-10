@@ -1,0 +1,147 @@
+---
+id: settings
+title: Innstillingsreferanse
+description: Slå opp Sinkhole-felt, standardverdier, tidsplaner, valg for lister og omfang, varslingsgrenser, Bypass-beskyttelse, IP-policy, oppdateringskontroller og språkvirkemåte.
+keywords:
+  - sinkhole for pfsense
+  - innstillinger
+  - standardverdier
+  - webgui
+  - konfigurasjon
+tags:
+  - reference
+  - settings
+  - webgui
+---
+
+Slå opp formålet og standardvirkemåten for hvert konfigurasjonsområde i Sinkhole under **Firewall → Sinkhole**.
+
+## General \{#general}
+
+| Felt             | Standard | Beskrivelse                                                                                          |
+|------------------|----------|------------------------------------------------------------------------------------------------------|
+| Enable           | Off      | Aktiverer planlagte listeoppdateringer og integrasjonen mellom Sinkhole og DNS Resolver.             |
+| Update Frequency | Daily    | Velger Hourly, Every 6 hours, Daily eller Weekly for planlegging av DNS-, Bypass- og IP-/landlister. |
+| Keep Settings    | On       | Bevarer konfigurasjon og vedvarende lagrede data når pakken fjernes.                                 |
+
+Planlagte tider bruker stabile tilfeldige komponenter. Hourly kjører på ett stabilt minutt, Every 6 hours bruker samme minutt hver sjette time, Daily kjører `00:<minute>`, og Weekly kjører søndag `00:<minute>`.
+
+## Package Updates \{#package-updates}
+
+| Felt                 | Standard | Beskrivelse                                                                                         |
+|----------------------|----------|-----------------------------------------------------------------------------------------------------|
+| Update Checks        | Weekly   | Velger Daily, Weekly, Monthly eller Never for kontroller av nye GitHub-utgivelser.                  |
+| Remote Notifications | Off      | Sender også hvert varsel om ny versjon gjennom de eksterne tjenestene som er konfigurert i pfSense. |
+
+Hver nye versjon oppretter ett lokalt pfSense-varsel. **About → Check Now** kjører den samme avgrensede utgivelseskontrollen umiddelbart uten å endre tidsplanen.
+
+## Lists \{#lists}
+
+| Felt            | Standard | Beskrivelse                                                                                               |
+|-----------------|----------|-----------------------------------------------------------------------------------------------------------|
+| Name            | Empty    | Lokal etikett som brukes av tilordninger, varsler og Status.                                              |
+| URL             | Empty    | HTTP- eller HTTPS-kilde uten innebygd legitimasjon.                                                       |
+| Enabled         | On       | Tar med kilden i oppdateringer og kompilert policy når den er tilordnet.                                  |
+| Global          | On       | Bruker listen for alle klienter etter avgjørelser for enhet og nettverk.                                  |
+| Allowed Domains | Empty    | Ett globalt tillatt domene per linje; hver oppføring tillater det nøyaktige domenet og alle underdomener. |
+
+**Add from Catalog** søker ved behov i listeregisteret til AdGuard Home og feedkatalogen til pfBlockerNG. Når et resultat legges til, opprettes den samme vanlige raden som når URL-en angis manuelt.
+
+Omgåelsesfeeder er utelatt fra denne katalogen.
+
+## Tjenester \{#services}
+
+Tjenestevalgene er tomme som standard for hvert omfang. En registertjeneste som dekkes av en egen Bypass-beskyttelse, skjules fra Tjenester og fjernes fra lagrede valg; Private Relay konfigureres bare på Bypass-fanen.
+
+## Network Scopes \{#network-scopes}
+
+| Felt            | Standard | Beskrivelse                                                                                                                                  |
+|-----------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface       | Empty    | Konfigurert pfSense-grensesnitt der gjeldende IPv4- og IPv6-delnett identifiserer nettverket.                                                |
+| Lists           | Empty    | Flere DNS-lister som blokkerer klienter i nettverket.                                                                                        |
+| Allowed Domains | Empty    | Ett nettverksunntak per linje; hvert unntak tillater det nøyaktige domenet og alle underdomener før nettverkets lister og all global policy. |
+| Enabled         | On       | Gjør raden til en del av klientsamsvar og kompilert policy.                                                                                  |
+
+Hvert grensesnitt kan bare vises én gang. Et lagret grensesnitt som ikke er tilgjengelig, forblir synlig for retting i stedet for å bli forkastet.
+
+## Device Scopes \{#device-scopes}
+
+| Felt                | Standard   | Beskrivelse                                                                                                                                        |
+|---------------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty      | Lokal etikett som vises i policy og Status.                                                                                                        |
+| Identified By       | IP address | Velger IP address, DHCP static mapping eller MAC address.                                                                                          |
+| IP or MAC Address   | Empty      | Nøyaktig identifikator når IP address eller MAC address er valgt.                                                                                  |
+| DHCP Static Mapping | Empty      | Eksisterende tilordning som velges når denne identifikasjonsmetoden brukes.                                                                        |
+| Lists               | Empty      | Flere DNS-lister som blokkerer denne enheten.                                                                                                      |
+| Allowed Domains     | Empty      | Ett enhetsunntak per linje; hvert unntak tillater det nøyaktige domenet og alle underdomener før alle nettverksavgjørelser og globale avgjørelser. |
+| Enabled             | On         | Gjør raden til en del av klientsamsvar og kompilert policy.                                                                                        |
+
+Statiske tilordninger bruker den konfigurerte adressen pluss gjeldende adresser som er observert for MAC-adressen til tilordningen. En MAC-rad bruker gjeldende data for ARP, NDP og DHCP-leie.
+
+## Alert Rules \{#alert-rules}
+
+| Felt                 | Standard | Beskrivelse                                                                                   |
+|----------------------|----------|-----------------------------------------------------------------------------------------------|
+| Description          | Empty    | Lokal etikett for regelen.                                                                    |
+| Lists                | Any      | Samsvarer med en hvilken som helst liste eller bare de valgte konfigurerte listene.           |
+| Clients              | Everyone | Samsvarer med alle eller de valgte nettverks- og enhetsomfangene.                             |
+| Repeat After         | 60       | Minutter før samme regel, klient, domene og liste kan varsle igjen. Godtar 1 til og med 1440. |
+| WebGUI Notice        | On       | Legger til et pfSense-varsel når regelen samsvarer.                                           |
+| Remote Notifications | On       | Bruker de konfigurerte varslingstjenestene i pfSense når regelen samsvarer.                   |
+| Enabled              | On       | Tar med regelen i kompilert varslingspolicy.                                                  |
+
+Minuttprosessoren sender høyst 20 meldinger per kjøring og 60 meldinger per regel per time, og oppsummerer deretter overskuddet. Den beholder høyst 50 uleste Sinkhole-varsler i WebGUI og bruker et kjørebudsjett på 40 sekunder. Hendelser eldre enn 10 minutter er utdaterte.
+
+## Bypass-beskyttelse \{#bypass-protection}
+
+| Felt                | Standard | Beskrivelse                                                                                                |
+|---------------------|----------|------------------------------------------------------------------------------------------------------------|
+| Apply to            | Empty    | Klientvendte ankomstgrensesnitt som deles av all Bypass-beskyttelse.                                       |
+| Redirect            | Off      | Sender vanlig UDP- og TCP-trafikk på port 53 på valgte grensesnitt til brannmuren.                         |
+| Exempt Sources      | Empty    | Én IP-adresse, CIDR, alias eller `This Firewall`-oppføring per linje som omgår omdirigering av vanlig DNS. |
+| Exempt Destinations | Empty    | Én mål-IP-adresse, CIDR eller alias per linje som omgår omdirigering av vanlig DNS.                        |
+| TLS and QUIC        | Off      | Blokkerer TCP- og UDP-port 853 til andre mål enn brannmuren.                                               |
+| Providers           | Off      | Blokkerer navn og adresser fra aktiverte **Encrypted DNS** Bypass Lists.                                   |
+| Firefox             | Off      | Returnerer `NXDOMAIN` for Firefox' kanarinavn for automatisk DNS-over-HTTPS og underdomenene.              |
+| Private Relay       | Off      | Returnerer `NXDOMAIN` for Apples to tilgjengelighetsnavn for Private Relay.                                |
+| Discovery           | Off      | Lar DDR være urørt, annonserer brannmurens DNS over TLS eller svarer `NOERROR` uten poster.                |
+| Tor                 | Off      | Blokkerer navn og adresser fra aktiverte **Tor** Bypass Lists.                                             |
+| VPN providers       | Off      | Blokkerer navn og adresser fra aktiverte **VPN** Bypass Lists.                                             |
+| Standard VPN ports  | Off      | Blokkerer UDP-porter for OpenVPN, WireGuard og IPsec samt ESP til andre mål enn brannmuren.                |
+
+Alle lagrede omdirigeringsunntak må være gyldige før omdirigeringsregler brukes. IPv4 bruker `127.0.0.1` som mål bare når Resolver lytter der, og bruker ellers grensesnittadressen. IPv6 bruker alltid grensesnittadressen. **Discovery → Advertise** krever DNS Resolverens SSL/TLS-tjeneste og sertifikatvertsnavn.
+
+### Bypass Lists \{#bypass-lists}
+
+| Felt    | Standard      | Beskrivelse                                                                                |
+|---------|---------------|--------------------------------------------------------------------------------------------|
+| Name    | Empty         | Lokal etikett som vises i Bypass og Status.                                                |
+| Kind    | Encrypted DNS | Velger policyen **Encrypted DNS**, **Tor** eller **VPN**.                                  |
+| URL     | Empty         | HTTP- eller HTTPS-kilde som inneholder en blanding av domener, adresser og CIDR-er.        |
+| Enabled | Off           | Tar med den lagrede listen i planlagte hentinger og den tilhørende aktiverte beskyttelsen. |
+
+Inndata for en Bypass List bruker én oppføring per linje og `#`-kommentarer. En mislykket henting beholder den siste gode lagrede kopien. Tillatte avgjørelser for listedomener har prioritet over navn i Bypass Lists, men ikke over signaler fra Firefox, Private Relay eller Discovery.
+
+**Add from Catalog** søker etter omgåelsesfeeder fra AdGuard Home-registeret og DNS-, IPv4- og IPv6-delene til pfBlockerNG bare når katalogen åpnes eller oppdateres. Hvert resultat har en fast type, **Encrypted DNS**, **Tor** eller **VPN**, og legges til som en aktivert Bypass List.
+
+## IP and Country Blocking \{#ip-and-country-blocking}
+
+| Felt                | Standard | Beskrivelse                                                                                    |
+|---------------------|----------|------------------------------------------------------------------------------------------------|
+| Enable              | Off      | Aktiverer det uavhengig lastede brannmurankeret `sinkhole/ip`.                                 |
+| Interfaces          | Empty    | Ankomstgrensesnitt der blokkeringsregler gjelder.                                              |
+| Directions          | Empty    | Velger blokkering av innkommende kilder, utgående mål eller begge deler.                       |
+| Countries           | Empty    | Én GeoLite2-landkode på to bokstaver per linje.                                                |
+| MaxMind Account ID  | Empty    | Konto som brukes til å hente GeoLite2 Country-arkivet.                                         |
+| MaxMind License Key | Unset    | Skrivebeskyttet nøkkel fra administratoren. Hvis feltet er tomt, beholdes den lagrede verdien. |
+| Clear License Key   | Off      | Sletter den lagrede MaxMind-nøkkelen når innstillingene lagres.                                |
+| IP Allowlist        | Empty    | Én IP-adresse eller CIDR per linje som trekkes fra de endelige blokkeringstabellene.           |
+
+Hver IP-listerad har navn, URL, valg av IPv4/IPv6/Both og en Enabled-bryter. Sinkhole fjerner også adresser for brannmurgrensesnitt, gateway og DNS fra de endelige tabellene, slik at egne regler ikke blokkerer beskyttet infrastruktur.
+
+IP-katalogen utelater alle feeder for Encrypted DNS, Tor og VPN som tilhører Bypass-katalogen.
+
+## Language \{#language}
+
+WebGUI for Sinkhole følger språkinnstillingen i pfSense og har fullstendige kataloger for alle de 18 støttede språkvariantene. Hvis en katalognøkkel uventet mangler, bruker Sinkhole engelsk for den nøkkelen.
+

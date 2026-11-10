@@ -1,0 +1,109 @@
+---
+id: troubleshooting
+title: Rješavanje problema
+description: Dijagnosticirajte neaktivnu integraciju Resolvera, zastarjela pravila, sukobe mape klijenata, Bypass stanje, odstupanja IP sidra i neuspjela ažuriranja.
+keywords:
+  - sinkhole for pfsense
+  - rješavanje problema
+  - dns resolver
+  - mapa klijenata
+  - neuspjelo ažuriranje
+tags:
+  - operate
+  - troubleshooting
+  - diagnostics
+---
+
+Pratite problem od panela Status i sistemskog dnevnika do određene liste, opsega, pravila, slušača, zaključavanja ili izvršnog stanja koje ga je izazvalo.
+
+## Gdje tražiti \{#where-to-look}
+
+- **Firewall → Sinkhole → Status** prikazuje stanje lista, kataloga, mape klijenata, upozorenja, Bypassa, IP-a, kompajliranja, postavljanja i Resolvera.
+- **Status → System Logs → System → General** prikazuje operativne redove koji počinju s `Sinkhole:`.
+- `/usr/local/sbin/sinkhole --help` ispisuje podržane načine održavanja.
+
+Preporučuje se sačuvati vrijednosti Statusa i relevantne redove dnevnika prije promjene konfiguracije. Potpuni izlaz `config.xml` može sadržavati tajne i ne treba se prilagati prijavi.
+
+## Sinkhole je neaktivan \{#sinkhole-is-inactive}
+
+Koristite razlog naveden iza **Summary → Sinkhole**:
+
+- **Sinkhole is disabled** — Odaberite **General → Enable** nakon što Resolver i Python mjesto budu spremni.
+- **DNS Resolver is disabled** — Omogućite i primijenite Resolver prije spremanja Sinkholea.
+- **Python script slot is owned** — Onemogućite sukobljenu DNSBL/Python integraciju ili ostavite Sinkhole onemogućenim; Sinkhole je neće zamijeniti.
+- **Python mode or position changed** — Ponovo spremite postavke Sinkhole General kako bi Sync mogao vratiti Python način i `pre_validator` dok Sinkhole posjeduje mjesto.
+- **Runtime files unavailable** — Pokrenite Sync paketa spremanjem postavki General ili ponovo pokrenite sistem i dopustite Syncu paketa pfSensea da vrati datoteke RAM diska.
+
+Na sistemima s `/var` u memoriji, Sync paketa pri svakom pokretanju vraća nedostajuće izvršne datoteke i po potrebi ponovo pokreće Unbound nakon pokretanja paketa. Nedostajuće rano izvršno okruženje neposredno nakon podizanja sistema stoga bi se trebalo oporaviti tokom pokretanja paketa.
+
+## Domena nije blokirana \{#a-domain-is-not-blocked}
+
+1. Potvrdite da je lista omogućena i da ima sačuvane zapise, a da njena posljednja ispravna kopija nije zamijenjena nakon greške.
+2. Slijedite [redoslijed odlučivanja](/docs/configure/scopes#decision-order) za trenutni uređaj i mrežu klijenta.
+3. Potvrdite da su **Compile Needed** i **Deployment Needed** postavljeni na `No`, a zatim uporedite kompajliranu, postavljenu i učitanu generaciju.
+4. Potvrdite da klijent šalje upite direktno pfSenseu ili putem **Bypass → Redirect**.
+
+Unbound odgovara na svoje ugrađene zone `test.`, `invalid.`, `onion.` i `localhost.` prije Python modula. Test uživo pod jednom od tih zona ne koristi Sinkhole.
+
+Kada postavljanje doda nazive ili proširi podstablo, Sinkhole ponovo učitava Unbound nakon učitavanja nove generacije jer `flush_zone` samo označava zapise predmemorije kao istekle. Unbound 1.18 ih i dalje može posluživati kada je **Serve Expired** uključen, dok `unbound-control reload` čisti predmemorije poruka i RRsetova.
+
+## CNAME rezultat izgleda nepotpun \{#a-cname-result-looks-incomplete}
+
+Upit čiji je CNAME cilj na listi blokira se čak i kada izvorni naziv nije na listi. Ako navedeni cilj nema zapis tražene vrste, poput AAAA, odgovor može zadržati CNAME bez adrese.
+
+Dopušteni naziv upita ostaje dopušten. Time se sprečava da manje određen CNAME cilj nadjača izričitu odluku dopuštene domene za upitani naziv.
+
+## Uređaj dobija pogrešna pravila \{#a-device-gets-the-wrong-policy}
+
+- Pokrenite `/usr/local/sbin/sinkhole --refresh-clients` i pregledajte **Status → Scopes**.
+- Potvrdite da red mreže prikazuje trenutne podmreže interfejsa, a red uređaja njegove trenutne adrese.
+- Riješite svaku vrijednost **Conflict** jer prvi uređaj po redoslijedu u tabeli ima prednost za zajedničku adresu.
+- Za statičko mapiranje provjerite i njegovu konfiguriranu adresu i trenutne adrese opažene za njegov MAC.
+
+Vremena završetka ISC zakupa mogu biti u GMT-u ili lokalnom vremenu zaštitnog zida, zavisno od postavke vremena zakupa interfejsa, dok su vremena Kea zakupa već lokalna. Sinkhole slijedi tu semantiku pfSensea pri određivanju je li zakup aktuelan.
+
+## Ažuriranje liste ili kataloga nije uspjelo \{#list-or-catalog-update-failed}
+
+Neuspjelo DNS, Bypass ili IP preuzimanje, parsiranje ili provjera zadržava prethodnu sačuvanu kopiju i bilježi grešku. DNS nastavlja koristiti postavljenu lokalnu generaciju umjesto da čeka neuspjeli izvor.
+
+Katalozi se dohvaćaju samo kada se pretraga otvori ili osvježi, a neuspjelo dohvatanje zadržava posljednji ispravni katalog u predmemoriji. Prije prisilnog novog osvježavanja potvrdite HTTPS povezivost, URL izvora i grešku na Statusu.
+
+## Preusmjeravanje običnog DNS-a je pauzirano ili nedostaje \{#plain-dns-redirect-is-paused-or-missing}
+
+- **Paused** — Ispravite ili uklonite svaki nevažeći izuzetak prikazan u panelu Bypass.
+- **No family address** — Dodajte porodicu interfejsu ili prihvatite da se pravilo te porodice ne može generirati.
+- **Resolver does not listen** — Promijenite **DNS Resolver → Network Interfaces** ili uklonite taj odabir preusmjeravanja.
+- **Rules missing or out of date** — Pričekajte dva minutna opažanja, a zatim pregledajte **Last parse error** i sistemske dnevnike.
+- **Queries are refused** — Dodajte mrežu klijenta u konfiguraciju kontrole pristupa Resolvera.
+
+Minutna provjera ne učitava ponovo filter dok je zaključavanje paketa pfSensea zauzeto niti kada je pfSense već odbio nepromijenjeni tekst pravila. Promjena nevažeće konfiguracije omogućava sljedećim dvama opažanjima da je usklade.
+
+Ciljevi IPv6 preusmjeravanja uvijek koriste adresu interfejsa jer izmjereno ponašanje FreeBSD-a odbacuje saobraćaj prepisan na `::1` s interfejsa koji nije povratna petlja. Izuzeci mješovitih porodica ispisuju se kao zasebna pravila `inet` i `inet6` jer su izmjereni FreeBSD 14 i 16 zadržavali samo prvu porodicu u nekvalificiranoj mješovitoj listi.
+
+## IP blokiranje ne odgovara postavkama \{#ip-blocking-does-not-match-settings}
+
+1. Potvrdite da je **IP and Country Blocking → State** postavljeno na `On` i da su navedeni predviđeni interfejsi i smjerovi.
+2. Provjerite konačni broj zapisa tabela porodica, preskočene redove, posljednje ažuriranje i posljednju grešku.
+3. Potvrdite da je **IP Anchor** postavljeno na `Yes`; `Out of Date` znači da učitano sidro ne odgovara trenutnim datotekama ili postavkama.
+4. Pregledajte listu dopuštenih adresa i imajte na umu da se adrese zaštitnog zida, pristupnika i DNS-a automatski uklanjaju.
+
+Sidro `sinkhole/ip` preživljava obična ponovna učitavanja filtera pfSensea i nalazi se ispred pravila pass-quick kroz ranu kuku pravila paketa. Minutna provjera direktno učitava prazno ili promijenjeno sidro, dok isključivanje funkcije prazni sidro.
+
+## Upozorenja ne stižu \{#alerts-do-not-arrive}
+
+- Potvrdite da je pravilo omogućeno i da se i njegov odabir liste i odabir klijenta podudaraju s blokiranim odgovorom.
+- Uporedite događaj s periodom ponavljanja pravila i ograničenjima od 20 po pokretanju, 60 po pravilu na sat i 50 nepročitanih obavijesti.
+- Provjerite **Status → Alerts** za broj zastarjelih, zadržanih, odbačenih događaja ili grešaka.
+- Nezavisno testirajte udaljenu uslugu konfiguriranu u pfSenseu pod **System → Advanced → Notifications**.
+
+Događaji stariji od 10 minuta su zastarjeli, a pokretanje prestaje slati nakon budžeta od 40 sekundi, tako da se preostali posao može nastaviti sljedeće minute. Tekst WebGUI obavijesti pojavljuje se i u sistemskom dnevniku pfSensea putem `file_notice()`.
+
+## Upotreba memorije je visoka \{#memory-use-is-high}
+
+Izmjereno testiranje s 300.000 naziva povećalo je RSS Unbounda sa 41 MiB na 103 MiB, uz vršnu memoriju pravila od približno 157 bajtova po nazivu. Stvarna upotreba zavisi od jedinstvenih normaliziranih naziva, dodjela opsega i pokrenutog Resolvera.
+
+Preporučuje se uporediti broj zapisa na Statusu s memorijom Unbounda prije i nakon dodavanja velikog izvora. Onemogućavanje nekorištene liste uklanja je iz aktivnih pravila pri sljedećem kompajliranju.
+
+## Prijavite problem \{#report-a-problem}
+
+Otvorite [GitHub problem](https://github.com/mrjackyliang/pfsense-sinkhole/issues) s verzijom Sinkholea, izdanjem i verzijom pfSensea, verzijom FreeBSD-a, tačnim stanjem Statusa, koracima reprodukcije i sanitiziranim redovima dnevnika `Sinkhole:`. Nemojte uključivati MaxMind vjerodajnice, pune konfiguracijske datoteke, sadržaj lista niti privatne podatke o klijentima/domenama.

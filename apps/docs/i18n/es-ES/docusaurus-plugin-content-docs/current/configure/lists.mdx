@@ -1,0 +1,100 @@
+---
+id: lists
+title: Listas y copias guardadas
+description: Añada listas DNS por URL o catálogo, use formatos hosts, de dominios y adblock, controle la política global y conserve copias válidas tras los fallos.
+keywords:
+  - sinkhole for pfsense
+  - listas de bloqueo
+  - listas guardadas
+  - búsqueda de listas populares
+  - dominios permitidos
+tags:
+  - configure
+  - lists
+  - dns
+---
+
+import catalogSearch from './_assets_/lists-2.png';
+
+Añada fuentes de listas en las que confíe y permita que Sinkhole conserve en el firewall copias normalizadas y válidas para su uso inmediato por el DNS.
+
+## ¿Por qué usar listas guardadas? \{#why-use-saved-lists}
+
+1. Mantiene el DNS independiente del host de una lista para que una descarga lenta o fallida no interrumpa la resolución de nombres.
+2. Descarga cada fuente una vez para que la misma copia guardada sirva a los ámbitos globales, de red y de dispositivo.
+3. Conserva la copia válida anterior cuando falla una nueva descarga o su análisis para que una entrada defectuosa no sustituya una política funcional.
+4. Actualiza las listas en segundo plano para que un reinicio o una recarga del Resolver nunca espere a la red.
+
+## Añadir una lista por URL \{#add-a-list-by-url}
+
+Abra **Firewall → Sinkhole → Lists**, seleccione **Add** debajo de la tabla de listas de bloqueo y complete **Add Block List** en la página del editor:
+
+| Campo   | Descripción                                                                           |
+|---------|---------------------------------------------------------------------------------------|
+| Name    | Etiqueta local mostrada en asignaciones, alertas y Status.                            |
+| URL     | Fuente HTTP o HTTPS sin credenciales incrustadas.                                     |
+| Enabled | Descarga la fuente y la deja disponible para los ámbitos asignados.                   |
+| Global  | Aplica la fuente a todos los clientes después de las decisiones de dispositivo y red. |
+
+Al guardar se vuelve a la pestaña Lists y se inicia la misma ruta validada de aplicación en segundo plano. Seleccione el lápiz de una fila o haga doble clic en ella para editarla. Una fila desactivada sigue configurada, pero aparece atenuada en la tabla y no se usa en el actualizador ni en la política compilada.
+
+## Formatos DNS aceptados \{#accepted-dns-formats}
+
+Sinkhole acepta los formatos estándar siguientes y normaliza los nombres válidos en un único conjunto de dominios guardado:
+
+| Formato            | Ejemplo                                       | Comportamiento                                                      |
+|--------------------|-----------------------------------------------|---------------------------------------------------------------------|
+| Archivo hosts      | `0.0.0.0 blocked.example`                     | Bloquea exactamente cada nombre de dominio después de la dirección. |
+| Lista de dominios  | `blocked.example`                             | Bloquea exactamente el nombre de dominio de cada línea.             |
+| Regla tipo adblock | <code>{'\u007c\u007cblocked.example^'}</code> | Bloquea el nombre de dominio y todos sus subdominios.               |
+
+Use la forma de adblock `||name^` cuando quiera que una sola entrada bloquee el nombre y todos sus subdominios.
+
+Los filtros cosméticos y las líneas mal formadas no se convierten en política DNS. Status informa de los errores de las fuentes, mientras que una lista fallida con una copia válida anterior conserva esa copia.
+
+## Buscar en los catálogos \{#search-the-catalogs}
+
+Seleccione **Add from Catalog** en la pestaña Lists para buscar en el registro de listas de AdGuard Home y en la sección DNS del catálogo de fuentes de pfBlockerNG. Sinkhole obtiene ambos solo cuando se abre la búsqueda o se selecciona **Refresh**; ninguno se incluye ni descarga según un horario.
+
+Los resultados aparecen como tarjetas. Use juntos los controles de búsqueda, fuente y responsable, seleccione una etiqueta de categoría y cambie **Group by** entre **Category** y **Maintainer**. Las etiquetas de categoría muestran los recuentos para los filtros actuales de búsqueda, fuente y responsable, mientras que el menú de responsables coloca primero a quienes tienen más listas coincidentes.
+
+Cada tarjeta muestra el nombre de la lista, su responsable o categoría, el catálogo de origen, una descripción de dos líneas, la página principal y el estado **Add** o **Added**. Las tarjetas no muestran puntuaciones, distintivos ni recomendaciones. Seleccionar **Add** crea una fila de lista ordinaria cuya URL puede asignarse como cualquier fuente introducida manualmente.
+
+La línea **Contents** de cada tarjeta muestra **Domains**. Al añadir un resultado del catálogo, su nombre de catálogo se conserva sin cambios.
+
+Las copias de los catálogos se guardan en caché bajo `/var/db` durante un día. Una actualización fallida conserva la última copia válida del catálogo y muestra el error de obtención en Status.
+
+<img src={catalogSearch} alt="Panel Add from Catalog de la pestaña Lists con controles de búsqueda en el catálogo y estado de obtención" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Las fuentes asignadas a la protección de bypass de Encrypted DNS, Tor o VPN no aparecen aquí. Solo están disponibles mediante **Add from Catalog** en la pestaña Bypass.
+
+## Establecer dominios permitidos globales \{#set-global-allowed-domains}
+
+La sección **Allowed Domains** debajo de los paneles de listas y catálogos define excepciones globales. Cada línea permite que ese dominio y sus subdominios atraviesen las listas globales heredadas. Seleccione **Save** debajo de esta sección para aplicar la opción común a toda la página.
+
+Un dominio permitido global se comprueba después de las reglas de dispositivo y red. Por tanto, no puede anular una lista que ya haya bloqueado la consulta en un nivel más específico de dispositivo o red.
+
+## Elegir la frecuencia de actualización \{#choose-the-update-frequency}
+
+La opción **General → Update Frequency** controla las actualizaciones programadas de listas DNS y también proporciona el horario de actualización cuando está activado el bloqueo IP:
+
+| Opción        | Horario                                                                    |
+|---------------|----------------------------------------------------------------------------|
+| Hourly        | Una vez por hora en el minuto estable asignado aleatoriamente al firewall. |
+| Every 6 hours | Cada seis horas en el mismo minuto estable.                                |
+| Daily         | Una vez al día en ese minuto, con `00` como hora programada.               |
+| Weekly        | Cada domingo en ese minuto, con `00` como hora programada.                 |
+
+`Daily` es el valor predeterminado. **Status → Update Now** inicia una actualización completa manual sin cambiar el horario guardado.
+
+## Qué sucede durante una actualización \{#what-happens-during-an-update}
+
+1. Descarga cada fuente activada mediante el cliente de descarga con límites.
+2. La analiza y normaliza en una copia temporal.
+3. Sustituye atómicamente la copia guardada solo cuando la nueva copia es válida.
+4. Compila la política global, de red, de dispositivo, de dominios permitidos y de alertas actual.
+5. Despliega una nueva generación local y permite que el módulo de Unbound la cargue.
+
+Cuando los nuevos nombres bloqueados amplían la política, Sinkhole espera a que el módulo cargue la generación y después recarga Unbound una vez para limpiar las respuestas en caché. [Cómo funcionan las actualizaciones](/docs/safety/how-updates-work) explica el modelo completo de disponibilidad y fallback.
+
+Cuando se consulta un subárbol bloqueado con una etiqueta DNS inusual pero válida, incluido un espacio o un byte superior a `0x7f`, Sinkhole conserva el nombre en formato de cable en la respuesta y devuelve la respuesta normal `0.0.0.0` o `::`. La consulta no se convierte en SERVFAIL solo porque la etiqueta no tenga formato de nombre de host.

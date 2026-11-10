@@ -1,0 +1,147 @@
+---
+id: settings
+title: Naslag voor instellingen
+description: Zoek Sinkhole-velden, standaardwaarden, schema's, lijst- en scopekeuzes, waarschuwingslimieten, Bypass-beveiliging, IP-beleid, updatecontroles en taalgedrag op.
+keywords:
+  - sinkhole voor pfsense
+  - instellingen
+  - standaardwaarden
+  - webgui
+  - configuratie
+tags:
+  - reference
+  - settings
+  - webgui
+---
+
+Zoek het doel en standaardgedrag op van elk Sinkhole-configuratiegebied onder **Firewall → Sinkhole**.
+
+## General \{#general}
+
+| Veld             | Standaard | Beschrijving                                                                                            |
+|------------------|-----------|---------------------------------------------------------------------------------------------------------|
+| Enable           | Off       | Schakelt geplande lijstupdates en de integratie van Sinkhole met de DNS Resolver in.                    |
+| Update Frequency | Daily     | Selecteert Hourly, Every 6 hours, Daily of Weekly voor het schema van DNS-, Bypass- en IP-/landlijsten. |
+| Keep Settings    | On        | Behoudt configuratie en permanent opgeslagen gegevens wanneer het pakket wordt verwijderd.              |
+
+Geplande tijden gebruiken stabiele willekeurige componenten. Hourly wordt op één stabiele minuut uitgevoerd, Every 6 hours gebruikt elke zes uur dezelfde minuut, Daily wordt uitgevoerd om `00:<minute>` en Weekly op zondag om `00:<minute>`.
+
+## Package Updates \{#package-updates}
+
+| Veld                 | Standaard | Beschrijving                                                                                                 |
+|----------------------|-----------|--------------------------------------------------------------------------------------------------------------|
+| Update Checks        | Weekly    | Selecteert Daily, Weekly, Monthly of Never voor controles op nieuwe GitHub-releases.                         |
+| Remote Notifications | Off       | Verzendt elke melding over een nieuwe versie ook via de externe services die in pfSense zijn geconfigureerd. |
+
+Elke nieuwe versie maakt één lokale pfSense-melding. **About → Check Now** voert dezelfde begrensde releasecontrole onmiddellijk uit zonder het schema te wijzigen.
+
+## Lists \{#lists}
+
+| Veld            | Standaard | Beschrijving                                                                                           |
+|-----------------|-----------|--------------------------------------------------------------------------------------------------------|
+| Name            | Empty     | Lokaal label dat door toewijzingen, waarschuwingen en Status wordt gebruikt.                           |
+| URL             | Empty     | HTTP- of HTTPS-bron zonder ingesloten referenties.                                                     |
+| Enabled         | On        | Neemt de bron op in updates en gecompileerd beleid wanneer deze is toegewezen.                         |
+| Global          | On        | Past de lijst na apparaat- en netwerkbeslissingen op elke client toe.                                  |
+| Allowed Domains | Empty     | Eén globaal toegestaan domein per regel; elke vermelding staat het exacte domein en elk subdomein toe. |
+
+**Add from Catalog** doorzoekt op aanvraag het lijstregister van AdGuard Home en de feedcatalogus van pfBlockerNG. Het toevoegen van een resultaat maakt dezelfde gewone rij als wanneer de URL handmatig wordt ingevoerd.
+
+Bypass-feeds zijn uitgesloten van deze catalogus.
+
+## Diensten \{#services}
+
+Dienstselecties zijn standaard leeg voor elk bereik. Een registerdienst die onder een specifieke Bypass-beveiliging valt, wordt verborgen in Diensten en verwijderd uit opgeslagen selecties; Private Relay wordt alleen op het tabblad Bypass geconfigureerd.
+
+## Network Scopes \{#network-scopes}
+
+| Veld            | Standaard | Beschrijving                                                                                                                                                |
+|-----------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface       | Empty     | Geconfigureerde pfSense-interface waarvan de huidige IPv4- en IPv6-subnetten het netwerk identificeren.                                                     |
+| Lists           | Empty     | Aanvullende DNS-lijsten die clients in het netwerk blokkeren.                                                                                               |
+| Allowed Domains | Empty     | Eén netwerkuitzondering per regel; elke uitzondering staat het exacte domein en elk subdomein toe vóór de lijsten van dat netwerk en al het globale beleid. |
+| Enabled         | On        | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                                                                       |
+
+Elke interface kan slechts eenmaal voorkomen. Een opgeslagen interface die niet beschikbaar is, blijft zichtbaar voor correctie in plaats van te worden verwijderd.
+
+## Device Scopes \{#device-scopes}
+
+| Veld                | Standaard  | Beschrijving                                                                                                                                 |
+|---------------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty      | Lokaal label dat in beleid en Status wordt weergegeven.                                                                                      |
+| Identified By       | IP address | Selecteert IP address, DHCP static mapping of MAC address.                                                                                   |
+| IP or MAC Address   | Empty      | Exacte identificatie wanneer IP address of MAC address is geselecteerd.                                                                      |
+| DHCP Static Mapping | Empty      | Bestaande toewijzing die wordt geselecteerd wanneer die identificatiemethode wordt gebruikt.                                                 |
+| Lists               | Empty      | Aanvullende DNS-lijsten die dit apparaat blokkeren.                                                                                          |
+| Allowed Domains     | Empty      | Eén apparaatuitzondering per regel; elke uitzondering staat het exacte domein en elk subdomein toe vóór elke netwerk- en globale beslissing. |
+| Enabled             | On         | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                                                        |
+
+Statische toewijzingen gebruiken hun geconfigureerde adres plus huidige adressen die voor het MAC-adres van de toewijzing zijn waargenomen. Een MAC-rij gebruikt actuele ARP-, NDP- en DHCP-leasegegevens.
+
+## Alert Rules \{#alert-rules}
+
+| Veld                 | Standaard | Beschrijving                                                                                                 |
+|----------------------|-----------|--------------------------------------------------------------------------------------------------------------|
+| Description          | Empty     | Lokaal label voor de regel.                                                                                  |
+| Lists                | Any       | Komt overeen met elke lijst of alleen met de geselecteerde geconfigureerde lijsten.                          |
+| Clients              | Everyone  | Komt overeen met iedereen of met de geselecteerde netwerk- en apparaatscopes.                                |
+| Repeat After         | 60        | Minuten voordat dezelfde regel, client, domein en lijst opnieuw kunnen melden; accepteert 1 tot en met 1440. |
+| WebGUI Notice        | On        | Voegt een pfSense-melding toe wanneer de regel overeenkomt.                                                  |
+| Remote Notifications | On        | Gebruikt de geconfigureerde meldingsservices van pfSense wanneer de regel overeenkomt.                       |
+| Enabled              | On        | Neemt de regel op in gecompileerd waarschuwingsbeleid.                                                       |
+
+Het proces per minuut verzendt maximaal 20 berichten per uitvoering en 60 berichten per regel per uur en vat daarna het overschot samen. Het bewaart maximaal 50 ongelezen Sinkhole-meldingen in de WebGUI en gebruikt een uitvoerbudget van 40 seconden; gebeurtenissen ouder dan 10 minuten zijn verouderd.
+
+## Bypass-beveiliging \{#bypass-protection}
+
+| Veld                | Standaard | Beschrijving                                                                                              |
+|---------------------|-----------|-----------------------------------------------------------------------------------------------------------|
+| Apply to            | Empty     | Clientgerichte aankomstinterfaces die door elke Bypass-beveiliging worden gedeeld.                        |
+| Redirect            | Off       | Stuurt gewoon UDP- en TCP-poort 53-verkeer op geselecteerde interfaces naar de firewall.                  |
+| Exempt Sources      | Empty     | Eén IP-adres, CIDR, alias of vermelding `This Firewall` per regel die gewone DNS-omleiding omzeilt.       |
+| Exempt Destinations | Empty     | Eén IP-bestemmingsadres, CIDR of alias per regel die gewone DNS-omleiding omzeilt.                        |
+| TLS and QUIC        | Off       | Blokkeert TCP- en UDP-poort 853 naar andere bestemmingen dan de firewall.                                 |
+| Providers           | Off       | Blokkeert namen en adressen uit ingeschakelde **Encrypted DNS** Bypass Lists.                             |
+| Firefox             | Off       | Geeft `NXDOMAIN` terug voor Firefox' canarynaam voor automatische DNS-over-HTTPS en de subdomeinen ervan. |
+| Private Relay       | Off       | Geeft `NXDOMAIN` terug voor de twee beschikbaarheidsnamen van Apple Private Relay.                        |
+| Discovery           | Off       | Laat DDR ongemoeid, adverteert DNS over TLS van de firewall of antwoordt `NOERROR` zonder records.        |
+| Tor                 | Off       | Blokkeert namen en adressen uit ingeschakelde **Tor** Bypass Lists.                                       |
+| VPN providers       | Off       | Blokkeert namen en adressen uit ingeschakelde **VPN** Bypass Lists.                                       |
+| Standard VPN ports  | Off       | Blokkeert OpenVPN-, WireGuard- en IPsec-UDP-poorten en ESP naar andere bestemmingen dan de firewall.      |
+
+Elke opgeslagen omleidingsuitzondering moet geldig zijn voordat omleidingsregels worden gebruikt. IPv4 gebruikt `127.0.0.1` alleen als doel wanneer de Resolver daar luistert en gebruikt anders het interfaceadres; IPv6 gebruikt altijd het interfaceadres. **Discovery → Advertise** vereist de SSL/TLS-service van de DNS Resolver en de hostnaam van het certificaat.
+
+### Bypass Lists \{#bypass-lists}
+
+| Veld    | Standaard     | Beschrijving                                                                                        |
+|---------|---------------|-----------------------------------------------------------------------------------------------------|
+| Name    | Empty         | Lokaal label dat op Bypass en Status wordt weergegeven.                                             |
+| Kind    | Encrypted DNS | Selecteert het beleid **Encrypted DNS**, **Tor** of **VPN**.                                        |
+| URL     | Empty         | HTTP- of HTTPS-bron met een combinatie van domeinen, adressen en CIDR's.                            |
+| Enabled | Off           | Neemt de opgeslagen lijst op in geplande ophaalacties en de bijbehorende ingeschakelde beveiliging. |
+
+Invoer voor een Bypass List gebruikt één vermelding per regel en `#`-opmerkingen. Bij een mislukte ophaalactie blijft de laatst bekende goede opgeslagen kopie behouden. Toegestane beslissingen voor lijstdomeinen hebben voorrang op namen uit Bypass Lists, maar niet op signalen van Firefox, Private Relay of Discovery.
+
+**Add from Catalog** zoekt alleen bij het openen of vernieuwen naar bypass-feeds in het register van AdGuard Home en de DNS-, IPv4- en IPv6-secties van pfBlockerNG. Elk resultaat heeft een vast type **Encrypted DNS**, **Tor** of **VPN** en wordt als ingeschakelde Bypass List toegevoegd.
+
+## IP and Country Blocking \{#ip-and-country-blocking}
+
+| Veld                | Standaard | Beschrijving                                                                                |
+|---------------------|-----------|---------------------------------------------------------------------------------------------|
+| Enable              | Off       | Schakelt het onafhankelijk geladen firewallanker `sinkhole/ip` in.                          |
+| Interfaces          | Empty     | Aankomstinterfaces waarop blokkeerregels worden toegepast.                                  |
+| Directions          | Empty     | Selecteert blokkering van inkomende bronnen, uitgaande bestemmingen of beide.               |
+| Countries           | Empty     | Eén GeoLite2-landcode van twee letters per regel.                                           |
+| MaxMind Account ID  | Empty     | Account waarmee het GeoLite2 Country-archief wordt opgehaald.                               |
+| MaxMind License Key | Unset     | Alleen-schrijfbare sleutel van de beheerder; leeg laten behoudt de opgeslagen waarde.       |
+| Clear License Key   | Off       | Verwijdert de opgeslagen MaxMind-sleutel wanneer de instellingen worden opgeslagen.         |
+| IP Allowlist        | Empty     | Eén IP-adres of CIDR per regel dat van de uiteindelijke blokkeertabellen wordt afgetrokken. |
+
+Elke IP-lijstrij heeft een naam, URL, selectie voor IPv4/IPv6/Both en een schakelaar Enabled. Sinkhole verwijdert ook firewallinterface-, gateway- en DNS-adressen uit de uiteindelijke tabellen, zodat de eigen regels geen beschermde infrastructuur blokkeren.
+
+De IP-catalogus sluit alle feeds voor Encrypted DNS, Tor en VPN uit die bij de Bypass-catalogus horen.
+
+## Language \{#language}
+
+De Sinkhole-WebGUI volgt de taalinstelling van pfSense en heeft volledige catalogi voor alle 18 ondersteunde taalvarianten. Als een catalogussleutel onverwacht ontbreekt, gebruikt Sinkhole voor die sleutel Engels.
+

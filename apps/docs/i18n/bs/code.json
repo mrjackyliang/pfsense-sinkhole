@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "Izvorni pfSense paket"
+  },
+  "homepage.hero.heading": {
+    "message": "Odaberite šta svaka mreža i uređaj mogu dosegnuti."
+  },
+  "homepage.hero.tagline": {
+    "message": "Primijenite sačuvane DNS liste na cijelu mrežu, VLAN ili uređaj, uz namjerna upozorenja i bez dodatnog servera."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Instalirajte Sinkhole"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "Planirajte scopes"
+  },
+  "homepage.stats.heading": {
+    "message": "Jedan vatrozid, pravila na svakom korisnom nivou"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole čuva pravila lokalno i jasno prikazuje granice rada."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "Opsezi pravila"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "Formati DNS lista"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "Keš kataloga"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Mjesto za Unbound modul"
+  },
+  "homepage.features.heading": {
+    "message": "Kontrola koja ostaje na vatrozidu"
+  },
+  "homepage.features.scopes.title": {
+    "message": "Odredite opseg svake odluke"
+  },
+  "homepage.features.scopes.description": {
+    "message": "Primijenite liste i dozvoljene domene globalno, po interfejsu ili VLAN-u i po uređaju."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "Čuvajte posljednje ispravne kopije"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "Odgovarajte na DNS iz lokalnih lista kroz ponovna pokretanja, učitavanja i neuspjela preuzimanja."
+  },
+  "homepage.features.alerts.title": {
+    "message": "Upozoravajte namjerno"
+  },
+  "homepage.features.alerts.description": {
+    "message": "Obavijestite samo za liste, mreže i uređaje odabrane u svakom pravilu."
+  },
+  "homepage.features.redirect.title": {
+    "message": "Zaštitite DNS putanje"
+  },
+  "homepage.features.redirect.description": {
+    "message": "Po želji preusmjerite obični DNS ili blokirajte uobičajena zaobilaženja putem šifriranog DNS-a i tunela na odabranim interfejsima."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "Pretražite pa odlučite"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "Pretražite podržane kataloge na zahtjev bez uključivanja ili preporučivanja liste."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "Blokirajte adrese i države"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "Primijenite IP liste i GeoLite2 pravila za države kroz izolirano sidro `sinkhole/ip`."
+  }
+}

@@ -1,0 +1,73 @@
+---
+id: compatibility
+title: Compatibiliteit
+description: Controleer de FreeBSD-pakket-ABI, het pfSense-testbeleid, de vereisten van de DNS Resolver, het conflict met de Python-positie, de taalstatus en bekende beperkingen van Sinkhole.
+keywords:
+  - sinkhole voor pfsense
+  - compatibiliteit
+  - freebsd-abi
+  - pfsense-releases
+  - unbound python
+tags:
+  - setup
+  - compatibility
+  - pfsense
+sidebar_position: 4
+---
+
+Controleer de vereisten voor het pakket, de Resolver en het netwerk voordat u op Sinkhole vertrouwt voor DNS- of IP-beleid.
+
+## pfSense en FreeBSD \{#pfsense-and-freebsd}
+
+- Releasepakketten worden gebouwd op de geconfigureerde FreeBSD-hoofdversie van de workflow en daarna opnieuw gebouwd met een ABI van `FreeBSD:*`, zodat één pakket op meerdere FreeBSD-hoofdversies kan worden geïnstalleerd.
+- Het pakket is als vitaal gemarkeerd, zodat de automatische verwijderingsstap van pfSense tijdens een upgrade het niet alleen verwijdert omdat het niet in de opslag van Netgate staat.
+- De brede pakket-ABI bewijst geen compatibiliteit met elke pfSense-release, omdat pfSense-API's en meegeleverde services nog steeds kunnen veranderen.
+
+## Geteste releases \{#tested-releases}
+
+De volgende pfSense-releases hebben de volledige verificatie doorstaan:
+
+| pfSense-release      | FreeBSD |
+|----------------------|---------|
+| pfSense CE 2.9.0     | 16.0    |
+| pfSense CE 2.8.1     | 15.0    |
+| pfSense Plus 26.07   | 16.0    |
+| pfSense Plus 26.03.1 | 16.0    |
+
+Elke geteste release doorstond van begin tot eind de installatie, update, een blokkeringstest en verwijdering.
+
+Het tabblad **About** markeert de overeenkomende release als **This firewall**. Voor een firewall die niet in de lijst staat, wordt een rij **Not tested** toegevoegd in plaats van de ABI `FreeBSD:*` als ondersteuningsverklaring te behandelen.
+
+## Vereisten voor de DNS Resolver \{#dns-resolver-requirements}
+
+- De op Unbound gebaseerde DNS Resolver van pfSense moet zijn ingeschakeld.
+- De enige Python-scriptpositie van de Resolver moet leeg zijn of al aan Sinkhole toebehoren.
+- Sinkhole gebruikt de modulepositie `pre_validator` en meldt een inactieve status als de Python-modus, de eigenaar van de positie, de positie of de runtimebestanden niet overeenkomen.
+
+pfBlockerNG DNSBL gebruikt dezelfde Python-scriptpositie als Sinkhole. Sinkhole weigert die positie in te nemen zolang `pfb_unbound` of een ander script de eigenaar is.
+
+## Netwerkvereisten \{#network-requirements}
+
+- Netwerkscopes gebruiken de huidige IPv4- en IPv6-subnetten van geconfigureerde pfSense-interfaces.
+- Apparaten die via een MAC-adres of statische toewijzing worden geïdentificeerd, zijn afhankelijk van actuele ARP-, NDP-, DHCP-lease-, statische-toewijzings- en interfacegegevens.
+- Voor de omleiding van gewone DNS onder **Bypass** moet de geselecteerde interface een adresfamilie hebben en moet de Resolver daarop luisteren.
+- Omgeleide clients moeten nog steeds door de instellingen voor toegangsbeheer van de Resolver worden toegestaan.
+
+## Optionele landgegevens \{#optional-country-data}
+
+Voor landblokkering zijn de eigen MaxMind-account-ID en GeoLite2-licentiesleutel van de beheerder vereist. Sinkhole levert of registreert geen sleutel, en IP-blokkering werkt zonder landgegevens wanneer alleen IP-lijsten zijn geselecteerd.
+
+## Bekende beperkingen \{#known-limits}
+
+- Bypass-beveiliging geldt alleen voor de geselecteerde interfaces en alleen voor de protocollen, signalen, namen, adressen en standaardpoorten die een beheerder inschakelt.
+- Aangepaste configuraties voor versleutelde DNS en tunnels kunnen DNS-beleid nog steeds omzeilen. Sinkhole belooft daarom geen volledige bescherming.
+- De ingebouwde lokale zones `test.`, `invalid.`, `onion.` en `localhost.` van Unbound antwoorden vóór Python-modules en zijn niet geschikt voor live filtertests.
+- Bij een conflict tussen apparaatadressen krijgt het eerste apparaat in de tabelvolgorde voorrang en meldt Status het conflict.
+- Bij gemeten tests met 300.000 namen steeg het RSS-gebruik van Unbound van 41 MiB naar 103 MiB en bedroeg het maximale beleidsgeheugen ongeveer 157 bytes per naam.
+
+## Talen \{#languages}
+
+Het pakket kiest de formuleringen voor de WebGUI, opdrachtregel, validatie, Status en meldingen op basis van de taalinstelling van pfSense. Engels is de broncatalogus en ontbrekende vertalingen vallen momenteel terug op Engels.
+
+Aanvullende pakketvertalingen zijn in ontwikkeling, terwijl de documentatie beschikbaar is in alle 18 pfSense-locales. Merk- en productnamen zoals Sinkhole, pfSense, FreeBSD en MaxMind blijven ongewijzigd.
+

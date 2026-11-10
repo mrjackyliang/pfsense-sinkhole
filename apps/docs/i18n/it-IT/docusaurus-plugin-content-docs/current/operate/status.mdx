@@ -1,0 +1,131 @@
+---
+id: status
+title: Stato
+description: Leggi tutti i pannelli Status di Sinkhole, distingui stati attivi, in sospeso, in pausa, caricati, mancanti e non aggiornati ed esegui un aggiornamento manuale.
+keywords:
+  - sinkhole for pfsense
+  - stato
+  - stato attivo
+  - generazione distribuita
+  - protezione bypass
+tags:
+  - operate
+  - status
+  - diagnostics
+---
+
+import ipStatus from './_assets_/status-4.png';
+import listsScopesStatus from './_assets_/status-1.png';
+import summaryStatus from './_assets_/status-2.png';
+
+Leggi in un’unica vista operativa lo stato di liste salvate, ambiti, avvisi, Bypass, IP, compilazione, distribuzione e Resolver.
+
+## Pannelli di Status \{#status-panels}
+
+Apri **Firewall → Sinkhole → Status** per visualizzare questi pannelli:
+
+| Pannello                | Informazioni riportate                                                                                                                                       |
+|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Summary                 | Compilazione, distribuzione, generazione, operazione, proprietario del Resolver, stato generale di Sinkhole e **Update Now** sotto il pannello.              |
+| Lists                   | URL della lista DNS, numero di voci salvate, ultimo aggiornamento riuscito e ultimo errore.                                                                  |
+| Popular-List Catalogs   | Ultimo recupero e ultimo errore per le fonti di catalogo AdGuard Home e pfBlockerNG.                                                                         |
+| Invalid Saved Rows      | Righe di lista non valide che rimangono disponibili per la riparazione; mostrato solo quando esistono.                                                       |
+| Scopes                  | Ora ed errore di ricostruzione della mappa dei client, seguiti da pannelli Networks e Devices separati.                                                      |
+| Alerts                  | Ultima esecuzione, eventi letti o obsoleti, notifiche inviate o trattenute, eventi scartati e ultimo errore.                                                 |
+| Bypass                  | Ogni protezione, interfacce, stato delle regole di reindirizzamento, stato e conteggi dell’ancora Bypass, seguiti da Bypass Lists e pannelli di riparazione. |
+| IP and Country Blocking | Selezioni dei criteri, conteggi di tabelle e regole, aggiornamenti, errori e stato dell’anchor, seguiti da un pannello IP Lists separato.                    |
+
+Le righe di liste e ambiti disabilitate appaiono attenuate. Una fonte con un errore può continuare a mostrare voci e un precedente aggiornamento riuscito perché l’ultima copia valida rimane attiva.
+
+<img src={listsScopesStatus} alt="Scheda Status con aggiornamenti di una lista dimostrativa salvata, sottoreti e indirizzi correnti di un dispositivo dimostrativo" width={1024} height={949} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Stato di Sinkhole \{#sinkhole-state}
+
+La riga finale **Sinkhole** in Summary è il controllo più rapido dell’integrazione del Resolver:
+
+| Stato                                    | Significato                                                                                                         |
+|------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `Active`                                 | Sinkhole è abilitato, possiede lo slot Python, usa la modalità Python e `pre_validator` e dispone dei dati runtime. |
+| `Inactive: Sinkhole is disabled.`        | **Enable** in General è disattivato.                                                                                |
+| `Inactive: DNS Resolver is disabled.`    | Il DNS Resolver di pfSense è disattivato.                                                                           |
+| `Inactive: ... slot is owned by ...`     | Un altro script Python, ad esempio pfBlockerNG DNSBL, possiede l’unico slot.                                        |
+| `Inactive: Sinkhole does not own ...`    | Lo script configurato non è Sinkhole anche se non è stato segnalato un altro proprietario.                          |
+| `Inactive: ... Python mode is disabled.` | La modalità Python del Resolver non è più abilitata.                                                                |
+| `Inactive: ... pre-validator position.`  | L’ordine dei moduli non colloca più Sinkhole in `pre_validator`.                                                    |
+| `Inactive: ... runtime files ...`        | Mancano lo script o la generazione compilata corrente.                                                              |
+
+Quando Sinkhole è disabilitato intenzionalmente, **Deployment Needed** mostra `No`, **Loaded Generation** mostra `Module not loaded.` e la pagina non visualizza un avviso di distribuzione. Un altro stato di integrazione inattivo forza **Deployment Needed** su `Yes` e **Loaded Generation** su `Module not loaded.`. Correggi il motivo indicato prima di considerare attivi i dati compilati.
+
+## Stato di compilazione e distribuzione \{#compile-and-deployment-state}
+
+| Campo               | Significato                                                                                             |
+|---------------------|---------------------------------------------------------------------------------------------------------|
+| Compile Needed      | I criteri salvati sono cambiati o l’ultima compilazione non è terminata correttamente.                  |
+| Compiled Generation | Identificatore prodotto dall’ultima compilazione riuscita.                                              |
+| Deployment Needed   | Il contenuto compilato non è quello distribuito per Unbound oppure l’integrazione è inattiva.           |
+| Deployed Generation | Identificatore nel manifesto runtime attualmente distribuito.                                           |
+| Loaded Generation   | Identificatore che il modulo Unbound segnala come caricato.                                             |
+| Update Running      | Mostrato solo mentre un aggiornamento di liste o IP detiene il lock condiviso degli aggiornamenti.      |
+| Removal in Progress | Mostrato solo mentre il marcatore persistente di rimozione è impostato e l’integrazione viene ritirata. |
+| Python Script Owner | Valore corrente dell’unico slot `python_script` del Resolver oppure `None`.                             |
+
+La pagina mostra un riquadro di avviso quando compilazione o distribuzione sono in sospeso, incluso il motivo registrato. Identificatori compilato, distribuito e caricato corrispondenti indicano che i criteri salvati hanno raggiunto il modulo in esecuzione.
+
+<img src={summaryStatus} alt="Pannello Summary di Status con generazioni compilata, distribuita e caricata corrispondenti e Sinkhole attivo" width={1024} height={914} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Stato degli ambiti e degli avvisi \{#scope-and-alert-state}
+
+Il riepilogo Scopes riporta lo stato di ricostruzione della mappa dei client. I pannelli separati **Networks** e **Devices** riportano i CIDR correnti di ogni interfaccia e gli indirizzi correnti di ogni dispositivo. Un conflitto indica un indirizzo rivendicato da più dispositivi; il primo nell’ordine della tabella possiede quell’indirizzo per i criteri.
+
+Il pannello **Alerts** descrive solo l’ultima attività eseguita ogni minuto. **Notifications held back** include la soppressione dovuta ai limiti o agli avvisi non letti, mentre **Events dropped by module** indica che la coda limitata degli eventi in memoria o su disco era piena.
+
+## Stato Bypass \{#bypass-state}
+
+Il pannello Bypass indica `On` o `Off` per TLS and QUIC, liste dei provider, Firefox, Private Relay, Tor, liste dei provider VPN e porte VPN standard. **Discovery** indica la modalità selezionata. **Interfaces** conferma la selezione condivisa delle interfacce rivolte ai client.
+
+L’ancora firewall indipendente indica:
+
+| Campo                   | Significato                                                                                                          |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------|
+| Firewall rules loaded   | Se l’ancora `sinkhole/bypass` esiste quando le impostazioni correnti la richiedono.                                  |
+| Firewall rules current  | Se digest, regole e tabelle caricati corrispondono alle impostazioni correnti e agli ultimi dati validi delle liste. |
+| Firewall rule count     | Numero di regole attive nell’ancora Bypass.                                                                          |
+| IPv4/IPv6 table entries | Conteggi finali degli indirizzi di provider, Tor e VPN dopo la rimozione degli indirizzi firewall protetti.          |
+
+La tabella **Bypass Lists** indica per ogni riga tipo, stato di abilitazione, numero di voci salvate, ultimo recupero e ultimo errore. Un recupero non riuscito può quindi mostrare un errore insieme alle voci dell’ultima copia valida conservata.
+
+### Stato del reindirizzamento DNS normale \{#plain-dns-redirect-state}
+
+| Stato  | Significato                                                                                                            |
+|--------|------------------------------------------------------------------------------------------------------------------------|
+| Off    | Il reindirizzamento DNS normale è disabilitato.                                                                        |
+| On     | Redirect è abilitato e tutte le esenzioni salvate sono valide.                                                         |
+| Paused | Almeno un’esenzione sorgente o destinazione salvata non è valida, quindi non vengono usate regole di reindirizzamento. |
+
+Il campo **pfSense loaded rules** ha tre stati:
+
+| Stato       | Significato                                                                                                       |
+|-------------|-------------------------------------------------------------------------------------------------------------------|
+| Yes         | `/tmp/rules.debug` contiene esattamente il blocco di reindirizzamento attualmente desiderato da Sinkhole.         |
+| No          | Il blocco desiderato non è caricato.                                                                              |
+| Out of Date | È caricato un blocco Sinkhole, ma il testo non corrisponde alle impostazioni o ai listener correnti del Resolver. |
+
+La destinazione di ogni famiglia è l’indirizzo listener selezionato oppure il motivo per cui non è possibile creare una regola. **Last parse error** viene mostrato solo mentre il blocco corrente manca dopo essere stato rifiutato da pfSense.
+
+## Stato IP e paesi \{#ip-and-country-state}
+
+Lo stato principale del pannello IP è **On** o **Off**. Il relativo **IP Anchor** usa **Yes**, **No** e **Out of Date** con la stessa distinzione tra stato caricato e corrente dell’ancora Bypass.
+
+I conteggi delle voci nelle tabelle mostrano le reti IPv4 e IPv6 finali unite dopo aver sottratto l’allowlist e gli indirizzi protetti.
+
+**Skipped Lines** conta gli input non validi delle liste IP. Le righe di commento e le righe vuote non vengono conteggiate.
+
+**GeoLite2 Last Update** è indipendente dall’aggiornamento più recente delle liste.
+
+<img src={ipStatus} alt="Pannello IP and Country Blocking di Status con conteggi delle tabelle, stato di aggiornamento, anchor caricato e riga dimostrativa di una lista IP" width={1024} height={1082} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Eseguire Update Now \{#run-update-now}
+
+Selezionando **Update Now** sotto Summary viene avviato `/usr/local/sbin/sinkhole --manual` in background e la pagina ritorna immediatamente. Il pulsante non trasmette l’output, quindi **Update Running**, le righe delle liste DNS/Bypass/IP, i campi di compilazione e gli ultimi errori forniscono il risultato.
+
+L’attività manuale usa lo stesso lock condiviso degli aggiornamenti pianificati delle liste e dell’aggiornamento automatico del pacchetto. Se un altro aggiornamento lo detiene, l’attività esistente continua e il lavoro di applicazione in sospeso viene mantenuto.

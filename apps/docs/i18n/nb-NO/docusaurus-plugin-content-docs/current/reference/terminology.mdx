@@ -1,0 +1,58 @@
+---
+id: terminology
+title: Terminologi
+description: Definer DNS-, liste-, omfangs-, varslings- og Bypass-termene som brukes i WebGUI for Sinkhole, Status-paneler, veiledninger og referansesider.
+keywords:
+  - sinkhole for pfsense
+  - terminologi
+  - ordliste
+  - dns-sinkhole
+  - blokkeringsliste
+tags:
+  - reference
+  - terminology
+  - glossary
+---
+
+Disse termene har samme betydning i hele WebGUI og dokumentasjonen for Sinkhole.
+
+## DNS Sinkhole \{#dns-sinkhole}
+
+Å svare på et blokkert navn med en adresse som ikke fører noe sted, slik at forespørselen stopper.
+
+## DNS Resolver \{#dns-resolver}
+
+Den Unbound-baserte DNS-tjenesten i pfSense.
+
+## Blokkeringsliste \{#block-list}
+
+En liste med navn eller adresser som skal blokkeres, lagt til via URL eller fra søket.
+
+## Lagret liste \{#saved-list}
+
+Den siste gyldige kopien av en blokkeringsliste, beholdt på brannmuren.
+
+## Omfang \{#scope}
+
+Der en blokkeringsliste gjelder: hele nettverket, et VLAN eller én enhet.
+
+## Globale lister \{#global-lists}
+
+Blokkeringslister som gjelder for alle klienter i nettverket.
+
+## Varslingsregel \{#alert-rule}
+
+En liste og et omfang der blokkeringer sender et pfSense-varsel.
+
+## Beskyttelse mot omgåelse \{#bypass-protection}
+
+Valgfrie kontroller per grensesnitt som holder klienter på DNS-baner Sinkhole kan inspisere, ved å omdirigere vanlig DNS eller blokkere vanlige alternativer for kryptert DNS og tunneler.
+
+## Omdirigering av vanlig DNS \{#plain-dns-redirect}
+
+Den valgfrie Bypass-innstillingen som sender vanlige TCP- og UDP-spørringer på port 53 fra enheter til brannmuren.
+
+## Søk etter populære lister \{#popular-list-search}
+
+WebGUI-søket etter mye brukte blokkeringslister, for eksempel velgeren fra AdGuard Home.
+

@@ -1,0 +1,73 @@
+---
+id: first-run
+title: Sinkhole 설정
+description: 신뢰하는 목록을 추가하고 전역 또는 범위 정책을 선택한 뒤 Resolver 통합을 활성화하고 첫 업데이트를 실행하여 Sinkhole의 활성 세대를 확인합니다.
+keywords:
+  - sinkhole for pfsense
+  - 첫 실행
+  - dns resolver
+  - 차단 목록
+  - status
+tags:
+  - setup
+  - first run
+  - dns
+sidebar_position: 3
+---
+
+정책을 확장하기 전에 신뢰하는 목록 하나를 설정하고 저장, 컴파일, 배포 및 로드 상태를 확인합니다.
+
+## Resolver 확인 \{#check-the-resolver}
+
+1. **Services → DNS Resolver**를 열고 Resolver가 활성화되어 있는지 확인합니다.
+2. pfBlockerNG DNSBL이 활성화되어 있으면 두 패키지가 Unbound의 Python 슬롯을 동시에 사용할 수 없으므로 DNS 필터링을 소유할 패키지를 선택합니다.
+3. **Firewall → Sinkhole → General**을 열고 첫 정책을 준비하는 동안 **Enable**을 꺼 둡니다.
+
+다른 Python 스크립트가 슬롯을 소유하고 있으면 Sinkhole은 **Enable** 저장을 거부합니다. 나중에 Sinkhole을 비활성화할 때 Python 설정이 여전히 Sinkhole 소유이면 Resolver의 이전 설정을 복원합니다.
+
+## 목록 추가 \{#add-a-list}
+
+1. **Lists**를 열고 신뢰하는 출처의 URL을 추가하거나 **Add from Catalog**를 열어 필요할 때만 가져오는 두 카탈로그를 검색합니다.
+2. 출처에 로컬 이름을 지정하고 Sinkhole이 다운로드하도록 **Enabled**를 선택한 상태로 둡니다.
+3. 모든 장치 및 네트워크 규칙 다음에 목록을 적용해야 하는 경우에만 **Global**을 선택한 상태로 둡니다.
+4. 알려진 오탐을 허용해야 하면 전역 **Allowed Domains**에 한 줄당 한 도메인을 추가합니다.
+
+Sinkhole은 어떤 출처도 추천하지 않습니다. [목록과 저장된 사본](/docs/configure/lists)에서는 허용되는 형식과 카탈로그 결과가 일반 목록 행으로 추가되는 방식을 설명합니다.
+
+## 선택적 범위 추가 \{#add-optional-scopes}
+
+네트워크나 장치에 전역 수준 이외의 정책이 필요하면 **Scopes**를 엽니다.
+
+- 구성된 pfSense 인터페이스 하나에 대해 **Network**를 추가한 다음 해당 목록과 허용 도메인을 선택합니다.
+- IP 주소, DHCP 정적 매핑 또는 MAC 주소로 **Device**를 추가한 다음 해당 목록과 허용 도메인을 선택합니다.
+
+장치는 현재 속한 네트워크를 상속하고 네트워크는 전역 목록을 상속합니다. [범위와 허용 도메인](/docs/configure/scopes)에서는 이름을 허용할지 차단할지 결정하는 판단 순서를 설명합니다.
+
+## 활성화 및 업데이트 \{#enable-and-update}
+
+1. **General**로 돌아가 **Enable**을 선택합니다.
+2. 활성화된 DNS 목록의 **Update Frequency**를 선택하고 저장합니다.
+3. **Status**를 열고 **Update Now**를 선택합니다.
+4. **Update running**이 다시 `No`로 바뀔 때까지 기다립니다.
+
+General 스위치는 예약된 DNS 목록 업데이트와 DNS Resolver 통합을 활성화합니다. 활성화된 Bypass Lists와 IP/국가 정책은 동일한 업데이트 일정을 독립적으로 사용하며, 모든 Bypass 및 IP 보호는 관리자가 활성화할 때까지 꺼져 있습니다.
+
+## 활성 상태 확인 \{#verify-the-active-state}
+
+Status 패널에 다음 결과가 모두 표시되면 첫 업데이트가 준비된 것입니다.
+
+- 작동하는 각 출처에 대해 **Lists**에 0보다 큰 항목 수와 **Last Successful Update**가 표시됩니다.
+- **Compile Needed**와 **Deployment Needed**는 **Summary**에서 `No`로 표시됩니다.
+- **Compiled Generation**, **Deployed Generation**, **Loaded Generation**이 현재 세대를 가리킵니다.
+- **DNS Resolver Python Script Owner**가 `sinkhole`로 표시됩니다.
+- **Sinkhole**이 이유 없이 `Active`로 표시됩니다.
+
+페이지에 비활성 이유나 대기 중인 세대가 표시되면 [Status](/docs/operate/status)에서 상태를 설명하고 [문제 해결](/docs/operate/troubleshooting)에서 가능한 각 원인을 다룹니다.
+
+## 알림과 Bypass 보호를 신중하게 추가 \{#add-alerts-and-bypass-protection-carefully}
+
+알림 규칙이나 Bypass 보호를 추가하기 전에 범위별 DNS 응답을 검증하는 것이 좋습니다. 알림은 클라이언트 활동을 드러낼 수 있으며, Bypass 설정은 선택한 인터페이스에 도착하는 트래픽을 리디렉션하거나 차단할 수 있습니다.
+
+- [알림](/docs/configure/alerts)은 목록, 클라이언트, 반복 간격 및 고정 한도에 따라 전달을 제한합니다.
+- [우회 방지](/docs/configure/bypass-protection)는 일반 DNS 리디렉션, 암호화 DNS 신호, 공급자 목록 및 터널 보호를 다룹니다.
+- [IP 및 국가 차단](/docs/configure/ip-and-country-blocking)은 기본적으로 꺼져 있는 독립 패킷 필터를 다룹니다.

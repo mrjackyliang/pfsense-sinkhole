@@ -1,0 +1,109 @@
+---
+id: bypass-protection
+title: Beveiliging tegen omzeiling
+description: Houd geselecteerde clientinterfaces op door Sinkhole beheerde DNS-paden met optionele omleiding van gewone DNS, versleutelde DNS-signalen, providerlijsten en tunnelblokkering.
+keywords:
+  - sinkhole for pfsense
+  - beveiliging tegen omzeiling
+  - dns-omleiding
+  - versleutelde dns
+  - vpn-blokkering
+tags:
+  - configure
+  - bypass
+  - dns
+---
+
+import bypassProtection from './_assets_/bypass-protection-1.png';
+
+Houd DNS-query's van geselecteerde clientinterfaces op paden die Sinkhole kan inspecteren. Elke beveiliging staat standaard uit, er is standaard geen interface geselecteerd en een upgrade schakelt geen beveiliging of lijst in.
+
+## De interfaces kiezen \{#choose-the-interfaces}
+
+Open **Firewall → Sinkhole → Bypass** en selecteer interfaces bij **Apply to** voordat je een beveiliging inschakelt. Deze ene selectie geldt voor elke instelling op de pagina. De beveiligingen inspecteren alleen verkeer dat van clients op die interfaces binnenkomt; ze hebben geen invloed op de eigen query's van de firewall of op uitgaand verkeer.
+
+Netwerk- en apparaatovereenkomsten gebruiken de huidige subnetten van die interfaces, net als gewone Sinkhole-scopes. Een client buiten de geselecteerde subnetten ontvangt geen Bypass-DNS-antwoord.
+
+<img src={bypassProtection} alt="Tabblad Bypass met LAN geselecteerd, gewone DNS-omleiding uitgeschakeld, bescherming voor versleutelde DNS en tunnels ingeschakeld, Discovery ingesteld op Answer with no records en drie demo-Bypass Lists" width={1024} height={1346} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Gewone DNS omleiden \{#redirect-plain-dns}
+
+Selecteer **Redirect → Send port 53 to the firewall** om gewoon DNS-verkeer via TCP en UDP op de geselecteerde interfaces naar pfSense te sturen. Sinkhole behoudt het bronadres, zodat netwerk- en apparaatbeleid van toepassing blijven.
+
+De omleiding behoudt de bestaande luisterafhankelijke doelen en uitzonderingen:
+
+| Familie | Doel                                                                                          |
+|---------|-----------------------------------------------------------------------------------------------|
+| IPv4    | `127.0.0.1` zolang de Resolver op localhost luistert; anders het IPv4-adres van de interface. |
+| IPv6    | Het IPv6-adres van de interface, nooit `::1`.                                                 |
+
+- **Exempt Sources** blijven een andere resolver bereiken.
+- **Exempt Destinations** blijven DNS-verkeer ontvangen, zodat een interne resolver op een ander netwerk wordt ondersteund.
+
+Elke uitzondering accepteert per regel één IPv4-adres, IPv6-adres, CIDR-netwerk of bestaande pfSense-host-/netwerkalias. Een ongeldige opgeslagen uitzondering pauzeert alle omleidingsregels totdat deze is gecorrigeerd of verwijderd. Omgeleide clients moeten nog steeds toegang hebben via de toegangsbeheerinstellingen van de Resolver.
+
+## Versleutelde DNS beveiligen \{#protect-encrypted-dns}
+
+De instellingen voor versleutelde DNS zijn onafhankelijk:
+
+- **TLS and QUIC** blokkeert TCP- en UDP-poort 853 naar elke bestemming behalve de firewall.
+- **Providers** blokkeert namen en adressen uit ingeschakelde Bypass Lists van het type **Encrypted DNS**.
+- **Firefox** beantwoordt `use-application-dns.net` en de subdomeinen ervan met `NXDOMAIN`, waarmee de automatische DNS-over-HTTPS-selectie van Firefox wordt uitgeschakeld.
+- **Private Relay** beantwoordt `mask.icloud.com` en `mask-h2.icloud.com` met `NXDOMAIN`, waarmee compatibele Apple-apparaten wordt verteld dat Private Relay niet beschikbaar is op dit netwerk.
+
+Namen uit providerlijsten worden in DNS geblokkeerd. IPv4-adressen, IPv6-adressen en CIDR's uit dezelfde lijsten worden op elke poort en elk protocol geblokkeerd in het onafhankelijke firewallanker `sinkhole/bypass`. Sinkhole verwijdert de interfaceadressen van de firewall en gateway- en DNS-serveradressen, inclusief adressen die via DHCP of PPP zijn verkregen, uit die tabellen voordat ze worden geladen.
+
+Toegestane domeinen hebben voorrang op naamblokkeringen uit providerlijsten. Ze overschrijven de antwoorden van Firefox, Private Relay of Discovery niet, omdat deze antwoorden netwerksignalen zijn en geen lijstblokkeringen.
+
+## Resolver Discovery configureren \{#configure-resolver-discovery}
+
+Discovery beheert query's voor `_dns.resolver.arpa`, de in RFC 9462 gedefinieerde naam voor Designated Resolver Discovery:
+
+| Keuze                                     | Antwoord                                                                                               |
+|-------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| **Off**                                   | Laat de query ongewijzigd.                                                                             |
+| **Advertise the firewall's DNS over TLS** | Retourneert een SVCB-antwoord met `alpn=dot`, poort `853` en de hostnaam uit het Resolver-certificaat. |
+| **Answer with no records**                | Retourneert `NOERROR` met een leeg antwoord.                                                           |
+
+**Advertise** vereist dat de SSL/TLS-service van de DNS Resolver is ingeschakeld met een bruikbare certificaathostnaam. De Bypass-pagina meldt of die service aan staat en opslaan mislukt met een duidelijke validatiemelding wanneer deze niet beschikbaar is.
+
+Als Sinkhole is ingeschakeld en een **Apply to**-interface is geselecteerd, wordt bij het inschakelen van Discovery dit beheerde blok toegevoegd aan **Custom options** van de DNS Resolver:
+
+```text
+# Sinkhole: begin (managed by the Sinkhole package)
+server:
+local-zone: "_dns.resolver.arpa." transparent
+# Sinkhole: end
+```
+
+Als Discovery wordt uitgeschakeld of Sinkhole wordt verwijderd, wordt het blok verwijderd. Sinkhole laat elke andere regel in **Custom options** ongewijzigd. Clients buiten de geselecteerde interfaces, inclusief de firewall zelf, blijven `NXDOMAIN` ontvangen voor `_dns.resolver.arpa`.
+
+## Beschermen tegen tunnels \{#protect-against-tunnels}
+
+- **Tor → Block listed Tor relays** past ingeschakelde Bypass Lists van het type **Tor** toe.
+- **VPN → Block listed VPN providers** past ingeschakelde Bypass Lists van het type **VPN** toe.
+- **VPN → Block standard VPN ports** blokkeert TCP en UDP `1194`, UDP `51820`, UDP `500` en `4500`, en ESP naar elke bestemming behalve de firewall.
+
+Namen en adressen uit Tor- en VPN-lijsten gebruiken hetzelfde DNS- en firewallgedrag als providerlijsten voor versleutelde DNS. Deze instellingen beperken veelgebruikte alternatieve paden, maar herkennen niet elke versleutelde of aangepaste tunnel.
+
+## Toevoegen vanuit de catalogus \{#add-from-catalog}
+
+Open **Add from Catalog** op het tabblad Bypass om het lijstenregister van AdGuard Home en de DNS-, IPv4- en IPv6-secties van de feedcatalogus van pfBlockerNG te doorzoeken. De resultaten zijn beperkt tot bypass-feeds en hebben een vast type: **Encrypted DNS**, **Tor** of **VPN**.
+
+De broncatalogi worden alleen opgehaald wanneer je de catalogus opent of **Refresh** selecteert. Het toevoegen van een resultaat maakt een ingeschakelde Bypass List die het normale schema voor lijstupdates volgt.
+
+De regel **Contents** op elke kaart toont **Domains**, **IPv4 addresses** of **IPv6 addresses**. Wanneer u een IPv4- of IPv6-resultaat van pfBlockerNG toevoegt, voegt Sinkhole ` (IPv4)` of ` (IPv6)` toe aan de opgeslagen naam; domeinresultaten behouden de ongewijzigde catalogusnaam.
+
+## Bypass Lists toevoegen \{#add-bypass-lists}
+
+Selecteer **Add** onder **Bypass Lists** en voer vervolgens een lokale naam, type en HTTP- of HTTPS-URL in. Nieuwe rijen zijn uitgeschakeld totdat ze expliciet worden ingeschakeld.
+
+Elke bron accepteert één item per regel. Een lijst kan domeinen, IPv4-adressen, IPv6-adressen en CIDR's combineren; tekst na `#` is een opmerking. Ongeldige en te lange regels worden overgeslagen. Een download die de vaste byte- of geaccepteerde-itemslimiet overschrijdt, wordt geweigerd, zodat de laatste goede kopie behouden blijft.
+
+Bypass Lists worden volgens het geconfigureerde lijstschema bijgewerkt met dezelfde begrensde downloadclient als andere lijsten. Een mislukte ophaalactie behoudt de laatste goede opgeslagen kopie en **Status → Bypass Lists** meldt items, laatste ophaalactie en de meest recente fout voor elke rij. Sinkhole levert of adviseert geen Bypass List.
+
+## De actieve status verifiëren \{#verify-the-active-state}
+
+Open na het opslaan **Status → Bypass** en bevestig dat elke beoogde beveiliging `On` is, dat de geselecteerde interfaces juist zijn en dat **Discovery Zone** `Present` is wanneer Discovery aan staat. Bevestig dat **Firewall rules loaded** en **Firewall rules current** voor firewallbeveiligingen `Yes` zijn. De tabel Bypass Lists toont het aantal opgeslagen items en de laatste ophaalactie.
+
+De omleiding van gewone DNS behoudt de bestaande afstemming per minuut met twee waarnemingen na wijzigingen aan Resolver-luisteraars. Het anker `sinkhole/bypass` wordt onafhankelijk van `sinkhole/ip` geladen, zodat het uitschakelen van de ene functie de andere niet verstoort.

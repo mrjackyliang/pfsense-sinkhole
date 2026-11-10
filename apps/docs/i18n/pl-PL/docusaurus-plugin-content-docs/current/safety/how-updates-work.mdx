@@ -1,0 +1,66 @@
+---
+id: how-updates-work
+title: Jak działają aktualizacje
+description: Poznaj aktualizacje zapisanych list, niepodzielny powrót do ostatniej prawidłowej kopii, lokalną kompilację i wdrożenie, obsługę pamięci podręcznych Resolver oraz wspólną blokadę aktualizacji.
+keywords:
+  - sinkhole for pfsense
+  - aktualizacje list
+  - ostatnia prawidłowa kopia
+  - przeładowanie unbound
+  - blokada aktualizacji
+tags:
+  - safety
+  - updates
+  - availability
+---
+
+Sinkhole oddziela pobieranie od usługi DNS, dzięki czemu zdalne źródło nigdy nie znajduje się na ścieżce zapytań Resolver.
+
+## Przebieg aktualizacji list DNS \{#dns-list-update-flow}
+
+Dla każdej włączonej listy DNS Sinkhole:
+
+1. Pobiera źródło z ograniczeniami czasu i rozmiaru.
+2. Analizuje obsługiwane wpisy w formacie hosts, zwykłych domen i stylu adblock do tymczasowego znormalizowanego zbioru.
+3. Niepodzielnie zastępuje zapisaną kopię dopiero po przejściu walidacji przez nową zawartość.
+4. Kompiluje zasady globalne, sieciowe, urządzeń, dozwolonych domen i alertów z lokalnych zapisanych danych.
+5. Wdraża generację w `/var/unbound`, aby już załadowany moduł Python mógł ją wykryć.
+
+Błąd pobierania, analizy lub walidacji rejestruje błąd bez zastępowania ostatniej prawidłowej kopii. DNS przez cały czas próby korzysta z wdrożonej lokalnej generacji.
+
+## Wdrożenie i pamięci podręczne Resolver \{#deployment-and-resolver-caches}
+
+Moduł Unbound sprawdza pomiędzy zapytaniami, czy istnieje nowy manifest, i przełącza się na pełną generację dopiero wtedy, gdy wszystkie wskazane pliki są gotowe. Status oddziela identyfikatory generacji skompilowanej, wdrożonej i załadowanej, aby można było zweryfikować każdy etap.
+
+Gdy zasady dodają zablokowane nazwy lub rozszerzają zablokowane poddrzewo, Sinkhole czeka na zgłoszenie nowej generacji przez moduł, a następnie raz przeładowuje Unbound. Przeładowanie czyści pamięć podręczną komunikatów i RRset, którą samo `flush_zone` może pozostawić dostępną dla **Serve Expired**.
+
+## Odświeżanie mapy klientów \{#client-map-refreshes}
+
+Podsieci i adresy urządzeń są przechowywane oddzielnie od skompilowanych danych domen. Gdy blokowanie DNS ma włączony zakres sieci lub urządzenia albo ochrona DNS Bypass wymaga rozpoznawania klientów, Sinkhole odświeża tę mapę klientów co minutę bez przeładowywania Unbound.
+
+Sync pakietu uruchamia to samo odświeżanie tylko pod tym warunkiem. Obejmuje to zmiany interfejsów, dzierżaw DHCP, sąsiadów i mapowań statycznych zachodzące poza aktualizacją listy. Po wyłączeniu wszystkich funkcji Sinkhole następny Sync usuwa mapę klientów środowiska uruchomieniowego i jej opcjonalną kopię na dysku RAM.
+
+## Przebieg aktualizacji IP i krajów \{#ip-and-country-update-flow}
+
+Gdy blokowanie IP i krajów jest włączone, ta sama zaplanowana lub ręczna aktualizacja pobiera włączone listy IP i odświeża odpowiednie dane GeoLite2. Sinkhole analizuje i scala każdą rodzinę adresów, odejmuje listę dozwolonych adresów administratora i chronione adresy zapory, a następnie niepodzielnie zastępuje pliki tabel rodzin.
+
+Istniejąca kotwica `sinkhole/ip` może po udanej aktualizacji otrzymać aktualizację samej tabeli przez `pfctl -T replace`. Sync i minutowa kontrola integralności ładują całą kotwicę, gdy reguły lub tabele są brakujące albo inne.
+
+## Harmonogramy i blokowanie \{#schedules-and-locking}
+
+Domyślna częstotliwość aktualizacji list to Daily. Harmonogramy Hourly, Every 6 hours, Daily i Weekly używają stabilnych losowych składników minut, aby zapora nie zmieniała czasu zadania przy każdym zapisaniu.
+
+Aktualizacje list DNS, IP/krajów, praca zastosowania związana z katalogiem i automatyczna aktualizacja pakietu są koordynowane przez `/var/run/sinkhole-update.lock`. Akcja Update pakietu czeka na zakończenie aktywnej aktualizacji listy, zamiast zmieniać zainstalowany pakiet w jej trakcie.
+
+## Odświeżanie katalogów jest oddzielne \{#catalog-refreshes-are-separate}
+
+Rejestr AdGuard Home i katalog źródeł pfBlockerNG są pobierane tylko po otwarciu wyszukiwania katalogu lub wybraniu **Refresh**. Ich ostatnia prawidłowa pamięć podręczna może być ponownie używana przez jeden dzień, a nieudane pobranie nie zmienia skonfigurowanych list.
+
+Wyniki katalogu są metadanymi wykrywania, a nie zasadami. Wynik wpływa na blokowanie DNS lub IP dopiero po dodaniu go jako zwykłej skonfigurowanej listy i zakończeniu normalnego przebiegu aktualizacji.
+
+## Odczytywanie stanu aktualizacji \{#read-update-state}
+
+Otwórz **Firewall → Sinkhole → Status** i porównaj błędy źródeł, liczby zapisanych wpisów, flagę trwającej aktualizacji oraz generacje skompilowane, wdrożone i załadowane. W przypadku blokowania IP porównaj także liczby tabel i stan kotwicy `sinkhole/ip`.
+
+Sekcja [Aktualizacje](/docs/reference/updates) opisuje kontrole wersji pakietu i automatyczne aktualizowanie. Użyj [Rozwiązywanie problemów](/docs/operate/troubleshooting), gdy etap zgłasza błąd lub pozostaje oczekujący.
+

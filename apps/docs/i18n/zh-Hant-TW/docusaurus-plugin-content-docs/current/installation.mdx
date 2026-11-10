@@ -1,0 +1,83 @@
+---
+id: installation
+title: 安裝套件
+description: 使用 SHA-256 檔案驗證 Sinkhole 穩定版套件，通過 pkg 安裝或更新，並確認 pfSense WebGUI 中的所有套件選項卡。
+keywords:
+  - sinkhole for pfsense
+  - 安裝
+  - pkg add
+  - sha256 校驗和
+  - github 發行版
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+從穩定的 GitHub 發行版套件安裝或更新 Sinkhole，然後確認 pfSense 已註冊所有 WebGUI 選項卡。
+
+## 要求 \{#requirements}
+
+- **Administrator shell** — 通過 SSH 或控制台訪問 pfSense shell。**Diagnostics → Command Prompt** 也可以執行單條命令。
+- **HTTPS access to GitHub** — 防火牆需要從 GitHub Releases 下載套件和校驗和。
+- **DNS Resolver** — 啓用 Sinkhole 的 DNS 集成前，需要先啓用 pfSense DNS Resolver。
+- **Available Python slot** — pfBlockerNG DNSBL 或其他 Python 腳本不能佔用 Resolver 的唯一模塊槽位。
+- **Current backup** — 建議在安裝非官方套件前，從 **Diagnostics → Backup & Restore** 下載 `config.xml`。
+
+:::warning
+
+Sinkhole 從 GitHub 而不是 Netgate 的套件存儲庫安裝，因此 Netgate 不審核或支持該套件。
+
+:::
+
+## 檢查發行版 \{#check-the-release}
+
+[GitHub Releases 頁面](https://github.com/mrjackyliang/pfsense-sinkhole/releases)發佈名稱固定的檔案和帶版本號的套件檔案。本頁使用的固定檔案如下：
+
+| 檔案                                | 用途                  |
+|-----------------------------------|---------------------|
+| `pfSense-pkg-Sinkhole.pkg`        | 最新可安裝的 Sinkhole 套件。 |
+| `pfSense-pkg-Sinkhole.pkg.sha256` | 固定套件的純 SHA-256 哈希值。 |
+
+## 驗證校驗和 \{#verify-the-checksum}
+
+將固定套件及其固定 `.sha256` 檔案下載到 `/tmp`，然後比較打印出的兩個值：
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg.sha256
+sha256 -q pfSense-pkg-Sinkhole.pkg
+cat pfSense-pkg-Sinkhole.pkg.sha256
+```
+
+下載的套件完整時，這兩個值相同。隨後可以使用 `pkg add -f /tmp/pfSense-pkg-Sinkhole.pkg` 安裝已檢查的本地檔案。
+
+## 安裝或更新 \{#install-or-update}
+
+同一條命令可以首次安裝 Sinkhole、更新舊版本或重新安裝當前版本：
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+`-f` 標誌是必需的，因為 pfSense 2.8 上的 `pkg` 版本可能會跳過來自同一固定 URL 的更新。該標誌也會保留套件的正常安裝和升級鈎子。
+
+## 確認 WebGUI \{#confirm-the-webgui}
+
+1. 打開 **Firewall → Sinkhole**。
+2. 確認顯示 **General**、**Lists**、**Services**、**Scopes**、**Alerts**、**Bypass**、**IP**、**Status** 和 **About**。
+3. 在啓用 DNS Resolver 且其 Python 腳本槽位可用之前，保持 **General → Enable** 關閉。
+4. 打開 **About**，確認顯示的套件版本與您安裝的發行版一致。
+
+從 Netgate 存儲庫以外安裝的套件不會出現在 pfSense 的 **Installed Packages** 頁面中。因此，更新和刪除使用本頁以及[套件生命週期](/docs/reference/package-lifecycle)中記錄的 shell 命令。
+
+## 安裝失敗時 \{#if-installation-fails}
+
+- **Not found or no package asset** — 確認最新 GitHub 發行版包含 `pfSense-pkg-Sinkhole.pkg`。
+- **Checksum differs** — 保留已安裝版本，並從發行版重新下載兩個固定檔案。
+- **DNS, TLS, or certificate error** — 確認 pfSense 能解析 `github.com`、通過 HTTPS 訪問它並具有正確的系統時間。
+- **Wrong ABI** — 安裝最新發行版。當前套件使用 `FreeBSD:*` ABI 重新構建，較舊的構件可能不是。
+
+選項卡出現後，請繼續[設定 Sinkhole](/docs/first-run)。

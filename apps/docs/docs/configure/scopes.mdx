@@ -1,0 +1,80 @@
+---
+id: scopes
+title: Scopes and Allowed Domains
+description: Assign lists and allowed domains to global, interface, and device scopes, then follow the exact most-specific decision order for every DNS query.
+keywords:
+  - sinkhole for pfsense
+  - scopes
+  - vlan blocking
+  - device policy
+  - allowed domains
+tags:
+  - configure
+  - scopes
+  - dns
+---
+
+Assign lists and allowed domains at global, network, and device levels so each client receives the policy intended for its current location.
+
+## Why Use Scopes? \{#why-use-scopes}
+
+1. Gives each pfSense interface or VLAN its own policy while retaining global rules for everyone.
+2. Gives one device a more specific decision without requiring a separate DNS server.
+3. Lets allowed domains correct false positives at the level where they matter without dropping a complete list.
+4. Keeps client addresses separate from compiled lists so DHCP, neighbor, or interface changes don't reload Unbound.
+
+## Global Scope \{#global-scope}
+
+A list with **Global** selected applies to every client after device and network decisions. Global allowed domains are entered on the **Lists** tab and allow the named domain plus its subdomains through global lists.
+
+A client that matches no enabled network or device scope receives only this level.
+
+## Network Scopes \{#network-scopes}
+
+Open **Firewall → Sinkhole → Scopes**, then select **Add** below the Networks table. The editor defaults to LAN, or the first available non-WAN interface, and omits interfaces that already have a network scope. A client belongs to that network when its address is inside one of the interface's current IPv4 or IPv6 subnets.
+
+Each network row selects additional lists, allowed domains, and whether the scope is enabled. Saving returns to Scopes; select the pencil or double-click a row to edit it. A device that moves between networks receives the policy for the network its current address matches.
+
+## Device Scopes \{#device-scopes}
+
+Select **Add** below the Devices table, provide a name, and choose one identification method. The editor shows only the identifier field that applies to the selected method:
+
+| Method              | Addresses used for the device                                                 |
+|---------------------|-------------------------------------------------------------------------------|
+| IP address          | The configured IPv4 or IPv6 address.                                          |
+| DHCP static mapping | Its configured address plus current addresses observed for the mapping's MAC. |
+| MAC address         | Current ARP, NDP, and DHCP lease addresses for that MAC.                      |
+
+The device row selects its lists, allowed domains, and enabled state. Saving returns to Scopes; select the pencil or double-click a row to edit it. A background job refreshes current subnets and device addresses every minute while DNS blocking has an enabled network or device scope, or while Bypass DNS protection needs client matching. Package Sync starts the same refresh only under that condition.
+
+## Decision Order \{#decision-order}
+
+The most specific matching level decides each query in this exact order:
+
+1. **Device allowed domains** — Allow immediately when the query name matches.
+2. **Device lists** — Block immediately when a selected device list matches.
+3. **Network allowed domains** — Allow immediately when the network exception matches.
+4. **Network lists** — Block immediately when a selected network list matches.
+5. **Global allowed domains** — Allow immediately when the global exception matches.
+6. **Global lists** — Block when a global list matches.
+
+The query passes when no step decides it. A level's allowed domains override lists inherited from less-specific levels, but they don't override lists at a more-specific level that has already decided.
+
+## Allowed-Domain Behavior \{#allowed-domain-behavior}
+
+Each allowed-domain entry applies to the exact domain and every subdomain. For example, allowing `service.example` also allows `api.service.example` at that level.
+
+- A device exception can pass device, network, and global lists because it is checked first.
+- A network exception can pass network and global lists, but not a device-list decision.
+- A global exception can pass only global lists.
+
+## Address Conflicts \{#address-conflicts}
+
+When two device rows claim the same current address, the first device in table order wins. **Status → Scopes** shows the address under **Conflict** for every affected row so the order or identifiers can be corrected.
+
+## Verify a Scope \{#verify-a-scope}
+
+1. Run `/usr/local/sbin/sinkhole --refresh-clients` or wait for the minute refresh.
+2. Open **Status → Scopes** and confirm the network's current subnets and the device's current addresses.
+3. Query a name from a client in that scope and compare the result with the decision order above.
+4. Check for an address conflict before relying on device-specific behavior.

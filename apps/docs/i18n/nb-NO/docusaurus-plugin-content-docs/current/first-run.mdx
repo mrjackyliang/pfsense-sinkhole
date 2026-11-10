@@ -1,0 +1,74 @@
+---
+id: first-run
+title: Konfigurer Sinkhole
+description: Legg til en pålitelig liste, velg global policy eller policy etter omfang, aktiver Resolver-integrasjon, kjør den første oppdateringen og kontroller den aktive Sinkhole-generasjonen.
+keywords:
+  - sinkhole for pfsense
+  - første kjøring
+  - dns resolver
+  - blokkeringsliste
+  - status
+tags:
+  - setup
+  - first run
+  - dns
+sidebar_position: 3
+---
+
+Konfigurer én pålitelig liste, og kontroller statusen som lagret, kompilert, distribuert og lastet før du utvider policyen.
+
+## Kontroller Resolver \{#check-the-resolver}
+
+1. Åpne **Services → DNS Resolver**, og bekreft at Resolver er aktivert.
+2. Hvis pfBlockerNG DNSBL er aktivert, velger du hvilken pakke som skal eie DNS-filtreringen, fordi begge pakkene ikke kan bruke Python-plassen i Unbound samtidig.
+3. Åpne **Firewall → Sinkhole → General**, og la **Enable** være avslått mens den første policyen klargjøres.
+
+Sinkhole nekter å lagre **Enable** mens et annet Python-skript eier plassen. Hvis du deaktiverer Sinkhole senere, gjenopprettes de tidligere Python-innstillingene i Resolver så lenge Sinkhole fortsatt eier dem.
+
+## Legg til en liste \{#add-a-list}
+
+1. Åpne **Lists**, og legg til URL-en til en kilde du stoler på, eller åpne **Add from Catalog** for å søke i de to katalogene ved behov.
+2. Gi kilden et lokalt navn, og la **Enabled** være valgt slik at Sinkhole laster den ned.
+3. La **Global** være valgt bare når listen skal gjelde etter alle enhets- og nettverksregler.
+4. Legg til eventuelle globale **Allowed Domains**, ett domene per linje, når en kjent falsk positiv skal slippes gjennom.
+
+Sinkhole anbefaler ingen kilde. [Lister og lagrede kopier](/docs/configure/lists) forklarer de støttede formatene og hvordan katalogresultater blir vanlige listerader.
+
+## Legg til valgfrie omfang \{#add-optional-scopes}
+
+Åpne **Scopes** når et nettverk eller en enhet trenger policy utover det globale nivået:
+
+- Legg til et **Network** for ett konfigurert pfSense-grensesnitt, og velg deretter listene og de tillatte domenene.
+- Legg til en **Device** etter IP-adresse, statisk DHCP-tilordning eller MAC-adresse, og velg deretter listene og de tillatte domenene.
+
+En enhet arver nettverket den befinner seg i, og nettverket arver globale lister. [Omfang og tillatte domener](/docs/configure/scopes) viser avgjørelsesrekkefølgen som bestemmer om et navn slippes gjennom eller blokkeres.
+
+## Aktiver og oppdater \{#enable-and-update}
+
+1. Gå tilbake til **General**, og velg **Enable**.
+2. Velg **Update Frequency** for aktiverte DNS-lister, og lagre.
+3. Åpne **Status**, og velg **Update Now**.
+4. Vent til **Update running** igjen viser `No`.
+
+Bryteren i General aktiverer planlagte DNS-listeoppdateringer og integrasjonen med DNS Resolver. Aktiverte Bypass Lists og IP-/landpolicy bruker den samme oppdateringsplanen uavhengig av hverandre. All Bypass- og IP-beskyttelse forblir avslått til en administrator aktiverer den.
+
+## Kontroller den aktive statusen \{#verify-the-active-state}
+
+Den første oppdateringen er klar når Status-panelene viser alle disse resultatene:
+
+- **Lists** viser et antall oppføringer over null og en **Last Successful Update** for hver fungerende kilde.
+- **Compile Needed** og **Deployment Needed** viser `No` i **Summary**.
+- **Compiled Generation**, **Deployed Generation** og **Loaded Generation** identifiserer gjeldende generasjon.
+- **DNS Resolver Python Script Owner** viser `sinkhole`.
+- **Sinkhole** viser `Active` uten en årsak.
+
+Hvis siden rapporterer en inaktiv årsak eller en ventende generasjon, forklarer [Status](/docs/operate/status) tilstanden, og [Feilsøking](/docs/operate/troubleshooting) følger hver sannsynlige årsak.
+
+## Legg til varsler og Bypass-beskyttelse med forsiktighet \{#add-alerts-and-bypass-protection-carefully}
+
+Det anbefales å kontrollere DNS-svar etter omfang før du legger til en varslingsregel eller Bypass-beskyttelse. Varsler kan avsløre klientaktivitet, mens Bypass-innstillinger kan omdirigere eller blokkere trafikk som kommer inn på valgte grensesnitt.
+
+- [Varsler](/docs/configure/alerts) begrenser levering etter liste, klient, gjentakelsesvindu og faste grenser.
+- [Beskyttelse mot omgåelse](/docs/configure/bypass-protection) dekker omdirigering av vanlig DNS, signaler for kryptert DNS, leverandørlister og tunnelbeskyttelse.
+- [IP- og landblokkering](/docs/configure/ip-and-country-blocking) dekker det uavhengige pakkefilteret som er avslått som standard.
+

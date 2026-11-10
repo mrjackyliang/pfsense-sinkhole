@@ -1,0 +1,77 @@
+---
+id: alerts
+title: Alertes
+description: Faites correspondre les réponses bloquées aux listes et clients, distribuez-les par pfSense et comprenez les plafonds de répétition, heure, avis et exécution.
+keywords:
+  - sinkhole for pfsense
+  - alertes
+  - notifications pfsense
+  - fenêtre de répétition
+  - plafonds de notification
+tags:
+  - configure
+  - alerts
+  - notifications
+---
+
+Envoyez des notifications uniquement pour les réponses bloquées dont la liste et le client correspondent à une règle d’alerte activée.
+
+## Pourquoi utiliser des règles d’alerte ? \{#why-use-alert-rules}
+
+1. Surveille les listes et clients sélectionnés afin que les blocages courants hors de cette politique restent silencieux.
+2. Utilise les canaux de notification locaux et distants existants de pfSense afin que Sinkhole n’ait besoin d’aucun service de distribution distinct.
+3. Supprime les répétitions et résume les rafales afin qu’un domaine bavard ne puisse pas saturer le WebGUI ou une boîte de réception.
+4. Maintient les événements en file d’attente dans des limites fixes et hors du traitement des requêtes DNS afin que la distribution ne retarde jamais une réponse.
+
+## Créer une règle \{#create-a-rule}
+
+Ouvrez **Firewall → Sinkhole → Alerts**, sélectionnez **Add** sous la table des règles d’alerte, puis remplissez **Add Alert Rule** dans la page d’édition :
+
+| Champ                | Description                                                                                              |
+|----------------------|----------------------------------------------------------------------------------------------------------|
+| Description          | Nom local de la règle affiché dans le texte des notifications et les résumés.                            |
+| Any block list       | Correspond à un blocage de n’importe quelle liste au lieu des seules listes choisies.                    |
+| Chosen block lists   | Listes qui peuvent satisfaire la règle lorsque **Any** est désactivé.                                    |
+| Everyone             | Correspond à tous les clients au lieu des seuls réseaux et appareils choisis.                            |
+| Chosen networks      | Portées réseau qui peuvent satisfaire la règle lorsque **Everyone** est désactivé.                       |
+| Chosen devices       | Portées appareil qui peuvent satisfaire la règle lorsque **Everyone** est désactivé.                     |
+| Repeat after         | Nombre de minutes avant que la même règle, le même client, domaine et liste puissent notifier à nouveau. |
+| WebGUI notice        | Ajoute un avis Sinkhole local à pfSense.                                                                 |
+| Remote notifications | Utilise les services distants configurés dans pfSense.                                                   |
+| Enabled              | Permet aux réponses bloquées de correspondre à cette règle.                                              |
+
+Le champ des listes choisies est masqué lorsque **Any block list** est sélectionné, et les champs des réseaux et appareils le sont lorsque **Everyone** est sélectionné. L’enregistrement revient à Alerts ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier.
+
+Un blocage ne correspond que si l’une des listes qui ont bloqué le nom est sélectionnée par la règle et si le client est sélectionné par cette même règle. La fenêtre de répétition par défaut est de 60 minutes et la plage acceptée va de 1 à 1 440 minutes.
+
+## Canaux de distribution \{#delivery-channels}
+
+- **WebGUI notice** utilise le canal local `file_notice()` de pfSense et renvoie vers l’onglet Alerts.
+- **Remote notifications** utilise les services `notify_all_remote()` configurés dans pfSense.
+
+Sinkhole ne crée aucun canal de courrier électronique, de discussion, de webhook ou autre. Les services distants sont configurés et testés sous **System → Advanced → Notifications** dans pfSense.
+
+## Limites fixes \{#fixed-limits}
+
+| Limite                              | Comportement                                                                                            |
+|-------------------------------------|---------------------------------------------------------------------------------------------------------|
+| 20 messages par exécution minute    | Les blocages supplémentaires sont regroupés dans un ou plusieurs résumés de règle sous le même plafond. |
+| 60 messages par règle et par heure  | Le soixantième emplacement est réservé à un résumé horaire de dépassement.                              |
+| 50 avis WebGUI non lus              | Les avis locaux supplémentaires attendent que certains avis Sinkhole soient lus.                        |
+| Budget de traitement de 40 secondes | Les envois inachevés restent pour l’exécution de la minute suivante au lieu de la bloquer.              |
+| Âge d’événement de 10 minutes       | Les événements plus anciens dans la file sont supprimés comme périmés.                                  |
+
+Status compte les événements lus, les événements périmés, les notifications envoyées ou retenues et les événements abandonnés par le module. Lorsqu’il ne reste aucune règle d’alerte activée, Sinkhole supprime le fichier d’événements et l’état de répétition.
+
+## Confidentialité et journalisation \{#privacy-and-logging}
+
+Le texte d’une alerte identifie le nom bloqué, le client, le réseau, la liste et la règle. Un blocage CNAME identifie également la cible CNAME répertoriée.
+
+La fonction d’avis local de pfSense écrit `New alert found: <message>` dans le journal système ; le domaine et l’appareil apparaissent donc aussi sous **Status → System Logs → System → General**. Il est recommandé de considérer les avis et les journaux comme des enregistrements de politique de navigation.
+
+## Vérifier une alerte \{#verify-an-alert}
+
+1. Vérifiez que la règle, la liste sélectionnée et la portée du client sélectionné sont activées.
+2. Vérifiez dans Status que le client est actuellement associé au réseau ou à l’appareil prévu.
+3. Interrogez un nom bloqué par la liste sélectionnée et vérifiez le canal pfSense configuré.
+4. Si aucun second avis n’arrive, comparez la tentative à la fenêtre de répétition et aux limites fixes de la règle.

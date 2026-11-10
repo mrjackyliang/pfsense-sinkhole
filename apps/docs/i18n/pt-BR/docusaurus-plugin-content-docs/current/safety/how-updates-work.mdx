@@ -1,0 +1,66 @@
+---
+id: how-updates-work
+title: Como as atualizações funcionam
+description: Entenda as atualizações das listas salvas, o fallback atômico para a última cópia válida, a compilação e a implantação locais, o tratamento dos caches do Resolver e o lock de atualização compartilhado.
+keywords:
+  - sinkhole for pfsense
+  - atualizações de listas
+  - última cópia válida
+  - recarga do unbound
+  - lock de atualização
+tags:
+  - safety
+  - updates
+  - availability
+---
+
+O Sinkhole separa o download do serviço de DNS para que uma origem remota nunca fique no caminho das consultas do Resolver.
+
+## Fluxo de atualização das listas de DNS \{#dns-list-update-flow}
+
+Para cada lista de DNS habilitada, o Sinkhole:
+
+1. Baixa a origem com limites de tempo e tamanho.
+2. Analisa entradas compatíveis dos formatos hosts, domínio simples e estilo adblock em um conjunto normalizado temporário.
+3. Substitui atomicamente a cópia salva somente depois que o novo conteúdo passa pela validação.
+4. Compila a política global, de rede, de dispositivo, de domínios permitidos e de alertas a partir dos dados locais salvos.
+5. Implanta uma geração em `/var/unbound` para que o módulo Python já carregado a encontre.
+
+Uma falha de download, análise ou validação registra um erro sem substituir a última cópia válida. O DNS continua usando a geração local implantada durante toda a tentativa.
+
+## Implantação e caches do Resolver \{#deployment-and-resolver-caches}
+
+O módulo do Unbound verifica se há um novo manifesto entre as consultas e só muda para a geração completa depois que todos os arquivos referenciados estão prontos. Status separa os identificadores das gerações compilada, implantada e carregada para que cada estágio possa ser verificado.
+
+Quando a política adiciona nomes bloqueados ou amplia uma subárvore bloqueada, o Sinkhole aguarda o módulo informar a nova geração e então recarrega o Unbound uma vez. A recarga limpa os caches de mensagens e RRset que apenas `flush_zone` pode deixar disponíveis para **Serve Expired**.
+
+## Atualizações do mapa de clientes \{#client-map-refreshes}
+
+As sub-redes e os endereços de dispositivos são armazenados separadamente dos dados de domínio compilados. Quando o bloqueio de DNS tem um escopo de rede ou dispositivo habilitado, ou a proteção DNS do Bypass precisa identificar clientes, o Sinkhole atualiza esse mapa de clientes a cada minuto sem recarregar o Unbound.
+
+O Sync do pacote inicia a mesma atualização apenas nessa condição. Isso abrange alterações em interfaces, concessões DHCP, vizinhos e mapeamentos estáticos que ocorrem fora de uma atualização de lista. Depois que todos os recursos do Sinkhole forem desativados, o próximo Sync removerá o mapa de clientes de execução e seu espelho opcional no disco RAM.
+
+## Fluxo de atualização de IP e países \{#ip-and-country-update-flow}
+
+Quando o bloqueio de IP e países está habilitado, a mesma atualização agendada ou manual baixa as listas de IP habilitadas e atualiza os dados elegíveis do GeoLite2. O Sinkhole analisa e combina cada família de endereços, subtrai a lista de permissões do administrador e os endereços protegidos do firewall e então substitui atomicamente os arquivos das tabelas por família.
+
+Uma âncora `sinkhole/ip` existente pode receber apenas uma atualização de tabela com `pfctl -T replace` depois de uma atualização bem-sucedida. Sync e a verificação de integridade a cada minuto carregam a âncora completa quando as regras ou tabelas estão ausentes ou diferentes.
+
+## Agendamentos e lock \{#schedules-and-locking}
+
+A frequência padrão de atualização das listas é Daily. Os agendamentos Hourly, Every 6 hours, Daily e Weekly usam componentes de minutos aleatórios estáveis para que o firewall não altere o horário do trabalho sempre que a configuração for salva.
+
+As atualizações de listas de DNS e de IP/países, o trabalho de aplicação relacionado ao catálogo e a autoatualização do pacote são coordenados por `/var/run/sinkhole-update.lock`. Uma ação Update do pacote aguarda o término de uma atualização de lista ativa em vez de alterar o pacote instalado durante sua execução.
+
+## As atualizações dos catálogos são separadas \{#catalog-refreshes-are-separate}
+
+O registro do AdGuard Home e o catálogo de feeds do pfBlockerNG são obtidos somente quando a pesquisa no catálogo é aberta ou quando **Refresh** é selecionado. O último cache válido pode ser reutilizado por um dia, e uma falha na obtenção não altera as listas configuradas.
+
+Os resultados do catálogo são metadados de descoberta, não política. Um resultado só afeta o bloqueio de DNS ou IP depois de ser adicionado como uma lista configurada comum e concluir o fluxo normal de atualização.
+
+## Interpretar o estado da atualização \{#read-update-state}
+
+Abra **Firewall → Sinkhole → Status** e compare os erros das origens, as contagens de entradas salvas, o indicador de atualização em execução e as gerações compilada, implantada e carregada. Para o bloqueio de IP, compare também as contagens das tabelas e o estado da âncora `sinkhole/ip`.
+
+Consulte [Atualizações](/docs/reference/updates) para verificações de versões do pacote e comportamento da autoatualização. Consulte [Solução de problemas](/docs/operate/troubleshooting) quando um estágio informar um erro ou permanecer pendente.
+

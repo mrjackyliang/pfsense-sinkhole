@@ -1,0 +1,36 @@
+{
+  "layout.learn.title": {
+    "message": "Руководства"
+  },
+  "layout.resources.title": {
+    "message": "Ресурсы"
+  },
+  "sections.learn.0.label": {
+    "message": "Установка Sinkhole"
+  },
+  "sections.learn.1.label": {
+    "message": "Списки и сохранённые копии"
+  },
+  "sections.learn.2.label": {
+    "message": "Область действия политики DNS"
+  },
+  "sections.learn.4.label": {
+    "message": "Устранение неполадок"
+  },
+  "sections.resources.0.label": {
+    "message": "Как работают обновления"
+  },
+  "sections.resources.1.label": {
+    "message": "Тестирование и проверка"
+  },
+  "sections.resources.2.label": {
+    "message": "Документация pfSense"
+  },
+  "sections.resources.3.label": {
+    "message": "Исходный код"
+  },
+  "copyright": {
+    "message": "Copyright © 2026 Jacky Liang. MIT.",
+    "description": "The footer copyright text"
+  }
+}

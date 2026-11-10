@@ -1,0 +1,85 @@
+---
+id: build-and-release
+title: Bouwen en uitbrengen
+description: Stel de repository in, voer Nova-controles en builds uit, bouw het pfSense-pakket op FreeBSD, leg changelogvermeldingen vast en publiceer een release.
+keywords:
+  - sinkhole voor pfsense
+  - bijdragen
+  - bouwen
+  - release
+  - nova-changelog
+tags:
+  - contributing
+  - build
+  - release
+---
+
+Bouw, test en publiceer Sinkhole via de Nova-hoofdwerkruimte, zodat het pakket en de documentatie dezelfde gecontroleerde workflow volgen.
+
+## Vereisten \{#prerequisites}
+
+- Gebruik het Node.js-versiebereik in het `package.json`-bestand in de hoofdmap en de npm-versie die door het veld `packageManager` is geselecteerd.
+- Gebruik FreeBSD met een checkout van de pfSense-ports voor de definitieve `.pkg`-build.
+- Gebruik een tijdelijk pfSense-lab om installatie, upgrade, blokkering en verwijdering te verifiëren.
+
+Stel `PFSENSE_PORTS_DIR` vóór het verpakken in op de checkout van de FreeBSD-ports van pfSense. De checkout moet `Mk/bsd.port.mk` bevatten en de bestemming `sysutils/pfSense-pkg-Sinkhole` moet vrij zijn voor de tijdelijke buildkopie.
+
+## Afhankelijkheden installeren \{#install-dependencies}
+
+Vanuit de hoofdmap van de repository:
+
+```sh
+npm install
+```
+
+Nova leest de werkruimten uit `nova.config.json`. Voer werkruimteopdrachten vanuit de hoofdmap uit, tenzij bewust een specifiekere pakketopdracht wordt onderzocht.
+
+## Elke wijziging controleren \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` voert linting, typecontrole en tests uit voor de hoofd-, pakket- en documentatiewerkruimten. `npm run build` maakt de pfSense-port gereed en maakt de productiebuild van de documentatie onder `build/`.
+
+Wanneer de host geen bruikbare PHP-runtime heeft, voert `SINKHOLE_SKIP_PHP_TESTS=1 npm run check` elke beschikbare controle uit, maar vervangt dit niet de vereiste pakkettests vóór een release. Pakketwijzigingen vereisen ook de offline PHP-, Python-, herstel- en taaloverschrijdende suites die in de repositoryregels worden beschreven.
+
+## Het releasepakket bouwen \{#build-the-release-package}
+
+Voer de definitieve verpakkingsopdracht op FreeBSD uit na `npm run build`:
+
+```sh
+npm run deploy
+```
+
+Het uitrolscript voert `make package` uit in de geconfigureerde ports-checkout, bouwt het manifest opnieuw op als vitaal met `FreeBSD:*`, verifieert beide eigenschappen en schrijft versiegebonden en stabiele `.pkg`-bestanden plus SHA-256-bestanden onder `packages/sinkhole/build/release/`.
+
+De opdracht mislukt bewust op hosts die geen FreeBSD gebruiken of zonder `PFSENSE_PORTS_DIR`. Vervang het releaseartefact nooit door een pakket dat op een ander besturingssysteem is gebouwd.
+
+## De wijziging vastleggen \{#record-the-change}
+
+Gebruik de changelogworkflow van Nova wanneer wijzigingen worden opgenomen:
+
+```sh
+npm run changelog
+```
+
+Selecteer de betrokken werkruimte en de releaseberichtcategorie die bij de voor gebruikers zichtbare wijziging past. Houd één samenhangende vermelding per wijziging aan en gebruik de gebiedende wijs en tegenwoordige tijd die de repository voor releaseberichten voorschrijft.
+
+## Een release maken \{#cut-a-release}
+
+1. Voer `npm run check` en `npm run build` uit vanaf een schone releasekandidaat.
+2. Voer `nova utility changelog --release` uit om de versie te selecteren, pakketversies bij te werken en changelogs te schrijven.
+3. Voer `npm run deploy` uit op de geconfigureerde FreeBSD-builder.
+4. Installeer en upgrade het artefact, test blokkering en verwijder het artefact in een tijdelijk pfSense-lab.
+5. Publiceer de GitHub-release met de versiegebonden en stabiele pakket- en controlesomassets.
+
+Als een release wordt gepubliceerd, worden de workflow voor pakketartefacten en de workflow voor documentatie-uitrol geactiveerd. Een pfSense-release wordt pas als ondersteund vermeld nadat deze volledige verificatie in het lab is geslaagd.
+
+## Documentatiewijzigingen \{#documentation-changes}
+
+Gebruik expliciete Engelse kop-ID's zoals `{#build-and-release}`, zodat vertaalde pagina's stabiele ankers kunnen behouden. Maak Markdown-tabellen op met `npx nova recipe misc fix-markdown-tables` en voer daarna dezelfde controle- en buildopdrachten in de hoofdmap uit.
+
+De Engelse pagina's zijn de bron voor alle 17 vertaalde locales. Vertaal productnamen niet, behoud code, paden en Engelse ankers exact en beloof geen functies die nog niet zijn geïmplementeerd.
+

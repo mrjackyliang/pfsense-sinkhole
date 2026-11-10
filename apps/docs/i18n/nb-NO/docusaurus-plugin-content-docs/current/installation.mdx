@@ -1,0 +1,84 @@
+---
+id: installation
+title: Installer pakken
+description: Kontroller den stabile Sinkhole-pakken mot SHA-256-filen, installer eller oppdater den med pkg, og bekreft alle pakkefanene i WebGUI for pfSense.
+keywords:
+  - sinkhole for pfsense
+  - installasjon
+  - pkg add
+  - sha256-kontrollsum
+  - github-utgivelse
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+Installer eller oppdater Sinkhole fra den stabile pakken i GitHub-utgivelsen, og bekreft deretter at pfSense registrerte alle WebGUI-fanene.
+
+## Krav \{#requirements}
+
+- **Administrator shell** — SSH- eller konsolltilgang til pfSense-skallet. **Diagnostics → Command Prompt** kan også kjøre én kommando.
+- **HTTPS access to GitHub** — Brannmuren må kunne laste ned pakken og kontrollsummen fra GitHub Releases.
+- **DNS Resolver** — DNS Resolver i pfSense må være aktivert før DNS-integrasjonen til Sinkhole kan aktiveres.
+- **Available Python slot** — pfBlockerNG DNSBL eller et annet Python-skript kan ikke eie den eneste modulplassen i Resolver.
+- **Current backup** — Det anbefales å laste ned `config.xml` fra **Diagnostics → Backup & Restore** før du installerer en uoffisiell pakke.
+
+:::warning
+
+Sinkhole installeres fra GitHub i stedet for pakkelageret til Netgate, så Netgate verken gjennomgår eller støtter pakken.
+
+:::
+
+## Kontroller utgivelsen \{#check-the-release}
+
+[Siden GitHub Releases](https://github.com/mrjackyliang/pfsense-sinkhole/releases) publiserer pakkefiler med stabile navn og versjonsnavn. De stabile filene som brukes på denne siden, er:
+
+| Fil                               | Formål                                                         |
+|-----------------------------------|----------------------------------------------------------------|
+| `pfSense-pkg-Sinkhole.pkg`        | Nyeste installerbare Sinkhole-pakke.                           |
+| `pfSense-pkg-Sinkhole.pkg.sha256` | SHA-256-verdi som bare inneholder hash for den stabile pakken. |
+
+## Bekreft kontrollsummen \{#verify-the-checksum}
+
+Last ned den stabile pakken og den stabile `.sha256`-filen til `/tmp`, og sammenlign deretter de to verdiene som skrives ut:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg.sha256
+sha256 -q pfSense-pkg-Sinkhole.pkg
+cat pfSense-pkg-Sinkhole.pkg.sha256
+```
+
+De to verdiene er like når den nedlastede pakken er intakt. Den kontrollerte lokale filen kan deretter installeres med `pkg add -f /tmp/pfSense-pkg-Sinkhole.pkg`.
+
+## Installer eller oppdater \{#install-or-update}
+
+Den samme kommandoen installerer Sinkhole for første gang, oppdaterer en eldre versjon eller installerer gjeldende versjon på nytt:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Flagget `-f` er påkrevd fordi `pkg`-versjonen i pfSense 2.8 ellers kan hoppe over en oppdatering fra samme stabile URL. Det bevarer også de vanlige krokene for installasjon og oppgradering av pakken.
+
+## Bekreft WebGUI \{#confirm-the-webgui}
+
+1. Åpne **Firewall → Sinkhole**.
+2. Bekreft at **General**, **Lists**, **Services**, **Scopes**, **Alerts**, **Bypass**, **IP**, **Status** og **About** vises.
+3. La **General → Enable** være avslått til DNS Resolver er aktivert og plassen for Python-skript er tilgjengelig.
+4. Åpne **About**, og bekreft at den viste pakkeversjonen samsvarer med utgivelsen du installerte.
+
+Pakker som installeres utenfor pakkelageret til Netgate, vises ikke på siden **Installed Packages** i pfSense. Oppdatering og fjerning bruker derfor skallkommandoene som er dokumentert her og under [Pakkens livssyklus](/docs/reference/package-lifecycle).
+
+## Hvis installasjonen mislykkes \{#if-installation-fails}
+
+- **Not found or no package asset** — Bekreft at den nyeste GitHub-utgivelsen inneholder `pfSense-pkg-Sinkhole.pkg`.
+- **Checksum differs** — Behold den installerte versjonen, og last ned begge de stabile filene på nytt fra utgivelsen.
+- **DNS, TLS, or certificate error** — Bekreft at pfSense slår opp `github.com`, når nettstedet over HTTPS og har riktig systemtid.
+- **Wrong ABI** — Installer den nyeste utgivelsen. Gjeldende pakker bygges på nytt med ABI-en `FreeBSD:*`, mens en eldre artefakt kanskje ikke gjør det.
+
+Fortsett med [Konfigurer Sinkhole](/docs/first-run) når fanene vises.
+

@@ -1,0 +1,81 @@
+---
+id: testing-and-verification
+title: Testowanie i weryfikacja
+description: Zweryfikuj instalację, własność Resolver, decyzje według zakresu, powiadomienia, ochronę Bypass, blokowanie IP, aktualizacje i bezpieczne usuwanie na zaporze laboratoryjnej.
+keywords:
+  - sinkhole for pfsense
+  - testowanie
+  - weryfikacja
+  - zapora laboratoryjna
+  - bezpieczeństwo wydania
+tags:
+  - safety
+  - testing
+  - verification
+---
+
+Przetestuj Sinkhole w jednorazowym laboratorium pfSense przed wprowadzeniem jego zasad DNS, NAT lub zapory do sieci produkcyjnej.
+
+## Weryfikacja pobrania pakietu \{#verify-the-package-download}
+
+Pobierz stabilny pakiet i zasób `.sha256` z tego samego wydania GitHub. Porównaj skrót SHA-256 pakietu z pojedynczym skrótem w `pfSense-pkg-Sinkhole.pkg.sha256` przed uruchomieniem `pkg add -f`.
+
+Samo pobranie przez HTTPS nie zastępuje porównania sumy kontrolnej. Podczas przenoszenia do zapory za pośrednictwem innego komputera trzymaj pakiet i sumę kontrolną razem.
+
+## Weryfikacja podstawowej instalacji \{#verify-a-basic-installation}
+
+1. Sprawdź, czy **Firewall → Sinkhole** otwiera się, a zainstalowana wersja jest widoczna w **About**.
+2. Sprawdź, czy **Services → DNS Resolver** jest włączony, a miejsca na skrypt Python nie zajmuje inny pakiet.
+3. Włącz Sinkhole, zapisz i sprawdź, czy **Status → Sinkhole** ma wartość `Active`.
+4. Po pierwszej udanej aktualizacji sprawdź, czy identyfikatory generacji skompilowanej, wdrożonej i załadowanej są zgodne.
+
+Sinkhole odmawia zastąpienia pfBlockerNG DNSBL lub innego skryptu w jedynym miejscu na moduł Python w Unbound. Traktuj ten stan nieaktywny jako konflikt konfiguracji, a nie błąd instalacji.
+
+## Weryfikacja zasad DNS \{#verify-dns-policy}
+
+Używaj wymyślonych domen testowych z kontrolowanej listy zamiast listy publicznej. Testuj jedną decyzję naraz z klientów, których tożsamość urządzenia i sieci jest widoczna w Status.
+
+1. Sprawdź, czy nazwa nieobecna na liście jest rozwiązywana normalnie.
+2. Sprawdź, czy lista globalna blokuje nazwę testową.
+3. Dodaj dozwoloną domenę sieci i sprawdź, czy przechodzi przez listy sieciowe i globalne.
+4. Dodaj decyzję urządzenia i sprawdź [udokumentowaną kolejność](/docs/configure/scopes#decision-order).
+5. Usuń dane testowe i sprawdź, czy następna wdrożona generacja przywraca oczekiwaną odpowiedź.
+
+Unikaj `test.`, `invalid.`, `onion.` i `localhost.`, ponieważ Unbound odpowiada na te wbudowane strefy przed modułami Python. Czyść pamięci podręczne DNS po stronie klienta pomiędzy kontrolami, gdy wynik mógłby zostać ponownie użyty.
+
+## Weryfikacja alertów \{#verify-alerts}
+
+Utwórz jedną wąską regułę dla blokady wymyślonej domeny testowej i znanego klienta laboratoryjnego. Sprawdź, czy następne zadanie minutowe rejestruje zdarzenie i wysyła je przez skonfigurowany system powiadomień pfSense.
+
+Powtórz w oknie powtórzeń reguły, aby sprawdzić, czy powiadomienie jest tłumione. Następnie usuń regułę i sprawdź, czy Status nie zgłasza już błędów przetwarzania alertów.
+
+## Weryfikacja ochrony Bypass \{#verify-bypass-protection}
+
+Wybierz jeden odizolowany interfejs laboratoryjny i włączaj po jednym mechanizmie ochrony Bypass. Po każdym teście sprawdź, czy równoważny klient na niewybranym interfejsie pozostaje nienaruszony.
+
+1. Włącz **Redirect**, sprawdź, czy rodzina adresów ma nasłuchiwanie Resolver, i wyślij zwykłe zapytania UDP i TCP na porcie 53 do innego celu. Sprawdź, czy pfSense je odbiera.
+2. Dodaj celowo nieprawidłowy wyjątek tylko w konfiguracji jednorazowej i sprawdź, czy przekierowanie przechodzi w stan **Paused**, zamiast ładować częściowe reguły. Przywróć prawidłowe dane, poczekaj na dwie obserwacje minutowe i sprawdź, czy **pfSense loaded rules** powraca do `Yes`.
+3. Włącz **TLS and QUIC**, a następnie sprawdź, czy port 853 TCP i UDP do celu laboratoryjnego jest blokowany, natomiast ruch do zapory nie.
+4. Dodaj wyłączoną Bypass List zawierającą tylko wymyślone domeny, adresy, CIDR-y, komentarze i nieprawidłowe dane. Włącz ją i odpowiadającą jej ochronę, a następnie sprawdź, czy prawidłowe nazwy i adresy są blokowane, nieprawidłowe wiersze pomijane, a późniejsze nieudane pobranie zachowuje zapisaną kopię.
+5. Sprawdź, czy zapytania testowe Firefox i Private Relay otrzymują `NXDOMAIN`. Sprawdź, czy DDR zwraca pustą odpowiedź `NOERROR` w trybie **Answer with no records**.
+6. Po skonfigurowaniu usługi SSL/TLS Resolver w laboratorium sprawdź, czy **Advertise** zwraca SVCB z nazwą hosta certyfikatu, `alpn=dot` i portem `853`. Wyłącz tę usługę i sprawdź, czy zapisanie **Advertise** kończy się niepowodzeniem walidacji.
+7. Włącz standardowe porty VPN i przetestuj TCP i UDP `1194`, UDP `51820`, UDP `500` i `4500` oraz ESP względem celu laboratoryjnego. Sprawdź, czy ruch adresowany do zapory nie jest blokowany.
+
+Po każdym teście zapory sprawdź, czy **Status → Bypass** zgłasza oczekiwany stan reguł, a `sinkhole/ip`, jeśli jest włączony osobno, pozostaje załadowany.
+
+## Weryfikacja blokowania IP i krajów \{#verify-ip-and-country-blocking}
+
+Użyj wymyślonego źródła testowego listy IP i adresu, który nie może wpłynąć na zarządzanie zaporą, bramy ani DNS. Przed testowaniem ruchu sprawdź końcową liczbę tabeli rodziny, wybrany interfejs i kierunek oraz **IP Anchor → Yes**.
+
+Sprawdź, czy dozwolony zakres testowy jest usuwany z tabeli blokowania. Jeśli testujesz GeoLite2, użyj własnego klucza MaxMind administratora i usuń go z wszelkich zarejestrowanych danych wyjściowych.
+
+## Weryfikacja aktualizacji i usuwania \{#verify-update-and-removal-behavior}
+
+Uruchom ręczną aktualizację list i sprawdź, czy DNS nadal odpowiada, gdy Status przechodzi przez stan aktualizacji, kompilacji, wdrożenia i załadowania. Celowo uszkodzone źródło powinno zachować wcześniejszą zapisaną kopię i wyświetlić błąd.
+
+Przed usunięciem zdecyduj, czy **Keep Settings** ma zachować konfigurację i zapisane listy. Usuń pakiet poleceniem `pkg delete -f pfSense-pkg-Sinkhole`, a następnie sprawdź, czy zniknęły integracja z Resolver, zaplanowane zadania, reguły przekierowania zwykłego DNS, kotwice `sinkhole/bypass` i `sinkhole/ip`, dane Bypass z pamięci podręcznej i tymczasowe pliki środowiska uruchomieniowego.
+
+## Rejestrowanie środowiska \{#record-the-environment}
+
+W użytecznym rejestrze testu zapisz wersję Sinkhole, edycję i wydanie pfSense, wydanie FreeBSD, wybrane funkcje, stan Status oraz oczyszczone wiersze `Sinkhole:` z dziennika systemowego. Obecnie żadne wydanie pfSense nie jest wymienione jako oficjalnie przetestowane; testy zgodności są wykonywane przed każdym wydaniem Sinkhole.
+

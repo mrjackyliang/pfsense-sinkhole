@@ -1,0 +1,86 @@
+---
+id: ip-and-country-blocking
+title: Blocco IP e per paese
+description: Blocca reti sorgente o destinazione con liste IP e paesi GeoLite2, sottrai gli indirizzi protetti e gestisci l’anchor sinkhole/ip.
+keywords:
+  - sinkhole for pfsense
+  - blocco ip
+  - blocco per paese
+  - geolite2
+  - anchor pf
+tags:
+  - configure
+  - ip blocking
+  - firewall
+---
+
+Blocca sorgenti o destinazioni IP selezionate indipendentemente dai criteri DNS con tabelle gestite dal pacchetto nell’anchor pf `sinkhole/ip`.
+
+## Perché usare il blocco IP? \{#why-use-ip-blocking}
+
+1. Copre il traffico per indirizzo o paese quando non è coinvolto un nome DNS.
+2. Si applica indipendentemente sulle interfacce e nelle direzioni selezionate, così i criteri WAN e delle reti client possono essere diversi.
+3. Conserva copie IP normalizzate e valide e aggiorna atomicamente le tabelle attive.
+4. Protegge gli indirizzi del firewall, dei gateway e dei server DNS dall’inclusione accidentale in una lista sorgente.
+
+## Abilitare la funzionalità \{#enable-the-feature}
+
+Apri **Firewall → Sinkhole → IP** e seleziona **Enable** solo dopo aver scelto interfacce e direzioni. Il blocco IP e per paese è disattivato per impostazione predefinita e non dipende dall’interruttore DNS di General.
+
+| Impostazione | Comportamento                                                                                             |
+|--------------|-----------------------------------------------------------------------------------------------------------|
+| Interfaces   | Genera regole sulle interfacce di arrivo selezionate.                                                     |
+| Inbound      | Blocca i pacchetti in arrivo da un indirizzo sorgente elencato, generalmente su una WAN.                  |
+| Outbound     | Blocca i pacchetti in arrivo verso un indirizzo di destinazione elencato, generalmente sulle reti client. |
+
+L’anchor contiene regole `block drop in quick` e nessuna regola pass. Sinkhole lo richiama tramite la posizione anticipata delle regole di pacchetto di pfSense, così i blocchi vengono eseguiti prima delle normali regole pass-quick. La pagina mostra prima i pannelli delle liste IP e dei cataloghi, seguiti dalle impostazioni IP e per paese dell’intera pagina con **Save** sotto il pannello.
+
+## Aggiungere liste IP \{#add-ip-lists}
+
+Seleziona **Add** sotto la tabella IP Lists per aprire l’editor delle liste IP. Una riga usa un URL HTTP o HTTPS, sceglie IPv4, IPv6 o entrambe le famiglie e controlla se la fonte è abilitata. Il salvataggio riporta alla scheda IP; seleziona la matita o fai doppio clic su una riga per modificarla.
+
+Le liste possono essere trovate anche nelle sezioni IP del catalogo dei feed di pfBlockerNG.
+
+Le righe valide sono singoli indirizzi IPv4 o IPv6 e reti CIDR. Le righe non valide vengono ignorate e contate; un download senza voci valide non sostituisce l’ultima copia valida salvata.
+
+Il catalogo viene scaricato solo quando la sua ricerca viene aperta o aggiornata e usa la stessa cache di un giorno dell’ultima copia valida della ricerca nel catalogo DNS. L’aggiunta di un risultato crea una normale riga di lista IP senza valutazione o consiglio.
+
+I feed di bypass per Encrypted DNS, Tor e VPN sono esclusi dal catalogo IP e compaiono solo nella scheda Bypass.
+
+La riga **Contents** di ogni scheda indica **IPv4 addresses** o **IPv6 addresses**. Quando aggiungi un risultato di pfBlockerNG, Sinkhole aggiunge ` (IPv4)` o ` (IPv6)` al nome salvato, accorciando solo il nome di base quando necessario.
+
+## Aggiungere paesi \{#add-countries}
+
+I paesi provengono dai dati CSV MaxMind GeoLite2 Country e vengono inseriti come codici ISO di due lettere. Le relative reti vengono aggiunte alle tabelle delle famiglie bloccate.
+
+- **MaxMind Account ID** è obbligatorio quando sono selezionati dei paesi.
+- **MaxMind License Key** viene fornita dall’amministratore, salvata come un campo password di pfSense e mai visualizzata dopo il salvataggio.
+- **Clear License Key** rimuove esplicitamente il segreto salvato.
+
+Sinkhole verifica e importa l’archivio GeoLite2 e lo aggiorna al massimo una volta alla settimana. Il pacchetto non include mai un account o una chiave di licenza MaxMind.
+
+## Consentire e proteggere indirizzi \{#allow-and-protect-addresses}
+
+La **IP Allowlist** accetta indirizzi IPv4 o IPv6, reti CIDR e alias host/rete esistenti. Gli intervalli consentiti vengono sottratti dall’insieme bloccato unito prima di scrivere i file delle tabelle.
+
+Sinkhole sottrae automaticamente anche questi indirizzi protetti:
+
+- Ogni indirizzo assegnato al firewall.
+- Gli indirizzi dei gateway, inclusi quelli ottenuti tramite DHCP o PPP.
+- Gli indirizzi dei server DNS, inclusi quelli ottenuti tramite DHCP o PPP.
+
+La sottrazione può dividere un CIDR bloccato in reti più piccole, così passa solo l’indirizzo protetto.
+
+## Comprendere l’anchor \{#understand-the-anchor}
+
+Il pacchetto carica direttamente `sinkhole/ip` con due tabelle persistenti per famiglia e le regole delle interfacce selezionate. Gli aggiornamenti delle liste sostituiscono solo le tabelle all’interno dell’anchor, mentre Sync e il controllo ogni minuto possono caricare l’anchor completo.
+
+Il contenuto dell’anchor sopravvive ai normali ricaricamenti del filtro pfSense e non fa parte della pulizia delle tabelle del ruleset principale. Disattivare il blocco IP o rimuovere Sinkhole svuota l’anchor.
+
+## Verificare lo stato \{#verify-the-state}
+
+**Status → IP and Country Blocking** mostra stato di attivazione, interfacce, direzioni, paesi, stato della chiave, dimensioni delle tabelle, righe ignorate, ultimo aggiornamento riuscito, ora di aggiornamento GeoLite2, stato dell’anchor, numero di regole e ultimo errore. Ogni riga di lista IP mostra inoltre famiglia, voci, righe ignorate, ultimo recupero ed errore.
+
+Lo stato dell’anchor **Out of Date** indica che il testo o le tabelle caricati non corrispondono alle impostazioni correnti. La riconciliazione ogni minuto carica immediatamente un anchor vuoto o modificato; [Risoluzione dei problemi](/docs/operate/troubleshooting#ip-blocking-does-not-match-settings) descrive i controlli.
+
+Le voci delle liste IP più ampie di IPv4 `/8` o IPv6 `/16` vengono ignorate e conteggiate; le reti limite `/8` e `/16` sono accettate. Questo limite non si applica alla IP Allowlist, perché può solo ridurre il blocco. Prima di scrivere le tabelle, Sinkhole sottrae sempre tutti gli indirizzi IPv4 e IPv6 delle interfacce del firewall, le sottoreti complete delle interfacce selezionate per il blocco IP, gli indirizzi virtuali CARP e IP Alias, nonché gateway e server DNS configurati.

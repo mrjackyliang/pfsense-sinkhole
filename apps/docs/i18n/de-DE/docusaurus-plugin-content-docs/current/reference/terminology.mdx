@@ -1,0 +1,57 @@
+---
+id: terminology
+title: Terminologie
+description: Definiere die DNS-, Listen-, Scope-, Alarm- und Bypass-Begriffe, die in Sinkhole-WebGUI, Status-Panels, Anleitungen und Referenzseiten verwendet werden.
+keywords:
+  - sinkhole for pfsense
+  - terminologie
+  - glossar
+  - dns-sinkhole
+  - blockliste
+tags:
+  - reference
+  - terminology
+  - glossary
+---
+
+Diese Begriffe haben in der Sinkhole-WebGUI und der Dokumentation dieselbe Bedeutung.
+
+## DNS-Sinkhole \{#dns-sinkhole}
+
+Beantwortet einen blockierten Namen mit einer Adresse, die ins Leere führt, sodass die Anfrage endet.
+
+## DNS Resolver \{#dns-resolver}
+
+Der Unbound-basierte DNS-Dienst von pfSense.
+
+## Blockliste \{#block-list}
+
+Eine Liste zu blockierender Namen oder Adressen, die per URL oder über die Suche hinzugefügt wird.
+
+## Gespeicherte Liste \{#saved-list}
+
+Die letzte gültige Kopie einer Blockliste, die auf der Firewall aufbewahrt wird.
+
+## Scope \{#scope}
+
+Der Geltungsbereich einer Blockliste: das gesamte Netzwerk, ein VLAN oder ein einzelnes Gerät.
+
+## Globale Listen \{#global-lists}
+
+Blocklisten, die für jeden Client im Netzwerk gelten.
+
+## Alarmregel \{#alert-rule}
+
+Eine Liste und ein Scope, deren Blockierungen eine pfSense-Benachrichtigung senden.
+
+## Bypass-Schutz \{#bypass-protection}
+
+Optionale, schnittstellenbezogene Kontrollen, die Clients auf DNS-Pfaden halten, die Sinkhole prüfen kann, indem sie Klartext-DNS umleiten oder verbreitete Alternativen für verschlüsseltes DNS und Tunnel blockieren.
+
+## Klartext-DNS-Umleitung \{#plain-dns-redirect}
+
+Die optionale Bypass-Einstellung, die gewöhnliche TCP- und UDP-Port-53-Abfragen von Geräten an die Firewall sendet.
+
+## Suche nach populären Listen \{#popular-list-search}
+
+Die WebGUI-Suche nach weit verbreiteten Blocklisten, ähnlich der Auswahl von AdGuard Home.

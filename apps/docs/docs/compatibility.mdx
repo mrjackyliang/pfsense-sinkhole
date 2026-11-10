@@ -1,0 +1,72 @@
+---
+id: compatibility
+title: Compatibility
+description: Check Sinkhole's FreeBSD package ABI, pfSense testing policy, DNS Resolver requirements, Python-slot conflict, language state, and known limits.
+keywords:
+  - sinkhole for pfsense
+  - compatibility
+  - freebsd abi
+  - pfsense releases
+  - unbound python
+tags:
+  - setup
+  - compatibility
+  - pfsense
+sidebar_position: 4
+---
+
+Check the package, Resolver, and network requirements before relying on Sinkhole for DNS or IP policy.
+
+## pfSense and FreeBSD \{#pfsense-and-freebsd}
+
+- Release packages are built on the workflow's configured FreeBSD major, then rebuilt with a `FreeBSD:*` ABI so one package can install across FreeBSD majors.
+- The package is marked vital, so pfSense's upgrade-time autoremove pass doesn't discard it merely because it isn't in Netgate's repository.
+- The broad package ABI doesn't prove compatibility with every pfSense release because pfSense APIs and bundled services can still change.
+
+## Tested Releases \{#tested-releases}
+
+The following pfSense releases passed end-to-end verification:
+
+| pfSense Release      | FreeBSD |
+|----------------------|---------|
+| pfSense CE 2.9.0     | 16.0    |
+| pfSense CE 2.8.1     | 15.0    |
+| pfSense Plus 26.07   | 16.0    |
+| pfSense Plus 26.03.1 | 16.0    |
+
+Each tested release passed install, update, a blocking test, and removal end to end.
+
+The **About** tab marks the matching release as **This firewall**. It adds a **Not tested** row for an unlisted firewall rather than treating the `FreeBSD:*` ABI as a support claim.
+
+## DNS Resolver Requirements \{#dns-resolver-requirements}
+
+- pfSense's Unbound-based DNS Resolver needs to be enabled.
+- The Resolver's one Python script slot needs to be empty or already owned by Sinkhole.
+- Sinkhole uses the `pre_validator` module position and reports an inactive state if Python mode, the slot owner, position, or runtime files don't match.
+
+pfBlockerNG DNSBL uses the same Python script slot as Sinkhole. Sinkhole refuses to take that slot while `pfb_unbound` or any other script owns it.
+
+## Network Requirements \{#network-requirements}
+
+- Network scopes use the current IPv4 and IPv6 subnets of configured pfSense interfaces.
+- Devices identified by MAC address or static mapping depend on current ARP, NDP, DHCP lease, static-mapping, and interface data.
+- The plain-DNS redirect on **Bypass** requires an address family on the selected interface and a matching Resolver listener.
+- Redirected clients still need to be allowed by the Resolver's access-control settings.
+
+## Optional Country Data \{#optional-country-data}
+
+Country blocking requires the administrator's own MaxMind account ID and GeoLite2 license key. Sinkhole doesn't ship or log a key, and IP blocking works without country data when only IP lists are selected.
+
+## Known Limits \{#known-limits}
+
+- Bypass protection covers only the selected interfaces and only the protocols, signals, names, addresses, and standard ports that an administrator enables.
+- Custom encrypted-DNS and tunnel configurations can still bypass DNS-based policy, so Sinkhole doesn't promise complete protection.
+- Unbound's built-in `test.`, `invalid.`, `onion.`, and `localhost.` local zones answer before Python modules and aren't useful live filtering tests.
+- A device address conflict goes to the first device in table order, and Status reports the conflict.
+- With 300,000 names in measured testing, Unbound RSS rose from 41 MiB to 103 MiB and peak policy memory measured about 157 bytes per name.
+
+## Languages \{#languages}
+
+The package selects its WebGUI, command-line, validation, Status, and notification wording from pfSense's language setting. English is the source catalog, and missing translations currently fall back to English.
+
+Additional package translations are in progress, while the documentation is available in all 18 pfSense locales. Brand and product names such as Sinkhole, pfSense, FreeBSD, and MaxMind stay unchanged.

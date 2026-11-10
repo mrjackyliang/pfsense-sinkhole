@@ -1,0 +1,100 @@
+---
+id: lists
+title: Liste i sačuvane kopije
+description: Dodajte DNS liste URL-om ili iz kataloga, koristite formate hosts, domena i adblock pravila, upravljajte globalnim pravilima i čuvajte posljednje ispravne kopije.
+keywords:
+  - sinkhole for pfsense
+  - liste za blokiranje
+  - sačuvane liste
+  - pretraga popularnih lista
+  - dopuštene domene
+tags:
+  - configure
+  - lists
+  - dns
+---
+
+import catalogSearch from './_assets_/lists-2.png';
+
+Dodajte izvore lista kojima vjerujete i dopustite Sinkholeu da na zaštitnom zidu čuva normalizirane posljednje ispravne kopije za neposrednu upotrebu DNS-a.
+
+## Zašto koristiti sačuvane liste? \{#why-use-saved-lists}
+
+1. Održava DNS nezavisnim od hosta liste, tako da sporo ili neuspjelo preuzimanje ne prekida razrješavanje naziva.
+2. Svaki izvor preuzima jednom, pa ista sačuvana kopija može služiti globalnim, mrežnim i uređajskim opsezima.
+3. Čuva prethodnu važeću kopiju kada novo preuzimanje ili parsiranje ne uspije, tako da neispravan unos ne zamijeni pravila koja rade.
+4. Ažurira liste u pozadini, pa ponovno pokretanje ili učitavanje Resolvera nikada ne čeka mrežu.
+
+## Dodajte listu putem URL-a \{#add-a-list-by-url}
+
+Otvorite **Firewall → Sinkhole → Lists**, odaberite **Add** ispod tabele lista za blokiranje, a zatim popunite **Add Block List** na stranici uređivača:
+
+| Polje   | Opis                                                               |
+|---------|--------------------------------------------------------------------|
+| Name    | Lokalna oznaka prikazana u dodjelama, upozorenjima i Statusu.      |
+| URL     | HTTP ili HTTPS izvor bez ugrađenih vjerodajnica.                   |
+| Enabled | Preuzima izvor i čini ga dostupnim dodijeljenim opsezima.          |
+| Global  | Primjenjuje izvor na svakog klijenta nakon odluka uređaja i mreže. |
+
+Spremanje vraća na karticu Lists i pokreće isti provjereni put primjene u pozadini. Odaberite olovku u redu ili dvaput kliknite red da biste ga uredili. Onemogućeni red ostaje konfiguriran, ali je prigušen u tabeli i ne koriste ga program za ažuriranje ni kompajlirana pravila.
+
+## Prihvaćeni DNS formati \{#accepted-dns-formats}
+
+Sinkhole prihvata standardne oblike ispod i normalizira važeće nazive u jedan sačuvani skup domena:
+
+| Format                  | Primjer                                       | Ponašanje                                      |
+|-------------------------|-----------------------------------------------|------------------------------------------------|
+| Hosts datoteka          | `0.0.0.0 blocked.example`                     | Blokira tačno svaki naziv domene nakon adrese. |
+| Lista običnih domena    | `blocked.example`                             | Blokira tačno naziv domene u svakom redu.      |
+| Pravilo u adblock stilu | <code>{'\u007c\u007cblocked.example^'}</code> | Blokira naziv domene i svaku poddomenu.        |
+
+Koristite adblock oblik `||name^` kada želite da jedan unos blokira naziv i svaku poddomenu.
+
+Kozmetički filteri i neispravni redovi ne postaju DNS pravila. Status prijavljuje greške izvora, dok neuspjela lista s prethodnom važećom kopijom zadržava tu kopiju.
+
+## Pretražite kataloge \{#search-the-catalogs}
+
+Odaberite **Add from Catalog** na kartici Lists da biste pretražili registar lista AdGuard Homea i DNS odjeljak kataloga izvora pfBlockerNG-a. Sinkhole dohvaća oba samo kada se pretraga otvori ili odaberete **Refresh**; nijedan katalog nije uključen u paket niti se preuzima prema rasporedu.
+
+Rezultati se prikazuju kao kartice. Zajedno koristite kontrole pretrage, izvora i održavaoca, odaberite oznaku kategorije i prebacujte **Group by** između **Category** i **Maintainer**. Oznake kategorija prikazuju broj za trenutne filtere pretrage, izvora i održavaoca, dok meni održavaoca prvo navodi vlasnike s najviše odgovarajućih lista.
+
+Svaka kartica prikazuje naziv liste, njenog održavaoca ili kategoriju, izvorni katalog, opis u dva reda, početnu stranicu i stanje **Add** ili **Added**. Kartice ne prikazuju ocjene, značke ni preporuke. Odabir **Add** kreira obični red liste čiji se URL može dodijeliti kao i svaki ručno uneseni izvor.
+
+Red **Contents** na svakoj kartici prikazuje **Domains**. Dodavanjem rezultata iz kataloga njegov naziv iz kataloga ostaje nepromijenjen.
+
+Kopije kataloga čuvaju se jedan dan u predmemoriji pod `/var/db`. Neuspjelo osvježavanje zadržava posljednju ispravnu kopiju kataloga i prikazuje grešku dohvatanja na Statusu.
+
+<img src={catalogSearch} alt="Panel Add from Catalog na kartici Lists prikazuje kontrole pretrage kataloga i stanje dohvatanja" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Izvori dodijeljeni zaštiti od zaobilaženja Encrypted DNS, Tor ili VPN ne prikazuju se ovdje. Dostupni su samo kroz **Add from Catalog** na kartici Bypass.
+
+## Postavite globalne dopuštene domene \{#set-global-allowed-domains}
+
+Odjeljak **Allowed Domains** ispod panela lista i kataloga definira globalne izuzetke. Svaki red dopušta toj domeni i njenim poddomenama prolazak kroz naslijeđene globalne liste. Odaberite **Save** ispod tog odjeljka kako biste primijenili postavku za cijelu stranicu.
+
+Globalna dopuštena domena provjerava se nakon pravila uređaja i mreže. Zato ne može nadjačati listu koja je već blokirala upit na određenijem nivou uređaja ili mreže.
+
+## Odaberite učestalost ažuriranja \{#choose-the-update-frequency}
+
+Postavka **General → Update Frequency** upravlja zakazanim ažuriranjima DNS lista i određuje raspored ažuriranja kada je IP blokiranje omogućeno:
+
+| Postavka      | Raspored                                                    |
+|---------------|-------------------------------------------------------------|
+| Hourly        | Jednom na sat u stabilnoj nasumičnoj minuti zaštitnog zida. |
+| Every 6 hours | Svakih šest sati u istoj stabilnoj nasumičnoj minuti.       |
+| Daily         | Jednom dnevno u toj minuti, sa `00` kao zakazanim satom.    |
+| Weekly        | Svake nedjelje u toj minuti, sa `00` kao zakazanim satom.   |
+
+`Daily` je zadana vrijednost. **Status → Update Now** pokreće ručno potpuno ažuriranje bez promjene sačuvanog rasporeda.
+
+## Šta se događa tokom ažuriranja \{#what-happens-during-an-update}
+
+1. Preuzima svaki omogućeni izvor kroz ograničeni klijent za preuzimanje.
+2. Parsira ga i normalizira u privremenu kopiju.
+3. Atomski zamjenjuje sačuvanu kopiju samo kada je nova kopija važeća.
+4. Kompajlira trenutna globalna, mrežna i uređajska pravila te pravila dopuštenih domena i upozorenja.
+5. Postavlja novu lokalnu generaciju i omogućava Unbound modulu da je učita.
+
+Kada novi blokirani nazivi prošire pravila, Sinkhole čeka da modul učita generaciju, a zatim jednom ponovo učitava Unbound da očisti predmemorirane odgovore. [Kako rade ažuriranja](/docs/safety/how-updates-work) objašnjava potpuni model dostupnosti i povratka.
+
+Kada se blokirano podstablo upita s neuobičajenom, ali važećom DNS oznakom, uključujući razmak ili bajt iznad `0x7f`, Sinkhole čuva ime u žičanom formatu u odgovoru i i dalje vraća uobičajeni odgovor `0.0.0.0` ili `::`. Takav upit ne postaje SERVFAIL samo zato što oznaka nije u obliku naziva hosta.

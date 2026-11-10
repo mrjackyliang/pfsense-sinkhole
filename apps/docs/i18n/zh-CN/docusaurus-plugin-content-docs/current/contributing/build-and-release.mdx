@@ -1,0 +1,84 @@
+---
+id: build-and-release
+title: 构建和发布
+description: 设置仓库、运行 Nova 检查和构建、在 FreeBSD 上构建 pfSense 软件包、记录变更日志条目并发布版本。
+keywords:
+  - sinkhole for pfsense
+  - 贡献
+  - 构建
+  - 发布
+  - nova 变更日志
+tags:
+  - contributing
+  - build
+  - release
+---
+
+通过根 Nova 工作区构建、测试和发布 Sinkhole，使软件包和文档遵循同一个经过检查的工作流程。
+
+## 前提条件 \{#prerequisites}
+
+- 使用根 `package.json` 中的 Node.js 版本范围，以及其 `packageManager` 字段选择的 npm 版本。
+- 使用带有 pfSense ports 检出的 FreeBSD 进行最终 `.pkg` 构建。
+- 使用可丢弃的 pfSense 实验室验证安装、升级、阻止和删除。
+
+打包前，将 `PFSENSE_PORTS_DIR` 设为 pfSense FreeBSD ports 检出路径。检出必须包含 `Mk/bsd.port.mk`，而目标 `sysutils/pfSense-pkg-Sinkhole` 必须空闲，以供临时构建副本使用。
+
+## 安装依赖项 \{#install-dependencies}
+
+在仓库根目录运行：
+
+```sh
+npm install
+```
+
+Nova 从 `nova.config.json` 读取工作区。除非有意诊断范围更窄的软件包命令，否则请从根目录运行工作区命令。
+
+## 检查每项更改 \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` 会对根工作区、软件包和文档工作区运行 lint、类型检查和测试。`npm run build` 会暂存 pfSense port，并在 `build/` 下创建生产文档构建。
+
+当主机没有可用的 PHP 运行时，`SINKHOLE_SKIP_PHP_TESTS=1 npm run check` 会运行所有可用检查，但不能替代发布前必需的软件包测试。软件包更改还需要仓库规则中所述的离线 PHP、Python、恢复和跨语言测试套件。
+
+## 构建发布软件包 \{#build-the-release-package}
+
+运行 `npm run build` 后，在 FreeBSD 上运行最终打包命令：
+
+```sh
+npm run deploy
+```
+
+部署脚本会在配置的 ports 检出中运行 `make package`，将清单重建为带有 `FreeBSD:*` 的 vital 软件包，验证这两个属性，并在 `packages/sinkhole/build/release/` 下写入带版本和稳定名称的 `.pkg` 文件及 SHA-256 文件。
+
+该命令会在非 FreeBSD 主机或缺少 `PFSENSE_PORTS_DIR` 时有意失败。绝不要用在其他操作系统上构建的软件包替代发布资源。
+
+## 记录更改 \{#record-the-change}
+
+在更改落地时使用 Nova 的变更日志工作流程：
+
+```sh
+npm run changelog
+```
+
+选择受影响的工作区，以及与用户可见更改匹配的发布说明类别。每项更改保留一个连贯条目，并使用仓库规定的祈使语气、现在时发布说明风格。
+
+## 发布版本 \{#cut-a-release}
+
+1. 从干净的发布候选版本运行 `npm run check` 和 `npm run build`。
+2. 运行 `nova utility changelog --release` 选择版本、更新软件包版本并写入变更日志。
+3. 在配置好的 FreeBSD 构建器上运行 `npm run deploy`。
+4. 在可丢弃的 pfSense 实验室上安装、升级、测试阻止并删除资源。
+5. 发布 GitHub 版本，并附上带版本和稳定名称的软件包及校验和资源。
+
+发布版本会触发软件包资源工作流和文档部署工作流。只有完整实验室验证通过后，才会将某个 pfSense 版本列为受支持。
+
+## 文档更改 \{#documentation-changes}
+
+使用显式英语标题 ID（例如 `\{#build-and-release}`），使翻译页面可以保留稳定锚点。使用 `npx nova recipe misc fix-markdown-tables` 格式化 Markdown 表，然后运行相同的根检查和构建命令。
+
+英语页面是全部 17 个翻译区域设置的来源。保持产品名称不翻译，准确保留代码、路径和英语锚点，不要承诺尚未实现的功能。

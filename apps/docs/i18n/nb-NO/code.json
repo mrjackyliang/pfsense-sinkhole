@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "Innebygd pfSense-pakke"
+  },
+  "homepage.hero.heading": {
+    "message": "Velg hva hvert nettverk og hver enhet kan nå."
+  },
+  "homepage.hero.tagline": {
+    "message": "Bruk lagrede DNS-lister for hele nettverket, én VLAN eller én enhet, med målrettede varsler og uten en ekstra server."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Installer Sinkhole"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "Planlegg scopes"
+  },
+  "homepage.stats.heading": {
+    "message": "Én brannmur, policy på hvert nyttig nivå"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole holder policyen lokal og gjør driftsgrensene tydelige."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "Policy-scopes"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "DNS-listeformater"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "Katalogcache"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Unbound-modulplass"
+  },
+  "homepage.features.heading": {
+    "message": "Kontroll som blir på brannmuren"
+  },
+  "homepage.features.scopes.title": {
+    "message": "Avgrens hver avgjørelse"
+  },
+  "homepage.features.scopes.description": {
+    "message": "Bruk lister og tillatte domener globalt, etter grensesnitt eller VLAN og etter enhet."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "Behold siste gyldige kopier"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "Svar på DNS fra lokale lister gjennom omstarter, omlastinger og mislykkede nedlastinger."
+  },
+  "homepage.features.alerts.title": {
+    "message": "Varsle med hensikt"
+  },
+  "homepage.features.alerts.description": {
+    "message": "Varsle bare for listene, nettverkene og enhetene som er valgt i hver regel."
+  },
+  "homepage.features.redirect.title": {
+    "message": "Beskytt DNS-baner"
+  },
+  "homepage.features.redirect.description": {
+    "message": "Omdiriger valgfritt vanlig DNS eller blokker vanlige omgåelser via kryptert DNS og tunneler på valgte grensesnitt."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "Søk og bestem"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "Søk i støttede kataloger ved behov uten å inkludere eller anbefale en liste."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "Blokker adresser og land"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "Bruk IP-lister og GeoLite2-landpolicy gjennom det isolerte ankeret `sinkhole/ip`."
+  }
+}

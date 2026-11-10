@@ -1,0 +1,85 @@
+---
+id: build-and-release
+title: Budowanie i wydawanie
+description: Skonfiguruj repozytorium, uruchamiaj kontrole i kompilacje Nova, zbuduj pakiet pfSense w FreeBSD, zapisuj wpisy dziennika zmian i publikuj wydanie.
+keywords:
+  - sinkhole for pfsense
+  - współtworzenie
+  - budowanie
+  - wydanie
+  - dziennik zmian nova
+tags:
+  - contributing
+  - build
+  - release
+---
+
+Buduj, testuj i wydawaj Sinkhole za pośrednictwem głównego obszaru roboczego Nova, aby pakiet i dokumentacja korzystały z tego samego zweryfikowanego przepływu pracy.
+
+## Wymagania wstępne \{#prerequisites}
+
+- Używaj zakresu wersji Node.js z głównego pliku `package.json` i wersji npm wskazanej w polu `packageManager`.
+- Do końcowej kompilacji `.pkg` używaj FreeBSD z kopią roboczą portów pfSense.
+- Do weryfikacji instalacji, uaktualniania, blokowania i usuwania używaj jednorazowego laboratorium pfSense.
+
+Przed pakowaniem ustaw `PFSENSE_PORTS_DIR` na kopię roboczą portów FreeBSD pfSense. Kopia musi zawierać `Mk/bsd.port.mk`, a miejsce docelowe `sysutils/pfSense-pkg-Sinkhole` musi być wolne dla tymczasowej kopii kompilacji.
+
+## Instalowanie zależności \{#install-dependencies}
+
+Z katalogu głównego repozytorium:
+
+```sh
+npm install
+```
+
+Nova odczytuje obszary robocze z `nova.config.json`. Uruchamiaj polecenia obszarów roboczych z katalogu głównego, chyba że celowo diagnozujesz węższe polecenie pakietu.
+
+## Sprawdzanie każdej zmiany \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` uruchamia linting, kontrolę typów i testy głównego obszaru roboczego, pakietu i dokumentacji. `npm run build` przygotowuje port pfSense i tworzy kompilację produkcyjną dokumentacji w katalogu `build/`.
+
+Jeśli host nie ma użytecznego środowiska PHP, `SINKHOLE_SKIP_PHP_TESTS=1 npm run check` uruchamia wszystkie dostępne kontrole, ale nie zastępuje wymaganych testów pakietu przed wydaniem. Zmiany pakietu wymagają również zestawów testów offline PHP, Python, przywracania i międzyjęzykowych opisanych w regułach repozytorium.
+
+## Budowanie pakietu wydania \{#build-the-release-package}
+
+Po `npm run build` uruchom końcowe polecenie pakowania w FreeBSD:
+
+```sh
+npm run deploy
+```
+
+Skrypt wdrożenia uruchamia `make package` w skonfigurowanej kopii portów, przebudowuje manifest jako kluczowy z `FreeBSD:*`, weryfikuje obie właściwości oraz zapisuje wersjonowane i stabilne pliki `.pkg` wraz z plikami SHA-256 w `packages/sinkhole/build/release/`.
+
+Polecenie celowo kończy się niepowodzeniem na hostach innych niż FreeBSD lub bez `PFSENSE_PORTS_DIR`. Nigdy nie zastępuj artefaktu wydania pakietem zbudowanym w innym systemie operacyjnym.
+
+## Rejestrowanie zmiany \{#record-the-change}
+
+W miarę wprowadzania zmian używaj przepływu pracy dziennika zmian Nova:
+
+```sh
+npm run changelog
+```
+
+Wybierz obszar roboczy, którego dotyczy zmiana, oraz kategorię informacji o wydaniu odpowiadającą zmianie widocznej dla użytkownika. Zachowaj jeden spójny wpis na zmianę i stosuj wymagany w repozytorium styl rozkazujący w czasie teraźniejszym.
+
+## Tworzenie wydania \{#cut-a-release}
+
+1. Uruchom `npm run check` i `npm run build` z czystego kandydata do wydania.
+2. Uruchom `nova utility changelog --release`, aby wybrać wersję, zaktualizować wersje pakietów i zapisać dzienniki zmian.
+3. Uruchom `npm run deploy` na skonfigurowanym systemie budującym FreeBSD.
+4. Zainstaluj i uaktualnij artefakt, przetestuj blokowanie, a następnie usuń go w jednorazowym laboratorium pfSense.
+5. Opublikuj wydanie GitHub z wersjonowanymi i stabilnymi zasobami pakietu oraz sum kontrolnych.
+
+Opublikowanie wydania uruchamia przepływ pracy artefaktów pakietu i przepływ pracy wdrażania dokumentacji. Wydanie pfSense nie jest oznaczane jako obsługiwane, dopóki nie przejdzie pełnej weryfikacji laboratoryjnej.
+
+## Zmiany dokumentacji \{#documentation-changes}
+
+Używaj jawnych angielskich identyfikatorów nagłówków, takich jak `{#build-and-release}`, aby przetłumaczone strony mogły zachować stabilne kotwice. Formatuj tabele Markdown poleceniem `npx nova recipe misc fix-markdown-tables`, a następnie uruchom te same główne polecenia kontroli i kompilacji.
+
+Strony angielskie są źródłem dla wszystkich 17 przetłumaczonych wersji językowych. Nie tłumacz nazw produktów, zachowuj dokładnie kod, ścieżki i angielskie kotwice oraz nie obiecuj funkcji, które nie zostały jeszcze zaimplementowane.
+

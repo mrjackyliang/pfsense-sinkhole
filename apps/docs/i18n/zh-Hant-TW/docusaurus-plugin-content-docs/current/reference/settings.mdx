@@ -1,0 +1,146 @@
+---
+id: settings
+title: 設定參考
+description: 查找 Sinkhole 字段、預設值、計劃、清單和作用域選擇、警報限制、Bypass 保護、IP 策略、更新檢查和語言行為。
+keywords:
+  - sinkhole for pfsense
+  - 設定
+  - 預設值
+  - webgui
+  - 配置
+tags:
+  - reference
+  - settings
+  - webgui
+---
+
+查找 **Firewall → Sinkhole** 下每個 Sinkhole 配置區域的用途和預設行為。
+
+## General \{#general}
+
+| 字段               | 預設值   | 說明                                                                  |
+|------------------|-------|---------------------------------------------------------------------|
+| Enable           | Off   | 啓用計劃清單更新和 Sinkhole 的 DNS Resolver 集成。                               |
+| Update Frequency | Daily | 選擇 Hourly、Every 6 hours、Daily 或 Weekly 的 DNS、Bypass 和 IP/國家或地區清單計劃。 |
+| Keep Settings    | On    | 刪除套件時保留配置和持久化已儲存資料。                                                 |
+
+計劃時間使用穩定的隨機組成部分。Hourly 在一個穩定分鐘執行；Every 6 hours 每六小時在同一分鐘執行；Daily 在 `00:<minute>` 執行；Weekly 在星期日 `00:<minute>` 執行。
+
+## 套件更新 \{#package-updates}
+
+| 字段                   | 預設值    | 說明                                             |
+|----------------------|--------|------------------------------------------------|
+| Update Checks        | Weekly | 選擇 Daily、Weekly、Monthly 或 Never 檢查新 GitHub 版本。 |
+| Remote Notifications | Off    | 還會通過 pfSense 中配置的遠程服務發送每個新版本通知。                |
+
+每個新版本會創建一條本地 pfSense 通知。**About → Check Now** 會立即執行同一個有界版本檢查，而不更改計劃。
+
+## Lists \{#lists}
+
+| 字段              | 預設值   | 說明                            |
+|-----------------|-------|-------------------------------|
+| Name            | Empty | 分配、警報和 Status 使用的本地標籤。        |
+| URL             | Empty | 不含嵌入憑據的 HTTP 或 HTTPS 來源。      |
+| Enabled         | On    | 在分配後將來源納入更新和編譯策略。             |
+| Global          | On    | 在設備和網路決定之後將清單應用於每個用戶端。        |
+| Allowed Domains | Empty | 每行一個全局允許域名；每個項目都允許該域名及其所有子域名。 |
+
+**Add from Catalog** 按需搜索 AdGuard Home 清單註冊表和 pfBlockerNG 源目錄。新增結果會創建與手動輸入 URL 相同的普通行。
+
+繞過來源會從此目錄中排除。
+
+## 服務 \{#services}
+
+每個範圍的服務選擇預設為空。由專用 Bypass 保護涵蓋的登錄服務會從「服務」中隱藏，並從已儲存的選擇中移除；Private Relay 只能在 Bypass 分頁設定。
+
+## Network Scopes \{#network-scopes}
+
+| 字段              | 預設值   | 說明                                         |
+|-----------------|-------|--------------------------------------------|
+| Interface       | Empty | 其當前 IPv4 和 IPv6 子網用於識別網路的已配置 pfSense 介面。   |
+| Lists           | Empty | 封鎖該網路中用戶端的其他 DNS 清單。                       |
+| Allowed Domains | Empty | 每行一個網路例外；每個項目都在該網路清單和所有全局策略之前允許該域名及其所有子域名。 |
+| Enabled         | On    | 使該行參與用戶端匹配和編譯策略。                           |
+
+每個介面只能出現一次。不可用的已儲存介面仍會顯示以供修正，而不會被丟棄。
+
+## Device Scopes \{#device-scopes}
+
+| 字段                  | 預設值        | 說明                                               |
+|---------------------|------------|--------------------------------------------------|
+| Name                | Empty      | 在策略和 Status 中顯示的本地標籤。                            |
+| Identified By       | IP address | 選擇 IP address、DHCP static mapping 或 MAC address。 |
+| IP or MAC Address   | Empty      | 選擇 IP address 或 MAC address 時使用的準確識別碼。           |
+| DHCP Static Mapping | Empty      | 使用該識別方式時選擇的現有映射。                                 |
+| Lists               | Empty      | 封鎖該設備的其他 DNS 清單。                                 |
+| Allowed Domains     | Empty      | 每行一個設備例外；每個項目都在所有網路和全局決定之前允許該域名及其所有子域名。          |
+| Enabled             | On         | 使該行參與用戶端匹配和編譯策略。                                 |
+
+靜態映射會使用其配置地址以及為映射 MAC 觀察到的當前地址。MAC 行使用當前 ARP、NDP 和 DHCP 租約資料。
+
+## Alert Rules \{#alert-rules}
+
+| 字段                   | 預設值      | 說明                                   |
+|----------------------|----------|--------------------------------------|
+| Description          | Empty    | 規則的本地標籤。                             |
+| Lists                | Any      | 匹配任意清單，或只匹配選定的已配置清單。                 |
+| Clients              | Everyone | 匹配所有人，或匹配選定的網路和設備作用域。                |
+| Repeat After         | 60       | 同一規則、用戶端、域名和清單再次通知前的分鐘數；接受 1 至 1440。 |
+| WebGUI Notice        | On       | 規則匹配時新增 pfSense 通知。                  |
+| Remote Notifications | On       | 規則匹配時使用 pfSense 配置的通知服務。             |
+| Enabled              | On       | 將規則納入編譯警報策略。                         |
+
+每分鐘處理器每次執行最多發送 20 條消息，每條規則每小時最多發送 60 條，隨後匯總溢出。它最多保留 50 條未讀 Sinkhole WebGUI 通知，並使用 40 秒執行預算；超過 10 分鐘的事件視為過期。
+
+## Bypass 保護 \{#bypass-protection}
+
+| 字段                  | 預設值   | 說明                                                    |
+|---------------------|-------|-------------------------------------------------------|
+| Apply to            | Empty | 所有 Bypass 保護共用的面向用戶端到達介面。                             |
+| Redirect            | Off   | 將選定介面上的普通 UDP 和 TCP 端口 53 流量傳送到防火牆。                   |
+| Exempt Sources      | Empty | 每行一個繞過普通 DNS 重定向的 IP 地址、CIDR、別名或 `This Firewall` 項目。  |
+| Exempt Destinations | Empty | 每行一個繞過普通 DNS 重定向的目標 IP 地址、CIDR 或別名。                   |
+| TLS and QUIC        | Off   | 阻止前往防火牆以外目標的 TCP 和 UDP 端口 853 流量。                     |
+| Providers           | Off   | 阻止已啟用的 **Encrypted DNS** Bypass Lists 中的名稱和地址。        |
+| Firefox             | Off   | 對 Firefox 的自動 DNS-over-HTTPS 金絲雀名稱及其子網域傳回 `NXDOMAIN`。 |
+| Private Relay       | Off   | 對 Apple 的兩個 Private Relay 可用性名稱傳回 `NXDOMAIN`。         |
+| Discovery           | Off   | 保持 DDR 不變、公告防火牆的 DNS over TLS，或傳回不含記錄的 `NOERROR` 回應。  |
+| Tor                 | Off   | 阻止已啟用的 **Tor** Bypass Lists 中的名稱和地址。                  |
+| VPN providers       | Off   | 阻止已啟用的 **VPN** Bypass Lists 中的名稱和地址。                  |
+| Standard VPN ports  | Off   | 阻止前往防火牆以外目標的 OpenVPN、WireGuard、IPsec UDP 端口和 ESP。     |
+
+必須所有已儲存的重定向豁免都有效，才會使用任何重定向規則。只有 Resolver 在 `127.0.0.1` 監聽時 IPv4 才使用它，否則使用介面地址；IPv6 始終使用介面地址。**Discovery → Advertise** 要求 DNS Resolver 的 SSL/TLS 服務和憑證主機名稱。
+
+### Bypass Lists \{#bypass-lists}
+
+| 字段      | 預設值           | 說明                                         |
+|---------|---------------|--------------------------------------------|
+| Name    | Empty         | 在 Bypass 和 Status 上顯示的本機標籤。                |
+| Kind    | Encrypted DNS | 選擇 **Encrypted DNS**、**Tor** 或 **VPN** 原則。 |
+| URL     | Empty         | 包含混合網域、地址和 CIDR 的 HTTP 或 HTTPS 來源。         |
+| Enabled | Off           | 將已儲存清單納入排程擷取及其對應的已啟用保護。                    |
+
+Bypass List 輸入每行使用一個項目，並支援 `#` 註解。擷取失敗時會保留上次成功儲存的副本。清單網域的允許決定優先於 Bypass List 名稱，但不優先於 Firefox、Private Relay 或 Discovery 訊號。
+
+**Add from Catalog** 只會在開啟或重新整理時搜尋 AdGuard Home 登錄以及 pfBlockerNG 的 DNS、IPv4 和 IPv6 區段中的繞過來源。每個結果的種類固定為 **Encrypted DNS**、**Tor** 或 **VPN**，並新增為已啟用的 Bypass List。
+
+## IP and Country Blocking \{#ip-and-country-blocking}
+
+| 字段                  | 預設值   | 說明                           |
+|---------------------|-------|------------------------------|
+| Enable              | Off   | 啓用獨立載入的 `sinkhole/ip` 防火牆錨點。 |
+| Interfaces          | Empty | 應用封鎖規則的到達介面。                 |
+| Directions          | Empty | 選擇入站來源封鎖、出站目標封鎖或兩者。          |
+| Countries           | Empty | 每行一個 GeoLite2 兩字母國家或地區代碼。    |
+| MaxMind Account ID  | Empty | 用於獲取 GeoLite2 Country 歸檔的帳戶。 |
+| MaxMind License Key | Unset | 管理員提供的只寫金鑰；留空可保留已存儲值。        |
+| Clear License Key   | Off   | 儲存時刪除已存儲的 MaxMind 金鑰。        |
+| IP Allowlist        | Empty | 每行一個從最終封鎖表扣除的 IP 地址或 CIDR。   |
+
+每個 IP 清單行都有名稱、URL、IPv4/IPv6/Both 地址族選擇和 Enabled 開關。Sinkhole 還會從最終表中移除防火牆介面、網關和 DNS 地址，使自身規則不會封鎖受保護基礎設施。
+
+IP 目錄會排除屬於 Bypass 目錄的所有 Encrypted DNS、Tor 和 VPN 來源。
+
+## 語言 \{#language}
+
+Sinkhole WebGUI 遵循 pfSense 的語言設定，並為全部 18 個受支援的區域設定提供完整翻譯目錄。如果目錄鍵意外缺少，Sinkhole 會對該鍵回退至英語。

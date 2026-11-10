@@ -1,0 +1,81 @@
+---
+id: scopes
+title: Scopes en toegestane domeinen
+description: Wijs lijsten en toegestane domeinen toe aan globale, interface- en apparaatscopes en volg daarna voor elke DNS-query de exacte beslisvolgorde van meest naar minst specifiek.
+keywords:
+  - sinkhole voor pfsense
+  - scopes
+  - vlan-blokkering
+  - apparaatbeleid
+  - toegestane domeinen
+tags:
+  - configure
+  - scopes
+  - dns
+---
+
+Wijs lijsten en toegestane domeinen toe op globaal, netwerk- en apparaatniveau, zodat elke client het beleid voor de huidige locatie krijgt.
+
+## Waarom scopes gebruiken? \{#why-use-scopes}
+
+1. Geeft elke pfSense-interface of VLAN eigen beleid, terwijl globale regels voor iedereen behouden blijven.
+2. Geeft één apparaat een specifiekere beslissing zonder een afzonderlijke DNS-server te vereisen.
+3. Laat toegestane domeinen fout-positieve blokkeringen corrigeren op het niveau waar dat nodig is, zonder een volledige lijst te verwijderen.
+4. Houdt clientadressen gescheiden van gecompileerde lijsten, zodat wijzigingen in DHCP, buren of interfaces Unbound niet herladen.
+
+## Globale scope \{#global-scope}
+
+Een lijst waarvoor **Global** is geselecteerd, wordt na apparaat- en netwerkbeslissingen op elke client toegepast. Globale toegestane domeinen worden op het tabblad **Lists** ingevoerd en laten het genoemde domein en de subdomeinen ervan door globale lijsten.
+
+Een client die met geen enkele ingeschakelde netwerk- of apparaatscope overeenkomt, krijgt alleen dit niveau.
+
+## Netwerkscopes \{#network-scopes}
+
+Open **Firewall → Sinkhole → Scopes** en selecteer vervolgens **Add** onder de tabel Networks. De editor gebruikt standaard LAN, of de eerste beschikbare interface die geen WAN is, en laat interfaces weg die al een netwerkscope hebben. Een client behoort tot dat netwerk wanneer het adres binnen een van de huidige IPv4- of IPv6-subnetten van de interface valt.
+
+Elke netwerkrij selecteert aanvullende lijsten, toegestane domeinen en of de scope is ingeschakeld. Na opslaan keert u terug naar Scopes; selecteer het potlood of dubbelklik op een rij om deze te bewerken. Een apparaat dat van netwerk wisselt, krijgt het beleid voor het netwerk dat met het huidige adres overeenkomt.
+
+## Apparaatscopes \{#device-scopes}
+
+Selecteer **Add** onder de tabel Devices, voer een naam in en kies één identificatiemethode. De editor toont alleen het identificatieveld dat bij de geselecteerde methode hoort:
+
+| Methode             | Adressen die voor het apparaat worden gebruikt                                                             |
+|---------------------|------------------------------------------------------------------------------------------------------------|
+| IP address          | Het geconfigureerde IPv4- of IPv6-adres.                                                                   |
+| DHCP static mapping | Het geconfigureerde adres plus huidige adressen die voor het MAC-adres van de toewijzing zijn waargenomen. |
+| MAC address         | Huidige ARP-, NDP- en DHCP-leaseadressen voor dat MAC-adres.                                               |
+
+De apparaatrij selecteert de lijsten, toegestane domeinen en inschakelstatus. Na opslaan keert u terug naar Scopes; selecteer het potlood of dubbelklik op een rij om deze te bewerken. Een achtergrondtaak vernieuwt huidige subnetten en apparaatadressen elke minuut wanneer DNS-blokkering een ingeschakelde netwerk- of apparaatscope heeft, of wanneer Bypass-DNS-beveiliging clientherkenning nodig heeft. Pakket-Sync start dezelfde vernieuwing alleen onder die voorwaarde.
+
+## Beslisvolgorde \{#decision-order}
+
+Het meest specifieke overeenkomende niveau beslist elke query in precies deze volgorde:
+
+1. **Device allowed domains** — Onmiddellijk toestaan wanneer de querynaam overeenkomt.
+2. **Device lists** — Onmiddellijk blokkeren wanneer een geselecteerde apparaatlijst overeenkomt.
+3. **Network allowed domains** — Onmiddellijk toestaan wanneer de netwerkuitzondering overeenkomt.
+4. **Network lists** — Onmiddellijk blokkeren wanneer een geselecteerde netwerklijst overeenkomt.
+5. **Global allowed domains** — Onmiddellijk toestaan wanneer de globale uitzondering overeenkomt.
+6. **Global lists** — Blokkeren wanneer een globale lijst overeenkomt.
+
+De query wordt doorgelaten wanneer geen enkele stap een beslissing neemt. Toegestane domeinen van een niveau hebben voorrang op lijsten die van minder specifieke niveaus zijn geërfd, maar niet op lijsten op een specifieker niveau dat al een beslissing heeft genomen.
+
+## Gedrag van toegestane domeinen \{#allowed-domain-behavior}
+
+Elke vermelding van een toegestaan domein geldt voor het exacte domein en elk subdomein. Als u bijvoorbeeld `service.example` toestaat, wordt `api.service.example` op dat niveau ook toegestaan.
+
+- Een apparaatuitzondering kan apparaat-, netwerk- en globale lijsten doorlaten, omdat deze eerst wordt gecontroleerd.
+- Een netwerkuitzondering kan netwerk- en globale lijsten doorlaten, maar geen beslissing van een apparaatlijst.
+- Een globale uitzondering kan alleen globale lijsten doorlaten.
+
+## Adresconflicten \{#address-conflicts}
+
+Wanneer twee apparaatrijen hetzelfde huidige adres claimen, krijgt het eerste apparaat in de tabelvolgorde voorrang. **Status → Scopes** toont het adres voor elke betrokken rij onder **Conflict**, zodat de volgorde of identificatiegegevens kunnen worden gecorrigeerd.
+
+## Een scope controleren \{#verify-a-scope}
+
+1. Voer `/usr/local/sbin/sinkhole --refresh-clients` uit of wacht op de vernieuwing per minuut.
+2. Open **Status → Scopes** en controleer de huidige subnetten van het netwerk en de huidige adressen van het apparaat.
+3. Vraag een naam op vanaf een client in die scope en vergelijk het resultaat met de bovenstaande beslisvolgorde.
+4. Controleer op een adresconflict voordat u op apparaatspecifiek gedrag vertrouwt.
+

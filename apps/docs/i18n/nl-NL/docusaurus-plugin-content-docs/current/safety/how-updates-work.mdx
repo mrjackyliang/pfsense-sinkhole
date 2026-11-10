@@ -1,0 +1,66 @@
+---
+id: how-updates-work
+title: Hoe updates werken
+description: Begrijp updates van opgeslagen lijsten, atomaire terugval naar de laatste geldige kopie, lokale compilatie en uitrol, verwerking van Resolver-caches en gedeelde updatevergrendeling.
+keywords:
+  - sinkhole voor pfsense
+  - lijstupdates
+  - laatste geldige kopie
+  - unbound-herlading
+  - updatevergrendeling
+tags:
+  - safety
+  - updates
+  - availability
+---
+
+Sinkhole scheidt het downloaden van de DNS-service, zodat een externe bron nooit in het querypad van de Resolver staat.
+
+## Updateproces voor DNS-lijsten \{#dns-list-update-flow}
+
+Voor elke ingeschakelde DNS-lijst doet Sinkhole het volgende:
+
+1. Downloadt de bron met begrensde tijd- en groottelimieten.
+2. Analyseert ondersteunde vermeldingen in hosts-, eenvoudig domein- en adblock-achtige indeling tot een tijdelijke genormaliseerde verzameling.
+3. Vervangt de opgeslagen kopie pas atomair nadat de nieuwe inhoud de validatie heeft doorstaan.
+4. Compileert globaal, netwerk-, apparaat-, toegestaan-domein- en waarschuwingsbeleid uit lokaal opgeslagen gegevens.
+5. Rolt een generatie uit onder `/var/unbound`, zodat de al geladen Python-module deze kan vinden.
+
+Bij een mislukte download, analyse of validatie wordt een fout vastgelegd zonder de laatste geldige kopie te vervangen. DNS blijft tijdens de volledige poging de uitgerolde lokale generatie gebruiken.
+
+## Uitrol en Resolver-caches \{#deployment-and-resolver-caches}
+
+De Unbound-module controleert tussen query's op een nieuw manifest en schakelt pas naar de volledige generatie over wanneer elk bestand waarnaar wordt verwezen gereed is. Status onderscheidt de gecompileerde, uitgerolde en geladen generatie-ID's, zodat elke fase kan worden gecontroleerd.
+
+Wanneer beleid geblokkeerde namen toevoegt of een geblokkeerde subboom uitbreidt, wacht Sinkhole totdat de module de nieuwe generatie meldt en herlaadt Unbound daarna eenmaal. De herlading wist bericht- en RRset-caches die alleen met `flush_zone` nog voor **Serve Expired** beschikbaar kunnen blijven.
+
+## Vernieuwing van clienttoewijzingen \{#client-map-refreshes}
+
+Netwerksubnetten en apparaatadressen worden los van de gecompileerde domeingegevens opgeslagen. Wanneer DNS-blokkering een ingeschakelde netwerk- of apparaatscope heeft, of wanneer Bypass-DNS-beveiliging clientherkenning nodig heeft, vernieuwt Sinkhole deze clienttoewijzing elke minuut zonder Unbound te herladen.
+
+Pakket-Sync start dezelfde vernieuwing alleen onder die voorwaarde. Dit dekt wijzigingen in interfaces, DHCP-leases, buren en statische toewijzingen die buiten een lijstupdate plaatsvinden. Nadat alle Sinkhole-functies zijn uitgeschakeld, verwijdert de volgende Sync de runtime-clienttoewijzing en de optionele RAM-schijfkopie.
+
+## Updateproces voor IP en landen \{#ip-and-country-update-flow}
+
+Wanneer IP- en landblokkering is ingeschakeld, downloadt dezelfde geplande of handmatige update ingeschakelde IP-lijsten en vernieuwt deze toepasselijke GeoLite2-gegevens. Sinkhole analyseert en voegt elke adresfamilie samen, trekt de toegestane lijst van de beheerder en beschermde firewalladressen af en vervangt daarna atomair de tabelbestanden per familie.
+
+Een bestaand `sinkhole/ip`-anker kan na een geslaagde update alleen een tabelupdate met `pfctl -T replace` ontvangen. Sync en de integriteitscontrole per minuut laden het volledige anker wanneer regels of tabellen ontbreken of verschillen.
+
+## Schema's en vergrendeling \{#schedules-and-locking}
+
+De standaardfrequentie voor lijstupdates is Daily. De schema's Hourly, Every 6 hours, Daily en Weekly gebruiken stabiele willekeurige minuutcomponenten, zodat de firewall het taakmoment niet bij elke opslag verplaatst.
+
+DNS-lijstupdates, IP-/landupdates, toepassingswerk voor de catalogus en automatische pakketupdates worden gecoördineerd via `/var/run/sinkhole-update.lock`. Een pakketactie Update wacht totdat een actieve lijstupdate is voltooid in plaats van het geïnstalleerde pakket eronder te wijzigen.
+
+## Catalogusvernieuwingen staan los \{#catalog-refreshes-are-separate}
+
+Het register van AdGuard Home en de feedcatalogus van pfBlockerNG worden alleen opgehaald wanneer de cataloguszoekfunctie wordt geopend of **Refresh** wordt geselecteerd. Hun laatste geldige cache kan één dag opnieuw worden gebruikt en een mislukte ophaalactie wijzigt geconfigureerde lijsten niet.
+
+Catalogusresultaten zijn ontdekkingsmetagegevens, geen beleid. Een resultaat beïnvloedt DNS- of IP-blokkering pas nadat het als een gewone geconfigureerde lijst is toegevoegd en het normale updateproces heeft voltooid.
+
+## Updatestatus lezen \{#read-update-state}
+
+Open **Firewall → Sinkhole → Status** en vergelijk bronfouten, aantallen opgeslagen vermeldingen, de vlag voor een actieve update en de gecompileerde, uitgerolde en geladen generaties. Vergelijk voor IP-blokkering ook de tabelaantallen en de status van het anker `sinkhole/ip`.
+
+Gebruik [Updates](/docs/reference/updates) voor controles van pakketversies en het gedrag van automatische updates. Gebruik [Probleemoplossing](/docs/operate/troubleshooting) wanneer een fase een fout meldt of blijft wachten.
+

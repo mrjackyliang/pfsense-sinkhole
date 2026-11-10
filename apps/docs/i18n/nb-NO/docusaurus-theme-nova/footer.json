@@ -1,0 +1,36 @@
+{
+  "layout.learn.title": {
+    "message": "Veiledninger"
+  },
+  "layout.resources.title": {
+    "message": "Ressurser"
+  },
+  "sections.learn.0.label": {
+    "message": "Installer Sinkhole"
+  },
+  "sections.learn.1.label": {
+    "message": "Lister og lagrede kopier"
+  },
+  "sections.learn.2.label": {
+    "message": "Avgrens DNS-policy"
+  },
+  "sections.learn.4.label": {
+    "message": "Feilsøking"
+  },
+  "sections.resources.0.label": {
+    "message": "Slik fungerer oppdateringer"
+  },
+  "sections.resources.1.label": {
+    "message": "Testing og verifisering"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense-dokumentasjon"
+  },
+  "sections.resources.3.label": {
+    "message": "Kildekode"
+  },
+  "copyright": {
+    "message": "Copyright © 2026 Jacky Liang. MIT.",
+    "description": "The footer copyright text"
+  }
+}

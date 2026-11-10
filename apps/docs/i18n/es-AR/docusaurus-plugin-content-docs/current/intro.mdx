@@ -1,0 +1,74 @@
+---
+id: intro
+title: Descripción general
+description: Bloquee sitios no deseados en pfSense con políticas separadas para toda la red, cada VLAN o un dispositivo, sin añadir otro host DNS.
+keywords:
+  - sinkhole for pfsense
+  - descripción general
+  - bloqueo dns
+  - política de red
+  - listas de bloqueo
+tags:
+  - setup
+  - overview
+  - dns
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Bloquee sitios no deseados con políticas separadas para toda la red, una VLAN o un dispositivo, todo dentro de pfSense.
+
+## Qué hace Sinkhole \{#what-sinkhole-does}
+
+Sinkhole for pfSense permite a familias y empleadores controlar qué <Terminology title="nombres o direcciones seleccionados para bloquear" to="/docs/reference/terminology#block-list">listas de bloqueo</Terminology> se aplican a cada parte de una red. Conserva las últimas copias válidas en el firewall para que el DNS responda inmediatamente después de un reinicio o una recarga mientras se descargan copias más recientes en segundo plano.
+
+Los nombres bloqueados responden con `0.0.0.0` o `::`. También se bloquea una cadena CNAME que alcance un nombre bloqueado, mientras que un nombre permitido en el nivel decisivo sigue permitido.
+
+## ¿Por qué usar Sinkhole? \{#why-use-sinkhole}
+
+1. Aplica políticas en <Terminology title="dónde se aplica una lista de bloqueo" to="/docs/reference/terminology#scope">ámbitos</Terminology> globales, de red y de dispositivo para que niños, invitados, empleados y dispositivos individuales puedan recibir listas diferentes.
+2. Usa <Terminology title="última copia válida conservada en el firewall" to="/docs/reference/terminology#saved-list">listas guardadas</Terminology> para que el DNS nunca espere una descarga ni pierda una lista funcional tras una actualización fallida.
+3. Envía una <Terminology title="coincidencia de lista y cliente que envía una notificación" to="/docs/reference/terminology#alert-rule">regla de alerta</Terminology> solo para las listas y los clientes que elija, mediante el sistema de notificaciones propio de pfSense.
+4. Proporciona <Terminology title="controles que mantienen a los clientes seleccionados en rutas DNS inspeccionadas" to="/docs/reference/terminology#bypass-protection">protección contra evasiones</Terminology> opcional para DNS simple, descubrimiento y proveedores de DNS cifrado, relays de Tor y proveedores o puertos de VPN.
+5. Añade bloqueo IP y por país por separado cuando el filtrado DNS no basta, sin requerir otro host ni un servicio en la nube.
+
+## Cómo funciona la integración DNS \{#how-dns-integration-works}
+
+Sinkhole se ejecuta como módulo Python dentro del <Terminology title="servicio DNS de pfSense basado en Unbound" to="/docs/reference/terminology#dns-resolver">DNS Resolver</Terminology> de pfSense, basado en Unbound. El módulo carga únicamente archivos locales compilados cuando se inicia Unbound y observa generaciones locales más recientes sin hacer esperar ninguna consulta DNS.
+
+El DNS Resolver ofrece un único espacio para un script Python. Sinkhole solo lo ocupa cuando está libre o ya pertenece a Sinkhole, y se niega a sustituir a otro propietario, como el módulo DNSBL de pfBlockerNG.
+
+:::warning
+
+Sinkhole y pfBlockerNG DNSBL no pueden filtrar DNS al mismo tiempo porque ambos necesitan el único espacio para scripts Python del Resolver.
+
+:::
+
+## Qué permanece bajo su control \{#what-stays-under-your-control}
+
+- **Lists** — Añada por URL las fuentes en las que confíe o búsquelas mediante la <Terminology title="búsqueda de catálogos bajo demanda en la WebGUI" to="/docs/reference/terminology#popular-list-search">búsqueda de listas populares</Terminology> neutral. Sinkhole no publica ni recomienda ninguna lista.
+- **Scopes** — Elija listas globales, listas para una interfaz o VLAN de pfSense y listas para un dispositivo identificado por dirección IP, asignación DHCP estática o dirección MAC.
+- **Allowed domains** — Permita un dominio y sus subdominios en el nivel global, de red o de dispositivo sin retirar una lista completa.
+- **Alerts** — Elija las combinaciones de lista y cliente que crean avisos locales en la WebGUI o usan los servicios de notificación remota configurados en pfSense.
+- **Bypass** — Mantenga todos los controles desactivados o seleccione interfaces orientadas a clientes y active explícitamente la redirección de DNS simple, las señales de DNS cifrado, las listas de proveedores o las protecciones de túneles.
+- **IP blocking** — Manténgalo desactivado o seleccione listas IP, países, interfaces, direcciones y direcciones permitidas.
+
+## Límites \{#limits}
+
+El bloqueo DNS no constituye un control completo del tráfico. La protección contra evasiones solo cubre rutas alternativas comunes cuando se activa cada control y no puede identificar todos los túneles cifrados o personalizados.
+
+Los eventos de bloqueo y los avisos revelan qué intentaron visitar los clientes. Esa información permanece en el firewall, salvo las notificaciones que decida enviar mediante pfSense.
+
+## Idiomas \{#languages}
+
+La WebGUI usa el idioma seleccionado en pfSense y recurre al inglés cuando todavía no hay una traducción. Las traducciones adicionales de la WebGUI están en curso y mantienen ese fallback hasta que se revise cada catálogo.
+
+El sitio de documentación ofrece inglés y las otras 17 configuraciones regionales de pfSense. Las páginas traducidas conservan las anclas en inglés para que los enlaces lleguen a la misma sección en todos los idiomas.
+
+## Siguientes pasos \{#next-steps}
+
+- **[Instalar el paquete](/docs/installation)** — Verifique e instale el paquete estable de la versión publicada.
+- **[Configurar Sinkhole](/docs/first-run)** — Añada una primera lista, elija su ámbito y verifique la generación activa.
+- **[Comprender los ámbitos](/docs/configure/scopes)** — Siga el orden exacto de decisión para dispositivo, red y nivel global.
+- **[Revisar el modelo de seguridad](/docs/safety/how-updates-work)** — Vea cómo las copias guardadas y el despliegue atómico mantienen disponible el DNS.

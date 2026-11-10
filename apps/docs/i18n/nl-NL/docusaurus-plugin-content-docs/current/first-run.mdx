@@ -1,0 +1,74 @@
+---
+id: first-run
+title: Sinkhole instellen
+description: Voeg een vertrouwde lijst toe, kies globaal beleid of beleid per scope, schakel de Resolver-integratie in, voer de eerste update uit en controleer de actieve Sinkhole-generatie.
+keywords:
+  - sinkhole voor pfsense
+  - eerste gebruik
+  - dns resolver
+  - blokkeerlijst
+  - status
+tags:
+  - setup
+  - first run
+  - dns
+sidebar_position: 3
+---
+
+Stel één vertrouwde lijst in en controleer de opgeslagen, gecompileerde, uitgerolde en geladen status voordat u het beleid uitbreidt.
+
+## De Resolver controleren \{#check-the-resolver}
+
+1. Open **Services → DNS Resolver** en controleer of de Resolver is ingeschakeld.
+2. Als pfBlockerNG DNSBL is ingeschakeld, kiest u welk pakket de DNS-filtering beheert, omdat beide pakketten niet tegelijk de Python-positie van Unbound kunnen gebruiken.
+3. Open **Firewall → Sinkhole → General** en laat **Enable** uitgeschakeld terwijl u het eerste beleid voorbereidt.
+
+Sinkhole weigert **Enable** op te slaan zolang een ander Python-script de positie bezit. Als u Sinkhole later uitschakelt, worden de eerdere Python-instellingen van de Resolver hersteld wanneer Sinkhole daar nog eigenaar van is.
+
+## Een lijst toevoegen \{#add-a-list}
+
+1. Open **Lists** en voeg de URL toe van een bron die u vertrouwt, of open **Add from Catalog** om de twee catalogi op aanvraag te doorzoeken.
+2. Geef de bron een lokale naam en laat **Enabled** geselecteerd, zodat Sinkhole deze downloadt.
+3. Laat **Global** alleen geselecteerd wanneer de lijst na elke apparaat- en netwerkregel moet worden toegepast.
+4. Voeg eventuele globale **Allowed Domains** toe, één domein per regel, wanneer een bekende fout-positieve blokkering moet worden doorgelaten.
+
+Sinkhole beveelt geen enkele bron aan. [Lijsten en opgeslagen kopieën](/docs/configure/lists) beschrijft de geaccepteerde indelingen en hoe catalogusresultaten gewone lijstrijen worden.
+
+## Optionele scopes toevoegen \{#add-optional-scopes}
+
+Open **Scopes** wanneer een netwerk of apparaat aanvullend beleid naast het globale niveau nodig heeft:
+
+- Voeg een **Network** toe voor één geconfigureerde pfSense-interface en selecteer vervolgens de lijsten en toegestane domeinen.
+- Voeg een **Device** toe op basis van IP-adres, statische DHCP-toewijzing of MAC-adres en selecteer vervolgens de lijsten en toegestane domeinen.
+
+Een apparaat erft het netwerk waarop het zich momenteel bevindt, en het netwerk erft globale lijsten. [Scopes en toegestane domeinen](/docs/configure/scopes) toont de beslisvolgorde die bepaalt of een naam wordt doorgelaten of geblokkeerd.
+
+## Inschakelen en bijwerken \{#enable-and-update}
+
+1. Ga terug naar **General** en selecteer **Enable**.
+2. Kies **Update Frequency** voor ingeschakelde DNS-lijsten en sla de instellingen op.
+3. Open **Status** en selecteer **Update Now**.
+4. Wacht totdat **Update running** weer `No` aangeeft.
+
+De schakelaar in General schakelt geplande DNS-lijstupdates en de integratie met de DNS Resolver in. Ingeschakelde Bypass Lists en IP-/landbeleid gebruiken onafhankelijk hetzelfde updateschema; elke Bypass- en IP-beveiliging blijft uit totdat een beheerder deze inschakelt.
+
+## De actieve status controleren \{#verify-the-active-state}
+
+De eerste update is gereed wanneer de Status-panelen alle volgende resultaten tonen:
+
+- **Lists** toont voor elke werkende bron een aantal vermeldingen groter dan nul en een **Last Successful Update**.
+- **Compile Needed** en **Deployment Needed** tonen `No` in **Summary**.
+- **Compiled Generation**, **Deployed Generation** en **Loaded Generation** identificeren de huidige generatie.
+- **DNS Resolver Python Script Owner** toont `sinkhole`.
+- **Sinkhole** toont `Active` zonder reden.
+
+Als de pagina een reden voor inactiviteit of een wachtende generatie meldt, wordt de status uitgelegd in [Status](/docs/operate/status) en worden de waarschijnlijke oorzaken behandeld in [Probleemoplossing](/docs/operate/troubleshooting).
+
+## Waarschuwingen en Bypass-beveiliging zorgvuldig toevoegen \{#add-alerts-and-bypass-protection-carefully}
+
+Het wordt aanbevolen DNS-antwoorden per scope te controleren voordat u een waarschuwingsregel of Bypass-beveiliging toevoegt. Waarschuwingen kunnen clientactiviteit onthullen, terwijl Bypass-instellingen verkeer dat op geselecteerde interfaces aankomt kunnen omleiden of blokkeren.
+
+- [Waarschuwingen](/docs/configure/alerts) beperkt de verzending op basis van lijst, client, herhaalvenster en vaste limieten.
+- [Beveiliging tegen omzeiling](/docs/configure/bypass-protection) behandelt de omleiding van gewone DNS, signalen voor versleutelde DNS, providerlijsten en tunnelbeveiliging.
+- [IP- en landblokkering](/docs/configure/ip-and-country-blocking) behandelt het onafhankelijke pakketfilter dat standaard is uitgeschakeld.
+

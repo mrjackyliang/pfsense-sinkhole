@@ -1,0 +1,110 @@
+---
+id: troubleshooting
+title: Feilsøking
+description: Diagnostiser inaktiv Resolver-integrasjon, utdatert policy, konflikter i klientkartet, Bypass-tilstand, avvik i IP-ankeret, undertrykte varsler og mislykkede oppdateringer.
+keywords:
+  - sinkhole for pfsense
+  - feilsøking
+  - dns resolver
+  - klientkart
+  - mislykket oppdatering
+tags:
+  - operate
+  - troubleshooting
+  - diagnostics
+---
+
+Spor et problem fra Status-panelet og systemloggen til den bestemte listen, omfanget, regelen, lytteren, låsen eller kjøretidstilstanden som forårsaket det.
+
+## Her finner du informasjon \{#where-to-look}
+
+- **Firewall → Sinkhole → Status** viser tilstanden for lister, kataloger, klientkart, varsler, Bypass, IP, kompilering, distribusjon og Resolver.
+- **Status → System Logs → System → General** viser driftslinjer som begynner med `Sinkhole:`.
+- `/usr/local/sbin/sinkhole --help` skriver ut de støttede vedlikeholdsmodusene.
+
+Det anbefales å bevare Status-verdiene og relevante logglinjer før du endrer konfigurasjonen. Fullstendige `config.xml`-utdata kan inneholde hemmeligheter og bør ikke vedlegges en rapport.
+
+## Sinkhole er inaktiv \{#sinkhole-is-inactive}
+
+Bruk årsaken etter **Summary → Sinkhole**:
+
+- **Sinkhole is disabled** — Velg **General → Enable** etter at Resolver og Python-plassen er klare.
+- **DNS Resolver is disabled** — Aktiver og bruk Resolver før du lagrer Sinkhole.
+- **Python script slot is owned** — Deaktiver den motstridende DNSBL-/Python-integrasjonen, eller la Sinkhole være deaktivert. Sinkhole erstatter den ikke.
+- **Python mode or position changed** — Lagre General-innstillingene i Sinkhole på nytt, slik at Sync kan gjenopprette Python-modus og `pre_validator` mens Sinkhole eier plassen.
+- **Runtime files unavailable** — Kjør pakke-Sync ved å lagre General-innstillingene, eller start på nytt og la pakke-Sync i pfSense gjenopprette RAM-diskfilene.
+
+På systemer med `/var` i minnet gjenoppretter pakke-Sync ved hver oppstart manglende kjøretidsfiler og starter Unbound på nytt ved behov etter at pakkene starter. En manglende kjøretidsfil tidlig etter oppstart skal derfor repareres under pakkestarten.
+
+## Et domene blokkeres ikke \{#a-domain-is-not-blocked}
+
+1. Bekreft at listen er aktivert og har lagrede oppføringer uten at den siste gyldige kopien er erstattet etter en feil.
+2. Følg [avgjørelsesrekkefølgen](/docs/configure/scopes#decision-order) for klientens gjeldende enhet og nettverk.
+3. Bekreft at **Compile Needed** og **Deployment Needed** er `No`, og sammenlign deretter de kompilerte, distribuerte og lastede generasjonene.
+4. Bekreft at klienten spør pfSense direkte eller gjennom **Bypass → Redirect**.
+
+Unbound svarer på de innebygde sonene `test.`, `invalid.`, `onion.` og `localhost.` før Python-moduler. En direkte test under en av disse sonene tester ikke Sinkhole.
+
+Når en distribusjon legger til navn eller utvider et deltre, laster Sinkhole Unbound på nytt etter at den nye generasjonen er lastet, fordi `flush_zone` bare merker bufferoppføringer som utløpt. Unbound 1.18 kan fortsatt levere disse oppføringene når **Serve Expired** er aktivert, mens `unbound-control reload` tømmer meldings- og RRset-bufferne.
+
+## Et CNAME-resultat ser ufullstendig ut \{#a-cname-result-looks-incomplete}
+
+En spørring der CNAME-målet står på listen, blokkeres selv om det opprinnelige navnet ikke står på listen. Hvis målet på listen ikke har en oppføring av den forespurte typen, for eksempel AAAA, kan svaret beholde CNAME uten å inneholde en adresse.
+
+Et tillatt spørringsnavn forblir tillatt. Dette hindrer et mindre spesifikt CNAME-mål i å overstyre en eksplisitt avgjørelse om tillatt domene for navnet som ble spurt om.
+
+## En enhet får feil policy \{#a-device-gets-the-wrong-policy}
+
+- Kjør `/usr/local/sbin/sinkhole --refresh-clients`, og undersøk **Status → Scopes**.
+- Bekreft at nettverksraden viser de gjeldende delnettene til grensesnittet, og at enhetsraden viser de gjeldende adressene.
+- Løs alle verdier for **Conflict**, fordi den første enheten i tabellrekkefølgen vinner en delt adresse.
+- For en statisk tilordning kontrollerer du både den konfigurerte adressen og gjeldende adresser som er observert for MAC-adressen.
+
+ISC-leietider kan være GMT eller lokal tid på brannmuren, avhengig av innstillingen for leietid på grensesnittet, mens Kea-leietider allerede er lokale. Sinkhole følger denne pfSense-semantikken når det avgjør om en leie er gjeldende.
+
+## Oppdatering av liste eller katalog mislyktes \{#list-or-catalog-update-failed}
+
+En mislykket DNS-, Bypass- eller IP-nedlasting, analyse eller validering beholder den forrige lagrede kopien og registrerer feilen. DNS fortsetter fra den distribuerte lokale generasjonen i stedet for å vente på kilden som mislyktes.
+
+Kataloger hentes bare når søket åpnes eller oppdateres, og en mislykket henting beholder den bufrede siste gyldige katalogen. Bekreft HTTPS-tilkobling, kilde-URL og Status-feilen før du tvinger frem en ny oppdatering.
+
+## Omdirigering av vanlig DNS er satt på pause eller mangler \{#plain-dns-redirect-is-paused-or-missing}
+
+- **Paused** — Rett eller fjern alle ugyldige unntak som vises i panelet Bypass.
+- **No family address** — Legg til familien på grensesnittet, eller godta at ingen regel kan genereres for familien.
+- **Resolver does not listen** — Endre **DNS Resolver → Network Interfaces**, eller fjern dette omdirigeringsvalget.
+- **Rules missing or out of date** — Vent på to observasjoner per minutt, og undersøk deretter **Last parse error** og systemloggene.
+- **Queries are refused** — Legg til klientnettverket i konfigurasjonen for tilgangskontroll i Resolver.
+
+Minuttkontrollen laster ikke filteret på nytt mens pakkelåsen i pfSense holdes, eller når pfSense allerede har avvist den uendrede regelteksten. Når den ugyldige konfigurasjonen endres, kan de to neste observasjonene avstemme den.
+
+IPv6-omdirigeringsmål bruker alltid grensesnittadressen fordi målt FreeBSD-atferd forkaster trafikk som er skrevet om til `::1` fra et grensesnitt som ikke er loopback. Unntak med blandede familier skrives som separate `inet`- og `inet6`-regler fordi målte FreeBSD 14 og 16 bare beholdt den første familien i en ukvalifisert blandet liste.
+
+## IP-blokkering samsvarer ikke med innstillingene \{#ip-blocking-does-not-match-settings}
+
+1. Bekreft at **IP and Country Blocking → State** er `On`, og at de tilsiktede grensesnittene og retningene er oppført.
+2. Kontroller det endelige antallet i familietabellene, linjer som er hoppet over, siste oppdatering og siste feil.
+3. Bekreft at **IP Anchor** er `Yes`. `Out of Date` betyr at det lastede ankeret ikke samsvarer med gjeldende filer eller innstillinger.
+4. Se gjennom tillatelseslisten, og husk at brannmur-, gateway- og DNS-adresser fjernes automatisk.
+
+Ankeret `sinkhole/ip` overlever vanlige omlastinger av pfSense-filteret og ligger foran pass-quick-regler gjennom den tidlige kroken for pakkeregler. Minuttkontrollen laster et tomt eller endret anker direkte på nytt, mens ankeret tømmes når funksjonen slås av.
+
+## Varsler kommer ikke \{#alerts-do-not-arrive}
+
+- Bekreft at regelen er aktivert, og at både listevalget og klientvalget samsvarer med det blokkerte svaret.
+- Sammenlign hendelsen med gjentakelsesvinduet for regelen og grensene på 20 per kjøring, 60 per regel per time og 50 uleste varsler.
+- Kontroller **Status → Alerts** for antall utdaterte, tilbakeholdte, forkastede eller feilaktige hendelser.
+- Test den konfigurerte eksterne tjenesten i pfSense separat under **System → Advanced → Notifications**.
+
+Hendelser eldre enn 10 minutter er utdaterte, og en kjøring stopper sending etter budsjettet på 40 sekunder, slik at gjenværende arbeid kan fortsette neste minutt. Teksten i WebGUI-varsler vises også i systemloggen til pfSense gjennom `file_notice()`.
+
+## Minnebruken er høy \{#memory-use-is-high}
+
+Målte tester med 300 000 navn økte Unbound RSS fra 41 MiB til 103 MiB, med toppminne for policyen på omtrent 157 byte per navn. Faktisk bruk avhenger av unike normaliserte navn, tilordninger til omfang og Resolver som kjører.
+
+Det anbefales å sammenligne antallet oppføringer i Status med Unbound-minnet før og etter at du legger til en stor kilde. Når en ubrukt liste deaktiveres, holdes den utenfor aktiv policy ved neste kompilering.
+
+## Rapporter et problem \{#report-a-problem}
+
+Åpne en [GitHub-issue](https://github.com/mrjackyliang/pfsense-sinkhole/issues) med Sinkhole-versjon, pfSense-utgave og -utgivelse, FreeBSD-utgivelse, nøyaktig Status-tilstand, trinn for å gjenskape problemet og rensede `Sinkhole:`-logglinjer. Ikke ta med MaxMind-legitimasjon, fullstendige konfigurasjonsfiler, listeinnhold eller private klient-/domenedata.
+

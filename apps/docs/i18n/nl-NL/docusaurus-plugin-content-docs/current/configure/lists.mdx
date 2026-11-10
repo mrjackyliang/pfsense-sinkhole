@@ -1,0 +1,101 @@
+---
+id: lists
+title: Lijsten en opgeslagen kopieën
+description: Voeg DNS-lijsten toe via URL of catalogus, gebruik hosts-, domein- en adblock-achtige indelingen, beheer globaal beleid en behoud de laatste geldige kopieën bij fouten.
+keywords:
+  - sinkhole voor pfsense
+  - blokkeerlijsten
+  - opgeslagen lijsten
+  - zoeken naar populaire lijsten
+  - toegestane domeinen
+tags:
+  - configure
+  - lists
+  - dns
+---
+
+import catalogSearch from './_assets_/lists-2.png';
+
+Voeg vertrouwde lijstbronnen toe en laat Sinkhole genormaliseerde, laatst geldige kopieën op de firewall bewaren voor onmiddellijk DNS-gebruik.
+
+## Waarom opgeslagen lijsten gebruiken? \{#why-use-saved-lists}
+
+1. Houdt DNS onafhankelijk van de host van een lijst, zodat een trage of mislukte download de naamomzetting niet onderbreekt.
+2. Downloadt elke bron eenmaal, zodat dezelfde opgeslagen kopie globale, netwerk- en apparaatscopes kan bedienen.
+3. Behoudt de vorige geldige kopie wanneer een nieuwe download of analyse mislukt, zodat defecte invoer geen werkend beleid vervangt.
+4. Werkt lijsten op de achtergrond bij, zodat een herstart of herlading van de Resolver nooit op het netwerk wacht.
+
+## Een lijst via URL toevoegen \{#add-a-list-by-url}
+
+Open **Firewall → Sinkhole → Lists**, selecteer **Add** onder de tabel met blokkeerlijsten en vul vervolgens **Add Block List** op de bewerkingspagina in:
+
+| Veld    | Beschrijving                                                              |
+|---------|---------------------------------------------------------------------------|
+| Name    | Lokaal label dat in toewijzingen, waarschuwingen en Status wordt getoond. |
+| URL     | HTTP- of HTTPS-bron zonder ingesloten referenties.                        |
+| Enabled | Downloadt de bron en maakt deze beschikbaar voor toegewezen scopes.       |
+| Global  | Past de bron na apparaat- en netwerkbeslissingen op elke client toe.      |
+
+Na opslaan keert u terug naar het tabblad Lists en wordt hetzelfde gevalideerde toepassingspad op de achtergrond gestart. Selecteer het potlood van een rij of dubbelklik op de rij om deze te bewerken. Een uitgeschakelde rij blijft geconfigureerd, maar wordt gedimd in de tabel en niet door het updateproces of het gecompileerde beleid gebruikt.
+
+## Geaccepteerde DNS-indelingen \{#accepted-dns-formats}
+
+Sinkhole accepteert de onderstaande standaardvormen en normaliseert geldige namen tot één opgeslagen domeinverzameling:
+
+| Indeling           | Voorbeeld                                     | Gedrag                                        |
+|--------------------|-----------------------------------------------|-----------------------------------------------|
+| Hosts file         | `0.0.0.0 blocked.example`                     | Blokkeert exact elke domeinnaam na het adres. |
+| Plain domain list  | `blocked.example`                             | Blokkeert exact de domeinnaam op elke regel.  |
+| Adblock-style rule | <code>{'\u007c\u007cblocked.example^'}</code> | Blokkeert de domeinnaam en elk subdomein.     |
+
+Gebruik de adblock-vorm `||name^` als één vermelding de naam en elk subdomein moet blokkeren.
+
+Cosmetische filters en onjuist gevormde regels worden geen DNS-beleid. Status meldt bronfouten, terwijl een mislukte lijst met een eerdere geldige kopie die kopie behoudt.
+
+## De catalogi doorzoeken \{#search-the-catalogs}
+
+Selecteer **Add from Catalog** op het tabblad Lists om het lijstregister van AdGuard Home en de DNS-sectie van de feedcatalogus van pfBlockerNG te doorzoeken. Sinkhole haalt beide alleen op wanneer de zoekfunctie wordt geopend of wanneer u **Refresh** selecteert; geen van beide catalogi wordt meegeleverd of volgens een schema gedownload.
+
+Resultaten worden als kaarten weergegeven. Gebruik de besturingselementen voor zoeken, bron en beheerder samen, selecteer een categoriechip en wissel **Group by** tussen **Category** en **Maintainer**. Categoriechips tonen aantallen voor de huidige zoek-, bron- en beheerderfilters, terwijl het beheerdersmenu de eigenaren met de meeste overeenkomende lijsten bovenaan zet.
+
+Elke kaart toont de lijstnaam, de beheerder of categorie, de broncatalogus, een beschrijving van twee regels, de startpagina en de status **Add** of **Added**. De kaarten tonen geen beoordelingen, badges of aanbevelingen. Als u **Add** selecteert, wordt een gewone lijstrij gemaakt waarvan de URL net als elke handmatig ingevoerde bron kan worden toegewezen.
+
+De regel **Contents** op elke kaart toont **Domains**. Bij het toevoegen van een catalogusresultaat blijft de catalogusnaam ongewijzigd.
+
+Cataloguskopieën worden één dag onder `/var/db` gecachet. Bij een mislukte vernieuwing blijft de laatste geldige cataloguskopie behouden en wordt de ophaalfout in Status getoond.
+
+<img src={catalogSearch} alt="Paneel Add from Catalog op het tabblad Lists met besturingselementen voor zoeken in de catalogus en de ophaalstatus" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Feeds die zijn toegewezen aan bypass-beveiliging voor Encrypted DNS, Tor of VPN verschijnen hier niet. Ze zijn alleen beschikbaar via **Add from Catalog** op het tabblad Bypass.
+
+## Globale toegestane domeinen instellen \{#set-global-allowed-domains}
+
+De sectie **Allowed Domains** onder de lijst- en cataloguspanelen definieert globale uitzonderingen. Elke regel laat dat domein en de subdomeinen ervan door de geërfde globale lijsten. Selecteer **Save** onder die sectie om de paginabrede instelling toe te passen.
+
+Een globaal toegestaan domein wordt na apparaat- en netwerkregels gecontroleerd. Het kan daarom geen lijst opheffen die de query al op een specifieker apparaat- of netwerkniveau heeft geblokkeerd.
+
+## De updatefrequentie kiezen \{#choose-the-update-frequency}
+
+De instelling **General → Update Frequency** beheert geplande DNS-lijstupdates en levert ook het updateschema wanneer IP-blokkering is ingeschakeld:
+
+| Instelling    | Schema                                                              |
+|---------------|---------------------------------------------------------------------|
+| Hourly        | Eenmaal per uur op de stabiele willekeurige minuut van de firewall. |
+| Every 6 hours | Elke zes uur op dezelfde stabiele willekeurige minuut.              |
+| Daily         | Eenmaal per dag op die minuut, met `00` als gepland uur.            |
+| Weekly        | Elke zondag op die minuut, met `00` als gepland uur.                |
+
+`Daily` is de standaardinstelling. **Status → Update Now** start een handmatige volledige update zonder het opgeslagen schema te wijzigen.
+
+## Wat er tijdens een update gebeurt \{#what-happens-during-an-update}
+
+1. Downloadt elke ingeschakelde bron via de begrensde downloadclient.
+2. Analyseert en normaliseert deze tot een tijdelijke kopie.
+3. Vervangt de opgeslagen kopie alleen atomair wanneer de nieuwe kopie geldig is.
+4. Compileert het huidige globale, netwerk-, apparaat-, toegestane-domein- en waarschuwingsbeleid.
+5. Rolt een nieuwe lokale generatie uit en laat de Unbound-module deze laden.
+
+Wanneer nieuwe geblokkeerde namen het beleid uitbreiden, wacht Sinkhole totdat de module de generatie heeft geladen en herlaadt daarna Unbound eenmaal om antwoorden in de cache te wissen. [Hoe updates werken](/docs/safety/how-updates-work) behandelt het volledige beschikbaarheids- en terugvalmodel.
+
+Wanneer een geblokkeerde substructuur wordt bevraagd met een ongebruikelijk maar geldig DNS-label, waaronder een spatie of een byte boven `0x7f`, behoudt Sinkhole de naam in wireformaat in het antwoord en retourneert het nog steeds het normale antwoord `0.0.0.0` of `::`. De query wordt niet alleen SERVFAIL omdat het label geen hostnaamvorm heeft.
+

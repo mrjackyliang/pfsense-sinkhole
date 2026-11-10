@@ -1,0 +1,10 @@
+{
+  "item.label.Home": {
+    "message": "Accueil",
+    "description": "Navbar item with label \"Home\""
+  },
+  "item.label.Troubleshooting": {
+    "message": "Dépannage",
+    "description": "Navbar item with label \"Troubleshooting\""
+  }
+}

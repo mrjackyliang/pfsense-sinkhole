@@ -1,0 +1,196 @@
+PORTNAME=	pfSense-pkg-Sinkhole
+DISTVERSION=	%%NOVA_PORTVERSION%%
+CATEGORIES=	sysutils
+MASTER_SITES=	# empty
+DISTFILES=	# empty
+EXTRACT_ONLY=	# empty
+
+MAINTAINER?=	hello@mrjackyliang.com
+COMMENT=	Block unwanted websites on pfSense networks
+WWW=	https://mrjackyliang.github.io/pfsense-sinkhole/
+
+LICENSE=	MIT
+
+NO_ARCH=	yes
+NO_BUILD=	yes
+NO_MTREE=	yes
+
+SUB_FILES=	pkg-install pkg-deinstall
+SUB_LIST=	PORTNAME=${PORTNAME}
+
+do-extract:
+	${MKDIR} ${WRKSRC}
+
+do-install:
+	${MKDIR} ${STAGEDIR}${PREFIX}/pkg
+	${MKDIR} ${STAGEDIR}${PREFIX}/pkg/priv
+	${MKDIR} ${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${MKDIR} ${STAGEDIR}${PREFIX}/pkg/sinkhole/translations
+	${MKDIR} ${STAGEDIR}${PREFIX}/sbin
+	${MKDIR} ${STAGEDIR}${PREFIX}/www
+	${MKDIR} ${STAGEDIR}${PREFIX}/www/css
+	${MKDIR} ${STAGEDIR}${DATADIR}
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole.inc \
+		${STAGEDIR}${PREFIX}/pkg
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole.xml \
+		${STAGEDIR}${PREFIX}/pkg
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/priv/sinkhole.priv.inc \
+		${STAGEDIR}${PREFIX}/pkg/priv
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/AtomicFile.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/BypassConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/BypassListStore.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/BypassParser.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/BypassRuleConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/BypassUpdater.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Catalog.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/CatalogCache.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/CatalogPresentation.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/AlertConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/AlertProcessor.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ClientMap.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ClientSource.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Compiler.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/CurlDownloadClient.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/DomainParser.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/DownloadClient.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/FileLock.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/FileSystem.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/GeoLite2.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/IpConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/IpListStore.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/IpNetwork.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/IpParser.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/IpRuleConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/IpStatusStore.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/IpUpdater.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ListConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/PackagePaths.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/PfSenseAdapter.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/PlatformAdapter.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/RedirectConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/SavedListStore.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ScopeConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ServiceConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ServicePresentation.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ServiceRegistry.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ServiceRegistryCache.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Settings.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/StateStore.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/TestedReleases.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Translator.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Translations.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/translations/bs.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/zh_CN.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/zh_Hans_CN.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/zh_Hans_HK.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/zh_Hant_TW.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/nl_NL.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/fr_FR.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/de_DE.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/it_IT.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/ko_FR.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/nb_NO.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/pl_PL.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/pt_PT.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/pt_BR.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/ru_RU.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/es_ES.php \
+		${FILESDIR}${PREFIX}/pkg/sinkhole/translations/es_AR.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole/translations
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/UnboundCustomOptions.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/UpdateManager.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Updater.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ValidationException.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/sinkhole_unbound.py \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_SCRIPT} ${FILESDIR}${PREFIX}/pkg/sinkhole/restore-runtime.sh \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_SCRIPT} ${FILESDIR}${PREFIX}/sbin/sinkhole \
+		${STAGEDIR}${PREFIX}/sbin
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/css/sinkhole.css \
+		${STAGEDIR}${PREFIX}/www/css
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-about.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-alerts.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-alerts_edit.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-bypass.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-bypass_edit.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-lists.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-lists_edit.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-services.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-ip.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-ip_edit.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-scopes.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-scopes_edit.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-status.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${DATADIR}/info.xml \
+		${STAGEDIR}${DATADIR}
+	${INSTALL_DATA} ${FILESDIR}${DATADIR}/logo.svg \
+		${STAGEDIR}${DATADIR}
+	${INSTALL_DATA} ${FILESDIR}${DATADIR}/release-signing.pub \
+		${STAGEDIR}${DATADIR}
+	@${REINPLACE_CMD} -i '' -e "s|%%PKGVERSION%%|${PKGVERSION}|" \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole.xml \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole/CurlDownloadClient.php \
+		${STAGEDIR}${DATADIR}/info.xml
+
+.include <bsd.port.mk>

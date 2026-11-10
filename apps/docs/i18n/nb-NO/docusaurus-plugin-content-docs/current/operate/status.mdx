@@ -1,0 +1,132 @@
+---
+id: status
+title: Status
+description: Les alle Sinkhole-panelene i Status, skill mellom aktive, ventende, pausede, lastede, manglende og utdaterte tilstander, og kjør en manuell listeoppdatering.
+keywords:
+  - sinkhole for pfsense
+  - status
+  - aktiv tilstand
+  - distribusjonsgenerasjon
+  - bypass-beskyttelse
+tags:
+  - operate
+  - status
+  - diagnostics
+---
+
+import ipStatus from './_assets_/status-4.png';
+import listsScopesStatus from './_assets_/status-1.png';
+import summaryStatus from './_assets_/status-2.png';
+
+Les statusen for lagrede lister, omfang, varsler, Bypass, IP, kompilering, distribusjon og Resolver i én driftsvisning.
+
+## Status-paneler \{#status-panels}
+
+Åpne **Firewall → Sinkhole → Status** for å se disse panelene:
+
+| Panel                   | Dette rapporteres                                                                                                                                              |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Summary                 | Kompilering, distribusjon, generasjon, operasjon, Resolver-eier, samlet Sinkhole-status og **Update Now** under panelet.                                       |
+| Lists                   | URL for DNS-liste, antall lagrede oppføringer, siste vellykkede oppdatering og siste feil.                                                                     |
+| Popular-List Catalogs   | Siste henting og siste feil for katalogkildene AdGuard Home og pfBlockerNG.                                                                                    |
+| Invalid Saved Rows      | Feilformede listerader som fortsatt er tilgjengelige for reparasjon. Vises bare når slike rader finnes.                                                        |
+| Scopes                  | Tidspunkt og feil for gjenoppbygging av klientkartet, etterfulgt av separate paneler for Networks og Devices.                                                  |
+| Alerts                  | Siste kjøring, leste eller utdaterte hendelser, sendte eller tilbakeholdte varsler, forkastede hendelser og siste feil.                                        |
+| Bypass                  | Hver beskyttelse, grensesnitt, omdirigeringsregeltilstand, tilstand og antall for Bypass-ankeret, etterfulgt av Bypass Lists og eventuelle reparasjonspaneler. |
+| IP and Country Blocking | Policyvalg, antall tabeller og regler, oppdateringer, feil og ankertilstand, etterfulgt av et separat panel for IP Lists.                                      |
+
+Deaktiverte liste- og omfangsrader vises dempet. En kilde med feil kan fortsatt vise oppføringer og en tidligere vellykket oppdatering fordi den siste gyldige kopien forblir aktiv.
+
+<img src={listsScopesStatus} alt="Fanen Status viser oppdateringer av lagrede demolister, nettverksdelnett og gjeldende adresser for demoenheter" width={1024} height={949} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Sinkhole-tilstand \{#sinkhole-state}
+
+Den siste raden **Sinkhole** i Summary er den raskeste kontrollen av Resolver-integrasjonen:
+
+| Tilstand                                 | Betydning                                                                                               |
+|------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| `Active`                                 | Sinkhole er aktivert, eier Python-plassen, bruker Python-modus og `pre_validator` og har kjøretidsdata. |
+| `Inactive: Sinkhole is disabled.`        | General **Enable** er avslått.                                                                          |
+| `Inactive: DNS Resolver is disabled.`    | DNS Resolver i pfSense er avslått.                                                                      |
+| `Inactive: ... slot is owned by ...`     | Et annet Python-skript, for eksempel pfBlockerNG DNSBL, eier den eneste plassen.                        |
+| `Inactive: Sinkhole does not own ...`    | Det konfigurerte skriptet er ikke Sinkhole, selv om ingen annen eier ble rapportert.                    |
+| `Inactive: ... Python mode is disabled.` | Resolver har ikke lenger Python-modus aktivert.                                                         |
+| `Inactive: ... pre-validator position.`  | Modulrekkefølgen plasserer ikke lenger Sinkhole på `pre_validator`.                                     |
+| `Inactive: ... runtime files ...`        | Skriptet eller den gjeldende kompilerte generasjonen mangler.                                           |
+
+Når Sinkhole er deaktivert med hensikt, er **Deployment Needed** `No`, **Loaded Generation** er `Module not loaded.`, og siden viser ingen distribusjonsadvarsel. En annen inaktiv integrasjonstilstand tvinger **Deployment Needed** til `Yes` og **Loaded Generation** til `Module not loaded.`. Rett den oppgitte årsaken før du behandler kompilerte data som aktive.
+
+## Tilstand for kompilering og distribusjon \{#compile-and-deployment-state}
+
+| Felt                | Betydning                                                                                           |
+|---------------------|-----------------------------------------------------------------------------------------------------|
+| Compile Needed      | Lagret policy er endret, eller den siste kompileringen ble ikke fullført.                           |
+| Compiled Generation | Identifikator produsert av den siste vellykkede kompileringen.                                      |
+| Deployment Needed   | Kompilert innhold er ikke innholdet som er distribuert for Unbound, eller integrasjonen er inaktiv. |
+| Deployed Generation | Identifikator i det distribuerte kjøretidsmanifestet.                                               |
+| Loaded Generation   | Identifikator som Unbound-modulen rapporterer som lastet.                                           |
+| Update Running      | Vises bare mens en liste- eller IP-oppdatering eier den delte oppdateringslåsen.                    |
+| Removal in Progress | Vises bare mens den vedvarende fjerningsmarkøren er satt og integrasjonen trekkes tilbake.          |
+| Python Script Owner | Gjeldende verdi for den eneste `python_script`-plassen i Resolver, eller `None`.                    |
+
+Siden viser en varslingsboks når kompilering eller distribusjon venter, inkludert den registrerte årsaken. Samsvarende identifikatorer for kompilert, distribuert og lastet viser at lagret policy nådde modulen som kjører.
+
+<img src={summaryStatus} alt="Panelet Status Summary viser samsvarende kompilerte, distribuerte og lastede generasjoner med aktiv Sinkhole" width={1024} height={914} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Tilstand for omfang og varsler \{#scope-and-alert-state}
+
+Sammendraget Scopes rapporterer tilstanden for gjenoppbygging av klientkartet. De separate panelene **Networks** og **Devices** rapporterer gjeldende CIDR-er for hvert grensesnitt og gjeldende adresser for hver enhet. En konflikt navngir en adresse som flere enheter krever. Den første enheten i tabellrekkefølgen eier adressen for policyen.
+
+Panelet **Alerts** beskriver bare den siste minuttjobben. **Notifications held back** omfatter undertrykking på grunn av en grense eller et ulest varsel, mens **Events dropped by module** angir at den avgrensede hendelseskøen i minnet eller på disken ble full.
+
+## Bypass-tilstand \{#bypass-state}
+
+Bypass-panelet rapporterer `On` eller `Off` for TLS and QUIC, leverandørlister, Firefox, Private Relay, Tor, VPN-leverandørlister og standard VPN-porter. **Discovery** rapporterer valgt modus. **Interfaces** bekrefter det delte utvalget av klientvendte grensesnitt.
+
+Det uavhengige brannmurankeret rapporterer:
+
+| Felt                    | Betydning                                                                                                  |
+|-------------------------|------------------------------------------------------------------------------------------------------------|
+| Firewall rules loaded   | Om ankeret `sinkhole/bypass` finnes når gjeldende innstillinger krever det.                                |
+| Firewall rules current  | Om lastet sammendrag, regler og tabeller samsvarer med gjeldende innstillinger og siste gyldige listedata. |
+| Firewall rule count     | Antall aktive regler i Bypass-ankeret.                                                                     |
+| IPv4/IPv6 table entries | Endelig antall leverandør-, Tor- og VPN-adresser etter at beskyttede brannmuradresser er fjernet.          |
+
+Tabellen **Bypass Lists** rapporterer hver rads type, aktiverte tilstand, antall lagrede oppføringer, siste henting og siste feil. En mislykket henting kan derfor vise en feil sammen med oppføringer fra den siste gyldige kopien som ble beholdt.
+
+### Tilstand for omdirigering av vanlig DNS \{#plain-dns-redirect-state}
+
+| Tilstand | Betydning                                                                                |
+|----------|------------------------------------------------------------------------------------------|
+| Off      | Omdirigering av vanlig DNS er deaktivert.                                                |
+| On       | Redirect er aktivert, og alle lagrede unntak er gyldige.                                 |
+| Paused   | Minst ett lagret kilde- eller målunntak er ugyldig, så ingen omdirigeringsregler brukes. |
+
+Feltet **pfSense loaded rules** har tre tilstander:
+
+| Tilstand    | Betydning                                                                                                   |
+|-------------|-------------------------------------------------------------------------------------------------------------|
+| Yes         | `/tmp/rules.debug` inneholder nøyaktig omdirigeringsblokken som Sinkhole ønsker nå.                         |
+| No          | Den ønskede blokken er ikke lastet.                                                                         |
+| Out of Date | En Sinkhole-blokk er lastet, men teksten samsvarer ikke med gjeldende innstillinger eller Resolver-lyttere. |
+
+Hvert familiemål er enten den valgte lytteradressen eller en årsak til at ingen regel kan bygges. **Last parse error** vises bare mens den gjeldende blokken mangler etter at pfSense avviste den.
+
+## IP- og landtilstand \{#ip-and-country-state}
+
+Hovedtilstanden i IP-panelet er **On** eller **Off**. **IP Anchor** bruker **Yes**, **No** og **Out of Date** med det samme skillet mellom lastet og gjeldende som Bypass-ankeret.
+
+Antall tabelloppføringer viser de endelige sammenslåtte IPv4- og IPv6-nettverkene etter at tillatelseslisten og beskyttede adresser er trukket fra.
+
+**Skipped Lines** teller ugyldige inndata fra IP-lister. Kommentarlinjer og tomme linjer telles ikke.
+
+**GeoLite2 Last Update** er uavhengig av den siste listeoppdateringen.
+
+<img src={ipStatus} alt="Panelet Status IP and Country Blocking viser tabellantall, oppdateringstilstand, et lastet anker og en demo-IP-listerad" width={1024} height={1102} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Kjør Update Now \{#run-update-now}
+
+Når du velger **Update Now** under Summary, starter `/usr/local/sbin/sinkhole --manual` i bakgrunnen og returnerer umiddelbart. Knappen strømmer ikke utdata, så **Update Running**, radene for DNS-/Bypass-/IP-lister, kompileringsfeltene og de siste feilene viser resultatet.
+
+Den manuelle jobben bruker den samme delte oppdateringslåsen som planlagte listeoppdateringer og automatisk pakkeoppdatering. Hvis en annen oppdatering eier den, fortsetter den eksisterende jobben, og ventende bruksarbeid bevares.
+

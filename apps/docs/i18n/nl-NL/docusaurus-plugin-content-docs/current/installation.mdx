@@ -1,0 +1,84 @@
+---
+id: installation
+title: Het pakket installeren
+description: Controleer het stabiele Sinkhole-pakket aan de hand van het SHA-256-bestand, installeer het of werk het bij met pkg en controleer elk pakkettabblad in de pfSense-WebGUI.
+keywords:
+  - sinkhole voor pfsense
+  - installatie
+  - pkg add
+  - sha256-controlesom
+  - github-release
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+Installeer Sinkhole of werk het bij vanuit het stabiele GitHub-releasepakket en controleer vervolgens of pfSense elk WebGUI-tabblad heeft geregistreerd.
+
+## Vereisten \{#requirements}
+
+- **Administrator shell** — SSH- of consoletoegang tot de pfSense-shell. **Diagnostics → Command Prompt** kan ook één opdracht uitvoeren.
+- **HTTPS access to GitHub** — De firewall moet het pakket en de controlesom van GitHub Releases kunnen downloaden.
+- **DNS Resolver** — De pfSense DNS Resolver moet zijn ingeschakeld voordat de DNS-integratie van Sinkhole kan worden ingeschakeld.
+- **Available Python slot** — pfBlockerNG DNSBL of een ander Python-script mag niet de enige modulepositie van de Resolver bezitten.
+- **Current backup** — Het wordt aanbevolen om vóór installatie van een niet-officieel pakket `config.xml` te downloaden via **Diagnostics → Backup & Restore**.
+
+:::warning
+
+Sinkhole wordt vanuit GitHub geïnstalleerd en niet vanuit de pakketopslag van Netgate. Netgate beoordeelt of ondersteunt het pakket daarom niet.
+
+:::
+
+## De release controleren \{#check-the-release}
+
+De [pagina GitHub Releases](https://github.com/mrjackyliang/pfsense-sinkhole/releases) publiceert pakketbestanden met een stabiele naam en met een versienaam. Op deze pagina worden de volgende stabiele bestanden gebruikt:
+
+| Bestand                           | Doel                                                        |
+|-----------------------------------|-------------------------------------------------------------|
+| `pfSense-pkg-Sinkhole.pkg`        | Nieuwste installeerbare Sinkhole-pakket.                    |
+| `pfSense-pkg-Sinkhole.pkg.sha256` | SHA-256-waarde met alleen de hash voor het stabiele pakket. |
+
+## De controlesom verifiëren \{#verify-the-checksum}
+
+Download het stabiele pakket en het bijbehorende stabiele `.sha256`-bestand naar `/tmp` en vergelijk daarna de twee afgedrukte waarden:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+fetch https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg.sha256
+sha256 -q pfSense-pkg-Sinkhole.pkg
+cat pfSense-pkg-Sinkhole.pkg.sha256
+```
+
+De twee waarden zijn gelijk wanneer het gedownloade pakket intact is. Het gecontroleerde lokale bestand kan vervolgens worden geïnstalleerd met `pkg add -f /tmp/pfSense-pkg-Sinkhole.pkg`.
+
+## Installeren of bijwerken \{#install-or-update}
+
+Met dezelfde opdracht installeert u Sinkhole voor het eerst, werkt u een oudere versie bij of installeert u de huidige versie opnieuw:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+De vlag `-f` is vereist omdat de `pkg`-versie op pfSense 2.8 anders een update vanaf dezelfde stabiele URL kan overslaan. De normale installatie- en upgradehooks van het pakket blijven hiermee ook behouden.
+
+## De WebGUI controleren \{#confirm-the-webgui}
+
+1. Open **Firewall → Sinkhole**.
+2. Controleer of **General**, **Lists**, **Services**, **Scopes**, **Alerts**, **Bypass**, **IP**, **Status** en **About** worden weergegeven.
+3. Laat **General → Enable** uitgeschakeld totdat de DNS Resolver is ingeschakeld en de Python-scriptpositie beschikbaar is.
+4. Open **About** en controleer of de weergegeven pakketversie overeenkomt met de release die u hebt geïnstalleerd.
+
+Pakketten die buiten de opslag van Netgate worden geïnstalleerd, verschijnen niet op de pfSense-pagina **Installed Packages**. Gebruik daarom voor updates en verwijdering de shellopdrachten die hier en in [Levenscyclus van het pakket](/docs/reference/package-lifecycle) worden beschreven.
+
+## Als de installatie mislukt \{#if-installation-fails}
+
+- **Not found or no package asset** — Controleer of de nieuwste GitHub-release `pfSense-pkg-Sinkhole.pkg` bevat.
+- **Checksum differs** — Behoud de geïnstalleerde versie en download beide stabiele bestanden opnieuw vanuit de release.
+- **DNS, TLS, or certificate error** — Controleer of pfSense `github.com` omzet, via HTTPS kan bereiken en de juiste systeemtijd heeft.
+- **Wrong ABI** — Installeer de nieuwste release. Huidige pakketten worden opnieuw gebouwd met de ABI `FreeBSD:*`, terwijl een ouder artefact dat mogelijk niet is.
+
+Ga verder met [Sinkhole instellen](/docs/first-run) nadat de tabbladen verschijnen.
+

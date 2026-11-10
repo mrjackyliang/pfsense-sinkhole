@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "Pacote nativo para pfSense"
+  },
+  "homepage.hero.heading": {
+    "message": "Escolha o que cada rede e dispositivo pode alcançar."
+  },
+  "homepage.hero.tagline": {
+    "message": "Aplique listas DNS guardadas a toda a rede, a uma VLAN ou a um dispositivo, com alertas intencionais e sem um segundo servidor."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Instalar o Sinkhole"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "Planear os scopes"
+  },
+  "homepage.stats.heading": {
+    "message": "Uma firewall, política em cada nível útil"
+  },
+  "homepage.stats.description": {
+    "message": "O Sinkhole mantém a política local e torna explícitos os limites operacionais."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "Scopes de política"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "Formatos de listas DNS"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "Cache dos catálogos"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Espaço de módulo Unbound"
+  },
+  "homepage.features.heading": {
+    "message": "Controlo que fica na firewall"
+  },
+  "homepage.features.scopes.title": {
+    "message": "Definir cada decisão"
+  },
+  "homepage.features.scopes.description": {
+    "message": "Aplique listas e domínios permitidos globalmente, por interface ou VLAN e por dispositivo."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "Conservar as últimas cópias válidas"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "Responda ao DNS a partir de listas locais apesar de reinícios, recarregamentos e transferências falhadas."
+  },
+  "homepage.features.alerts.title": {
+    "message": "Alertar com intenção"
+  },
+  "homepage.features.alerts.description": {
+    "message": "Notifique apenas para listas, redes e dispositivos escolhidos em cada regra."
+  },
+  "homepage.features.redirect.title": {
+    "message": "Proteger os caminhos DNS"
+  },
+  "homepage.features.redirect.description": {
+    "message": "Redirecione opcionalmente o DNS comum ou bloqueie evasões comuns por DNS encriptado e túneis nas interfaces selecionadas."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "Pesquisar e depois decidir"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "Pesquise catálogos suportados a pedido sem incluir nem recomendar uma lista."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "Bloquear endereços e países"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "Aplique listas IP e políticas de país GeoLite2 através da âncora isolada `sinkhole/ip`."
+  }
+}

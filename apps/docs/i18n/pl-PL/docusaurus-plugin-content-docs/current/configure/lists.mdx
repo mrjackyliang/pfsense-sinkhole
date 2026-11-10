@@ -1,0 +1,101 @@
+---
+id: lists
+title: Listy i zapisane kopie
+description: Dodawaj listy DNS według adresu URL lub z katalogu, używaj formatów hosts, domen i stylu adblock, kontroluj zasady globalne i zachowuj ostatnie prawidłowe kopie w razie błędów.
+keywords:
+  - sinkhole for pfsense
+  - listy blokowania
+  - zapisane listy
+  - wyszukiwanie popularnych list
+  - dozwolone domeny
+tags:
+  - configure
+  - lists
+  - dns
+---
+
+import catalogSearch from './_assets_/lists-2.png';
+
+Dodaj zaufane źródła list i pozwól Sinkhole przechowywać znormalizowane ostatnie prawidłowe kopie na zaporze w celu natychmiastowego użycia przez DNS.
+
+## Dlaczego warto używać zapisanych list? \{#why-use-saved-lists}
+
+1. Uniezależniają DNS od hosta listy, dzięki czemu wolne lub nieudane pobieranie nie przerywa rozwiązywania nazw.
+2. Pobierają każde źródło jeden raz, dzięki czemu ta sama zapisana kopia może obsługiwać zakres globalny, sieciowy i urządzenia.
+3. Zachowują poprzednią prawidłową kopię, gdy nowe pobranie lub analiza się nie powiedzie, aby uszkodzone dane wejściowe nie zastąpiły działających zasad.
+4. Aktualizują listy w tle, dzięki czemu ponowne uruchomienie lub przeładowanie Resolver nigdy nie czeka na sieć.
+
+## Dodawanie listy według adresu URL \{#add-a-list-by-url}
+
+Otwórz **Firewall → Sinkhole → Lists**, wybierz **Add** pod tabelą list blokowania, a następnie wypełnij **Add Block List** na stronie edytora:
+
+| Pole    | Opis                                                               |
+|---------|--------------------------------------------------------------------|
+| Name    | Lokalna etykieta wyświetlana w przypisaniach, alertach i Status.   |
+| URL     | Źródło HTTP lub HTTPS bez osadzonych danych uwierzytelniających.   |
+| Enabled | Pobiera źródło i udostępnia je przypisanym zakresom.               |
+| Global  | Stosuje źródło do każdego klienta po decyzjach urządzenia i sieci. |
+
+Zapisanie powoduje powrót do karty Lists i uruchamia tę samą zweryfikowaną ścieżkę stosowania w tle. Wybierz ołówek wiersza lub kliknij wiersz dwukrotnie, aby go edytować. Wyłączony wiersz pozostaje skonfigurowany, ale jest wyszarzony w tabeli i nie jest używany przez proces aktualizacji ani skompilowane zasady.
+
+## Obsługiwane formaty DNS \{#accepted-dns-formats}
+
+Sinkhole obsługuje poniższe standardowe formaty i normalizuje prawidłowe nazwy do jednego zapisanego zbioru domen:
+
+| Format             | Przykład                                      | Działanie                                        |
+|--------------------|-----------------------------------------------|--------------------------------------------------|
+| Hosts file         | `0.0.0.0 blocked.example`                     | Blokuje dokładnie każdą nazwę domeny po adresie. |
+| Plain domain list  | `blocked.example`                             | Blokuje dokładnie nazwę domeny w każdym wierszu. |
+| Adblock-style rule | <code>{'\u007c\u007cblocked.example^'}</code> | Blokuje nazwę domeny i wszystkie jej poddomeny.  |
+
+Użyj formatu adblock `||name^`, gdy jeden wpis ma blokować nazwę i wszystkie jej poddomeny.
+
+Filtry kosmetyczne i nieprawidłowo sformatowane wiersze nie stają się zasadami DNS. Status zgłasza błędy źródła, a lista, której aktualizacja się nie powiodła, zachowuje poprzednią prawidłową kopię.
+
+## Przeszukiwanie katalogów \{#search-the-catalogs}
+
+Wybierz **Add from Catalog** na karcie Lists, aby przeszukać rejestr list AdGuard Home i sekcję DNS katalogu źródeł pfBlockerNG. Sinkhole pobiera oba tylko po otwarciu wyszukiwania lub wybraniu **Refresh**; żaden katalog nie jest dołączony do pakietu ani pobierany według harmonogramu.
+
+Wyniki są wyświetlane jako karty. Użyj razem elementów sterujących wyszukiwaniem, źródłem i opiekunem, wybierz znacznik kategorii i przełączaj **Group by** między **Category** i **Maintainer**. Znaczniki kategorii pokazują liczby dla bieżących filtrów wyszukiwania, źródła i opiekuna, a menu opiekunów najpierw pokazuje właścicieli z największą liczbą pasujących list.
+
+Każda karta pokazuje nazwę listy, opiekuna lub kategorię, katalog źródłowy, dwuwierszowy opis, stronę główną i stan **Add** lub **Added**. Karty nie pokazują ocen, odznak ani rekomendacji. Wybranie **Add** tworzy zwykły wiersz listy, którego adres URL można przypisać tak jak każde źródło wprowadzone ręcznie.
+
+Wiersz **Contents** na każdej karcie wskazuje **Domains**. Dodanie wyniku katalogu zachowuje jego nazwę katalogową bez zmian.
+
+Kopie katalogów są buforowane przez jeden dzień w `/var/db`. Nieudane odświeżenie zachowuje ostatnią prawidłową kopię katalogu i pokazuje błąd pobierania w Status.
+
+<img src={catalogSearch} alt="Panel Add from Catalog na karcie Lists z elementami sterującymi wyszukiwaniem katalogu i stanem pobierania" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Źródła przypisane do ochrony przed obejściem Encrypted DNS, Tor lub VPN nie są tutaj wyświetlane. Są dostępne tylko przez **Add from Catalog** na karcie Bypass.
+
+## Ustawianie globalnych dozwolonych domen \{#set-global-allowed-domains}
+
+Sekcja **Allowed Domains** pod panelami listy i katalogu definiuje wyjątki globalne. Każdy wiersz przepuszcza daną domenę i jej poddomeny przez dziedziczone listy globalne. Wybierz **Save** pod tą sekcją, aby zastosować ustawienie na całej stronie.
+
+Globalna dozwolona domena jest sprawdzana po regułach urządzenia i sieci. Dlatego nie może zastąpić listy, która już zablokowała zapytanie na bardziej szczegółowym poziomie urządzenia lub sieci.
+
+## Wybieranie częstotliwości aktualizacji \{#choose-the-update-frequency}
+
+Ustawienie **General → Update Frequency** steruje zaplanowanymi aktualizacjami list DNS, a także dostarcza harmonogram aktualizacji po włączeniu blokowania IP:
+
+| Ustawienie    | Harmonogram                                                       |
+|---------------|-------------------------------------------------------------------|
+| Hourly        | Raz na godzinę w stabilnej losowej minucie zapory.                |
+| Every 6 hours | Co sześć godzin w tej samej stabilnej losowej minucie.            |
+| Daily         | Raz dziennie w tej minucie, z `00` jako zaplanowaną godziną.      |
+| Weekly        | W każdą niedzielę w tej minucie, z `00` jako zaplanowaną godziną. |
+
+`Daily` jest ustawieniem domyślnym. **Status → Update Now** uruchamia ręczną pełną aktualizację bez zmiany zapisanego harmonogramu.
+
+## Działanie podczas aktualizacji \{#what-happens-during-an-update}
+
+1. Pobiera każde włączone źródło za pomocą klienta pobierania z limitami.
+2. Analizuje i normalizuje je do kopii tymczasowej.
+3. Niepodzielnie zastępuje zapisaną kopię tylko wtedy, gdy nowa kopia jest prawidłowa.
+4. Kompiluje bieżące zasady globalne, sieciowe, urządzeń, dozwolonych domen i alertów.
+5. Wdraża nową lokalną generację i pozwala modułowi Unbound ją załadować.
+
+Gdy nowe zablokowane nazwy rozszerzają zasady, Sinkhole czeka na załadowanie generacji przez moduł, a następnie raz przeładowuje Unbound, aby wyczyścić odpowiedzi z pamięci podręcznej. [Jak działają aktualizacje](/docs/safety/how-updates-work) opisuje pełny model dostępności i wycofywania.
+
+Gdy zablokowane poddrzewo jest odpytywane przy użyciu nietypowej, ale prawidłowej etykiety DNS, zawierającej spację lub bajt powyżej `0x7f`, Sinkhole zachowuje nazwę w formacie wire w odpowiedzi i nadal zwraca zwykłą odpowiedź `0.0.0.0` lub `::`. Zapytanie nie kończy się SERVFAIL tylko dlatego, że etykieta nie ma postaci nazwy hosta.
+

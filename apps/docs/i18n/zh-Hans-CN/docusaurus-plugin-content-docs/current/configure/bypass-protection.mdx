@@ -1,0 +1,109 @@
+---
+id: bypass-protection
+title: 防绕过保护
+description: 通过可选的普通 DNS 重定向、加密 DNS 信号、提供商列表和隧道拦截，将所选客户端接口保持在 Sinkhole 控制的 DNS 路径上。
+keywords:
+  - sinkhole for pfsense
+  - 防绕过保护
+  - dns 重定向
+  - 加密 dns
+  - vpn 拦截
+tags:
+  - configure
+  - bypass
+  - dns
+---
+
+import bypassProtection from './_assets_/bypass-protection-1.png';
+
+让所选客户端接口的 DNS 查询始终沿着 Sinkhole 可以检查的路径传输。所有保护功能默认关闭，默认不选择任何接口，升级也不会启用任何保护功能或列表。
+
+## 选择接口 \{#choose-the-interfaces}
+
+打开 **Firewall → Sinkhole → Bypass**，并在启用保护功能之前选择 **Apply to** 接口。此选择适用于页面上的所有设置。保护功能只检查从这些接口上的客户端传入的流量；不会影响防火墙自身的查询或出站流量。
+
+网络和设备匹配与普通 Sinkhole 作用域一样，使用这些接口的当前子网。所选子网之外的客户端不会收到 Bypass DNS 响应。
+
+<img src={bypassProtection} alt="Bypass 选项卡，其中已选择 LAN、已关闭普通 DNS 重定向、已启用加密 DNS 和隧道保护、Discovery 设为 Answer with no records，并显示三个演示 Bypass Lists" width={1024} height={1266} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 重定向普通 DNS \{#redirect-plain-dns}
+
+选择 **Redirect → Send port 53 to the firewall**，将所选接口上的普通 TCP 和 UDP DNS 流量发送到 pfSense。Sinkhole 会保留源地址，因此网络和设备策略仍然适用。
+
+重定向会保留现有的监听器感知目标和豁免：
+
+| 地址族  | 目标                                                     |
+|------|--------------------------------------------------------|
+| IPv4 | Resolver 监听 localhost 时使用 `127.0.0.1`；否则使用接口的 IPv4 地址。 |
+| IPv6 | 使用接口的 IPv6 地址，绝不使用 `::1`。                              |
+
+- **Exempt Sources** 仍可访问其他解析器。
+- **Exempt Destinations** 仍可接收 DNS 流量，从而支持其他网络上的内部解析器。
+
+每项豁免每行接受一个 IPv4 地址、IPv6 地址、CIDR 网络或现有 pfSense 主机/网络别名。无效的已保存豁免会暂停所有重定向规则，直到修复或删除该豁免。重定向的客户端仍需获得 Resolver 访问控制设置的允许。
+
+## 保护加密 DNS \{#protect-encrypted-dns}
+
+各项加密 DNS 设置彼此独立：
+
+- **TLS and QUIC** 拦截发往防火墙以外任何目标的 TCP 和 UDP 端口 853。
+- **Providers** 拦截种类为 **Encrypted DNS** 的已启用 Bypass Lists 中的名称和地址。
+- **Firefox** 对 `use-application-dns.net` 及其子域返回 `NXDOMAIN`，从而关闭 Firefox 自动选择 DNS over HTTPS 的功能。
+- **Private Relay** 对 `mask.icloud.com` 和 `mask-h2.icloud.com` 返回 `NXDOMAIN`，告知兼容的 Apple 设备此网络不提供 Private Relay。
+
+提供商列表中的名称在 DNS 中被拦截。同一列表中的 IPv4 地址、IPv6 地址和 CIDR 会在独立的 `sinkhole/bypass` 防火墙锚点中针对所有端口和协议进行拦截。Sinkhole 会在加载这些表之前，从中删除防火墙的接口地址以及网关和 DNS 服务器地址，包括通过 DHCP 或 PPP 获取的地址。
+
+允许的域名优先于提供商列表的名称拦截。它们不会覆盖 Firefox、Private Relay 或 Discovery 响应，因为这些响应是网络信号，而不是列表拦截。
+
+## 配置 Resolver 发现 \{#configure-resolver-discovery}
+
+Discovery 控制对 `_dns.resolver.arpa` 的查询，该名称是 RFC 9462 定义的 Designated Resolver Discovery 名称：
+
+| 选项                                        | 响应                                                   |
+|-------------------------------------------|------------------------------------------------------|
+| **Off**                                   | 不更改查询。                                               |
+| **Advertise the firewall's DNS over TLS** | 返回包含 `alpn=dot`、端口 `853` 和 Resolver 证书中主机名的 SVCB 响应。 |
+| **Answer with no records**                | 返回空响应和 `NOERROR`。                                    |
+
+**Advertise** 要求启用 DNS Resolver 的 SSL/TLS 服务，并提供可用的证书主机名。Bypass 页面会报告该服务是否已开启；服务不可用时，保存会失败并显示清晰的验证消息。
+
+启用 Sinkhole 并选择 **Apply to** 接口后，开启 Discovery 会将以下托管块添加到 DNS Resolver 的 **Custom options**：
+
+```text
+# Sinkhole: begin (managed by the Sinkhole package)
+server:
+local-zone: "_dns.resolver.arpa." transparent
+# Sinkhole: end
+```
+
+关闭 Discovery 或移除 Sinkhole 会删除该块。Sinkhole 不会更改 **Custom options** 中的任何其他行。所选接口之外的客户端（包括防火墙本身）仍会收到 `_dns.resolver.arpa` 的 `NXDOMAIN`。
+
+## 防范隧道 \{#protect-against-tunnels}
+
+- **Tor → Block listed Tor relays** 应用种类为 **Tor** 的已启用 Bypass Lists。
+- **VPN → Block listed VPN providers** 应用种类为 **VPN** 的已启用 Bypass Lists。
+- **VPN → Block standard VPN ports** 拦截发往防火墙以外任何目标的 TCP 和 UDP `1194`、UDP `51820`、UDP `500` 和 `4500` 以及 ESP。
+
+Tor 和 VPN 列表中的名称和地址使用与加密 DNS 提供商列表相同的 DNS 和防火墙行为。这些控制可以减少常见的替代路径，但无法识别所有加密或自定义隧道。
+
+## 从目录添加 \{#add-from-catalog}
+
+在 Bypass 标签页打开 **Add from Catalog**，搜索 AdGuard Home 列表注册表以及 pfBlockerNG 订阅源目录的 DNS、IPv4 和 IPv6 部分。结果仅包含绕过订阅源，类型固定为 **Encrypted DNS**、**Tor** 或 **VPN**。
+
+仅在打开目录或选择 **Refresh** 时获取源目录。添加结果会创建一个已启用的 Bypass List，并遵循正常的列表更新计划。
+
+每张卡片的 **Contents** 行显示 **Domains**、**IPv4 addresses** 或 **IPv6 addresses**。添加 pfBlockerNG IPv4 或 IPv6 结果时，Sinkhole 会在保存的名称后附加 ` (IPv4)` 或 ` (IPv6)`；域名结果保留未加后缀的目录名称。
+
+## 添加 Bypass Lists \{#add-bypass-lists}
+
+选择 **Bypass Lists** 下方的 **Add**，然后输入本地名称、种类以及 HTTP 或 HTTPS URL。新行在明确启用之前保持禁用。
+
+每个来源每行接受一个条目。列表可混合域名、IPv4 地址、IPv6 地址和 CIDR；`#` 后面的文本是注释。无效和过长的行会被跳过。超过固定字节数或已接受条目数限制的下载会被拒绝，并保留最后的有效副本。
+
+Bypass Lists 使用与其他列表相同的受限下载客户端，按照配置的列表计划更新。获取失败时会保留最后的有效保存副本，**Status → Bypass Lists** 会报告每一行的条目数、上次获取时间和最新错误。Sinkhole 不捆绑或推荐任何 Bypass List。
+
+## 验证活动状态 \{#verify-the-active-state}
+
+保存后，打开 **Status → Bypass**，确认每项预期保护均为 `On`、所选接口正确，并且 Discovery 开启时 **Discovery Zone** 为 `Present`。确认防火墙保护的 **Firewall rules loaded** 和 **Firewall rules current** 均为 `Yes`。Bypass Lists 表会显示已保存条目数和上次获取时间。
+
+普通 DNS 重定向会在 Resolver 监听器更改后保留现有的两次观察分钟协调。`sinkhole/bypass` 锚点独立于 `sinkhole/ip` 加载，因此禁用任一功能都不会干扰另一个功能。

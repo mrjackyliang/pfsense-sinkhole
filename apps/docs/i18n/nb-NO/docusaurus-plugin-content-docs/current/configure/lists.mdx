@@ -1,0 +1,101 @@
+---
+id: lists
+title: Lister og lagrede kopier
+description: Legg til DNS-lister via URL eller katalog, bruk hosts-, domene- og adblock-lignende formater, styr global policy og behold siste gyldige kopier gjennom feil.
+keywords:
+  - sinkhole for pfsense
+  - blokkeringslister
+  - lagrede lister
+  - søk etter populære lister
+  - tillatte domener
+tags:
+  - configure
+  - lists
+  - dns
+---
+
+import catalogSearch from './_assets_/lists-2.png';
+
+Legg til listekilder du stoler på, og la Sinkhole beholde normaliserte, siste gyldige kopier på brannmuren for umiddelbar DNS-bruk.
+
+## Hvorfor bruke lagrede lister? \{#why-use-saved-lists}
+
+1. Holder DNS uavhengig av listeverten, slik at en treg eller mislykket nedlasting ikke avbryter navneoppløsningen.
+2. Laster ned hver kilde én gang, slik at den samme lagrede kopien kan betjene globale omfang, nettverksomfang og enhetsomfang.
+3. Beholder den forrige gyldige kopien når en ny nedlasting eller analyse mislykkes, slik at ødelagte inndata ikke erstatter fungerende policy.
+4. Oppdaterer lister i bakgrunnen, slik at en omstart eller omlasting av Resolver aldri venter på nettverket.
+
+## Legg til en liste via URL \{#add-a-list-by-url}
+
+Åpne **Firewall → Sinkhole → Lists**, velg **Add** under tabellen med blokkeringslister, og fyll deretter ut **Add Block List** på redigeringssiden:
+
+| Felt    | Beskrivelse                                                              |
+|---------|--------------------------------------------------------------------------|
+| Name    | Lokal etikett som vises i tilordninger, varsler og Status.               |
+| URL     | HTTP- eller HTTPS-kilde uten innebygd legitimasjon.                      |
+| Enabled | Laster ned kilden og gjør den tilgjengelig for tilordnede omfang.        |
+| Global  | Bruker kilden for alle klienter etter avgjørelser for enhet og nettverk. |
+
+Når du lagrer, går du tilbake til fanen Lists, og den samme validerte bruksprosessen starter i bakgrunnen. Velg blyanten på en rad eller dobbeltklikk raden for å redigere den. En deaktivert rad forblir konfigurert, men vises dempet i tabellen og brukes ikke av oppdateringsprosessen eller den kompilerte policyen.
+
+## Støttede DNS-formater \{#accepted-dns-formats}
+
+Sinkhole støtter standardformatene nedenfor og normaliserer gyldige navn i ett lagret domenesett:
+
+| Format             | Eksempel                                      | Virkemåte                                           |
+|--------------------|-----------------------------------------------|-----------------------------------------------------|
+| Hosts file         | `0.0.0.0 blocked.example`                     | Blokkerer nøyaktig hvert domenenavn etter adressen. |
+| Plain domain list  | `blocked.example`                             | Blokkerer nøyaktig domenenavnet på hver linje.      |
+| Adblock-style rule | <code>{'\u007c\u007cblocked.example^'}</code> | Blokkerer domenenavnet og alle underdomener.        |
+
+Bruk adblock-formatet `||name^` når én oppføring skal blokkere navnet og alle underdomener.
+
+Kosmetiske filtre og feilformede linjer blir ikke DNS-policy. Status rapporterer kildefeil, mens en mislykket liste med en tidligere gyldig kopi beholder denne kopien.
+
+## Søk i katalogene \{#search-the-catalogs}
+
+Velg **Add from Catalog** på fanen Lists for å søke i listeregisteret til AdGuard Home og DNS-delen av feedkatalogen til pfBlockerNG. Sinkhole henter begge bare når søket åpnes eller du velger **Refresh**. Ingen av katalogene følger med i pakken eller lastes ned etter en tidsplan.
+
+Resultatene vises som kort. Bruk kontrollene for søk, kilde og vedlikeholder sammen, velg en kategoribrikke, og bytt **Group by** mellom **Category** og **Maintainer**. Kategoribrikkene viser antall for gjeldende filtre for søk, kilde og vedlikeholder, mens vedlikeholdermenyen viser eierne med flest samsvarende lister først.
+
+Hvert kort viser listenavnet, vedlikeholderen eller kategorien, kildekatalogen, en beskrivelse på to linjer, hjemmesiden og statusen **Add** eller **Added**. Kortene viser ingen vurderinger, merker eller anbefalinger. Når du velger **Add**, opprettes en vanlig listerad der URL-en kan tilordnes som enhver manuelt angitt kilde.
+
+Linjen **Contents** på hvert kort viser **Domains**. Når du legger til et katalogresultat, beholdes katalognavnet uendret.
+
+Katalogkopier bufres under `/var/db` i én dag. En mislykket oppdatering beholder den siste gyldige katalogkopien og viser hentefeilen i Status.
+
+<img src={catalogSearch} alt="Panelet Add from Catalog på fanen Lists viser kontroller for katalogsøk og hentestatus" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Feeder som er tilordnet omgåelsesbeskyttelse for Encrypted DNS, Tor eller VPN, vises ikke her. De er bare tilgjengelige gjennom **Add from Catalog** på Bypass-fanen.
+
+## Angi globale tillatte domener \{#set-global-allowed-domains}
+
+Delen **Allowed Domains** under liste- og katalogpanelene definerer globale unntak. Hver linje slipper domenet og underdomenene gjennom arvede globale lister. Velg **Save** under delen for å bruke innstillingen for hele siden.
+
+Et globalt tillatt domene kontrolleres etter enhets- og nettverksregler. Det kan derfor ikke oppheve en liste som allerede blokkerte spørringen på et mer spesifikt enhets- eller nettverksnivå.
+
+## Velg oppdateringsfrekvens \{#choose-the-update-frequency}
+
+Innstillingen **General → Update Frequency** styrer planlagte oppdateringer av DNS-lister og leverer også oppdateringsplanen når IP-blokkering er aktivert:
+
+| Innstilling   | Tidsplan                                                      |
+|---------------|---------------------------------------------------------------|
+| Hourly        | Én gang hver time på brannmurens stabile tilfeldige minutt.   |
+| Every 6 hours | Hver sjette time på det samme stabile tilfeldige minuttet.    |
+| Daily         | Én gang daglig på dette minuttet, med `00` som planlagt time. |
+| Weekly        | Hver søndag på dette minuttet, med `00` som planlagt time.    |
+
+`Daily` er standard. **Status → Update Now** starter en manuell full oppdatering uten å endre den lagrede tidsplanen.
+
+## Dette skjer under en oppdatering \{#what-happens-during-an-update}
+
+1. Laster ned hver aktiverte kilde gjennom den avgrensede nedlastingsklienten.
+2. Analyserer og normaliserer den til en midlertidig kopi.
+3. Erstatter den lagrede kopien atomisk bare når den nye kopien er gyldig.
+4. Kompilerer gjeldende global policy, nettverkspolicy, enhetspolicy, policy for tillatte domener og varslingspolicy.
+5. Distribuerer en ny lokal generasjon og lar Unbound-modulen laste den.
+
+Når nye blokkerte navn utvider policyen, venter Sinkhole til modulen har lastet generasjonen, og laster deretter Unbound på nytt én gang for å tømme bufrede svar. [Slik fungerer oppdateringer](/docs/safety/how-updates-work) beskriver hele modellen for tilgjengelighet og reservekopi.
+
+Når et blokkert undertre spørres med en uvanlig, men gyldig DNS-etikett som inneholder et mellomrom eller en byte over `0x7f`, bevarer Sinkhole navnet i wireformat i svaret og returnerer fortsatt det vanlige svaret `0.0.0.0` eller `::`. Spørringen blir ikke SERVFAIL bare fordi etiketten ikke har vertsnavnformat.
+

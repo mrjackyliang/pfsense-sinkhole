@@ -1,0 +1,81 @@
+---
+id: testing-and-verification
+title: Testing og verifisering
+description: Verifiser installasjon, eierskap til Resolver, avgjørelser etter omfang, varsler, Bypass-beskyttelse, IP-blokkering, oppdateringer og sikker fjerning på en laboratoriebrannmur.
+keywords:
+  - sinkhole for pfsense
+  - testing
+  - verifisering
+  - laboratoriebrannmur
+  - utgivelsessikkerhet
+tags:
+  - safety
+  - testing
+  - verification
+---
+
+Test Sinkhole i et midlertidig pfSense-laboratorium før du innfører DNS-, NAT- eller brannmurpolicyen i et produksjonsnettverk.
+
+## Verifiser pakkedownloaden \{#verify-the-package-download}
+
+Last ned den stabile pakken og `.sha256`-ressursen fra samme GitHub-utgivelse. Sammenlign SHA-256-sammendraget for pakken med den ene hashverdien i `pfSense-pkg-Sinkhole.pkg.sha256` før du kjører `pkg add -f`.
+
+En HTTPS-nedlasting alene erstatter ikke sammenligning av kontrollsummen. Hold pakken og kontrollsummen samlet når de overføres til en brannmur via en annen maskin.
+
+## Verifiser en grunnleggende installasjon \{#verify-a-basic-installation}
+
+1. Bekreft at **Firewall → Sinkhole** åpnes, og at den installerte versjonen vises under **About**.
+2. Bekreft at **Services → DNS Resolver** er aktivert, og at Python-plassen ikke eies av en annen pakke.
+3. Aktiver Sinkhole, lagre, og bekreft at **Status → Sinkhole** er `Active`.
+4. Bekreft at identifikatorene for kompilert, distribuert og lastet generasjon samsvarer etter den første vellykkede oppdateringen.
+
+Sinkhole nekter å erstatte pfBlockerNG DNSBL eller et annet skript i den eneste Python-modulplassen i Unbound. Behandle den inaktive tilstanden som en konfigurasjonskonflikt, ikke som en installasjonsfeil.
+
+## Verifiser DNS-policy \{#verify-dns-policy}
+
+Bruk oppdiktede testdomener fra en liste du kontrollerer, i stedet for en offentlig liste. Test én avgjørelse om gangen fra klienter der enhets- og nettverksidentiteten er synlig i Status.
+
+1. Bekreft at et navn som ikke står på listen, løses normalt.
+2. Bekreft at en global liste blokkerer testnavnet.
+3. Legg til et tillatt nettverksdomene, og bekreft at det passerer nettverkslister og globale lister.
+4. Legg til en enhetsavgjørelse, og bekreft den [dokumenterte rekkefølgen](/docs/configure/scopes#decision-order).
+5. Fjern testdataene, og bekreft at den neste distribuerte generasjonen gjenoppretter det forventede svaret.
+
+Unngå `test.`, `invalid.`, `onion.` og `localhost.`, fordi Unbound svarer på disse innebygde sonene før Python-moduler. Tøm DNS-buffere på klientsiden mellom kontrollene når resultatet ellers kan brukes på nytt.
+
+## Verifiser varsler \{#verify-alerts}
+
+Opprett én smal regel for en blokkering av et oppdiktet testdomene og en kjent laboratorieklient. Bekreft at den neste minuttjobben registrerer hendelsen og sender den gjennom det konfigurerte varslingssystemet i pfSense.
+
+Gjenta innenfor gjentakelsesvinduet for regelen for å bekrefte at varselet undertrykkes. Fjern regelen etterpå, og bekreft at Status ikke lenger rapporterer feil i varslingsbehandlingen.
+
+## Verifiser Bypass-beskyttelse \{#verify-bypass-protection}
+
+Velg ett isolert laboratoriegrensesnitt og aktiver én Bypass-beskyttelse om gangen. Etter hver test bekrefter du at en tilsvarende klient på et grensesnitt som ikke er valgt, forblir uberørt.
+
+1. Aktiver **Redirect**, bekreft at adressefamilien har en Resolver-lytter, og send vanlige UDP- og TCP-spørringer på port 53 til et annet mål. Bekreft at pfSense mottar dem.
+2. Legg til et bevisst ugyldig unntak bare i en midlertidig konfigurasjon, og bekreft at omdirigering blir **Paused** i stedet for å laste delvise regler. Gjenopprett gyldige data, vent på de to observasjonene per minutt, og bekreft at **pfSense loaded rules** går tilbake til `Yes`.
+3. Aktiver **TLS and QUIC**, og bekreft deretter at TCP- og UDP-port 853 til et laboratoriemål blokkeres, mens trafikk til brannmuren ikke gjør det.
+4. Legg til en deaktivert Bypass List som bare inneholder oppdiktede domener, adresser, CIDR-er, kommentarer og ugyldige data. Aktiver den og den tilhørende beskyttelsen, og bekreft at gyldige navn og adresser blokkeres, ugyldige linjer hoppes over, og en senere mislykket henting beholder den lagrede kopien.
+5. Bekreft at testspørringer for Firefox og Private Relay mottar `NXDOMAIN`. Bekreft at DDR returnerer et tomt `NOERROR`-svar i modusen **Answer with no records**.
+6. Med Resolverens SSL/TLS-tjeneste konfigurert i laboratoriet bekrefter du at **Advertise** returnerer SVCB med sertifikatvertsnavnet, `alpn=dot` og port `853`. Slå av tjenesten og bekreft at lagring av **Advertise** mislykkes ved validering.
+7. Aktiver standard VPN-porter og test TCP og UDP `1194`, UDP `51820`, UDP `500` og `4500` samt ESP mot et laboratoriemål. Bekreft at trafikk adressert til brannmuren ikke blokkeres.
+
+Etter hver brannmurtest bekrefter du at **Status → Bypass** rapporterer forventet regeltilstand, og at `sinkhole/ip`, når det er aktivert separat, forblir lastet.
+
+## Verifiser IP- og landblokkering \{#verify-ip-and-country-blocking}
+
+Bruk en oppdiktet IP-listefixture og en adresse som ikke kan påvirke administrasjon av brannmuren, gatewayene eller DNS. Bekreft det endelige tabellantallet for familien, det valgte grensesnittet og retningen samt **IP Anchor → Yes** før du tester trafikk.
+
+Bekreft at et tillatt testområde fjernes fra blokkeringstabellen. Hvis du tester GeoLite2, bruker du administratorens egen MaxMind-nøkkel og fjerner den fra alle registrerte utdata.
+
+## Verifiser virkemåten for oppdatering og fjerning \{#verify-update-and-removal-behavior}
+
+Kjør en manuell listeoppdatering, og bekreft at DNS fortsetter å svare mens Status går gjennom oppdatering, kompilering, distribusjon og lastet tilstand. En kilde som mislykkes med hensikt, skal beholde den tidligere lagrede kopien og vise feilen.
+
+Før fjerning avgjør du om **Keep Settings** skal bevare konfigurasjon og lagrede lister. Fjern med `pkg delete -f pfSense-pkg-Sinkhole`, og bekreft deretter at Resolver-integrasjonen, planlagte jobber, omdirigeringsregler for vanlig DNS, ankrene `sinkhole/bypass` og `sinkhole/ip`, bufrede Bypass-data og midlertidige kjøretidsfiler er borte.
+
+## Registrer miljøet \{#record-the-environment}
+
+For en nyttig testlogg registrerer du Sinkhole-versjon, pfSense-utgave og -utgivelse, FreeBSD-utgivelse, valgte funksjoner, Status-tilstand og rensede `Sinkhole:`-linjer fra systemloggen. Ingen pfSense-utgivelse er for tiden oppført som offisielt testet. Kompatibilitetstesting utføres før hver Sinkhole-utgivelse.
+

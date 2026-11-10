@@ -1,0 +1,33 @@
+---
+id: blocked-services
+title: Servizi bloccati
+description: Blocca interi servizi globalmente o per una rete o un dispositivo configurato da un registro in cache, mantenendo priorità dei domini consentiti e scelte riparabili.
+keywords:
+  - sinkhole for pfsense
+  - servizi bloccati
+  - blocco dei servizi
+  - ambito di rete
+  - ambito di dispositivo
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Usa **Firewall → Sinkhole → Services** quando vuoi bloccare un intero marchio senza scegliere e mantenere l’URL di una lista separata.
+
+## Scegliere un ambito \{#choose-a-scope}
+
+Seleziona **Global**, una rete configurata o un dispositivo configurato. Cerca un servizio, restringi i riquadri con un chip di gruppo, attiva o disattiva i servizi, quindi seleziona **Save** sotto le schede dei servizi.
+
+La selezione viene compilata al livello esistente di quell’ambito. I domini consentiti del dispositivo continuano ad avere la precedenza sulle sue regole di servizio, quelli della rete sulle sue regole di servizio e i domini consentiti globali sulle regole di servizio globali.
+
+I servizi coperti da una protezione Bypass dedicata non compaiono nella griglia, nei conteggi dei gruppi o nella ricerca. Private Relay si configura solo nella scheda Bypass.
+
+## Registro e riparazione \{#registry-and-repair}
+
+Sinkhole recupera il registro dei servizi di AdGuard Home solo quando questa pagina viene aperta o quando selezioni **Refresh**. Mantiene l’ultima copia valida in `/var/db` per un giorno, così la compilazione non attende mai la rete.
+
+I loghi dei servizi vengono visualizzati come immagini Data URI isolate. Per loghi mancanti o troppo grandi viene usata un’immagine generica. Se un servizio salvato scompare da un registro più recente, Sinkhole ne conserva l’ID e lo mostra in **Needs Repair**; disattivalo e salva per rimuovere la scelta.
+
+La scheda **Status** mostra l’ora di recupero del registro, l’ultimo errore e il numero di servizi bloccati selezionati per ogni ambito configurato.

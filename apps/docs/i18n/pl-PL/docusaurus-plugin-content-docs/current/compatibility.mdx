@@ -1,0 +1,73 @@
+---
+id: compatibility
+title: Zgodność
+description: Sprawdź ABI pakietu FreeBSD, zasady testowania pfSense, wymagania DNS Resolver, konflikt miejsca na skrypt Python, stan języków i znane ograniczenia Sinkhole.
+keywords:
+  - sinkhole for pfsense
+  - zgodność
+  - abi freebsd
+  - wydania pfsense
+  - unbound python
+tags:
+  - setup
+  - compatibility
+  - pfsense
+sidebar_position: 4
+---
+
+Przed użyciem Sinkhole do zasad DNS lub IP sprawdź wymagania dotyczące pakietu, Resolver i sieci.
+
+## pfSense i FreeBSD \{#pfsense-and-freebsd}
+
+- Pakiety wydań są budowane na głównej wersji FreeBSD skonfigurowanej w przepływie pracy, a następnie przebudowywane z ABI `FreeBSD:*`, dzięki czemu jeden pakiet można instalować w różnych głównych wersjach FreeBSD.
+- Pakiet jest oznaczony jako kluczowy, więc etap automatycznego usuwania podczas uaktualniania pfSense nie usuwa go tylko dlatego, że nie znajduje się w repozytorium Netgate.
+- Szerokie ABI pakietu nie dowodzi zgodności z każdym wydaniem pfSense, ponieważ interfejsy API pfSense i dołączone usługi mogą się zmieniać.
+
+## Przetestowane wydania \{#tested-releases}
+
+Następujące wydania pfSense przeszły pełną weryfikację kompleksową:
+
+| Wydanie pfSense      | FreeBSD |
+|----------------------|---------|
+| pfSense CE 2.9.0     | 16.0    |
+| pfSense CE 2.8.1     | 15.0    |
+| pfSense Plus 26.07   | 16.0    |
+| pfSense Plus 26.03.1 | 16.0    |
+
+Każde przetestowane wydanie przeszło kompleksowo instalację, aktualizację, test blokowania i usunięcie.
+
+Karta **About** oznacza pasujące wydanie jako **This firewall**. Dla zapory nieujętej na liście dodaje wiersz **Not tested**, zamiast traktować ABI `FreeBSD:*` jako deklarację obsługi.
+
+## Wymagania DNS Resolver \{#dns-resolver-requirements}
+
+- Oparty na Unbound DNS Resolver w pfSense musi być włączony.
+- Jedyne miejsce na skrypt Python w Resolver musi być puste lub już należeć do Sinkhole.
+- Sinkhole używa pozycji modułu `pre_validator` i zgłasza stan nieaktywny, jeśli tryb Python, właściciel miejsca, pozycja lub pliki środowiska uruchomieniowego nie są zgodne.
+
+pfBlockerNG DNSBL używa tego samego miejsca na skrypt Python co Sinkhole. Sinkhole odmawia jego przejęcia, gdy właścicielem jest `pfb_unbound` lub inny skrypt.
+
+## Wymagania sieciowe \{#network-requirements}
+
+- Zakresy sieciowe używają bieżących podsieci IPv4 i IPv6 skonfigurowanych interfejsów pfSense.
+- Urządzenia identyfikowane według adresu MAC lub statycznego mapowania zależą od bieżących danych ARP, NDP, dzierżaw DHCP, mapowań statycznych i interfejsów.
+- Przekierowanie zwykłego DNS w **Bypass** wymaga rodziny adresów na wybranym interfejsie i pasującego nasłuchiwania Resolver.
+- Przekierowani klienci nadal muszą być dozwoleni w ustawieniach kontroli dostępu Resolver.
+
+## Opcjonalne dane krajów \{#optional-country-data}
+
+Blokowanie krajów wymaga własnego identyfikatora konta MaxMind i klucza licencyjnego GeoLite2 administratora. Sinkhole nie dostarcza ani nie rejestruje klucza, a blokowanie IP działa bez danych krajów, gdy wybrane są tylko listy IP.
+
+## Znane ograniczenia \{#known-limits}
+
+- Ochrona Bypass obejmuje tylko wybrane interfejsy oraz wyłącznie protokoły, sygnały, nazwy, adresy i standardowe porty włączone przez administratora.
+- Niestandardowe konfiguracje szyfrowanego DNS i tuneli nadal mogą omijać zasady oparte na DNS, dlatego Sinkhole nie gwarantuje pełnej ochrony.
+- Wbudowane strefy lokalne Unbound `test.`, `invalid.`, `onion.` i `localhost.` odpowiadają przed modułami Python i nie nadają się do testów filtrowania na żywo.
+- W razie konfliktu adresów urządzeń wygrywa pierwsze urządzenie w kolejności tabeli, a Status zgłasza konflikt.
+- W zmierzonych testach z 300 000 nazwami RSS Unbound wzrósł z 41 MiB do 103 MiB, a szczytowe zużycie pamięci zasad wynosiło około 157 bajtów na nazwę.
+
+## Języki \{#languages}
+
+Pakiet wybiera sformułowania WebGUI, wiersza poleceń, walidacji, Status i powiadomień na podstawie ustawienia języka pfSense. Katalogiem źródłowym jest język angielski, a brakujące tłumaczenia korzystają obecnie z języka angielskiego.
+
+Trwają prace nad dodatkowymi tłumaczeniami pakietu, natomiast dokumentacja jest dostępna we wszystkich 18 wersjach językowych pfSense. Nazwy marek i produktów, takie jak Sinkhole, pfSense, FreeBSD i MaxMind, pozostają niezmienione.
+

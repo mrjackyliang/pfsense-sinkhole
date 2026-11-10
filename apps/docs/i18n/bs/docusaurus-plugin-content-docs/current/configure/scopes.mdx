@@ -1,0 +1,80 @@
+---
+id: scopes
+title: Opsezi i dopuštene domene
+description: Dodijelite liste i dopuštene domene globalnim, interfejsnim i uređajskim opsezima, a zatim slijedite tačan redoslijed najodređenije odluke za svaki DNS upit.
+keywords:
+  - sinkhole for pfsense
+  - opsezi
+  - vlan blokiranje
+  - pravila uređaja
+  - dopuštene domene
+tags:
+  - configure
+  - scopes
+  - dns
+---
+
+Dodijelite liste i dopuštene domene na globalnom, mrežnom i uređajskom nivou, tako da svaki klijent dobije pravila namijenjena njegovoj trenutnoj lokaciji.
+
+## Zašto koristiti opsege? \{#why-use-scopes}
+
+1. Daje svakom interfejsu pfSensea ili VLAN-u vlastita pravila, uz zadržavanje globalnih pravila za sve.
+2. Daje jednom uređaju određeniju odluku bez potrebe za zasebnim DNS serverom.
+3. Omogućava dopuštenim domenama ispravljanje lažno pozitivnih rezultata na odgovarajućem nivou bez uklanjanja cijele liste.
+4. Drži adrese klijenata odvojeno od kompajliranih lista, tako da promjene DHCP-a, susjeda ili interfejsa ne učitavaju ponovo Unbound.
+
+## Globalni opseg \{#global-scope}
+
+Lista s odabranim **Global** primjenjuje se na svakog klijenta nakon odluka uređaja i mreže. Globalne dopuštene domene unose se na kartici **Lists** i propuštaju navedenu domenu i njene poddomene kroz globalne liste.
+
+Klijent koji ne odgovara nijednom omogućenom opsegu mreže ili uređaja dobija samo ovaj nivo.
+
+## Mrežni opsezi \{#network-scopes}
+
+Otvorite **Firewall → Sinkhole → Scopes**, a zatim odaberite **Add** ispod tabele Networks. Uređivač prema zadanim postavkama bira LAN ili prvi dostupni interfejs koji nije WAN i izostavlja interfejse koji već imaju mrežni opseg. Klijent pripada toj mreži kada je njegova adresa unutar jedne od trenutnih IPv4 ili IPv6 podmreža interfejsa.
+
+Svaki mrežni red bira dodatne liste, dopuštene domene i je li opseg omogućen. Spremanje vraća na Scopes; odaberite olovku ili dvaput kliknite red da biste ga uredili. Uređaj koji prelazi između mreža dobija pravila mreže kojoj odgovara njegova trenutna adresa.
+
+## Opsezi uređaja \{#device-scopes}
+
+Odaberite **Add** ispod tabele Devices, unesite naziv i izaberite jedan način identifikacije. Uređivač prikazuje samo polje identifikatora koje se odnosi na odabrani način:
+
+| Način               | Adrese koje se koriste za uređaj                                             |
+|---------------------|------------------------------------------------------------------------------|
+| IP address          | Konfigurirana IPv4 ili IPv6 adresa.                                          |
+| DHCP static mapping | Njegova konfigurirana adresa i trenutne adrese opažene za MAC tog mapiranja. |
+| MAC address         | Trenutne adrese ARP-a, NDP-a i DHCP zakupa za taj MAC.                       |
+
+Red uređaja bira njegove liste, dopuštene domene i omogućeno stanje. Spremanje vraća na Scopes; odaberite olovku ili dvaput kliknite red da biste ga uredili. Pozadinski posao osvježava trenutne podmreže i adrese uređaja svake minute dok DNS blokiranje ima omogućeni mrežni ili uređajski opseg, ili dok Bypass DNS zaštita zahtijeva prepoznavanje klijenta. Sync paketa pokreće isto osvježavanje samo pod tim uslovom.
+
+## Redoslijed odlučivanja \{#decision-order}
+
+Najodređeniji odgovarajući nivo odlučuje o svakom upitu ovim tačnim redoslijedom:
+
+1. **Device allowed domains** — Odmah dopušta kada se naziv upita podudara.
+2. **Device lists** — Odmah blokira kada se podudara odabrana lista uređaja.
+3. **Network allowed domains** — Odmah dopušta kada se podudara mrežni izuzetak.
+4. **Network lists** — Odmah blokira kada se podudara odabrana mrežna lista.
+5. **Global allowed domains** — Odmah dopušta kada se podudara globalni izuzetak.
+6. **Global lists** — Blokira kada se podudara globalna lista.
+
+Upit prolazi kada nijedan korak ne donese odluku. Dopuštene domene nekog nivoa nadjačavaju liste naslijeđene s manje određenih nivoa, ali ne nadjačavaju liste na određenijem nivou koji je već donio odluku.
+
+## Ponašanje dopuštenih domena \{#allowed-domain-behavior}
+
+Svaki unos dopuštene domene primjenjuje se na tačnu domenu i svaku poddomenu. Na primjer, dopuštanje `service.example` dopušta i `api.service.example` na tom nivou.
+
+- Izuzetak uređaja može propustiti liste uređaja, mreže i globalne liste jer se prvi provjerava.
+- Mrežni izuzetak može propustiti mrežne i globalne liste, ali ne i odluku liste uređaja.
+- Globalni izuzetak može propustiti samo globalne liste.
+
+## Sukobi adresa \{#address-conflicts}
+
+Kada dva reda uređaja polažu pravo na istu trenutnu adresu, prvi uređaj po redoslijedu u tabeli ima prednost. **Status → Scopes** prikazuje adresu pod **Conflict** za svaki pogođeni red, kako bi se redoslijed ili identifikatori mogli ispraviti.
+
+## Provjerite opseg \{#verify-a-scope}
+
+1. Pokrenite `/usr/local/sbin/sinkhole --refresh-clients` ili pričekajte minutno osvježavanje.
+2. Otvorite **Status → Scopes** i potvrdite trenutne podmreže mreže i trenutne adrese uređaja.
+3. Pošaljite upit za naziv s klijenta u tom opsegu i uporedite rezultat s navedenim redoslijedom odlučivanja.
+4. Prije oslanjanja na ponašanje specifično za uređaj provjerite postoji li sukob adresa.

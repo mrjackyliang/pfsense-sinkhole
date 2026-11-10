@@ -1,0 +1,86 @@
+---
+id: ip-and-country-blocking
+title: IP 和国家/地区阻止
+description: 使用 IP 列表和 GeoLite2 国家/地区阻止所选源或目标网络，减去受保护地址，并管理 sinkhole/ip 锚点。
+keywords:
+  - sinkhole for pfsense
+  - ip 阻止
+  - 国家阻止
+  - geolite2
+  - pf 锚点
+tags:
+  - configure
+  - ip blocking
+  - firewall
+---
+
+通过 `sinkhole/ip` pf 锚点中由软件包管理的表，独立于 DNS 策略阻止所选 IP 源或目标。
+
+## 为什么使用 IP 阻止？ \{#why-use-ip-blocking}
+
+1. 当流量不涉及 DNS 名称时，按地址或国家/地区覆盖流量。
+2. 在所选接口和方向上独立应用，因此 WAN 和客户端网络策略可以不同。
+3. 保留规范化的最后有效 IP 副本，并原子更新活动表。
+4. 防止来源列表意外包含防火墙、网关和 DNS 地址。
+
+## 启用功能 \{#enable-the-feature}
+
+打开 **Firewall → Sinkhole → IP**，仅在选择接口和方向后选择 **Enable**。IP 和国家/地区阻止默认关闭，不依赖 General DNS 开关。
+
+| 设置         | 行为                        |
+|------------|---------------------------|
+| Interfaces | 在所选到达接口上生成规则。             |
+| Inbound    | 阻止来自所列源地址的数据包，通常用于 WAN。   |
+| Outbound   | 阻止发往所列目标地址的数据包，通常用于客户端网络。 |
+
+锚点包含 `block drop in quick` 规则，不包含 pass 规则。Sinkhole 通过 pfSense 的早期软件包规则位置引用它，让阻止在普通 pass-quick 规则前执行。该页面先显示 IP 列表和目录面板，再显示页面级 IP 和国家/地区设置，并在面板下方提供 **Save**。
+
+## 添加 IP 列表 \{#add-ip-lists}
+
+选择 IP Lists 表格下方的 **Add** 以打开 IP 列表编辑器。每行使用 HTTP 或 HTTPS URL，选择 IPv4、IPv6 或两个地址族，并控制是否启用来源。保存后会返回 IP 选项卡；选择铅笔图标或双击某行即可编辑。
+
+也可以通过 pfBlockerNG 源目录的 IP 部分查找列表。
+
+有效行是单个 IPv4 或 IPv6 地址以及 CIDR 网络。无效行会被跳过并计数；没有有效条目的下载不会替换最后一份有效副本。
+
+目录仅在其搜索打开或刷新时下载，并使用与 DNS 目录搜索相同的一天最后有效缓存。添加结果会创建普通 IP 列表行，不提供评分或推荐。
+
+Encrypted DNS、Tor 和 VPN 绕过订阅源会从 IP 目录中排除，并且只显示在 Bypass 标签页。
+
+每张卡片的 **Contents** 行显示 **IPv4 addresses** 或 **IPv6 addresses**。添加 pfBlockerNG 结果时，Sinkhole 会在保存的名称后附加 ` (IPv4)` 或 ` (IPv6)`，并在必要时仅截短基础名称。
+
+## 添加国家/地区 \{#add-countries}
+
+国家/地区来自 MaxMind GeoLite2 Country CSV 数据，以两个字母的 ISO 代码输入。其网络会加入被阻止的地址族表。
+
+- **MaxMind Account ID** 在选择国家/地区时必需。
+- **MaxMind License Key** 由管理员提供，像 pfSense 密码字段一样存储，保存后绝不显示。
+- **Clear License Key** 明确删除已保存的密钥。
+
+Sinkhole 会验证并导入 GeoLite2 归档，最多每周更新一次。软件包绝不附带 MaxMind 账户或许可证密钥。
+
+## 允许和保护地址 \{#allow-and-protect-addresses}
+
+**IP Allowlist** 接受 IPv4 或 IPv6 地址、CIDR 网络和现有主机/网络别名。在写入表文件前，会从合并的阻止集合中减去允许范围。
+
+Sinkhole 还会自动减去以下受保护地址：
+
+- 分配给防火墙的每个地址。
+- 网关地址，包括通过 DHCP 或 PPP 获取的地址。
+- DNS 服务器地址，包括通过 DHCP 或 PPP 获取的地址。
+
+减法可以把被阻止的 CIDR 拆成更小的网络，使只有受保护地址通过。
+
+## 了解锚点 \{#understand-the-anchor}
+
+软件包自行加载 `sinkhole/ip`，其中包含两个持久地址族表和所选接口规则。列表更新只替换该锚点内的表，而 Sync 和每分钟检查可以加载完整锚点。
+
+锚点内容在普通 pfSense 过滤器重新加载后仍保留，不属于主规则集的表清理范围。关闭 IP 阻止或删除 Sinkhole 会清空锚点。
+
+## 验证状态 \{#verify-the-state}
+
+**Status → IP and Country Blocking** 显示启用状态、接口、方向、国家/地区、密钥状态、表大小、跳过行数、最后成功更新、GeoLite2 更新时间、锚点状态、规则数和最后错误。每个 IP 列表行还显示地址族、条目、跳过行数、最后获取和错误。
+
+锚点状态 **Out of date** 表示已加载文本或表与当前设置不匹配。每分钟协调会立即加载空锚点或已改变的锚点；[故障排除](/docs/operate/troubleshooting#ip-blocking-does-not-match-settings)介绍相应检查。
+
+比 IPv4 `/8` 或 IPv6 `/16` 更宽的 IP 列表条目会被跳过并计入统计；边界网络 `/8` 和 `/16` 可以接受。此限制不适用于 IP Allowlist，因为允许列表只会缩小阻止范围。写入表之前，Sinkhole 始终会减去所有防火墙接口的 IPv4 和 IPv6 地址、为 IP 阻止选择的接口的完整子网、CARP 和 IP Alias 虚拟地址，以及已配置的网关和 DNS 服务器。

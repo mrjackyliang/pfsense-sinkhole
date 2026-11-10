@@ -1,0 +1,10 @@
+{
+  "item.label.Guides": {
+    "message": "Guide",
+    "description": "Navbar item with label \"Guides\""
+  },
+  "item.label.Troubleshooting": {
+    "message": "Risoluzione dei problemi",
+    "description": "Navbar item with label \"Troubleshooting\""
+  }
+}

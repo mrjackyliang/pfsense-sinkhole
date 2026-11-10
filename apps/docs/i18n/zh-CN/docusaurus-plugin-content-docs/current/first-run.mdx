@@ -1,0 +1,73 @@
+---
+id: first-run
+title: 设置 Sinkhole
+description: 添加可信列表，选择全局或作用域策略，启用 Resolver 集成，运行首次更新，并验证 Sinkhole 的活动代次。
+keywords:
+  - sinkhole for pfsense
+  - 首次运行
+  - dns resolver
+  - 阻止列表
+  - 状态
+tags:
+  - setup
+  - first run
+  - dns
+sidebar_position: 3
+---
+
+先设置一份可信列表并验证其已保存、已编译、已部署和已加载状态，再扩展策略。
+
+## 检查 Resolver \{#check-the-resolver}
+
+1. 打开 **Services → DNS Resolver**，确认 Resolver 已启用。
+2. 如果启用了 pfBlockerNG DNSBL，请选择由哪个软件包负责 DNS 过滤，因为两个软件包无法同时使用 Unbound 的 Python 槽位。
+3. 打开 **Firewall → Sinkhole → General**，在准备第一份策略时保持 **Enable** 关闭。
+
+当另一个 Python 脚本占用该槽位时，Sinkhole 拒绝保存 **Enable**。以后禁用 Sinkhole 时，只要 Sinkhole 仍拥有这些设置，它就会恢复 Resolver 之前的 Python 设置。
+
+## 添加列表 \{#add-a-list}
+
+1. 打开 **Lists**，添加您信任的来源 URL；也可以打开 **Add from Catalog** 搜索两个按需目录。
+2. 为来源指定本地名称，并保持 **Enabled** 选中，让 Sinkhole 下载它。
+3. 仅当该列表应在所有设备和网络规则之后应用时，才保持 **Global** 选中。
+4. 如果需要放行已知的误报，请添加任意全局 **Allowed Domains**，每行一个域名。
+
+Sinkhole 不推荐任何来源。[列表和已保存副本](/docs/configure/lists)说明可接受的格式，以及目录结果如何成为普通列表行。
+
+## 添加可选作用域 \{#add-optional-scopes}
+
+当某个网络或设备需要全局层级以外的策略时，打开 **Scopes**：
+
+- 为一个已配置的 pfSense 接口添加 **Network**，然后选择其列表和允许的域名。
+- 通过 IP 地址、DHCP 静态映射或 MAC 地址添加 **Device**，然后选择其列表和允许的域名。
+
+设备会继承其当前所在网络，而网络会继承全局列表。[作用域和允许的域名](/docs/configure/scopes)展示名称被放行或阻止时采用的决定顺序。
+
+## 启用并更新 \{#enable-and-update}
+
+1. 返回 **General** 并选择 **Enable**。
+2. 为已启用的 DNS 列表选择 **Update Frequency** 并保存。
+3. 打开 **Status** 并选择 **Update Now**。
+4. 等待 **Update running** 恢复为 `No`。
+
+General 开关启用计划 DNS 列表更新和 DNS Resolver 集成。已启用的 Bypass Lists 和 IP/国家地区策略独立使用同一更新计划；所有 Bypass 和 IP 保护在管理员启用之前都保持关闭。
+
+## 验证活动状态 \{#verify-the-active-state}
+
+当 Status 面板显示以下所有结果时，首次更新已经就绪：
+
+- **Lists** 为每个可用来源显示非零条目数和 **Last Successful Update**。
+- **Summary** 中的 **Compile Needed** 和 **Deployment Needed** 显示 `No`。
+- **Compiled Generation**、**Deployed Generation** 和 **Loaded Generation** 标识当前代次。
+- **DNS Resolver Python Script Owner** 显示 `sinkhole`。
+- **Sinkhole** 显示 `Active`，且没有原因。
+
+如果页面报告非活动原因或待处理代次，[Status](/docs/operate/status)会说明状态，[故障排除](/docs/operate/troubleshooting)会按照各个可能原因处理。
+
+## 谨慎添加警报和 Bypass 保护 \{#add-alerts-and-bypass-protection-carefully}
+
+建议先验证作用域 DNS 应答，再添加警报规则或 Bypass 保护。警报可能透露客户端活动，而 Bypass 设置可以重定向或拦截从所选接口传入的流量。
+
+- [警报](/docs/configure/alerts)按列表、客户端、重复窗口和固定上限限制发送。
+- [防绕过保护](/docs/configure/bypass-protection)介绍普通 DNS 重定向、加密 DNS 信号、提供商列表和隧道保护。
+- [IP 和国家/地区阻止](/docs/configure/ip-and-country-blocking)介绍独立且默认关闭的数据包过滤器。

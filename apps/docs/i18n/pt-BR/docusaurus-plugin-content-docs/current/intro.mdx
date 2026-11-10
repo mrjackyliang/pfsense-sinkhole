@@ -1,0 +1,74 @@
+---
+id: intro
+title: Visão geral
+description: Bloqueie sites indesejados no pfSense com políticas separadas para toda a rede, cada VLAN ou um dispositivo, sem adicionar outro host DNS.
+keywords:
+  - sinkhole for pfsense
+  - visão geral
+  - bloqueio de dns
+  - política de rede
+  - listas de bloqueio
+tags:
+  - setup
+  - overview
+  - dns
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Bloqueie sites indesejados com políticas separadas para toda a rede, uma VLAN ou um dispositivo, tudo dentro do pfSense.
+
+## O que o Sinkhole faz \{#what-sinkhole-does}
+
+O Sinkhole for pfSense oferece a pais e empregadores controle sobre quais <Terminology title="nomes ou endereços selecionados para bloqueio" to="/docs/reference/terminology#block-list">listas de bloqueio</Terminology> se aplicam a cada parte de uma rede. Ele mantém as últimas cópias válidas no firewall, para que o DNS possa responder imediatamente após uma reinicialização ou recarga enquanto cópias mais recentes são baixadas em segundo plano.
+
+Nomes bloqueados respondem com `0.0.0.0` ou `::`. Uma cadeia CNAME que chega a um nome bloqueado também é bloqueada, enquanto um nome permitido no nível decisório continua permitido.
+
+## Por que usar o Sinkhole? \{#why-use-sinkhole}
+
+1. Aplica políticas nos <Terminology title="onde uma lista de bloqueio se aplica" to="/docs/reference/terminology#scope">escopos</Terminology> global, de rede e de dispositivo, para que crianças, convidados, funcionários e dispositivos individuais possam receber listas diferentes.
+2. Usa <Terminology title="última cópia válida da lista mantida no firewall" to="/docs/reference/terminology#saved-list">listas salvas</Terminology> para que o DNS nunca espere por um download nem perca uma lista funcional após uma atualização com falha.
+3. Envia uma <Terminology title="combinação de lista e cliente que envia uma notificação" to="/docs/reference/terminology#alert-rule">regra de alerta</Terminology> apenas para as listas e os clientes escolhidos, pelo próprio sistema de notificações do pfSense.
+4. Oferece <Terminology title="controles que mantêm os clientes selecionados em caminhos DNS inspecionados" to="/docs/reference/terminology#bypass-protection">proteção contra evasão</Terminology> opcional para DNS comum, descoberta e provedores de DNS criptografado, relays Tor e provedores ou portas de VPN.
+5. Acrescenta bloqueio separado por IP e país quando a filtragem de DNS não basta, sem exigir um segundo host ou serviço em nuvem.
+
+## Como funciona a integração com o DNS \{#how-dns-integration-works}
+
+O Sinkhole é executado como um módulo Python dentro do <Terminology title="serviço DNS Unbound do pfSense" to="/docs/reference/terminology#dns-resolver">DNS Resolver</Terminology> do pfSense, baseado no Unbound. O módulo carrega somente arquivos locais compilados quando o Unbound inicia e observa novas gerações locais sem fazer uma consulta DNS esperar.
+
+O DNS Resolver oferece um único espaço para script Python. O Sinkhole só o ocupa quando ele está vazio ou já pertence ao Sinkhole e se recusa a substituir outro proprietário, como o módulo DNSBL do pfBlockerNG.
+
+:::warning
+
+O Sinkhole e o DNSBL do pfBlockerNG não podem filtrar DNS ao mesmo tempo porque ambos precisam do único espaço para script Python do Resolver.
+
+:::
+
+## O que permanece sob seu controle \{#what-stays-under-your-control}
+
+- **Lists** — Adicione fontes em que você confia por URL ou encontre-as com a <Terminology title="pesquisa de catálogo sob demanda na WebGUI" to="/docs/reference/terminology#popular-list-search">pesquisa de listas populares</Terminology> neutra. O Sinkhole não publica nem recomenda nenhuma lista.
+- **Scopes** — Escolha listas globais, listas para uma interface ou VLAN do pfSense e listas para um dispositivo identificado por endereço IP, mapeamento estático de DHCP ou endereço MAC.
+- **Allowed domains** — Permita um domínio e seus subdomínios no nível global, de rede ou de dispositivo sem remover uma lista inteira.
+- **Alerts** — Escolha as combinações de lista e cliente que criam avisos locais na WebGUI ou usam os serviços de notificação remota configurados no pfSense.
+- **Bypass** — Mantenha todos os controles desativados ou selecione as interfaces voltadas aos clientes e ative explicitamente o redirecionamento de DNS comum, os sinais de DNS criptografado, as listas de provedores ou as proteções contra túneis.
+- **IP blocking** — Mantenha-o desativado ou selecione listas de IP, países, interfaces, direções e endereços permitidos.
+
+## Limites \{#limits}
+
+O bloqueio de DNS não é um controle completo de tráfego. A proteção contra evasão cobre caminhos alternativos comuns somente quando cada controle está ativado e não consegue identificar todos os túneis criptografados ou personalizados.
+
+Eventos de bloqueio e avisos revelam o que os clientes tentaram acessar. Essas informações permanecem no firewall, exceto pelas notificações que você decidir enviar pelo pfSense.
+
+## Idiomas \{#languages}
+
+A WebGUI segue o idioma selecionado no pfSense e recorre ao inglês quando uma tradução ainda não está disponível. Traduções adicionais da WebGUI estão em andamento e continuam usando esse fallback até que cada catálogo seja revisado.
+
+O site de documentação oferece inglês e os outros 17 idiomas do pfSense. As páginas traduzidas preservam as âncoras em inglês para que os links cheguem à mesma seção em todos os idiomas.
+
+## Próximas etapas \{#next-steps}
+
+- **[Instale o pacote](/docs/installation)** — Verifique e instale o pacote da versão estável.
+- **[Configure o Sinkhole](/docs/first-run)** — Adicione uma primeira lista, escolha seu escopo e verifique a geração ativa.
+- **[Entenda os escopos](/docs/configure/scopes)** — Siga a ordem exata de decisão entre dispositivo, rede e nível global.
+- **[Revise o modelo de segurança](/docs/safety/how-updates-work)** — Veja como cópias salvas e implantação atômica mantêm o DNS disponível.

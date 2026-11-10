@@ -1,0 +1,109 @@
+---
+id: bypass-protection
+title: Protección contra evasiones
+description: Mantenga las interfaces de cliente seleccionadas en rutas DNS controladas por Sinkhole con redirección de DNS simple, señales cifradas, listas de proveedores y bloqueos de túneles opcionales.
+keywords:
+  - sinkhole for pfsense
+  - protección contra evasiones
+  - redirección dns
+  - dns cifrado
+  - bloqueo de vpn
+tags:
+  - configure
+  - bypass
+  - dns
+---
+
+import bypassProtection from './_assets_/bypass-protection-1.png';
+
+Mantenga las consultas DNS de las interfaces de cliente seleccionadas en rutas que Sinkhole pueda inspeccionar. Todas las protecciones están desactivadas de forma predeterminada, no hay ninguna interfaz seleccionada de forma predeterminada y una actualización no activa ninguna protección ni lista.
+
+## Seleccionar las interfaces \{#choose-the-interfaces}
+
+Abra **Firewall → Sinkhole → Bypass** y seleccione interfaces en **Apply to** antes de activar una protección. Esta única selección se aplica a todos los ajustes de la página. Las protecciones solo inspeccionan el tráfico que llega de clientes por esas interfaces; no afectan a las consultas del propio firewall ni al tráfico saliente.
+
+La coincidencia de redes y dispositivos usa las subredes actuales de esas interfaces, igual que los ámbitos normales de Sinkhole. Un cliente fuera de las subredes seleccionadas no recibe ninguna respuesta DNS de Bypass.
+
+<img src={bypassProtection} alt="Pestaña Bypass con LAN seleccionada, redirección de DNS simple desactivada, protecciones de DNS cifrado y túneles activadas, Discovery configurado como Answer with no records y tres Bypass Lists de demostración" width={1024} height={1346} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Redirigir el DNS simple \{#redirect-plain-dns}
+
+Seleccione **Redirect → Send port 53 to the firewall** para enviar a pfSense el tráfico DNS ordinario TCP y UDP de las interfaces seleccionadas. Sinkhole conserva la dirección de origen para que la política de red y dispositivo siga aplicándose.
+
+La redirección mantiene sus destinos dependientes del listener y sus excepciones existentes:
+
+| Familia | Destino                                                                                                   |
+|---------|-----------------------------------------------------------------------------------------------------------|
+| IPv4    | `127.0.0.1` mientras el Resolver escucha en localhost; de lo contrario, la dirección IPv4 de la interfaz. |
+| IPv6    | La dirección IPv6 de la interfaz, nunca `::1`.                                                            |
+
+- **Exempt Sources** siguen accediendo a otro resolver.
+- **Exempt Destinations** siguen recibiendo tráfico DNS, lo que permite usar un resolver interno en otra red.
+
+Cada excepción admite una dirección IPv4, una dirección IPv6, una red CIDR o un alias de host/red de pfSense existente por línea. Una excepción guardada no válida pausa todas las reglas de redirección hasta que se corrija o elimine. Los clientes redirigidos aún necesitan acceso mediante los ajustes de control de acceso del Resolver.
+
+## Proteger el DNS cifrado \{#protect-encrypted-dns}
+
+Los ajustes de DNS cifrado son independientes:
+
+- **TLS and QUIC** bloquea el puerto 853 TCP y UDP hacia todos los destinos excepto el firewall.
+- **Providers** bloquea nombres y direcciones de las Bypass Lists activadas cuyo tipo sea **Encrypted DNS**.
+- **Firefox** responde a `use-application-dns.net` y sus subdominios con `NXDOMAIN`, lo que desactiva la selección automática de DNS sobre HTTPS de Firefox.
+- **Private Relay** responde a `mask.icloud.com` y `mask-h2.icloud.com` con `NXDOMAIN`, lo que indica a los dispositivos Apple compatibles que Private Relay no está disponible en esta red.
+
+Los nombres de las listas de proveedores se bloquean en DNS. Las direcciones IPv4, las direcciones IPv6 y los CIDR de las mismas listas se bloquean en todos los puertos y protocolos en el ancla de firewall independiente `sinkhole/bypass`. Sinkhole elimina de esas tablas las direcciones de interfaz del firewall y las direcciones de gateway y servidores DNS, incluidas las obtenidas mediante DHCP o PPP, antes de cargarlas.
+
+Los dominios permitidos tienen prioridad sobre los bloqueos de nombres de listas de proveedores. No anulan las respuestas de Firefox, Private Relay o Discovery porque esas respuestas son señales de red y no bloqueos de lista.
+
+## Configurar el descubrimiento del Resolver \{#configure-resolver-discovery}
+
+Discovery controla las consultas de `_dns.resolver.arpa`, el nombre de Designated Resolver Discovery definido por RFC 9462:
+
+| Opción                                    | Respuesta                                                                                                     |
+|-------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| **Off**                                   | Deja la consulta sin cambios.                                                                                 |
+| **Advertise the firewall's DNS over TLS** | Devuelve una respuesta SVCB con `alpn=dot`, el puerto `853` y el nombre de host del certificado del Resolver. |
+| **Answer with no records**                | Devuelve `NOERROR` con una respuesta vacía.                                                                   |
+
+**Advertise** requiere que el servicio SSL/TLS del DNS Resolver esté activado y tenga un nombre de host de certificado utilizable. La página Bypass informa si ese servicio está activo y el guardado falla con un mensaje de validación claro cuando no está disponible.
+
+Con Sinkhole activado y una interfaz seleccionada en **Apply to**, al activar Discovery se añade este bloque administrado a **Custom options** del DNS Resolver:
+
+```text
+# Sinkhole: begin (managed by the Sinkhole package)
+server:
+local-zone: "_dns.resolver.arpa." transparent
+# Sinkhole: end
+```
+
+Al desactivar Discovery o eliminar Sinkhole se quita el bloque. Sinkhole deja sin cambios todas las demás líneas de **Custom options**. Los clientes fuera de las interfaces seleccionadas, incluido el propio firewall, siguen recibiendo `NXDOMAIN` para `_dns.resolver.arpa`.
+
+## Proteger contra túneles \{#protect-against-tunnels}
+
+- **Tor → Block listed Tor relays** aplica las Bypass Lists activadas de tipo **Tor**.
+- **VPN → Block listed VPN providers** aplica las Bypass Lists activadas de tipo **VPN**.
+- **VPN → Block standard VPN ports** bloquea TCP y UDP `1194`, UDP `51820`, UDP `500` y `4500`, y ESP hacia todos los destinos excepto el firewall.
+
+Los nombres y direcciones de las listas de Tor y VPN usan el mismo comportamiento de DNS y firewall que las listas de proveedores de DNS cifrado. Estos controles reducen rutas alternativas comunes, pero no identifican todos los túneles cifrados o personalizados.
+
+## Añadir desde el catálogo \{#add-from-catalog}
+
+Abrí **Add from Catalog** en la pestaña Bypass para buscar en el registro de listas de AdGuard Home y en las secciones DNS, IPv4 e IPv6 del catálogo de fuentes de pfBlockerNG. Los resultados se limitan a fuentes de bypass y tienen un tipo fijo: **Encrypted DNS**, **Tor** o **VPN**.
+
+Los catálogos de origen se consultan solo cuando abrís el catálogo o seleccionás **Refresh**. Al añadir un resultado, se crea una Bypass List habilitada que sigue el cronograma normal de actualización de listas.
+
+La línea **Contents** de cada tarjeta muestra **Domains**, **IPv4 addresses** o **IPv6 addresses**. Al añadir un resultado IPv4 o IPv6 de pfBlockerNG, Sinkhole agrega ` (IPv4)` o ` (IPv6)` al nombre guardado; los resultados de dominios conservan el nombre simple del catálogo.
+
+## Añadir Bypass Lists \{#add-bypass-lists}
+
+Seleccione **Add** debajo de **Bypass Lists** e introduzca un nombre local, un tipo y una URL HTTP o HTTPS. Las filas nuevas están desactivadas hasta que se activen explícitamente.
+
+Cada fuente admite una entrada por línea. Una lista puede mezclar dominios, direcciones IPv4, direcciones IPv6 y CIDR; el texto después de `#` es un comentario. Las líneas no válidas o demasiado largas se omiten. Una descarga que supera el límite fijo de bytes o entradas aceptadas se rechaza y deja la última copia válida en su lugar.
+
+Las Bypass Lists se actualizan según el horario de listas configurado con el mismo cliente de descarga limitado que las demás listas. Una descarga fallida conserva la última copia válida guardada y **Status → Bypass Lists** informa de las entradas, la última descarga y el error más reciente de cada fila. Sinkhole no incluye ni recomienda ninguna Bypass List.
+
+## Verificar el estado activo \{#verify-the-active-state}
+
+Después de guardar, abra **Status → Bypass** y confirme que cada protección prevista esté en `On`, que las interfaces seleccionadas sean correctas y que **Discovery Zone** figure como `Present` cuando Discovery esté activado. Confirme que **Firewall rules loaded** y **Firewall rules current** estén en `Yes` para las protecciones de firewall. La tabla Bypass Lists muestra el número de entradas guardadas y la última descarga.
+
+La redirección de DNS simple conserva su conciliación por minuto de dos observaciones después de cambios en los listeners del Resolver. El ancla `sinkhole/bypass` se carga de forma independiente de `sinkhole/ip`, por lo que desactivar una función no altera la otra.

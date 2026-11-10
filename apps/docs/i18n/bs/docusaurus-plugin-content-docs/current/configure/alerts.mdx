@@ -1,0 +1,77 @@
+---
+id: alerts
+title: Upozorenja
+description: Uparite blokirane odgovore prema listi i klijentu, isporučite ih kroz pfSense obavijesti ili udaljene usluge te razumijte ograničenja ponavljanja i slanja.
+keywords:
+  - sinkhole for pfsense
+  - upozorenja
+  - pfsense obavijesti
+  - period ponavljanja
+  - ograničenja obavijesti
+tags:
+  - configure
+  - alerts
+  - notifications
+---
+
+Šaljite obavijesti samo za blokirane odgovore čija lista i klijent odgovaraju omogućenom pravilu upozorenja.
+
+## Zašto koristiti pravila upozorenja? \{#why-use-alert-rules}
+
+1. Prati odabrane liste i klijente, tako da rutinska blokiranja izvan tih pravila ostanu tiha.
+2. Koristi postojeće lokalne i udaljene kanale obavijesti pfSensea, pa Sinkhole ne treba zasebnu uslugu za isporuku.
+3. Potiskuje ponavljanja i sažima nalete, tako da domena s mnogo upita ne može preplaviti WebGUI ili sandučić.
+4. Održava red događaja ograničenim i izvan obrade DNS upita, pa isporuka nikada ne odgađa odgovor.
+
+## Kreirajte pravilo \{#create-a-rule}
+
+Otvorite **Firewall → Sinkhole → Alerts**, odaberite **Add** ispod tabele pravila upozorenja, a zatim popunite **Add Alert Rule** na stranici uređivača:
+
+| Polje                | Opis                                                                                           |
+|----------------------|------------------------------------------------------------------------------------------------|
+| Description          | Lokalni naziv pravila prikazan u tekstu obavijesti i sažecima.                                 |
+| Any block list       | Podudara blokiranje s bilo koje liste umjesto samo s odabranih lista.                          |
+| Chosen block lists   | Liste koje mogu zadovoljiti pravilo kada je **Any** isključen.                                 |
+| Everyone             | Podudara svakog klijenta umjesto samo odabranih mreža i uređaja.                               |
+| Chosen networks      | Mrežni opsezi koji mogu zadovoljiti pravilo kada je **Everyone** isključen.                    |
+| Chosen devices       | Opsezi uređaja koji mogu zadovoljiti pravilo kada je **Everyone** isključen.                   |
+| Repeat after         | Minute prije nego ista kombinacija pravila, klijenta, domene i liste ponovo pošalje obavijest. |
+| WebGUI notice        | Dodaje lokalnu Sinkhole obavijest u pfSense.                                                   |
+| Remote notifications | Koristi udaljene usluge konfigurirane u pfSenseu.                                              |
+| Enabled              | Omogućava da se blokirani odgovori podudaraju s ovim pravilom.                                 |
+
+Polje odabranih lista skriveno je dok je odabrano **Any block list**, a polja mreža i uređaja skrivena su dok je odabrano **Everyone**. Spremanje vraća na Alerts; odaberite olovku ili dvaput kliknite red da biste ga uredili.
+
+Blokiranje se podudara samo kada je jedna od lista koja je blokirala naziv odabrana u pravilu i kada je isti klijent odabran u tom pravilu. Zadani period ponavljanja je 60 minuta, a prihvaćeni raspon je od 1 do 1.440 minuta.
+
+## Kanali isporuke \{#delivery-channels}
+
+- **WebGUI notice** koristi lokalni kanal `file_notice()` u pfSenseu i vodi nazad na karticu Alerts.
+- **Remote notifications** koristi usluge `notify_all_remote()` konfigurirane u pfSenseu.
+
+Sinkhole ne kreira vlastiti kanal za e-poštu, razgovor, webhook ili bilo koju drugu vrstu isporuke. Udaljene usluge konfiguriraju se i testiraju u **System → Advanced → Notifications** u pfSenseu.
+
+## Fiksna ograničenja \{#fixed-limits}
+
+| Ograničenje                       | Ponašanje                                                                                 |
+|-----------------------------------|-------------------------------------------------------------------------------------------|
+| 20 poruka po minutnom pokretanju  | Dodatna blokiranja spajaju se u jedan ili više sažetaka pravila unutar istog ograničenja. |
+| 60 poruka po pravilu na sat       | Šezdeseto mjesto rezervirano je za sažetak prekoračenja po satu.                          |
+| 50 nepročitanih WebGUI obavijesti | Dodatne lokalne obavijesti čekaju dok se neke Sinkhole obavijesti ne pročitaju.           |
+| Budžet obrade od 40 sekundi       | Nedovršena slanja ostaju za sljedeći minutni posao umjesto da ga zadržavaju.              |
+| Starost događaja od 10 minuta     | Stariji događaji u redu odbacuju se kao zastarjeli.                                       |
+
+Status broji pročitane događaje, zastarjele događaje, poslane obavijesti, zadržane obavijesti i događaje koje je modul odbacio. Kada ne ostane nijedno omogućeno pravilo upozorenja, Sinkhole uklanja datoteku događaja i stanje ponavljanja.
+
+## Privatnost i bilježenje \{#privacy-and-logging}
+
+Tekst upozorenja navodi blokirani naziv, klijenta, mrežu, listu i pravilo. Blokiranje CNAME-a navodi i CNAME cilj koji se nalazi na listi.
+
+Lokalna funkcija obavijesti pfSensea zapisuje `New alert found: <message>` u sistemski dnevnik, pa se domena i uređaj pojavljuju i u **Status → System Logs → System → General**. Preporučuje se obavijesti i dnevnike tretirati kao zapise pravila pregledavanja.
+
+## Provjerite upozorenje \{#verify-an-alert}
+
+1. Potvrdite da su pravilo, odabrana lista i odabrani opseg klijenta omogućeni.
+2. Na Statusu potvrdite da je klijent trenutno mapiran na predviđenu mrežu ili uređaj.
+3. Pošaljite upit za naziv koji odabrana lista blokira i provjerite konfigurirani kanal pfSensea.
+4. Ako druga obavijest ne stigne, uporedite pokušaj s periodom ponavljanja pravila i fiksnim ograničenjima.

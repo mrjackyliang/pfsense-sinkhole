@@ -1,0 +1,107 @@
+---
+id: command-line-and-files
+title: Opdrachtregel en bestanden
+description: Voer de onderhoudsmodi van Sinkhole uit en identificeer de permanente opgeslagen lijsten, updatestatus, caches, vergrendelingen, firewallgegevens en runtimebestanden van Unbound.
+keywords:
+  - sinkhole voor pfsense
+  - opdrachtregel
+  - bestandspaden
+  - onderhoud
+  - runtimebestanden
+tags:
+  - reference
+  - command-line
+  - files
+---
+
+Gebruik de vaste opdracht `/usr/local/sbin/sinkhole` voor diagnostiek en voor dezelfde onderhoudsmodi die door cron en de WebGUI worden aangeroepen.
+
+## Opdrachtmodi \{#command-modes}
+
+| Opdracht                     | Gedrag                                                                                            |
+|------------------------------|---------------------------------------------------------------------------------------------------|
+| `sinkhole --update`          | Voert het geplande updatepad voor DNS-, Bypass- en ingeschakelde IP-/landlijsten uit.             |
+| `sinkhole --manual`          | Voert de volledige handmatige update uit die door **Status → Update Now** wordt gebruikt.         |
+| `sinkhole --apply`           | Past opgeslagen configuratie op de achtergrond toe en voert alleen het vereiste downloadwerk uit. |
+| `sinkhole --refresh-clients` | Bouwt netwerksubnetten en apparaatadressen in de clienttoewijzing opnieuw op.                     |
+| `sinkhole --alerts`          | Leest blokkeringsgebeurtenissen en verwerkt overeenkomende waarschuwingsregels.                   |
+| `sinkhole --redirect-check`  | Stemt gewenste gewone DNS-omleidingsregels en de onafhankelijk geladen Bypass- en IP-ankers af.   |
+| `sinkhole --check-updates`   | Controleert de nieuwste GitHub-release en synchroniseert de updatemelding.                        |
+| `sinkhole --self-update`     | Downloadt, verifieert, inspecteert en installeert de nieuwste release in de wachtrij.             |
+| `sinkhole --help`            | Drukt de ondersteunde gebruiksregel af.                                                           |
+
+Gebruik het geïnstalleerde pad in automatisering, bijvoorbeeld `/usr/local/sbin/sinkhole --refresh-clients`. De modi sluiten elkaar uit. Een DNS-/Bypass-/IP-lijstupdate of automatische update die vaststelt dat de gedeelde updatevergrendeling al wordt vastgehouden, wordt beëindigd zonder een concurrerende bewerking te starten.
+
+## Permanente bestanden onder `/cf/conf/sinkhole` \{#persistent-files}
+
+| Pad                                     | Doel                                                                                                |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `lists/<id>.domains`                    | Genormaliseerde laatst geldige domeinen voor één DNS-lijst.                                         |
+| `lists/<id>.json`                       | Updatemetagegevens van die DNS-lijst.                                                               |
+| `ip-lists/<id>.networks`                | Genormaliseerde laatst geldige netwerken voor één IP-lijst.                                         |
+| `ip-lists/<id>.json`                    | Updatemetagegevens van die IP-lijst.                                                                |
+| `bypass-lists/<id>.entries`             | Genormaliseerde gemengde vermeldingen uit de laatste geldige kopie van één Bypass List.             |
+| `bypass-lists/<id>.json`                | Updatemetagegevens van die Bypass List.                                                             |
+| `state.json`                            | Permanente status van compilatie, uitrol, eerdere Resolver-instelling, schema en verwijdering.      |
+| `updates.json`                          | Status van de controle op de nieuwste release en ontdubbeling van meldingen.                        |
+| `update-status.json`                    | Voortgang van de losgekoppelde automatische pakketupdate.                                           |
+| `unbound/sinkhole/`                     | Optionele permanente spiegel van de huidige gecompileerde generatie voor herstel van de RAM-schijf. |
+| `unbound/sinkhole.d/`                   | Optionele permanente spiegel van de opslag voor gecompileerde generaties.                           |
+| `unbound/sinkhole-clients/clients.json` | Optionele permanente spiegel van de clienttoewijzing.                                               |
+
+De spiegel onder `unbound/` wordt gebruikt wanneer pfSense `/var` op een RAM-schijf bewaart. Pakket-Sync herstelt deze naar de runtimeboom voordat de Resolver deze nodig heeft.
+
+## Werkgegevens onder `/var/db` \{#working-data}
+
+| Pad                                  | Doel                                                               |
+|--------------------------------------|--------------------------------------------------------------------|
+| `sinkhole-alerts.json`               | Status van het herhaalvenster en de uurlimiet voor waarschuwingen. |
+| `sinkhole-catalog-adguard-home.json` | Gecachet lijstregister van AdGuard Home.                           |
+| `sinkhole-catalog-pfblockerng.json`  | Gecachete feedcatalogus van pfBlockerNG.                           |
+| `sinkhole-block-v4.txt`              | Uiteindelijke samengevoegde en afgetrokken IPv4-blokkeertabel.     |
+| `sinkhole-block-v6.txt`              | Uiteindelijke samengevoegde en afgetrokken IPv6-blokkeertabel.     |
+| `sinkhole-bypass-v4.txt`             | Uiteindelijke IPv4-Bypass-tabel na aftrek van beschermde adressen. |
+| `sinkhole-bypass-v6.txt`             | Uiteindelijke IPv6-Bypass-tabel na aftrek van beschermde adressen. |
+| `sinkhole-geolite2-country.zip`      | Geverifieerd GeoLite2 Country-archief.                             |
+| `sinkhole-geolite2-country.json`     | GeoLite2-updatemetagegevens.                                       |
+
+Cataloguscaches en gegenereerde IP-tabellen zijn reproduceerbare werkgegevens. De waarschuwingstatus voorkomt herhaalde bezorging tussen uitvoeringen per minuut.
+
+## Tijdelijke bestanden onder `/var/run` \{#transient-files}
+
+| Pad                             | Doel                                                                                            |
+|---------------------------------|-------------------------------------------------------------------------------------------------|
+| `sinkhole-update.lock`          | Gedeelde langdurige vergrendeling voor lijst-, IP- en pakketupdates.                            |
+| `sinkhole-runtime.lock`         | Korte vergrendeling voor compilatie, activering en Resolver-integratie.                         |
+| `sinkhole-clients.lock`         | Vergrendeling voor het vernieuwen van de clienttoewijzing.                                      |
+| `sinkhole-alerts.lock`          | Vergrendeling voor de verwerking van waarschuwingen.                                            |
+| `sinkhole-redirect-check.lock`  | Vergrendeling voor de controle van de omleiding per minuut.                                     |
+| `sinkhole-redirect-check.json`  | Eerste afwijkingsobservatie die door de omleidingscontrole met twee observaties wordt gebruikt. |
+| `sinkhole-status.json`          | Huidige status van update, compilatie, uitrol, clients en waarschuwingen.                       |
+| `sinkhole-status.json.lock`     | Coördinatievergrendeling voor het statusbestand.                                                |
+| `sinkhole-ip-anchor.conf`       | Huidige gegenereerde regels voor het anker `sinkhole/ip`.                                       |
+| `sinkhole-ip-anchor.sha256`     | Samenvatting waarmee gegenereerd en geladen IP-beleid wordt vergeleken.                         |
+| `sinkhole-ip-status.json`       | Status van IP-lijsten, GeoLite2, tabellen en het anker.                                         |
+| `sinkhole-bypass-anchor.conf`   | Huidige gegenereerde regels voor het anker `sinkhole/bypass`.                                   |
+| `sinkhole-bypass-anchor.sha256` | Digest om het gegenereerde en geladen Bypass-beleid te vergelijken.                             |
+
+Vergrendelingsbestanden coördineren taken; hun bestaan alleen bewijst niet dat een actief proces ze vasthoudt. Gebruik Status en de opdrachtuitvoer voordat u een bestand als verouderd beschouwt.
+
+## Resolver-runtime onder `/var/unbound` \{#resolver-runtime}
+
+| Pad                                  | Doel                                                                                                   |
+|--------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `sinkhole.py`                        | Beoordeelde Python-module die naar de runtimehoofdmap van Unbound wordt gekopieerd.                    |
+| `sinkhole/`                          | Manifest en gegevens van de actieve generatie die door de module worden gelezen.                       |
+| `sinkhole.d/`                        | Door root beheerde opslag voor gecompileerde generaties.                                               |
+| `sinkhole.d/<generation>/bypass.tsv` | Gecompileerde provider-, Tor- en VPN-namen voor Bypass-DNS-antwoorden.                                 |
+| `sinkhole-clients/clients.json`      | Huidige toewijzing van clientadres naar scope.                                                         |
+| `sinkhole-state/loaded`              | Generatie-ID die door de module als geladen wordt gemeld.                                              |
+| `sinkhole-state/events`              | Samengevoegde gebeurtenissen met geblokkeerde antwoorden die op verwerking van waarschuwingen wachten. |
+| `sinkhole-state/events.processing`   | Gebeurtenisbatch die momenteel door het waarschuwingsproces wordt beheerd.                             |
+| `sinkhole-state/events-dropped`      | Aantal gebeurtenissen dat is verwijderd nadat de begrensde wachtrij vol raakte.                        |
+
+Deze bestanden zijn runtimemateriaal, geen configuratie. Sinkhole herstelt of genereert ze opnieuw via pakket-Sync en verwijdert ze wanneer het pakket wordt gedeïnstalleerd.
+
+De minuuttaak voor de clientkaart en de achtergrondvernieuwing tijdens Sync worden alleen uitgevoerd wanneer DNS-blokkering een ingeschakelde netwerk- of apparaatscope heeft, of wanneer Bypass-DNS-beveiliging clientherkenning nodig heeft. Nadat alle Sinkhole-functies zijn uitgeschakeld, verwijdert de volgende Sync de runtime-clientkaart en de optionele RAM-schijfkopie en start geen vernieuwing.
+

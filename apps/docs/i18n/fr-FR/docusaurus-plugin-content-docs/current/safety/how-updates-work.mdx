@@ -1,0 +1,65 @@
+---
+id: how-updates-work
+title: Fonctionnement des mises à jour
+description: Comprenez les mises à jour de listes, le repli atomique, la compilation et le déploiement locaux, la gestion du cache du Resolver et le verrou partagé.
+keywords:
+  - sinkhole for pfsense
+  - mises à jour des listes
+  - dernière copie valide
+  - rechargement unbound
+  - verrou de mise à jour
+tags:
+  - safety
+  - updates
+  - availability
+---
+
+Sinkhole sépare les téléchargements du service DNS afin qu’une source distante ne se trouve jamais dans le chemin de requête du Resolver.
+
+## Déroulement d’une mise à jour de liste DNS \{#dns-list-update-flow}
+
+Pour chaque liste DNS activée, Sinkhole :
+
+1. Télécharge la source avec des limites de temps et de taille.
+2. Analyse les entrées hosts, de domaine simple et de type adblock prises en charge dans un ensemble normalisé temporaire.
+3. Remplace atomiquement la copie enregistrée uniquement après validation du nouveau contenu.
+4. Compile les politiques globales, réseau, appareil, de domaines autorisés et d’alerte à partir des données locales enregistrées.
+5. Déploie sous `/var/unbound` une génération que le module Python déjà chargé peut découvrir.
+
+Un échec de téléchargement, d’analyse ou de validation consigne une erreur sans remplacer la dernière copie valide. Le DNS continue d’utiliser la génération locale déployée pendant toute la tentative.
+
+## Déploiement et caches du Resolver \{#deployment-and-resolver-caches}
+
+Le module Unbound recherche un nouveau manifeste entre les requêtes et ne bascule vers la génération complète qu’une fois tous les fichiers référencés prêts. Status distingue les identifiants des générations compilée, déployée et chargée afin de vérifier chaque étape.
+
+Lorsque la politique ajoute des noms bloqués ou élargit un sous-arbre bloqué, Sinkhole attend que le module signale la nouvelle génération, puis recharge Unbound une fois. Ce rechargement vide les caches de messages et RRset que `flush_zone` seul peut laisser admissibles à **Serve Expired**.
+
+## Actualisations de la carte des clients \{#client-map-refreshes}
+
+Les sous-réseaux et les adresses d’appareil sont stockés séparément des données de domaine compilées. Lorsque le blocage DNS comporte une portée réseau ou appareil activée, ou que la protection DNS de Bypass nécessite l’identification des clients, Sinkhole actualise cette carte des clients chaque minute sans recharger Unbound.
+
+Le Sync du paquet lance la même actualisation uniquement dans cette condition. Il couvre ainsi les changements d’interface, de bail DHCP, de voisinage et d’association statique qui se produisent hors d’une mise à jour de liste. Après désactivation de toutes les fonctions de Sinkhole, le prochain Sync supprime la carte des clients d’exécution et son miroir facultatif sur disque RAM.
+
+## Déroulement d’une mise à jour IP et pays \{#ip-and-country-update-flow}
+
+Lorsque le blocage IP et par pays est activé, la même mise à jour planifiée ou manuelle télécharge les listes IP activées et actualise les données GeoLite2 admissibles. Sinkhole analyse et fusionne chaque famille d’adresses, soustrait la liste d’autorisation de l’administrateur et les adresses protégées du pare-feu, puis remplace atomiquement les fichiers de table par famille.
+
+Une ancre `sinkhole/ip` existante peut recevoir uniquement un `pfctl -T replace` de ses tables après une mise à jour réussie. Sync et la vérification d’intégrité minute chargent l’ancre complète lorsque des règles ou des tables sont absentes ou différentes.
+
+## Calendriers et verrouillage \{#schedules-and-locking}
+
+La fréquence par défaut des mises à jour de listes est Daily. Les calendriers Hourly, Every 6 hours, Daily et Weekly utilisent des minutes aléatoires stables afin que le pare-feu ne déplace pas l’heure de sa tâche à chaque enregistrement.
+
+Les mises à jour des listes DNS, du blocage IP/pays, les travaux d’application liés aux catalogues et la mise à jour automatique du paquet se coordonnent par `/var/run/sinkhole-update.lock`. Une action Update du paquet attend la fin d’une mise à jour de liste active au lieu de modifier le paquet installé pendant son exécution.
+
+## Actualisations des catalogues séparées \{#catalog-refreshes-are-separate}
+
+Le registre d’AdGuard Home et le catalogue de flux de pfBlockerNG sont récupérés uniquement lorsque la recherche du catalogue s’ouvre ou lorsque **Refresh** est sélectionné. Leur dernière copie valide en cache peut être réutilisée pendant un jour et un échec de récupération ne modifie pas les listes configurées.
+
+Les résultats du catalogue sont des métadonnées de découverte, pas une politique. Un résultat n’affecte le blocage DNS ou IP qu’après son ajout comme liste configurée ordinaire et l’achèvement du processus normal de mise à jour.
+
+## Lire l’état des mises à jour \{#read-update-state}
+
+Ouvrez **Firewall → Sinkhole → Status** et comparez les erreurs de source, le nombre d’entrées enregistrées, l’indicateur de mise à jour en cours et les générations compilée, déployée et chargée. Pour le blocage IP, comparez également le nombre d’entrées des tables et l’état de l’ancre `sinkhole/ip`.
+
+Consultez [Mises à jour du paquet](/docs/reference/updates) pour les contrôles de version et le comportement de mise à jour automatique. Consultez [Dépannage](/docs/operate/troubleshooting) lorsqu’une étape signale une erreur ou reste en attente.

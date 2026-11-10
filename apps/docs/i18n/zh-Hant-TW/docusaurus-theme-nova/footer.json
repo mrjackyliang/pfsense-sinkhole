@@ -1,0 +1,38 @@
+{
+  "layout.learn.title": {
+    "message": "指南"
+  },
+  "layout.resources.title": {
+    "message": "資源"
+  },
+  "sections.learn.0.label": {
+    "message": "安裝 Sinkhole"
+  },
+  "sections.learn.1.label": {
+    "message": "清單和已儲存副本"
+  },
+  "sections.learn.2.label": {
+    "message": "作用域和允許域名"
+  },
+  "sections.learn.3.label": {
+    "message": "狀態"
+  },
+  "sections.learn.4.label": {
+    "message": "故障排除"
+  },
+  "sections.resources.0.label": {
+    "message": "更新的工作方式"
+  },
+  "sections.resources.1.label": {
+    "message": "測試和驗證"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense 文檔"
+  },
+  "sections.resources.3.label": {
+    "message": "源代碼"
+  },
+  "copyright": {
+    "message": "版權所有 © 2026 Jacky Liang。採用 MIT 許可證發佈。"
+  }
+}

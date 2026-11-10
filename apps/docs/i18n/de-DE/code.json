@@ -1,0 +1,74 @@
+{
+  "homepage.hero.eyebrow": {
+    "message": "Natives pfSense-Paket"
+  },
+  "homepage.hero.heading": {
+    "message": "Bestimme, was jedes Netzwerk und Gerät erreichen darf."
+  },
+  "homepage.hero.tagline": {
+    "message": "Wende gespeicherte DNS-Listen auf das gesamte Netz, ein VLAN oder ein Gerät an – mit gezielten Alarmen und ohne zweiten Server."
+  },
+  "homepage.hero.ctaLabel": {
+    "message": "Sinkhole installieren"
+  },
+  "homepage.hero.secondaryCtaLabel": {
+    "message": "Scopes planen"
+  },
+  "homepage.stats.heading": {
+    "message": "Eine Firewall, Richtlinien auf jeder sinnvollen Ebene"
+  },
+  "homepage.stats.description": {
+    "message": "Sinkhole hält Richtlinien lokal und macht Betriebsgrenzen deutlich."
+  },
+  "homepage.stats.policyScopes": {
+    "message": "Richtlinien-Scopes"
+  },
+  "homepage.stats.dnsListFormats": {
+    "message": "DNS-Listenformate"
+  },
+  "homepage.stats.catalogCache": {
+    "message": "Katalog-Cache"
+  },
+  "homepage.stats.unboundSlot": {
+    "message": "Unbound-Modulplatz"
+  },
+  "homepage.features.heading": {
+    "message": "Kontrolle, die auf der Firewall bleibt"
+  },
+  "homepage.features.scopes.title": {
+    "message": "Jede Entscheidung zuordnen"
+  },
+  "homepage.features.scopes.description": {
+    "message": "Wende Listen und erlaubte Domains global, nach Schnittstelle oder VLAN und nach Gerät an."
+  },
+  "homepage.features.savedLists.title": {
+    "message": "Letzte gültige Kopien behalten"
+  },
+  "homepage.features.savedLists.description": {
+    "message": "Beantworte DNS aus lokalen Listen trotz Neustarts, Reloads und fehlgeschlagener Downloads."
+  },
+  "homepage.features.alerts.title": {
+    "message": "Gezielt alarmieren"
+  },
+  "homepage.features.alerts.description": {
+    "message": "Benachrichtige nur für die Listen, Netzwerke und Geräte, die du in jeder Regel auswählst."
+  },
+  "homepage.features.redirect.title": {
+    "message": "DNS-Pfade schützen"
+  },
+  "homepage.features.redirect.description": {
+    "message": "Leite Klartext-DNS optional um oder blockiere verbreitete Umgehungen über verschlüsseltes DNS und Tunnel an ausgewählten Schnittstellen."
+  },
+  "homepage.features.catalogs.title": {
+    "message": "Suchen, dann entscheiden"
+  },
+  "homepage.features.catalogs.description": {
+    "message": "Durchsuche unterstützte Kataloge bei Bedarf, ohne eine Liste mitzuliefern oder zu empfehlen."
+  },
+  "homepage.features.ipCountry.title": {
+    "message": "Adressen und Länder blockieren"
+  },
+  "homepage.features.ipCountry.description": {
+    "message": "Wende IP-Listen und GeoLite2-Länderrichtlinien über den isolierten Anker `sinkhole/ip` an."
+  }
+}

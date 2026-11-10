@@ -1,0 +1,84 @@
+---
+id: build-and-release
+title: Build e rilascio
+description: Configura il repository, esegui controlli e build Nova, crea il pacchetto pfSense su FreeBSD, registra le modifiche e pubblica una release.
+keywords:
+  - sinkhole for pfsense
+  - contribuire
+  - build
+  - rilascio
+  - nova changelog
+tags:
+  - contributing
+  - build
+  - release
+---
+
+Crea, testa e rilascia Sinkhole tramite il workspace Nova radice, così il pacchetto e la documentazione seguono lo stesso workflow verificato.
+
+## Prerequisiti \{#prerequisites}
+
+- Usa l’intervallo di versioni Node.js indicato nel file `package.json` radice e la versione npm selezionata dal relativo campo `packageManager`.
+- Usa FreeBSD con un checkout dei ports pfSense per il build finale del file `.pkg`.
+- Usa un laboratorio pfSense usa e getta per verificare installazione, aggiornamento, blocco e rimozione.
+
+Imposta `PFSENSE_PORTS_DIR` sul checkout dei FreeBSD ports di pfSense prima di creare il pacchetto. Il checkout deve contenere `Mk/bsd.port.mk` e la destinazione `sysutils/pfSense-pkg-Sinkhole` deve essere libera per la copia temporanea di build.
+
+## Installare le dipendenze \{#install-dependencies}
+
+Dalla radice del repository:
+
+```sh
+npm install
+```
+
+Nova legge i workspace da `nova.config.json`. Esegui i comandi del workspace dalla radice, a meno che non sia in corso la diagnosi intenzionale di un comando più specifico del pacchetto.
+
+## Controllare ogni modifica \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` esegue lint, controllo dei tipi e test per i workspace radice, pacchetto e documentazione. `npm run build` prepara il port pfSense e crea il build di produzione della documentazione in `build/`.
+
+Quando l’host non dispone di un runtime PHP utilizzabile, `SINKHOLE_SKIP_PHP_TESTS=1 npm run check` esegue tutti i controlli disponibili, ma non sostituisce i test obbligatori del pacchetto prima di una release. Le modifiche al pacchetto richiedono inoltre le suite offline PHP, Python, di ripristino e tra linguaggi descritte nelle regole del repository.
+
+## Creare il pacchetto di rilascio \{#build-the-release-package}
+
+Esegui il comando finale di creazione del pacchetto su FreeBSD dopo `npm run build`:
+
+```sh
+npm run deploy
+```
+
+Lo script di distribuzione esegue `make package` nel checkout dei ports configurato, ricrea il manifesto come vital con `FreeBSD:*`, verifica entrambe le proprietà e scrive file `.pkg` con versione e stabili insieme ai file SHA-256 in `packages/sinkhole/build/release/`.
+
+Il comando non riesce intenzionalmente su host diversi da FreeBSD o senza `PFSENSE_PORTS_DIR`. Non sostituire mai l’artefatto di rilascio con un pacchetto creato su un altro sistema operativo.
+
+## Registrare la modifica \{#record-the-change}
+
+Usa il workflow changelog di Nova man mano che vengono apportate le modifiche:
+
+```sh
+npm run changelog
+```
+
+Seleziona il workspace interessato e la categoria delle note di rilascio corrispondente alla modifica visibile all’utente. Mantieni una voce coerente per ogni modifica e usa lo stile imperativo al presente delle note di rilascio del repository.
+
+## Preparare una release \{#cut-a-release}
+
+1. Esegui `npm run check` e `npm run build` da un candidato di release pulito.
+2. Esegui `nova utility changelog --release` per scegliere la versione, aggiornare le versioni del pacchetto e scrivere i changelog.
+3. Esegui `npm run deploy` sul builder FreeBSD configurato.
+4. Installa, aggiorna, prova il blocco e rimuovi l’artefatto in un laboratorio pfSense usa e getta.
+5. Pubblica la release GitHub con i pacchetti e i checksum con versione e stabili.
+
+La pubblicazione di una release attiva il workflow degli artefatti del pacchetto e quello di distribuzione della documentazione. Una release pfSense non viene indicata come supportata finché non supera questa verifica completa in laboratorio.
+
+## Modifiche alla documentazione \{#documentation-changes}
+
+Usa ID espliciti in inglese per i titoli, ad esempio `{#build-and-release}`, così le pagine tradotte mantengono anchor stabili. Formatta le tabelle Markdown con `npx nova recipe misc fix-markdown-tables`, quindi esegui gli stessi comandi radice di controllo e build.
+
+Le pagine inglesi sono la fonte per tutte le 17 impostazioni locali tradotte. Mantieni non tradotti i nomi dei prodotti, conserva esattamente codice, percorsi e anchor inglesi e non promettere funzionalità non ancora implementate.

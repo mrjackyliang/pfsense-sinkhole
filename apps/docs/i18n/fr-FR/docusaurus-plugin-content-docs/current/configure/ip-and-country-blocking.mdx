@@ -1,0 +1,86 @@
+---
+id: ip-and-country-blocking
+title: Blocage IP et par pays
+description: Bloquez des réseaux source ou destination avec des listes IP et des pays GeoLite2, soustrayez les adresses protégées et gérez l’ancre sinkhole/ip.
+keywords:
+  - sinkhole for pfsense
+  - blocage ip
+  - blocage par pays
+  - geolite2
+  - ancre pf
+tags:
+  - configure
+  - ip blocking
+  - firewall
+---
+
+Bloquez certaines sources ou destinations IP indépendamment de la politique DNS grâce à des tables gérées par le paquet dans l’ancre pf `sinkhole/ip`.
+
+## Pourquoi utiliser le blocage IP ? \{#why-use-ip-blocking}
+
+1. Couvre le trafic par adresse ou pays lorsqu’aucun nom DNS n’intervient.
+2. S’applique indépendamment aux interfaces et directions sélectionnées afin que les politiques WAN et de réseau client puissent différer.
+3. Conserve des copies IP normalisées et valides et met les tables actives à jour de façon atomique.
+4. Empêche l’inclusion accidentelle des adresses du pare-feu, des passerelles et des serveurs DNS dans une liste source.
+
+## Activer la fonction \{#enable-the-feature}
+
+Ouvrez **Firewall → Sinkhole → IP** et sélectionnez **Enable** uniquement après avoir choisi les interfaces et les directions. Le blocage IP et par pays est désactivé par défaut et ne dépend pas du commutateur DNS de General.
+
+| Réglage    | Comportement                                                                                                   |
+|------------|----------------------------------------------------------------------------------------------------------------|
+| Interfaces | Génère des règles sur les interfaces d’arrivée sélectionnées.                                                  |
+| Inbound    | Bloque les paquets provenant d’une adresse source répertoriée, généralement sur un WAN.                        |
+| Outbound   | Bloque les paquets arrivant vers une adresse de destination répertoriée, généralement sur les réseaux clients. |
+
+L’ancre contient des règles `block drop in quick` et aucune règle pass. Sinkhole la référence depuis la position précoce des règles de paquet de pfSense afin que les blocages précèdent les règles pass-quick ordinaires. La page affiche d’abord les panneaux des listes IP et du catalogue, puis les réglages IP et pays communs à la page avec **Save** sous le panneau.
+
+## Ajouter des listes IP \{#add-ip-lists}
+
+Sélectionnez **Add** sous la table IP Lists pour ouvrir l’éditeur de liste IP. Une ligne utilise une URL HTTP ou HTTPS, choisit IPv4, IPv6 ou les deux familles et indique si la source est activée. L’enregistrement revient à l’onglet IP ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier.
+
+Les listes peuvent également être trouvées dans les sections IP du catalogue de flux de pfBlockerNG.
+
+Les lignes valides sont des adresses IPv4 ou IPv6 individuelles et des réseaux CIDR. Les lignes non valides sont ignorées et comptées ; un téléchargement sans entrée valide ne remplace pas la dernière copie valide enregistrée.
+
+Le catalogue est téléchargé uniquement lorsque sa recherche est ouverte ou actualisée et utilise le même cache d’un jour de la dernière copie valide que la recherche du catalogue DNS. L’ajout d’un résultat crée une ligne de liste IP ordinaire sans note ni recommandation.
+
+Les flux de contournement Encrypted DNS, Tor et VPN sont exclus du catalogue IP et apparaissent uniquement dans l'onglet Bypass.
+
+La ligne **Contents** de chaque carte indique **IPv4 addresses** ou **IPv6 addresses**. Lorsque vous ajoutez un résultat pfBlockerNG, Sinkhole ajoute ` (IPv4)` ou ` (IPv6)` au nom enregistré et tronque uniquement le nom de base si nécessaire.
+
+## Ajouter des pays \{#add-countries}
+
+Les pays proviennent des données CSV MaxMind GeoLite2 Country et sont saisis sous forme de codes ISO à deux lettres. Leurs réseaux rejoignent les tables de famille bloquées.
+
+- **MaxMind Account ID** est obligatoire lorsque des pays sont sélectionnés.
+- **MaxMind License Key** est fournie par l’administrateur, enregistrée comme un champ de mot de passe pfSense et n’est jamais affichée après l’enregistrement.
+- **Clear License Key** supprime explicitement le secret enregistré.
+
+Sinkhole vérifie et importe l’archive GeoLite2 et la met à jour au maximum une fois par semaine. Le paquet ne fournit jamais de compte MaxMind ni de clé de licence.
+
+## Autoriser et protéger des adresses \{#allow-and-protect-addresses}
+
+La **IP Allowlist** accepte les adresses IPv4 ou IPv6, les réseaux CIDR et les alias hôte/réseau existants. Les plages autorisées sont soustraites de l’ensemble bloqué fusionné avant l’écriture des fichiers de table.
+
+Sinkhole soustrait également automatiquement les adresses protégées suivantes :
+
+- Toutes les adresses attribuées au pare-feu.
+- Les adresses de passerelle, y compris celles apprises via DHCP ou PPP.
+- Les adresses de serveurs DNS, y compris celles apprises via DHCP ou PPP.
+
+La soustraction peut diviser un CIDR bloqué en réseaux plus petits afin que seule l’adresse protégée soit autorisée.
+
+## Comprendre l’ancre \{#understand-the-anchor}
+
+Le paquet charge lui-même `sinkhole/ip` avec deux tables de famille persistantes et les règles des interfaces sélectionnées. Les mises à jour des listes remplacent uniquement les tables de cette ancre, tandis que Sync et la vérification minute peuvent charger l’ancre complète.
+
+Le contenu de l’ancre survit aux rechargements normaux du filtre pfSense et ne fait pas partie du nettoyage des tables de l’ensemble de règles principal. La désactivation du blocage IP ou la suppression de Sinkhole vide l’ancre.
+
+## Vérifier l’état \{#verify-the-state}
+
+**Status → IP and Country Blocking** affiche l’état d’activation, les interfaces, les directions, les pays, l’état de la clé, la taille des tables, les lignes ignorées, la dernière mise à jour réussie, l’heure de mise à jour GeoLite2, l’état de l’ancre, le nombre de règles et la dernière erreur. Chaque ligne de liste IP affiche également sa famille, ses entrées, ses lignes ignorées, sa dernière récupération et son erreur.
+
+Un état d’ancre **Out of Date** signifie que le texte ou les tables chargés ne correspondent pas aux réglages actuels. Le rapprochement minute charge immédiatement une ancre vide ou modifiée ; [Dépannage](/docs/operate/troubleshooting#ip-blocking-does-not-match-settings) décrit les vérifications.
+
+Les entrées de liste IP plus larges que IPv4 `/8` ou IPv6 `/16` sont ignorées et comptées ; les réseaux limites `/8` et `/16` sont acceptés. Cette limite ne s’applique pas à IP Allowlist, car celle-ci ne fait que réduire le blocage. Avant d’écrire les tables, Sinkhole soustrait toujours toutes les adresses IPv4 et IPv6 des interfaces du pare-feu, les sous-réseaux complets des interfaces sélectionnées pour le blocage IP, les adresses virtuelles CARP et IP Alias, ainsi que les passerelles et serveurs DNS configurés.

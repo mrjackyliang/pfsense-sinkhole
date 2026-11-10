@@ -1,0 +1,80 @@
+---
+id: scopes
+title: Scopes und erlaubte Domains
+description: Weise Listen und erlaubte Domains globalen, Schnittstellen- und Geräte-Scopes zu und folge bei jeder DNS-Abfrage der genauen spezifischsten Reihenfolge.
+keywords:
+  - sinkhole for pfsense
+  - scopes
+  - vlan-blockierung
+  - geräterichtlinie
+  - erlaubte domains
+tags:
+  - configure
+  - scopes
+  - dns
+---
+
+Weise Listen und erlaubte Domains auf globaler, Netzwerk- und Geräteebene zu, damit jeder Client die für seinen aktuellen Standort vorgesehene Richtlinie erhält.
+
+## Warum Scopes verwenden? \{#why-use-scopes}
+
+1. Gibt jeder pfSense-Schnittstelle oder jedem VLAN eine eigene Richtlinie und behält zugleich globale Regeln für alle bei.
+2. Gibt einem einzelnen Gerät eine spezifischere Entscheidung, ohne einen separaten DNS-Server zu erfordern.
+3. Lässt erlaubte Domains Fehlalarme auf der relevanten Ebene korrigieren, ohne eine vollständige Liste zu entfernen.
+4. Hält Clientadressen von kompilierten Listen getrennt, sodass DHCP-, Nachbar- oder Schnittstellenänderungen Unbound nicht neu laden.
+
+## Globaler Scope \{#global-scope}
+
+Eine Liste, bei der **Global** ausgewählt ist, gilt nach Geräte- und Netzwerkentscheidungen für jeden Client. Globale erlaubte Domains werden auf dem Tab **Lists** eingegeben und lassen die genannte Domain sowie ihre Subdomains durch globale Listen passieren.
+
+Ein Client, der mit keinem aktivierten Netzwerk- oder Geräte-Scope übereinstimmt, erhält nur diese Ebene.
+
+## Netzwerk-Scopes \{#network-scopes}
+
+Öffne **Firewall → Sinkhole → Scopes** und wähle unter der Tabelle Networks **Add**. Der Editor verwendet standardmäßig LAN oder die erste verfügbare Nicht-WAN-Schnittstelle und lässt Schnittstellen aus, für die bereits ein Netzwerk-Scope besteht. Ein Client gehört zu diesem Netzwerk, wenn seine Adresse in einem der aktuellen IPv4- oder IPv6-Subnetze der Schnittstelle liegt.
+
+Jeder Netzwerkeintrag wählt zusätzliche Listen, erlaubte Domains und den Aktivierungszustand des Scopes aus. Nach dem Speichern kehrst du zu Scopes zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile. Ein Gerät, das zwischen Netzwerken wechselt, erhält die Richtlinie des Netzwerks, zu dem seine aktuelle Adresse gehört.
+
+## Geräte-Scopes \{#device-scopes}
+
+Wähle unter der Tabelle Devices **Add**, gib einen Namen ein und wähle eine Identifikationsmethode. Der Editor zeigt nur das Identifikatorfeld für die ausgewählte Methode an:
+
+| Methode             | Für das Gerät verwendete Adressen                                                                   |
+|---------------------|-----------------------------------------------------------------------------------------------------|
+| IP address          | Die konfigurierte IPv4- oder IPv6-Adresse.                                                          |
+| DHCP static mapping | Die konfigurierte Adresse sowie aktuelle Adressen, die für die MAC der Zuordnung beobachtet werden. |
+| MAC address         | Aktuelle ARP-, NDP- und DHCP-Lease-Adressen für diese MAC.                                          |
+
+Der Geräteeintrag wählt seine Listen, erlaubten Domains und seinen Aktivierungszustand aus. Nach dem Speichern kehrst du zu Scopes zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile. Ein Hintergrundauftrag aktualisiert aktuelle Subnetze und Geräteadressen jede Minute, solange die DNS-Blockierung einen aktivierten Netzwerk- oder Geräte-Scope hat oder der Bypass-DNS-Schutz eine Client-Zuordnung benötigt. Paket-Sync startet dieselbe Aktualisierung nur unter dieser Bedingung.
+
+## Entscheidungsreihenfolge \{#decision-order}
+
+Die spezifischste übereinstimmende Ebene entscheidet jede Abfrage in genau dieser Reihenfolge:
+
+1. **Erlaubte Domains des Geräts** — Sofort zulassen, wenn der Abfragename übereinstimmt.
+2. **Gerätelisten** — Sofort blockieren, wenn eine ausgewählte Geräteliste übereinstimmt.
+3. **Erlaubte Domains des Netzwerks** — Sofort zulassen, wenn die Netzwerkausnahme übereinstimmt.
+4. **Netzwerklisten** — Sofort blockieren, wenn eine ausgewählte Netzwerkliste übereinstimmt.
+5. **Globale erlaubte Domains** — Sofort zulassen, wenn die globale Ausnahme übereinstimmt.
+6. **Globale Listen** — Blockieren, wenn eine globale Liste übereinstimmt.
+
+Die Abfrage wird zugelassen, wenn kein Schritt entscheidet. Die erlaubten Domains einer Ebene setzen Listen weniger spezifischer Ebenen außer Kraft, aber keine Liste einer spezifischeren Ebene, die bereits entschieden hat.
+
+## Verhalten erlaubter Domains \{#allowed-domain-behavior}
+
+Jeder Eintrag für eine erlaubte Domain gilt für die genaue Domain und jede Subdomain. Wenn beispielsweise `service.example` erlaubt wird, ist auf dieser Ebene auch `api.service.example` erlaubt.
+
+- Eine Geräteausnahme kann Geräte-, Netzwerk- und globale Listen passieren, da sie zuerst geprüft wird.
+- Eine Netzwerkausnahme kann Netzwerk- und globale Listen passieren, aber keine Entscheidung einer Geräteliste.
+- Eine globale Ausnahme kann nur globale Listen passieren.
+
+## Adresskonflikte \{#address-conflicts}
+
+Wenn zwei Geräteeinträge dieselbe aktuelle Adresse beanspruchen, gewinnt das erste Gerät in der Tabellenreihenfolge. **Status → Scopes** zeigt die Adresse bei jedem betroffenen Eintrag unter **Conflict**, damit Reihenfolge oder Identifikatoren korrigiert werden können.
+
+## Scope prüfen \{#verify-a-scope}
+
+1. Führe `/usr/local/sbin/sinkhole --refresh-clients` aus oder warte auf die minutenweise Aktualisierung.
+2. Öffne **Status → Scopes** und bestätige die aktuellen Subnetze des Netzwerks sowie die aktuellen Adressen des Geräts.
+3. Frage einen Namen von einem Client in diesem Scope ab und vergleiche das Ergebnis mit der obigen Entscheidungsreihenfolge.
+4. Prüfe auf einen Adresskonflikt, bevor du dich auf gerätespezifisches Verhalten verlässt.

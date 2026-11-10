@@ -1,0 +1,77 @@
+---
+id: alerts
+title: 警報
+description: 按清單和用戶端匹配被封鎖回應，通過 pfSense 通知或遠程服務發送，並瞭解重復、每小時、未讀和單次執行上限。
+keywords:
+  - sinkhole for pfsense
+  - 警報
+  - pfsense 通知
+  - 重復窗口
+  - 通知上限
+tags:
+  - configure
+  - alerts
+  - notifications
+---
+
+僅針對清單和用戶端與已啓用警報規則匹配的被封鎖回應發送通知。
+
+## 為什麼使用警報規則？ \{#why-use-alert-rules}
+
+1. 監視所選清單和用戶端，因此該策略之外的日常封鎖保持安靜。
+2. 使用 pfSense 現有的本地和遠程通知通道，因此 Sinkhole 不需要單獨的發送服務。
+3. 抑制重復並匯總突發事件，因此頻繁出現的域名不會淹沒 WebGUI 或收件箱。
+4. 讓排隊事件保持有界並位於 DNS 查詢處理之外，因此發送永遠不會延遲回應。
+
+## 創建規則 \{#create-a-rule}
+
+打開 **Firewall → Sinkhole → Alerts**，選擇警報規則表格下方的 **Add**，然後在編輯頁面填寫 **Add Alert Rule**：
+
+| 字段                   | 說明                            |
+|----------------------|-------------------------------|
+| Description          | 在通知文本和摘要中顯示的本地規則名稱。           |
+| Any block list       | 匹配任何清單的封鎖，而不是只匹配所選清單。         |
+| Chosen block lists   | **Any** 關閉時可以滿足規則的清單。         |
+| Everyone             | 匹配所有用戶端，而不是只匹配所選網路和設備。        |
+| Chosen networks      | **Everyone** 關閉時可以滿足規則的網路作用域。 |
+| Chosen devices       | **Everyone** 關閉時可以滿足規則的設備作用域。 |
+| Repeat after         | 同一規則、用戶端、域名和清單再次通知前的分鐘數。      |
+| WebGUI notice        | 向 pfSense 新增本地 Sinkhole 通知。   |
+| Remote notifications | 使用 pfSense 中配置的遠程服務。          |
+| Enabled              | 允許被封鎖回應匹配此規則。                 |
+
+選擇 **Any block list** 時會隱藏所選清單欄位，選擇 **Everyone** 時會隱藏網路和設備欄位。儲存後會返回 Alerts；選擇鉛筆圖示或雙擊某行即可編輯。
+
+只有當封鎖名稱的清單之一被該規則選中，而且用戶端也被同一規則選中時，封鎖才匹配。預設重復窗口為 60 分鐘，可接受範圍為 1 到 1,440 分鐘。
+
+## 發送通道 \{#delivery-channels}
+
+- **WebGUI notice** 使用 pfSense 的本地 `file_notice()` 通道，並連結回 Alerts 選項卡。
+- **Remote notifications** 使用 pfSense 已配置的 `notify_all_remote()` 服務。
+
+Sinkhole 不創建自己的電子郵件、聊天、Webhook 或其他通道。遠程服務在 pfSense 的 **System → Advanced → Notifications** 下配置和測試。
+
+## 固定限制 \{#fixed-limits}
+
+| 限制               | 行為                             |
+|------------------|--------------------------------|
+| 每分鐘執行 20 條消息     | 額外封鎖會在同一上限內折疊為一條或多條規則摘要。       |
+| 每條規則每小時 60 條消息   | 第六十個槽位為每小時溢出摘要保留。              |
+| 50 條未讀 WebGUI 通知 | 其他本地通知會等待，直到部分 Sinkhole 通知被閱讀。 |
+| 40 秒處理預算         | 未完成發送留給下一次每分鐘作業，而不是佔用當前作業。     |
+| 10 分鐘事件年齡        | 更早的排隊事件會作為過期事件丟棄。              |
+
+Status 會統計已讀取事件、過期事件、已發送通知、被保留通知和模塊丟棄事件。沒有已啓用警報規則時，Sinkhole 會刪除事件檔案和重復狀態。
+
+## 隱私和日誌 \{#privacy-and-logging}
+
+警報文本會標識被封鎖名稱、用戶端、網路、清單和規則。CNAME 封鎖還會標識列出的 CNAME 目標。
+
+pfSense 的本地通知函數會把 `New alert found: <message>` 寫入系統日誌，因此域名和設備也會出現在 **Status → System Logs → System → General** 下。建議把通知和日誌都視為瀏覽策略記錄。
+
+## 驗證警報 \{#verify-an-alert}
+
+1. 確認規則、所選清單和所選用戶端作用域均已啓用。
+2. 在 Status 上確認用戶端當前映射到預期網路或設備。
+3. 查詢所選清單封鎖的名稱，並檢查已配置的 pfSense 通道。
+4. 如果沒有收到第二條通知，請將該嘗試與規則的重復窗口和固定上限比較。

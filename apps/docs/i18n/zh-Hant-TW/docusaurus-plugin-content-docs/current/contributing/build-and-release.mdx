@@ -1,0 +1,84 @@
+---
+id: build-and-release
+title: 構建和發佈
+description: 設定倉庫、執行 Nova 檢查和構建、在 FreeBSD 上構建 pfSense 套件、記錄變更日誌項目併發布版本。
+keywords:
+  - sinkhole for pfsense
+  - 貢獻
+  - 構建
+  - 發佈
+  - nova 變更日誌
+tags:
+  - contributing
+  - build
+  - release
+---
+
+通過根 Nova 工作區構建、測試和發佈 Sinkhole，使套件和文檔遵循同一個經過檢查的工作流程。
+
+## 前提條件 \{#prerequisites}
+
+- 使用根 `package.json` 中的 Node.js 版本範圍，以及其 `packageManager` 字段選擇的 npm 版本。
+- 使用帶有 pfSense ports 檢出的 FreeBSD 進行最終 `.pkg` 構建。
+- 使用可丟棄的 pfSense 實驗室驗證安裝、升級、封鎖和刪除。
+
+打包前，將 `PFSENSE_PORTS_DIR` 設為 pfSense FreeBSD ports 檢出路徑。檢出必須包含 `Mk/bsd.port.mk`，而目標 `sysutils/pfSense-pkg-Sinkhole` 必須空閒，以供臨時構建副本使用。
+
+## 安裝依賴項 \{#install-dependencies}
+
+在倉庫根目錄執行：
+
+```sh
+npm install
+```
+
+Nova 從 `nova.config.json` 讀取工作區。除非有意診斷範圍更窄的套件命令，否則請從根目錄執行工作區命令。
+
+## 檢查每項更改 \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` 會對根工作區、套件和文檔工作區執行 lint、類型檢查和測試。`npm run build` 會暫存 pfSense port，並在 `build/` 下創建生產文檔構建。
+
+當主機沒有可用的 PHP 執行時，`SINKHOLE_SKIP_PHP_TESTS=1 npm run check` 會執行所有可用檢查，但不能替代發佈前必需的套件測試。套件更改還需要倉庫規則中所述的離線 PHP、Python、恢復和跨語言測試套件。
+
+## 構建發佈套件 \{#build-the-release-package}
+
+執行 `npm run build` 後，在 FreeBSD 上執行最終打包命令：
+
+```sh
+npm run deploy
+```
+
+部署腳本會在配置的 ports 檢出中執行 `make package`，將清單重建為帶有 `FreeBSD:*` 的 vital 套件，驗證這兩個屬性，並在 `packages/sinkhole/build/release/` 下寫入帶版本和穩定名稱的 `.pkg` 檔案及 SHA-256 檔案。
+
+該命令會在非 FreeBSD 主機或缺少 `PFSENSE_PORTS_DIR` 時有意失敗。絕不要用在其他操作系統上構建的套件替代發佈資源。
+
+## 記錄更改 \{#record-the-change}
+
+在更改落地時使用 Nova 的變更日誌工作流程：
+
+```sh
+npm run changelog
+```
+
+選擇受影響的工作區，以及與用戶可見更改匹配的發佈說明類別。每項更改保留一個連貫項目，並使用倉庫規定的祈使語氣、現在時發佈說明風格。
+
+## 發佈版本 \{#cut-a-release}
+
+1. 從乾淨的發佈候選版本執行 `npm run check` 和 `npm run build`。
+2. 執行 `nova utility changelog --release` 選擇版本、更新套件版本並寫入變更日誌。
+3. 在配置好的 FreeBSD 構建器上執行 `npm run deploy`。
+4. 在可丟棄的 pfSense 實驗室上安裝、升級、測試封鎖並刪除資源。
+5. 發佈 GitHub 版本，並附上帶版本和穩定名稱的套件及校驗和資源。
+
+發佈版本會觸發套件資源工作流和文檔部署工作流。只有完整實驗室驗證通過後，才會將某個 pfSense 版本列為受支持。
+
+## 文檔更改 \{#documentation-changes}
+
+使用顯式英語標題 ID（例如 `\{#build-and-release}`），使翻譯頁面可以保留穩定錨點。使用 `npx nova recipe misc fix-markdown-tables` 格式化 Markdown 表，然後執行相同的根檢查和構建命令。
+
+英語頁面是全部 17 個翻譯區域設定的來源。保持產品名稱不翻譯，準確保留代碼、路徑和英語錨點，不要承諾尚未實現的功能。

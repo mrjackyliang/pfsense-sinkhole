@@ -1,0 +1,57 @@
+---
+id: terminology
+title: 术语
+description: 定义 Sinkhole WebGUI、Status 面板、指南和参考页面中使用的 DNS、列表、作用域、警报和 Bypass 术语。
+keywords:
+  - sinkhole for pfsense
+  - 术语
+  - 词汇表
+  - dns sinkhole
+  - 阻止列表
+tags:
+  - reference
+  - terminology
+  - glossary
+---
+
+这些术语在 Sinkhole WebGUI 和文档中始终具有相同含义。
+
+## DNS Sinkhole \{#dns-sinkhole}
+
+使用一个无处可达的地址应答被阻止的名称，使请求停止。
+
+## DNS Resolver \{#dns-resolver}
+
+pfSense 基于 Unbound 的 DNS 服务。
+
+## 阻止列表 \{#block-list}
+
+通过 URL 或搜索添加的待阻止名称或地址列表。
+
+## 已保存列表 \{#saved-list}
+
+保存在防火墙上的阻止列表最后有效副本。
+
+## 作用域 \{#scope}
+
+阻止列表的应用范围：整个网络、某个 VLAN 或单个设备。
+
+## 全局列表 \{#global-lists}
+
+应用于网络中每个客户端的阻止列表。
+
+## 警报规则 \{#alert-rule}
+
+阻止事件会发送 pfSense 通知的列表和作用域。
+
+## 防绕过保护 \{#bypass-protection}
+
+可选的接口级控制，通过重定向普通 DNS 或拦截常见的加密 DNS 和隧道替代路径，让客户端保持使用 Sinkhole 可以检查的 DNS 路径。
+
+## 普通 DNS 重定向 \{#plain-dns-redirect}
+
+将设备的普通 TCP 和 UDP 端口 53 查询发送到防火墙的可选 Bypass 设置。
+
+## 常用列表搜索 \{#popular-list-search}
+
+WebGUI 对广泛使用的阻止列表进行的搜索，例如 AdGuard Home 的选择器。

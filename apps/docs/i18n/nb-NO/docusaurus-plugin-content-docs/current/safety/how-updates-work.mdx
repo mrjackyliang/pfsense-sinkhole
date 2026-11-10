@@ -1,0 +1,66 @@
+---
+id: how-updates-work
+title: Slik fungerer oppdateringer
+description: Forstå oppdateringer av lagrede lister, atomisk reserve med siste gyldige kopi, lokal kompilering og distribusjon, håndtering av Resolver-buffere og delt oppdateringslås.
+keywords:
+  - sinkhole for pfsense
+  - listeoppdateringer
+  - siste gyldige kopi
+  - omlasting av unbound
+  - oppdateringslås
+tags:
+  - safety
+  - updates
+  - availability
+---
+
+Sinkhole skiller nedlasting fra DNS-tjenesten, slik at en ekstern kilde aldri befinner seg i spørringsbanen til Resolver.
+
+## Oppdateringsflyt for DNS-lister \{#dns-list-update-flow}
+
+For hver aktivert DNS-liste gjør Sinkhole følgende:
+
+1. Laster ned kilden med avgrensede tids- og størrelsesgrenser.
+2. Analyserer støttede oppføringer i hosts-format, rent domeneformat og adblock-lignende format til et midlertidig normalisert sett.
+3. Erstatter den lagrede kopien atomisk først etter at det nye innholdet har bestått validering.
+4. Kompilerer global policy, nettverkspolicy, enhetspolicy, policy for tillatte domener og varslingspolicy fra lokalt lagrede data.
+5. Distribuerer en generasjon under `/var/unbound`, slik at Python-modulen som allerede er lastet, kan oppdage den.
+
+En feil under nedlasting, analyse eller validering registrerer en feil uten å erstatte den siste gyldige kopien. DNS fortsetter å bruke den distribuerte lokale generasjonen gjennom hele forsøket.
+
+## Distribusjon og Resolver-buffere \{#deployment-and-resolver-caches}
+
+Unbound-modulen kontrollerer om det finnes et nytt manifest mellom spørringer og bytter til den fullstendige generasjonen først når alle refererte filer er klare. Status skiller identifikatorene for kompilert, distribuert og lastet generasjon, slik at hvert trinn kan kontrolleres.
+
+Når policyen legger til blokkerte navn eller utvider et blokkert deltre, venter Sinkhole på at modulen skal rapportere den nye generasjonen og laster deretter Unbound på nytt én gang. Omlastingen tømmer meldings- og RRset-buffere som `flush_zone` alene kan la være tilgjengelige for **Serve Expired**.
+
+## Oppdatering av klientkart \{#client-map-refreshes}
+
+Nettverksdelnett og enhetsadresser lagres separat fra de kompilerte domenedataene. Når DNS-blokkering har et aktivert nettverks- eller enhetsomfang, eller Bypass DNS-beskyttelse trenger klientgjenkjenning, oppdaterer Sinkhole dette klientkartet hvert minutt uten å laste Unbound på nytt.
+
+Pakke-Sync starter den samme oppdateringen bare under denne betingelsen. Dette dekker endringer i grensesnitt, DHCP-leier, naboer og statiske tilordninger som skjer utenfor en listeoppdatering. Når alle Sinkhole-funksjoner er deaktivert, fjerner neste Sync klientkartet under kjøring og det valgfrie RAM-disk-speilet.
+
+## Oppdateringsflyt for IP og land \{#ip-and-country-update-flow}
+
+Når IP- og landblokkering er aktivert, laster den samme planlagte eller manuelle oppdateringen ned aktiverte IP-lister og oppdaterer kvalifiserte GeoLite2-data. Sinkhole analyserer og slår sammen hver adressefamilie, trekker fra tillatelseslisten til administratoren og beskyttede brannmuradresser og erstatter deretter familietabellfilene atomisk.
+
+Et eksisterende `sinkhole/ip`-anker kan motta en ren tabelloppdatering med `pfctl -T replace` etter en vellykket oppdatering. Sync og integritetskontrollen per minutt laster hele ankeret når regler eller tabeller mangler eller er forskjellige.
+
+## Tidsplaner og låsing \{#schedules-and-locking}
+
+Standardfrekvensen for listeoppdatering er Daily. Tidsplanene Hourly, Every 6 hours, Daily og Weekly bruker stabile tilfeldige minuttkomponenter, slik at brannmuren ikke flytter kjøretidspunktet for jobben ved hver lagring.
+
+Oppdateringer av DNS-lister og IP/land, bruksarbeid knyttet til katalogen og automatisk pakkeoppdatering koordineres gjennom `/var/run/sinkhole-update.lock`. En pakkehandling Update venter på at en aktiv listeoppdatering skal fullføres i stedet for å endre den installerte pakken under den.
+
+## Katalogoppdateringer er separate \{#catalog-refreshes-are-separate}
+
+Registeret til AdGuard Home og feedkatalogen til pfBlockerNG hentes bare når katalogsøket åpnes eller **Refresh** velges. Den siste gyldige bufferen kan brukes på nytt i én dag, og en mislykket henting endrer ikke konfigurerte lister.
+
+Katalogresultater er metadata for oppdagelse, ikke policy. Et resultat påvirker DNS- eller IP-blokkering først etter at det er lagt til som en vanlig konfigurert liste og har fullført den normale oppdateringsflyten.
+
+## Les oppdateringsstatus \{#read-update-state}
+
+Åpne **Firewall → Sinkhole → Status**, og sammenlign kildefeil, antall lagrede oppføringer, flagget for oppdatering som kjører og de kompilerte, distribuerte og lastede generasjonene. For IP-blokkering sammenligner du også tabellantall og tilstanden til ankeret `sinkhole/ip`.
+
+Bruk [Oppdateringer](/docs/reference/updates) for kontroller av pakkeversjoner og virkemåten til automatisk oppdatering. Bruk [Feilsøking](/docs/operate/troubleshooting) når et trinn rapporterer en feil eller forblir ventende.
+

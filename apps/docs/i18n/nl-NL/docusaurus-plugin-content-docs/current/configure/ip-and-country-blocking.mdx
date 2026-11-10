@@ -1,0 +1,87 @@
+---
+id: ip-and-country-blocking
+title: IP- en landblokkering
+description: Blokkeer geselecteerde bron- of bestemmingsnetwerken met IP-lijsten en GeoLite2-landen, trek beschermde adressen af en beheer het sinkhole/ip-anker.
+keywords:
+  - sinkhole voor pfsense
+  - ip-blokkering
+  - landblokkering
+  - geolite2
+  - pf-anker
+tags:
+  - configure
+  - ip blocking
+  - firewall
+---
+
+Blokkeer geselecteerde IP-bronnen of -bestemmingen onafhankelijk van het DNS-beleid met door het pakket beheerde tabellen in het pf-anker `sinkhole/ip`.
+
+## Waarom IP-blokkering gebruiken? \{#why-use-ip-blocking}
+
+1. Dekt verkeer op basis van adres of land wanneer er geen DNS-naam bij betrokken is.
+2. Wordt onafhankelijk toegepast op geselecteerde interfaces en richtingen, zodat het beleid voor WAN en clientnetwerken kan verschillen.
+3. Behoudt genormaliseerde, laatst geldige IP-kopieën en werkt live tabellen atomair bij.
+4. Beschermt firewall-, gateway- en DNS-adressen tegen onbedoelde opname in een bronlijst.
+
+## De functie inschakelen \{#enable-the-feature}
+
+Open **Firewall → Sinkhole → IP** en selecteer **Enable** pas nadat u interfaces en richtingen hebt gekozen. IP- en landblokkering is standaard uitgeschakeld en is niet afhankelijk van de General-schakelaar voor DNS.
+
+| Instelling | Gedrag                                                                                                        |
+|------------|---------------------------------------------------------------------------------------------------------------|
+| Interfaces | Genereert regels op de geselecteerde aankomstinterfaces.                                                      |
+| Inbound    | Blokkeert pakketten die aankomen vanaf een bronadres in de lijst, gewoonlijk op een WAN.                      |
+| Outbound   | Blokkeert pakketten die aankomen op weg naar een bestemmingsadres in de lijst, gewoonlijk op clientnetwerken. |
+
+Het anker bevat `block drop in quick`-regels en geen doorlaatregels. Sinkhole verwijst ernaar via de vroege positie voor pakketregels van pfSense, zodat de blokkeringen vóór gewone pass-quick-regels worden uitgevoerd. De pagina toont eerst de panelen voor IP-lijsten en de catalogus, gevolgd door de paginabrede instellingen voor IP en landen met **Save** onder het paneel.
+
+## IP-lijsten toevoegen \{#add-ip-lists}
+
+Selecteer **Add** onder de tabel IP Lists om de editor voor IP-lijsten te openen. Een rij gebruikt een HTTP- of HTTPS-URL, kiest IPv4, IPv6 of beide families en bepaalt of de bron is ingeschakeld. Na opslaan keert u terug naar het tabblad IP; selecteer het potlood of dubbelklik op een rij om deze te bewerken.
+
+Lijsten kunnen ook worden gevonden via de IP-secties van de feedcatalogus van pfBlockerNG.
+
+Geldige regels zijn afzonderlijke IPv4- of IPv6-adressen en CIDR-netwerken. Ongeldige regels worden overgeslagen en geteld; een download zonder geldige vermelding vervangt de laatste geldige opgeslagen kopie niet.
+
+De catalogus wordt alleen gedownload wanneer de zoekfunctie wordt geopend of vernieuwd en gebruikt dezelfde eendaagse cache met de laatste geldige kopie als de zoekfunctie voor de DNS-catalogus. Het toevoegen van een resultaat maakt een gewone IP-lijstrij zonder beoordeling of aanbeveling.
+
+Bypass-feeds voor Encrypted DNS, Tor en VPN zijn uitgesloten van de IP-catalogus en verschijnen alleen op het tabblad Bypass.
+
+De regel **Contents** op elke kaart toont **IPv4 addresses** of **IPv6 addresses**. Wanneer u een pfBlockerNG-resultaat toevoegt, voegt Sinkhole ` (IPv4)` of ` (IPv6)` toe aan de opgeslagen naam en kort het zo nodig alleen de basisnaam in.
+
+## Landen toevoegen \{#add-countries}
+
+Landen zijn afkomstig uit MaxMind GeoLite2 Country-CSV-gegevens en worden als ISO-codes van twee letters ingevoerd. Hun netwerken worden aan de geblokkeerde familietabellen toegevoegd.
+
+- **MaxMind Account ID** is vereist wanneer landen zijn geselecteerd.
+- **MaxMind License Key** wordt door de beheerder verstrekt, zoals een pfSense-wachtwoordveld opgeslagen en na opslaan nooit weergegeven.
+- **Clear License Key** verwijdert het opgeslagen geheim expliciet.
+
+Sinkhole verifieert en importeert het GeoLite2-archief en werkt het maximaal eenmaal per week bij. Het pakket levert nooit een MaxMind-account of licentiesleutel mee.
+
+## Adressen toestaan en beschermen \{#allow-and-protect-addresses}
+
+De **IP Allowlist** accepteert IPv4- of IPv6-adressen, CIDR-netwerken en bestaande host-/netwerkaliassen. Toegestane bereiken worden van de samengevoegde geblokkeerde verzameling afgetrokken voordat de tabelbestanden worden geschreven.
+
+Sinkhole trekt ook automatisch de volgende beschermde adressen af:
+
+- Elk adres dat aan de firewall is toegewezen.
+- Gatewayadressen, inclusief adressen die via DHCP of PPP zijn verkregen.
+- DNS-serveradressen, inclusief adressen die via DHCP of PPP zijn verkregen.
+
+Door aftrekking kan een geblokkeerd CIDR in kleinere netwerken worden gesplitst, zodat alleen het beschermde adres wordt doorgelaten.
+
+## Het anker begrijpen \{#understand-the-anchor}
+
+Het pakket laadt `sinkhole/ip` zelf met twee permanente familietabellen en de geselecteerde interfaceregels. Lijstupdates vervangen alleen de tabellen binnen dat anker, terwijl Sync en de controle per minuut het volledige anker kunnen laden.
+
+De inhoud van het anker blijft bij normale herladingen van het pfSense-filter behouden en maakt geen deel uit van de opschoning van tabellen in de hoofdregelset. Als IP-blokkering wordt uitgeschakeld of Sinkhole wordt verwijderd, wordt het anker leeggemaakt.
+
+## De status controleren \{#verify-the-state}
+
+**Status → IP and Country Blocking** toont de inschakelstatus, interfaces, richtingen, landen, sleutelstatus, tabelgroottes, overgeslagen regels, laatste geslaagde update, GeoLite2-updatetijd, ankerstatus, aantal regels en laatste fout. Elke IP-lijstrij toont ook de familie, vermeldingen, overgeslagen regels, laatste ophaaltijd en fout.
+
+De ankerstatus **Out of Date** betekent dat de geladen tekst of tabellen niet overeenkomen met de huidige instellingen. De afstemming per minuut laadt een leeg of gewijzigd anker onmiddellijk; [Probleemoplossing](/docs/operate/troubleshooting#ip-blocking-does-not-match-settings) behandelt de controles.
+
+IP-lijstvermeldingen die ruimer zijn dan IPv4 `/8` of IPv6 `/16` worden overgeslagen en geteld; de grensnetwerken `/8` en `/16` worden geaccepteerd. Deze grens geldt niet voor IP Allowlist, omdat die blokkering alleen kan verminderen. Voordat de tabellen worden geschreven, trekt Sinkhole altijd alle IPv4- en IPv6-adressen van firewallinterfaces, de volledige subnetten van voor IP-blokkering geselecteerde interfaces, virtuele CARP- en IP Alias-adressen en geconfigureerde gateways en DNS-servers af.
+

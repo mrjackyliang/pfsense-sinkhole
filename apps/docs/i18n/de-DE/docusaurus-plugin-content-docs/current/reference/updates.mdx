@@ -1,0 +1,65 @@
+---
+id: updates
+title: Paketaktualisierungen
+description: Konfiguriere Release-Prüfungen, lies Hinweise und die About-Updateleiste und verstehe begrenzte Prüfsummen-, Signatur-, Metadaten-, Sperr- und Installationsprüfungen.
+keywords:
+  - sinkhole for pfsense
+  - paketaktualisierungen
+  - selbstaktualisierung
+  - prüfsummenverifizierung
+  - release-hinweise
+tags:
+  - reference
+  - updates
+  - security
+---
+
+import aboutUpdateBar from './_assets_/updates-1.png';
+
+Sinkhole kann seine GitHub-Releases prüfen, über pfSense benachrichtigen und ein verifiziertes neueres Paket über den Tab About installieren.
+
+## Geplante Release-Prüfungen \{#scheduled-release-checks}
+
+**General → Update Checks** wählt Daily, Weekly, Monthly oder Never; Weekly ist der Standard. Sinkhole speichert stabile zufällige Zeitplankomponenten, sodass das Speichern von Einstellungen den Prüfzeitpunkt nicht ständig verschiebt.
+
+Eine Prüfung speichert neueste Version, Release-Seite, Prüfzeit und letzten Fehler. **About → Check Now** führt dieselbe Prüfung sofort aus.
+
+## Aktualisierungshinweise \{#update-notices}
+
+Jede neu erkannte Version erzeugt einen lokalen pfSense-WebGUI-Hinweis, der zum Sinkhole-Tab About verlinkt. Wiederholte Prüfungen erzeugen für dieselbe Version keine doppelten Hinweise.
+
+Wähle **Remote Notifications**, um zusätzlich die unter **System → Advanced → Notifications** konfigurierten Dienste zu verwenden. Die Einstellung ist standardmäßig deaktiviert und betrifft Versionshinweise, nicht die Alarmregeln für Listenblockierungen.
+
+## Updateleiste auf About \{#about-update-bar}
+
+Die Updateleiste zeigt installierte Version, zuletzt geprüfte Version, letzte Prüfung, Release-Link, Fehler und Fortschritt der abgekoppelten Aktualisierung. Ihr visueller Zustand unterscheidet zwischen keiner ausstehenden Aktualisierung, einem neueren Release, einer laufenden Aktualisierung, Erfolg und Fehlschlag.
+
+**Update** erscheint, wenn die gespeicherte neueste Version neuer ist. Die Seite fragt den abgekoppelten Auftrag ab und meldet sein Ergebnis, ohne die Browseranfrage offen zu halten.
+
+<img src={aboutUpdateBar} alt="Tab About mit einer verfügbaren Sinkhole-Aktualisierung und den Steuerelementen Update und What's New" width={1024} height={816} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Verifizierung vor der Installation \{#verification-before-installation}
+
+Die Selbstaktualisierung akzeptiert Assets nur aus dem GitHub-Release-Downloadpfad dieses Projekts und verwendet begrenzte Downloadgrößen und Zeitüberschreitungen. Sie benötigt das stabile Paket samt `.sha256`, verifiziert den SHA-256-Digest und prüft anschließend die Paketmetadaten, bevor sie mit `pkg add -f` installiert.
+
+Wenn `/usr/local/share/pfSense-pkg-Sinkhole/release-signing.pub` vertrauenswürdige Ed25519-OpenSSH-Schlüssel enthält, wird das passende abgekoppelte `.sig`-Asset zwingend erforderlich. Sinkhole verifiziert diese Signatur in seinem Release-Namespace, bevor `pkg` die Paketmetadaten untersuchen darf.
+
+Bei einer leeren installierten Vertrauensliste ist keine Signatur erforderlich; Prüfsumme und Paketmetadaten werden dennoch verifiziert. Ein fehlendes, fehlerhaftes, nicht vertrauenswürdiges, zu großes oder nicht übereinstimmendes Asset beendet die Aktualisierung und lässt das installierte Paket bestehen.
+
+## Aktualisierungssperre \{#update-locking}
+
+Paketprüfung und Selbstaktualisierung teilen `/var/run/sinkhole-update.lock` mit DNS-Listen- und IP-/Länderaktualisierungen. Wenn eine Listenaktualisierung läuft, kann die Aktion **Update** auf About erst beginnen, wenn dieser Auftrag abgeschlossen ist.
+
+Die Sperre verhindert Änderungen an Paketdateien, während das aktuelle Paket Richtlinien herunterlädt, verarbeitet, kompiliert oder anwendet. Versuche es über About erneut, sobald Status keine laufende Aktualisierung mehr zeigt.
+
+## Manuelle Paketaktualisierung \{#manual-package-update}
+
+Der stabile Befehl bleibt verfügbar, wenn die Aktion auf About nicht verwendet werden kann:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Lade vor der Ausführung das stabile `.sha256`-Asset herunter und vergleiche seinen Hash wie unter [Installation](/docs/installation#verify-the-checksum) beschrieben mit dem Paket. `-f` ist erforderlich, damit `pkg` einen neuen Build installiert, auch wenn er von derselben stabilen URL stammt.
+
+Die About-Berechtigung ist schreibgeschützt. **Check Now** und **Update** werden nur für angemeldete Benutzer mit der Berechtigung für die Sinkhole-General-Einstellungen oder der pfSense-Berechtigung `page-all` angezeigt und akzeptiert. Benutzer mit ausschließlich der About-Berechtigung können weiterhin die installierte Version, den Release-Status und den Release-Link lesen.

@@ -1,0 +1,109 @@
+---
+id: bypass-protection
+title: Zaštita od zaobilaženja
+description: Zadržite odabrane klijentske interfejse na DNS putanjama pod kontrolom Sinkholea uz opcionalno preusmjeravanje, signale, liste pružalaca i blokiranje tunela.
+keywords:
+  - sinkhole for pfsense
+  - zaštita od zaobilaženja
+  - dns preusmjeravanje
+  - šifrirani dns
+  - blokiranje vpn-a
+tags:
+  - configure
+  - bypass
+  - dns
+---
+
+import bypassProtection from './_assets_/bypass-protection-1.png';
+
+Zadržite DNS upite sa odabranih klijentskih interfejsa na putanjama koje Sinkhole može pregledati. Svaka zaštita je podrazumijevano isključena, nijedan interfejs nije podrazumijevano odabran, a nadogradnja ne uključuje zaštitu ili listu.
+
+## Odaberite interfejse \{#choose-the-interfaces}
+
+Otvorite **Firewall → Sinkhole → Bypass** i odaberite interfejse u polju **Apply to** prije nego što uključite zaštitu. Ovaj jedan odabir primjenjuje se na svaku postavku na stranici. Zaštite pregledaju samo saobraćaj koji stiže od klijenata na tim interfejsima; ne utiču na upite samog zaštitnog zida niti na izlazni saobraćaj.
+
+Podudaranje mreža i uređaja koristi trenutne podmreže tih interfejsa, baš kao obični opsezi Sinkholea. Klijent izvan odabranih podmreža ne prima Bypass DNS odgovor.
+
+<img src={bypassProtection} alt="Kartica Bypass s odabranim LAN-om, isključenim preusmjeravanjem običnog DNS-a, uključenim zaštitama šifriranog DNS-a i tunela, opcijom Discovery postavljenom na Answer with no records i tri demonstracijske Bypass liste" width={1024} height={1326} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Preusmjerite obični DNS \{#redirect-plain-dns}
+
+Odaberite **Redirect → Send port 53 to the firewall** da biste poslali obični TCP i UDP DNS saobraćaj na odabranim interfejsima prema pfSenseu. Sinkhole čuva izvornu adresu, pa se mrežna pravila i pravila uređaja i dalje primjenjuju.
+
+Preusmjeravanje zadržava postojeće ciljeve koji zavise od slušača i izuzetke:
+
+| Porodica | Cilj                                                                              |
+|----------|-----------------------------------------------------------------------------------|
+| IPv4     | `127.0.0.1` dok Resolver sluša na localhostu; u suprotnom IPv4 adresa interfejsa. |
+| IPv6     | IPv6 adresa interfejsa, nikada `::1`.                                             |
+
+- **Exempt Sources** nastavljaju pristupati drugom resolveru.
+- **Exempt Destinations** nastavljaju primati DNS saobraćaj, što podržava interni resolver na drugoj mreži.
+
+Svaki izuzetak prihvata jednu IPv4 adresu, IPv6 adresu, CIDR mrežu ili postojeći pfSense host/mrežni alias po redu. Nevažeći sačuvani izuzetak pauzira sva pravila preusmjeravanja dok se ne ispravi ili ukloni. Preusmjereni klijenti i dalje moraju imati pristup kroz postavke kontrole pristupa Resolvera.
+
+## Zaštitite šifrirani DNS \{#protect-encrypted-dns}
+
+Postavke šifriranog DNS-a su nezavisne:
+
+- **TLS and QUIC** blokira TCP i UDP port 853 prema svakom odredištu osim zaštitnog zida.
+- **Providers** blokira imena i adrese iz uključenih Bypass lista čija je vrsta **Encrypted DNS**.
+- **Firefox** odgovara sa `NXDOMAIN` za `use-application-dns.net` i njegove poddomene, čime se isključuje Firefoxov automatski odabir DNS-a preko HTTPS-a.
+- **Private Relay** odgovara sa `NXDOMAIN` za `mask.icloud.com` i `mask-h2.icloud.com`, čime kompatibilnim Apple uređajima poručuje da Private Relay nije dostupan na ovoj mreži.
+
+Imena iz lista pružalaca blokiraju se u DNS-u. IPv4 adrese, IPv6 adrese i CIDR-ovi iz istih lista blokiraju se na svakom portu i protokolu u nezavisnom sidru zaštitnog zida `sinkhole/bypass`. Sinkhole uklanja adrese interfejsa zaštitnog zida te adrese pristupnika i DNS servera, uključujući one dobijene putem DHCP-a ili PPP-a, iz tih tabela prije njihovog učitavanja.
+
+Dozvoljene domene imaju prednost nad blokiranjem imena iz lista pružalaca. One ne poništavaju odgovore Firefox, Private Relay ili Discovery jer su ti odgovori mrežni signali, a ne blokiranja sa liste.
+
+## Konfigurišite otkrivanje Resolvera \{#configure-resolver-discovery}
+
+Discovery kontroliše upite za `_dns.resolver.arpa`, naziv Designated Resolver Discovery definisan u RFC-u 9462:
+
+| Odabir                                    | Odgovor                                                                                  |
+|-------------------------------------------|------------------------------------------------------------------------------------------|
+| **Off**                                   | Ostavlja upit nepromijenjenim.                                                           |
+| **Advertise the firewall's DNS over TLS** | Vraća SVCB odgovor sa `alpn=dot`, portom `853` i nazivom hosta iz certifikata Resolvera. |
+| **Answer with no records**                | Vraća `NOERROR` sa praznim odgovorom.                                                    |
+
+**Advertise** zahtijeva da SSL/TLS usluga DNS Resolvera bude uključena i da ima upotrebljiv naziv hosta certifikata. Stranica Bypass prikazuje da li je ta usluga uključena, a spremanje ne uspijeva uz jasnu poruku provjere kada nije dostupna.
+
+Kada je Sinkhole uključen i odabran je interfejs **Apply to**, uključivanje opcije Discovery dodaje ovaj upravljani blok u **Custom options** DNS Resolvera:
+
+```text
+# Sinkhole: begin (managed by the Sinkhole package)
+server:
+local-zone: "_dns.resolver.arpa." transparent
+# Sinkhole: end
+```
+
+Isključivanje opcije Discovery ili uklanjanje Sinkholea uklanja blok. Sinkhole ostavlja svaki drugi red u **Custom options** nepromijenjenim. Klijenti izvan odabranih interfejsa, uključujući sam zaštitni zid, i dalje primaju `NXDOMAIN` za `_dns.resolver.arpa`.
+
+## Zaštitite od tunela \{#protect-against-tunnels}
+
+- **Tor → Block listed Tor relays** primjenjuje uključene Bypass liste vrste **Tor**.
+- **VPN → Block listed VPN providers** primjenjuje uključene Bypass liste vrste **VPN**.
+- **VPN → Block standard VPN ports** blokira TCP i UDP `1194`, UDP `51820`, UDP `500` i `4500` te ESP prema svakom odredištu osim zaštitnog zida.
+
+Imena i adrese sa Tor i VPN lista koriste isto DNS ponašanje i ponašanje zaštitnog zida kao liste pružalaca šifriranog DNS-a. Ove kontrole smanjuju uobičajene alternativne putanje, ali ne prepoznaju svaki šifrirani ili prilagođeni tunel.
+
+## Dodajte iz kataloga \{#add-from-catalog}
+
+Otvorite **Add from Catalog** na kartici Bypass da pretražite registar lista AdGuard Homea i DNS, IPv4 i IPv6 odjeljke kataloga izvora pfBlockerNG-a. Rezultati su ograničeni na izvore za zaobilaženje i imaju fiksnu vrstu **Encrypted DNS**, **Tor** ili **VPN**.
+
+Izvorni katalozi dohvaćaju se samo kada otvorite katalog ili odaberete **Refresh**. Dodavanjem rezultata stvara se omogućena Bypass lista koja slijedi redovni raspored ažuriranja lista.
+
+Red **Contents** na svakoj kartici prikazuje **Domains**, **IPv4 addresses** ili **IPv6 addresses**. Kada dodate IPv4 ili IPv6 rezultat iz pfBlockerNG-a, Sinkhole dodaje ` (IPv4)` ili ` (IPv6)` njegovom sačuvanom nazivu; rezultati s domenama zadržavaju obični naziv iz kataloga.
+
+## Dodajte Bypass liste \{#add-bypass-lists}
+
+Odaberite **Add** ispod **Bypass Lists**, a zatim unesite lokalni naziv, vrstu i HTTP ili HTTPS URL. Novi redovi su isključeni dok se izričito ne uključe.
+
+Svaki izvor prihvata jedan unos po redu. Lista može miješati domene, IPv4 adrese, IPv6 adrese i CIDR-ove; tekst nakon `#` je komentar. Nevažeći i predugi redovi se preskaču. Preuzimanje koje premašuje fiksno ograničenje bajtova ili prihvaćenih unosa se odbija, a posljednja dobra kopija ostaje na mjestu.
+
+Bypass liste se ažuriraju prema konfigurisanom rasporedu lista pomoću istog ograničenog klijenta za preuzimanje kao i druge liste. Neuspjelo preuzimanje zadržava posljednju dobru sačuvanu kopiju, a **Status → Bypass Lists** prikazuje unose, posljednje preuzimanje i najnoviju grešku za svaki red. Sinkhole ne uključuje niti preporučuje Bypass listu.
+
+## Provjerite aktivno stanje \{#verify-the-active-state}
+
+Nakon spremanja otvorite **Status → Bypass** i potvrdite da je svaka namjeravana zaštita `On`, da su odabrani interfejsi tačni te da je **Discovery Zone** `Present` kada je Discovery uključen. Potvrdite da su **Firewall rules loaded** i **Firewall rules current** postavljeni na `Yes` za zaštite zaštitnog zida. Tabela Bypass Lists prikazuje broj sačuvanih unosa i posljednje preuzimanje.
+
+Preusmjeravanje običnog DNS-a zadržava postojeći minutni postupak usklađivanja nakon dva opažanja poslije promjena slušača Resolvera. Sidro `sinkhole/bypass` učitava se nezavisno od `sinkhole/ip`, pa isključivanje bilo koje funkcije ne remeti drugu.

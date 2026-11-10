@@ -1,0 +1,81 @@
+---
+id: scopes
+title: Âmbitos e domínios permitidos
+description: Atribua listas e domínios permitidos aos âmbitos global, de interface e de dispositivo e siga a ordem exata da decisão mais específica para cada consulta DNS.
+keywords:
+  - sinkhole for pfsense
+  - âmbitos
+  - bloqueio por vlan
+  - política de dispositivo
+  - domínios permitidos
+tags:
+  - configure
+  - scopes
+  - dns
+---
+
+Atribua listas e domínios permitidos nos níveis global, de rede e de dispositivo para que cada cliente receba a política destinada à sua localização atual.
+
+## Por que usar âmbitos? \{#why-use-scopes}
+
+1. Dá a cada interface ou VLAN do pfSense sua própria política, mantendo as regras globais para todos.
+2. Dá a um dispositivo uma decisão mais específica sem exigir um servidor DNS separado.
+3. Permite que domínios permitidos corrijam falsos positivos no nível em que importam, sem remover uma lista inteira.
+4. Mantém os endereços dos clientes separados das listas compiladas, para que mudanças de DHCP, vizinho ou interface não recarreguem o Unbound.
+
+## Âmbito global \{#global-scope}
+
+Uma lista com **Global** selecionado aplica-se a todos os clientes depois das decisões de dispositivo e rede. Os domínios permitidos globais são inseridos no separador **Lists** e permitem o domínio informado e seus subdomínios diante das listas globais.
+
+Um cliente que não corresponda a nenhum âmbito de rede ou dispositivo ativado recebe apenas esse nível.
+
+## Âmbitos de rede \{#network-scopes}
+
+Abra **Firewall → Sinkhole → Scopes** e selecione **Add** abaixo da tabela Networks. O editor usa LAN por predefinição, ou a primeira interface disponível que não seja WAN, e omite interfaces que já tenham um âmbito de rede. Um cliente pertence a essa rede quando seu endereço está dentro de uma das sub-redes IPv4 ou IPv6 atuais da interface.
+
+Cada linha de rede seleciona listas adicionais, domínios permitidos e se o âmbito está ativado. Ao guardar, regressa a Scopes; selecione o lápis ou faça duplo clique numa linha para editá-la. Um dispositivo que muda de rede recebe a política da rede correspondente ao seu endereço atual.
+
+## Âmbitos de dispositivo \{#device-scopes}
+
+Selecione **Add** abaixo da tabela Devices, informe um nome e escolha um método de identificação. O editor mostra apenas o campo de identificador correspondente ao método selecionado:
+
+| Método              | Endereços usados para o dispositivo                                               |
+|---------------------|-----------------------------------------------------------------------------------|
+| IP address          | O endereço IPv4 ou IPv6 configurado.                                              |
+| DHCP static mapping | O endereço configurado e os endereços atuais observados para o MAC do mapeamento. |
+| MAC address         | Os endereços atuais de ARP, NDP e concessões DHCP desse MAC.                      |
+
+A linha do dispositivo seleciona as suas listas, domínios permitidos e estado de ativação. Ao guardar, regressa a Scopes; selecione o lápis ou faça duplo clique numa linha para a editar. Um processo em segundo plano atualiza as sub-redes e os endereços atuais dos dispositivos a cada minuto quando o bloqueio de DNS tem um âmbito de rede ou dispositivo ativado, ou quando a proteção DNS do Bypass precisa de identificar clientes. O Sync do pacote inicia a mesma atualização apenas nessa condição.
+
+## Ordem de decisão \{#decision-order}
+
+O nível correspondente mais específico decide cada consulta nesta ordem exata:
+
+1. **Domínios permitidos do dispositivo** — Permite imediatamente quando o nome consultado corresponde.
+2. **Listas do dispositivo** — Bloqueia imediatamente quando uma lista selecionada do dispositivo corresponde.
+3. **Domínios permitidos da rede** — Permite imediatamente quando a exceção da rede corresponde.
+4. **Listas da rede** — Bloqueia imediatamente quando uma lista selecionada da rede corresponde.
+5. **Domínios permitidos globais** — Permite imediatamente quando a exceção global corresponde.
+6. **Listas globais** — Bloqueia quando uma lista global corresponde.
+
+A consulta é permitida quando nenhuma etapa decide. Os domínios permitidos de um nível substituem listas herdadas de níveis menos específicos, mas não substituem listas de um nível mais específico que já tenha decidido.
+
+## Comportamento dos domínios permitidos \{#allowed-domain-behavior}
+
+Cada entrada de domínio permitido aplica-se ao domínio exato e a todos os seus subdomínios. Por exemplo, permitir `service.example` também permite `api.service.example` nesse nível.
+
+- Uma exceção de dispositivo pode superar listas de dispositivo, rede e globais porque é verificada primeiro.
+- Uma exceção de rede pode superar listas de rede e globais, mas não uma decisão de lista de dispositivo.
+- Uma exceção global pode superar apenas listas globais.
+
+## Conflitos de endereço \{#address-conflicts}
+
+Quando duas linhas de dispositivo reivindicam o mesmo endereço atual, o primeiro dispositivo na ordem da tabela vence. **Status → Scopes** mostra o endereço em **Conflict** para cada linha afetada, para que a ordem ou os identificadores possam ser corrigidos.
+
+## Verifique um âmbito \{#verify-a-scope}
+
+1. Execute `/usr/local/sbin/sinkhole --refresh-clients` ou aguarde a atualização por minuto.
+2. Abra **Status → Scopes** e confirme as sub-redes atuais da rede e os endereços atuais do dispositivo.
+3. Consulte um nome a partir de um cliente nesse âmbito e compare o resultado com a ordem de decisão acima.
+4. Verifique se existe algum conflito de endereço antes de depender do comportamento específico do dispositivo.
+

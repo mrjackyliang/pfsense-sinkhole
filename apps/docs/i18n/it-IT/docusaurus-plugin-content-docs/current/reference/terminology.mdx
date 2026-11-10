@@ -1,0 +1,57 @@
+---
+id: terminology
+title: Terminologia
+description: Definisci i termini DNS, lista, ambito, avviso e Bypass usati nella WebGUI di Sinkhole, nei pannelli Status, nelle guide e nei riferimenti.
+keywords:
+  - sinkhole for pfsense
+  - terminologia
+  - glossario
+  - dns sinkhole
+  - lista di blocco
+tags:
+  - reference
+  - terminology
+  - glossary
+---
+
+Questi termini mantengono lo stesso significato in tutta la WebGUI e nella documentazione di Sinkhole.
+
+## DNS sinkhole \{#dns-sinkhole}
+
+Rispondere a un nome bloccato con un indirizzo che non conduce da nessuna parte, così la richiesta si interrompe.
+
+## DNS Resolver \{#dns-resolver}
+
+Il servizio DNS di pfSense basato su Unbound.
+
+## Lista di blocco \{#block-list}
+
+Un elenco di nomi o indirizzi da bloccare, aggiunto tramite URL o dalla ricerca.
+
+## Lista salvata \{#saved-list}
+
+L’ultima copia valida di una lista di blocco, conservata sul firewall.
+
+## Ambito \{#scope}
+
+Dove si applica una lista di blocco: l’intera rete, una VLAN o un singolo dispositivo.
+
+## Liste globali \{#global-lists}
+
+Liste di blocco applicate a ogni client della rete.
+
+## Regola di avviso \{#alert-rule}
+
+Una lista e un ambito i cui blocchi inviano una notifica pfSense.
+
+## Protezione dal bypass \{#bypass-protection}
+
+Controlli facoltativi per interfaccia che mantengono i client su percorsi DNS ispezionabili da Sinkhole reindirizzando il DNS in chiaro o bloccando le comuni alternative di DNS cifrato e tunnel.
+
+## Reindirizzamento del DNS in chiaro \{#plain-dns-redirect}
+
+L’impostazione Bypass facoltativa che invia al firewall le normali query TCP e UDP dei dispositivi sulla porta 53.
+
+## Ricerca di liste popolari \{#popular-list-search}
+
+La ricerca nella WebGUI di liste di blocco molto usate, simile alla selezione di AdGuard Home.

@@ -1,0 +1,85 @@
+---
+id: build-and-release
+title: Bygging og utgivelse
+description: Konfigurer repositoriet, kjør Nova-kontroller og bygg, bygg pfSense-pakken på FreeBSD, registrer changelog-oppføringer og publiser en utgivelse.
+keywords:
+  - sinkhole for pfsense
+  - bidrag
+  - bygging
+  - utgivelse
+  - nova-changelog
+tags:
+  - contributing
+  - build
+  - release
+---
+
+Bygg, test og utgi Sinkhole gjennom Nova-arbeidsområdet i roten, slik at pakken og dokumentasjonen følger den samme kontrollerte arbeidsflyten.
+
+## Forutsetninger \{#prerequisites}
+
+- Bruk Node.js-versjonsområdet i `package.json` i roten og npm-versjonen som velges av feltet `packageManager`.
+- Bruk FreeBSD med en utsjekking av pfSense-ports for den endelige `.pkg`-byggingen.
+- Bruk et midlertidig pfSense-laboratorium for å kontrollere installasjon, oppgradering, blokkering og fjerning.
+
+Angi `PFSENSE_PORTS_DIR` som utsjekkingen av FreeBSD-ports for pfSense før pakking. Utsjekkingen må inneholde `Mk/bsd.port.mk`, og målet `sysutils/pfSense-pkg-Sinkhole` må være ledig for den midlertidige byggkopien.
+
+## Installer avhengigheter \{#install-dependencies}
+
+Fra roten av repositoriet:
+
+```sh
+npm install
+```
+
+Nova leser arbeidsområdene fra `nova.config.json`. Kjør arbeidsområdekommandoer fra roten med mindre en smalere pakkekommando undersøkes med hensikt.
+
+## Kontroller alle endringer \{#check-every-change}
+
+```sh
+npm run check
+npm run build
+```
+
+`npm run check` kjører linting, typekontroll og tester for arbeidsområdene i roten, pakken og dokumentasjonen. `npm run build` klargjør pfSense-porten og oppretter produksjonsbyggingen av dokumentasjonen under `build/`.
+
+Når verten ikke har en brukbar PHP-kjøretid, kjører `SINKHOLE_SKIP_PHP_TESTS=1 npm run check` alle tilgjengelige kontroller, men erstatter ikke de påkrevde pakketestene før utgivelse. Pakkeendringer krever også de frakoblede testsettene for PHP, Python, gjenoppretting og samarbeid mellom språk som er beskrevet i repositoriereglene.
+
+## Bygg utgivelsespakken \{#build-the-release-package}
+
+Kjør den endelige pakkekommandoen på FreeBSD etter `npm run build`:
+
+```sh
+npm run deploy
+```
+
+Distribusjonsskriptet kjører `make package` i den konfigurerte ports-utsjekkingen, bygger manifestet på nytt som vitalt med `FreeBSD:*`, verifiserer begge egenskapene og skriver versjonerte og stabile `.pkg`-filer samt SHA-256-filer under `packages/sinkhole/build/release/`.
+
+Kommandoen mislykkes med hensikt på verter som ikke bruker FreeBSD, eller uten `PFSENSE_PORTS_DIR`. Erstatt aldri utgivelsesartefakten med en pakke som er bygd på et annet operativsystem.
+
+## Registrer endringen \{#record-the-change}
+
+Bruk changelog-arbeidsflyten i Nova etter hvert som endringer tas inn:
+
+```sh
+npm run changelog
+```
+
+Velg det berørte arbeidsområdet og kategorien for utgivelsesmerknaden som samsvarer med den brukersynlige endringen. Behold én sammenhengende oppføring per endring, og bruk repositoriets imperativ og presens for utgivelsesmerknader.
+
+## Lag en utgivelse \{#cut-a-release}
+
+1. Kjør `npm run check` og `npm run build` fra en ren utgivelseskandidat.
+2. Kjør `nova utility changelog --release` for å velge versjonen, oppdatere pakkeversjoner og skrive changeloger.
+3. Kjør `npm run deploy` på den konfigurerte FreeBSD-byggeren.
+4. Installer, oppgrader, test blokkering og fjern artefakten i et midlertidig pfSense-laboratorium.
+5. Publiser GitHub-utgivelsen med de versjonerte og stabile pakke- og kontrollsumressursene.
+
+Når en utgivelse publiseres, utløses arbeidsflyten for pakkeartefakter og arbeidsflyten for distribusjon av dokumentasjon. En pfSense-utgivelse oppføres ikke som støttet før hele laboratorieverifiseringen er bestått.
+
+## Dokumentasjonsendringer \{#documentation-changes}
+
+Bruk eksplisitte engelske overskrifts-ID-er som `{#build-and-release}`, slik at oversatte sider kan beholde stabile ankere. Formater Markdown-tabeller med `npx nova recipe misc fix-markdown-tables`, og kjør deretter de samme kontroll- og byggekommandoene fra roten.
+
+De engelske sidene er kilden for alle 17 oversatte språkvarianter. Ikke oversett produktnavn, behold kode, baner og engelske ankere nøyaktig, og ikke lov funksjoner som ikke allerede er implementert.
+

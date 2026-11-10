@@ -1,0 +1,33 @@
+---
+id: blocked-services
+title: Services bloqués
+description: Bloquez des services entiers globalement ou pour un réseau ou appareil configuré depuis un registre en cache, avec priorité aux domaines autorisés et choix réparables.
+keywords:
+  - sinkhole for pfsense
+  - services bloqués
+  - blocage de services
+  - portée réseau
+  - portée appareil
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Utilisez **Firewall → Sinkhole → Services** pour bloquer une marque entière sans choisir ni maintenir l’URL d’une liste distincte.
+
+## Choisir une portée \{#choose-a-scope}
+
+Sélectionnez **Global**, un réseau configuré ou un appareil configuré. Recherchez un service, affinez les tuiles avec une puce de groupe, activez ou désactivez les services, puis sélectionnez **Save** sous les cartes de service.
+
+La sélection est compilée au niveau existant de cette portée. Les domaines autorisés de l’appareil restent prioritaires sur ses règles de service, ceux du réseau sur ses règles de service et les domaines autorisés globaux sur les règles de service globales.
+
+Les services couverts par une protection Bypass dédiée n'apparaissent pas dans la grille, le nombre de groupes ou la recherche. Private Relay se configure uniquement dans l'onglet Bypass.
+
+## Registre et réparation \{#registry-and-repair}
+
+Sinkhole récupère le registre des services d’AdGuard Home uniquement lorsque cette page s’ouvre ou lorsque vous sélectionnez **Refresh**. Il conserve la dernière copie valide sous `/var/db` pendant un jour afin que la compilation n’attende jamais le réseau.
+
+Les logos de service sont rendus comme des images Data URI isolées. Un logo manquant ou trop grand est remplacé par une image générique. Si un service enregistré disparaît d’un registre plus récent, Sinkhole conserve son identifiant et l’affiche sous **Needs Repair** ; désactivez-le et enregistrez pour supprimer ce choix.
+
+L’onglet **Status** affiche l’heure de récupération du registre, la dernière erreur et le nombre de services bloqués sélectionnés pour chaque portée configurée.

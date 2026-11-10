@@ -1,0 +1,33 @@
+---
+id: blocked-services
+title: Blockierte Dienste
+description: Blockiere ganze Dienste global oder für ein konfiguriertes Netzwerk oder Gerät aus einem Cache-Register, mit Vorrang erlaubter Domains und reparierbaren Auswahlen.
+keywords:
+  - sinkhole for pfsense
+  - blockierte dienste
+  - dienstblockierung
+  - netzwerk-scope
+  - geräte-scope
+tags:
+  - configure
+  - services
+  - dns
+---
+
+Verwende **Firewall → Sinkhole → Services**, wenn du eine vollständige Marke blockieren möchtest, ohne eine separate Listen-URL auszuwählen und zu pflegen.
+
+## Scope auswählen \{#choose-a-scope}
+
+Wähle **Global**, ein konfiguriertes Netzwerk oder ein konfiguriertes Gerät. Suche nach einem Dienst, grenze die Kacheln mit einem Gruppen-Chip ein, schalte die Dienste ein oder aus und wähle anschließend unter den Dienstkarten **Save**.
+
+Die Auswahl wird auf der bestehenden Ebene dieses Scopes kompiliert. Erlaubte Domains des Geräts haben weiterhin Vorrang vor dessen Dienstregeln, erlaubte Domains des Netzwerks vor dessen Dienstregeln und globale erlaubte Domains vor globalen Dienstregeln.
+
+Dienste, die durch einen eigenen Bypass-Schutz abgedeckt sind, erscheinen nicht im Raster, in Gruppenzählungen oder in der Suche. Private Relay wird nur auf dem Tab Bypass konfiguriert.
+
+## Register und Reparatur \{#registry-and-repair}
+
+Sinkhole ruft das Dienstregister von AdGuard Home nur ab, wenn diese Seite geöffnet oder **Refresh** ausgewählt wird. Die letzte gültige Kopie bleibt einen Tag lang unter `/var/db` gespeichert, sodass die Kompilierung nie auf das Netzwerk wartet.
+
+Dienstlogos werden als isolierte Data-URI-Bilder dargestellt. Bei fehlenden oder zu großen Logos wird ein generisches Bild verwendet. Wenn ein gespeicherter Dienst aus einem neueren Register verschwindet, behält Sinkhole seine ID bei und zeigt ihn unter **Needs Repair** an; schalte ihn aus und speichere, um diese Auswahl zu entfernen.
+
+Der Tab **Status** zeigt Abrufzeit, letzten Fehler und die Anzahl blockierter Dienste, die für jeden konfigurierten Scope ausgewählt sind.

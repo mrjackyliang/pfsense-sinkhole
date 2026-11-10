@@ -1,0 +1,68 @@
+---
+id: package-lifecycle
+title: 软件包生命周期
+description: 了解安装、升级、启动和 WAN Sync、pfSense 升级期间的软件包保护、Keep Settings、Resolver 恢复和完整删除。
+keywords:
+  - sinkhole for pfsense
+  - 软件包生命周期
+  - 保留设置
+  - pfsense 升级
+  - 卸载
+tags:
+  - reference
+  - lifecycle
+  - removal
+---
+
+Sinkhole 遵循 pfSense 软件包挂钩完成安装、重复 Sync、升级和删除，同时有意保留 Resolver 和已保存数据。
+
+## 安装和升级 \{#install-and-upgrade}
+
+从稳定版本 URL 安装或更新：
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+安装挂钩会在任何所需的服务或过滤器重新加载之前写入软件包集成。升级挂钩可重复运行，并在替换已安装程序文件时保留设置和已保存列表。
+
+直接从 GitHub 安装的软件包不会列在 pfSense 的 **System → Package Manager → Installed Packages** 页面上。请使用命令行或 Sinkhole 经过验证的 About 更新操作，而不是寻找 Netgate 仓库条目。
+
+## 软件包 Sync \{#package-sync}
+
+pfSense 会在启动和每次 WAN 地址改变后调用软件包 Sync。Sinkhole 使用它按需恢复计划任务、当前客户端地址、Resolver 集成、运行时代次、普通 DNS 重定向规则以及独立的 Bypass 和 IP 锚点。
+
+没有变化的 Sync 不会写入配置修订、不会编译任何内容，也不会影响 Unbound。在 RAM 磁盘系统上，启动时的 Sync 会从持久镜像恢复缺失的 `/var/unbound` 内容，并且只在必要时重启 Resolver。
+
+## pfSense 升级为何会保留 Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
+
+发布软件包将 ABI 声明为 `FreeBSD:*`，并设置软件包的 vital 标志。通配符使一个发布软件包可跨 FreeBSD 主版本安装，而 vital 标志可防止 pfSense 在升级时的自动删除步骤删除 Netgate 仓库中不存在的软件包。
+
+这种保留并不表示与未经测试的 pfSense 版本兼容。平台升级后，请查看[兼容性](/docs/compatibility)并在实验室防火墙上验证软件包。
+
+## Keep Settings \{#keep-settings}
+
+**General → Keep Settings** 默认选中。选中时，删除软件包会保留 Sinkhole 的 pfSense 配置和 `/cf/conf/sinkhole` 数据，以便重新安装后继续使用已保存列表和策略。
+
+此默认值也会保护在软件包管理器执行“先删除后安装”的升级过程中保留数据。只有在预期结果是完全删除配置和已保存数据时，才应取消选择。
+
+## 删除 Sinkhole \{#remove-sinkhole}
+
+发布软件包标记为 vital，因此请在保留其正常生命周期挂钩的情况下强制显式删除：
+
+```sh
+pkg delete -f pfSense-pkg-Sinkhole
+```
+
+删除会停止计划任务、阻止新的更新工作、恢复 Resolver 之前的 Python 设置、从 DNS Resolver 的 **Custom options** 中删除 Sinkhole 的托管 Discovery 块、删除 `/var/unbound` 运行时内容、清除临时锁和状态、撤销普通 DNS 重定向规则、清空 `sinkhole/bypass` 和 `sinkhole/ip` 锚点，并删除缓存的 Bypass Lists 和表文件。无论 **Keep Settings** 开启还是关闭，都会删除该托管 Discovery 块。它还会删除 `/usr/local` 下安装的软件包文件。
+
+启用 **Keep Settings** 时，会保留配置和持久化已保存列表以供重新安装。关闭时，会删除 Sinkhole 的所有设置和已保存数据，包括 `/cf/conf/sinkhole` 以及 pfSense 软件包配置中的整个 Sinkhole 分支。
+
+## 验证删除 \{#verify-removal}
+
+1. 确认 **Firewall → Sinkhole** 不再显示。
+2. 确认 DNS Resolver 的 Python 脚本和顺序与安装 Sinkhole 之前的值一致。
+3. 确认不存在 Sinkhole cron 条目、普通 DNS 重定向块、`sinkhole/bypass` 锚点或 `sinkhole/ip` 锚点。
+4. 如果关闭了 Keep Settings，请确认 `/cf/conf/sinkhole` 不存在。
+
+如果更新处于活动状态，删除标记会要求它在接触持久数据之前，于有界阶段之间停止。删除过程会记录第一个清理失败，同时仍尝试其余相互独立的清理步骤。

@@ -1,0 +1,131 @@
+---
+id: status
+title: 狀態
+description: 讀取 Sinkhole 的每個 Status 面板，區分活動、待處理、已暫停、已載入、缺失和過期狀態，並執行手動清單更新。
+keywords:
+  - sinkhole for pfsense
+  - 狀態
+  - 活動狀態
+  - 部署代次
+  - Bypass 保護
+tags:
+  - operate
+  - status
+  - diagnostics
+---
+
+import ipStatus from './_assets_/status-4.png';
+import listsScopesStatus from './_assets_/status-1.png';
+import summaryStatus from './_assets_/status-2.png';
+
+從一個執行視圖讀取已儲存清單、作用域、警報、Bypass、IP、編譯、部署和 Resolver 狀態。
+
+## Status 面板 \{#status-panels}
+
+打開 **Firewall → Sinkhole → Status** 可查看以下面板：
+
+| 面板                      | 報告內容                                                           |
+|-------------------------|----------------------------------------------------------------|
+| Summary                 | 編譯、部署、代次、操作、Resolver 所有者、Sinkhole 總體狀態，以及面板下方的 **Update Now**。 |
+| Lists                   | DNS 清單 URL、已儲存項目數、上次成功更新和上次錯誤。                                 |
+| Popular-List Catalogs   | AdGuard Home 和 pfBlockerNG 目錄來源的上次獲取時間和上次錯誤。                   |
+| Invalid Saved Rows      | 仍可修復的格式錯誤清單行；僅在存在這些行時顯示。                                       |
+| Scopes                  | 用戶端映射重建時間和錯誤，隨後是獨立的 Networks 和 Devices 面板。                     |
+| Alerts                  | 上次執行、已讀取或過期事件、已發送或暫緩通知、已丟棄事件和上次錯誤。                             |
+| Bypass                  | 每項保護、介面、重定向規則狀態、Bypass 錨點狀態和計數，隨後是 Bypass Lists 和修復面板。         |
+| IP and Country Blocking | 策略選擇、表和規則計數、更新、錯誤和錨點狀態，隨後是獨立的 IP Lists 面板。                     |
+
+已禁用的清單和作用域行顯示為灰色。來源發生錯誤時仍可能顯示項目和更早的成功更新時間，因為最後一份有效副本仍在使用。
+
+<img src={listsScopesStatus} alt="Status 選項卡顯示已儲存的演示清單更新、網路子網和當前演示設備地址" width={1024} height={929} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Sinkhole 狀態 \{#sinkhole-state}
+
+Summary 中最後一行 **Sinkhole** 是最快的 Resolver 集成檢查：
+
+| 狀態                                       | 含義                                                                 |
+|------------------------------------------|--------------------------------------------------------------------|
+| `Active`                                 | Sinkhole 已啓用、擁有 Python 插槽、使用 Python 模式和 `pre_validator`，並且具有執行時資料。 |
+| `Inactive: Sinkhole is disabled.`        | General 中的 **Enable** 已關閉。                                         |
+| `Inactive: DNS Resolver is disabled.`    | pfSense 的 DNS Resolver 已關閉。                                        |
+| `Inactive: ... slot is owned by ...`     | 另一個 Python 腳本（例如 pfBlockerNG DNSBL）擁有唯一插槽。                         |
+| `Inactive: Sinkhole does not own ...`    | 即使未報告其他所有者，已配置的腳本也不是 Sinkhole。                                     |
+| `Inactive: ... Python mode is disabled.` | Resolver 不再啓用 Python 模式。                                           |
+| `Inactive: ... pre-validator position.`  | 模塊順序不再將 Sinkhole 放在 `pre_validator`。                               |
+| `Inactive: ... runtime files ...`        | 腳本或當前編譯代次缺失。                                                       |
+
+當 Sinkhole 被有意停用時，**Deployment Needed** 為 `No`，**Loaded Generation** 為 `Module not loaded.`，而且頁面不會顯示部署警告。其他非活動整合狀態會強制 **Deployment Needed** 為 `Yes`，並將 **Loaded Generation** 設為 `Module not loaded.`。在將編譯資料視為活動資料之前，請先修復所述原因。
+
+## 編譯和部署狀態 \{#compile-and-deployment-state}
+
+| 字段                  | 含義                                           |
+|---------------------|----------------------------------------------|
+| Compile Needed      | 已儲存策略發生變化，或上次編譯未成功完成。                        |
+| Compiled Generation | 最近一次成功編譯生成的識別碼。                              |
+| Deployment Needed   | 已編譯內容不是為 Unbound 部署的內容，或集成處於非活動狀態。           |
+| Deployed Generation | 當前已部署執行時清單中的識別碼。                             |
+| Loaded Generation   | Unbound 模塊報告已載入的識別碼。                         |
+| Update Running      | 僅當清單或 IP 更新持有共享更新鎖時顯示。                       |
+| Removal in Progress | 僅當設定了持久刪除標記並正在撤銷整合時顯示。                       |
+| Python Script Owner | Resolver 唯一 `python_script` 插槽的當前值，或 `None`。 |
+
+當編譯或部署待處理時，頁面會顯示包含記錄原因的警告框。編譯、部署和載入識別碼一致，說明已儲存策略已經到達正在執行的模塊。
+
+<img src={summaryStatus} alt="Status 的 Summary 面板顯示編譯、部署和載入代次一致且 Sinkhole 處於活動狀態" width={1024} height={814} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 作用域和警報狀態 \{#scope-and-alert-state}
+
+Scopes 摘要報告用戶端映射重建狀態。獨立的 **Networks** 和 **Devices** 面板報告每個介面的當前 CIDR 和每個設備的當前地址。衝突會指出由多個設備聲明的地址；按表格順序出現的第一個設備擁有該地址的策略。
+
+**Alerts** 面板只描述最近一次每分鐘任務。**Notifications held back** 包括上限或未讀通知抑制，**Events dropped by module** 則表示有界記憶體或磁盤事件隊列已滿。
+
+## Bypass 狀態 \{#bypass-state}
+
+Bypass 面板針對 TLS and QUIC、供應商清單、Firefox、Private Relay、Tor、VPN 供應商清單和標準 VPN 端口報告 `On` 或 `Off`。**Discovery** 報告所選模式。**Interfaces** 確認共用的面向用戶端介面選擇。
+
+獨立防火牆錨點報告：
+
+| 字段                      | 含義                                  |
+|-------------------------|-------------------------------------|
+| Firewall rules loaded   | 目前設定需要時，`sinkhole/bypass` 錨點是否存在。   |
+| Firewall rules current  | 已載入的摘要、規則和表是否與目前設定及上次成功的清單資料一致。     |
+| Firewall rule count     | Bypass 錨點中的活動規則數。                   |
+| IPv4/IPv6 table entries | 移除受保護的防火牆地址後，最終的供應商、Tor 和 VPN 地址計數。 |
+
+**Bypass Lists** 表報告每行的類型、啟用狀態、已儲存項目數、上次擷取和上次錯誤。因此，擷取失敗時可以在保留的上次成功副本項目旁顯示錯誤。
+
+### 普通 DNS 重定向狀態 \{#plain-dns-redirect-state}
+
+| 狀態     | 含義                              |
+|--------|---------------------------------|
+| Off    | 普通 DNS 重定向已禁用。                  |
+| On     | Redirect 已啓用，並且每個已儲存豁免都有效。      |
+| Paused | 至少一個已儲存的來源或目標豁免無效，因此不使用任何重定向規則。 |
+
+**pfSense loaded rules** 字段有三種狀態：
+
+| 狀態          | 含義                                          |
+|-------------|---------------------------------------------|
+| Yes         | `/tmp/rules.debug` 恰好包含 Sinkhole 當前需要的重定向塊。 |
+| No          | 所需塊未載入。                                     |
+| Out of date | 已載入 Sinkhole 塊，但其文本與當前設定或 Resolver 監聽地址不匹配。 |
+
+每個地址族目標要麼是所選監聽地址，要麼是無法構建規則的原因。**Last parse error** 只在 pfSense 拒絕規則後當前塊仍缺失時顯示。
+
+## IP 和國家/地區狀態 \{#ip-and-country-state}
+
+IP 面板的主要狀態為 **On** 或 **Off**。其 **IP Anchor** 使用 **Yes**、**No** 和 **Out of date**，與 Bypass 錨點一樣區分已載入內容和目前內容。
+
+表項目計數顯示經過允許清單和受保護地址扣除後最終合併的 IPv4 和 IPv6 網路。
+
+**Skipped Lines** 統計無效的 IP 清單輸入。註解行和空白行不列入計數。
+
+**GeoLite2 Last Update** 與最近一次清單更新相互獨立。
+
+<img src={ipStatus} alt="Status 的 IP and Country Blocking 面板顯示表計數、更新狀態、已載入錨點和演示 IP 清單行" width={1024} height={982} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 執行 Update Now \{#run-update-now}
+
+選擇 Summary 下方的 **Update Now** 會在後台啓動 `/usr/local/sbin/sinkhole --manual` 並立即返回。該按鈕不會流式顯示輸出，因此請通過 **Update Running**、DNS/Bypass/IP 清單行、編譯字段和上次錯誤查看結果。
+
+手動作業與計劃清單更新和套件自更新使用同一個共享更新鎖。如果另一個更新持有該鎖，現有作業會繼續執行，待應用工作也會保留。

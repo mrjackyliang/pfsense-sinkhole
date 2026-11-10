@@ -1,0 +1,65 @@
+---
+id: how-updates-work
+title: How Updates Work
+description: Understand saved-list updates, atomic last-good fallback, local compilation and deployment, Resolver cache handling, and shared update locking.
+keywords:
+  - sinkhole for pfsense
+  - list updates
+  - last good copy
+  - unbound reload
+  - update lock
+tags:
+  - safety
+  - updates
+  - availability
+---
+
+Sinkhole separates downloading from DNS service so a remote source never sits in the Resolver's query path.
+
+## DNS-List Update Flow \{#dns-list-update-flow}
+
+For every enabled DNS list, Sinkhole:
+
+1. Downloads the source with bounded time and size limits.
+2. Parses supported hosts, plain-domain, and adblock-style entries into a temporary normalized set.
+3. Atomically replaces the saved copy only after the new content passes validation.
+4. Compiles global, network, device, allowed-domain, and alert policy from local saved data.
+5. Deploys a generation under `/var/unbound` for the already-loaded Python module to discover.
+
+A download, parse, or validation failure records an error without replacing the last-good copy. DNS keeps using the deployed local generation throughout the attempt.
+
+## Deployment and Resolver Caches \{#deployment-and-resolver-caches}
+
+The Unbound module checks for a new manifest between queries and swaps to the complete generation only after every referenced file is ready. Status separates the compiled, deployed, and loaded generation identifiers so each stage can be verified.
+
+When policy adds blocked names or broadens a blocked subtree, Sinkhole waits for the module to report the new generation and then reloads Unbound once. The reload clears message and RRset caches that `flush_zone` alone can leave eligible for **Serve Expired**.
+
+## Client-Map Refreshes \{#client-map-refreshes}
+
+Network subnets and device addresses are stored separately from the compiled domain data. When DNS blocking has an enabled network or device scope, or Bypass DNS protection needs client matching, Sinkhole refreshes this client map every minute without reloading Unbound.
+
+Package Sync starts the same refresh only under that condition. This covers interface, DHCP lease, neighbor, and static-mapping changes that occur outside a list update. After every Sinkhole feature is disabled, the next Sync removes the runtime client map and its optional RAM-disk mirror.
+
+## IP and Country Update Flow \{#ip-and-country-update-flow}
+
+When IP and country blocking is enabled, the same scheduled or manual update downloads enabled IP lists and refreshes eligible GeoLite2 data. Sinkhole parses and merges each address family, subtracts the administrator's allowlist and protected firewall addresses, then replaces the family table files atomically.
+
+An existing `sinkhole/ip` anchor can receive a table-only `pfctl -T replace` after a successful update. Sync and the minute integrity check load the complete anchor when rules or tables are missing or different.
+
+## Schedules and Locking \{#schedules-and-locking}
+
+The default list update frequency is Daily. Hourly, Every 6 hours, Daily, and Weekly schedules use stable randomized minute components so the firewall doesn't move its job time on every save.
+
+DNS-list updates, IP/country updates, catalog-related apply work, and package self-update coordinate through `/var/run/sinkhole-update.lock`. A package Update action waits for an active list update to finish instead of changing the installed package underneath it.
+
+## Catalog Refreshes Are Separate \{#catalog-refreshes-are-separate}
+
+The AdGuard Home registry and pfBlockerNG feed catalog are fetched only when catalog search opens or **Refresh** is selected. Their last-good cache can be reused for one day, and a failed fetch doesn't alter configured lists.
+
+Catalog results are discovery metadata, not policy. A result affects DNS or IP blocking only after it is added as an ordinary configured list and completes the normal update flow.
+
+## Read Update State \{#read-update-state}
+
+Open **Firewall → Sinkhole → Status** and compare source errors, saved entry counts, the update-running flag, and compiled, deployed, and loaded generations. For IP blocking, also compare table counts and the `sinkhole/ip` anchor state.
+
+Use [Updates](/docs/reference/updates) for package-version checks and self-update behavior. Use [Troubleshooting](/docs/operate/troubleshooting) when a stage reports an error or remains pending.

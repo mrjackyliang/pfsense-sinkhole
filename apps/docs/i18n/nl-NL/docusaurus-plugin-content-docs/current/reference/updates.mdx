@@ -1,0 +1,66 @@
+---
+id: updates
+title: Pakketupdates
+description: Configureer releasecontroles, lees meldingen en de updatebalk van About en begrijp de begrensde controles van controlesom, handtekening, metagegevens, vergrendeling en installatie.
+keywords:
+  - sinkhole voor pfsense
+  - pakketupdates
+  - automatische update
+  - controlesomverificatie
+  - releasemeldingen
+tags:
+  - reference
+  - updates
+  - security
+---
+
+import aboutUpdateBar from './_assets_/updates-1.png';
+
+Sinkhole kan de GitHub-releases controleren, via pfSense melden en een geverifieerd nieuwer pakket vanaf het tabblad About installeren.
+
+## Geplande releasecontroles \{#scheduled-release-checks}
+
+**General → Update Checks** selecteert Daily, Weekly, Monthly of Never; Weekly is de standaardinstelling. Sinkhole bewaart stabiele willekeurige schemacomponenten, zodat het opslaan van instellingen het controletijdstip niet voortdurend verschuift.
+
+Een controle legt de nieuwste versie, releasepagina, controletijd en laatste fout vast. **About → Check Now** voert dezelfde controle onmiddellijk uit.
+
+## Updatemeldingen \{#update-notices}
+
+Elke nieuw gedetecteerde versie maakt één lokale pfSense WebGUI-melding met een koppeling naar het tabblad About van Sinkhole. Herhaalde controles maken geen dubbele meldingen voor dezelfde versie.
+
+Selecteer **Remote Notifications** om ook de services te gebruiken die onder **System → Advanced → Notifications** zijn geconfigureerd. De instelling is standaard uitgeschakeld en beïnvloedt versiemeldingen, niet de waarschuwingsregels voor lijstblokkeringen.
+
+## Updatebalk van About \{#about-update-bar}
+
+De updatebalk toont de geïnstalleerde versie, de nieuwste gecontroleerde versie, de laatste controle, de releasekoppeling, de fout en de voortgang van de losgekoppelde update. De visuele status onderscheidt geen wachtende update, een nieuwere release, een actieve update, succes en mislukking.
+
+**Update** verschijnt wanneer de vastgelegde nieuwste versie nieuwer is. De pagina peilt de losgekoppelde taak en meldt het resultaat zonder het browserverzoek open te houden.
+
+<img src={aboutUpdateBar} alt="Tabblad About met een beschikbare Sinkhole-update en de besturingselementen Update en What's New" width={1024} height={846} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Verificatie vóór installatie \{#verification-before-installation}
+
+Automatisch bijwerken accepteert alleen assets uit het GitHub-pad voor releasedownloads van dit project en past begrensde downloadgroottes en time-outs toe. Het vereist het stabiele pakket plus het bijbehorende `.sha256`-bestand, verifieert de SHA-256-samenvatting en inspecteert daarna de pakketmetagegevens voordat het installeert met `pkg add -f`.
+
+Wanneer `/usr/local/share/pfSense-pkg-Sinkhole/release-signing.pub` vertrouwde Ed25519 OpenSSH-sleutels bevat, wordt de overeenkomende losse `.sig`-asset verplicht. Sinkhole verifieert die handtekening in de releasenaamruimte voordat `pkg` het pakket mag inspecteren.
+
+Een lege geïnstalleerde vertrouwenslijst betekent dat geen handtekening vereist is, maar controles van de controlesom en pakketmetagegevens blijven gelden. Een ontbrekende, onjuist gevormde, niet-vertrouwde, te grote of niet-overeenkomende asset stopt de update en laat het geïnstalleerde pakket staan.
+
+## Updatevergrendeling \{#update-locking}
+
+Pakketcontrole en automatisch bijwerken delen `/var/run/sinkhole-update.lock` met DNS-lijst- en IP-/landupdates. Als een lijstupdate actief is, kan de actie **Update** in About niet beginnen totdat die taak is voltooid.
+
+De vergrendeling voorkomt dat pakketbestanden veranderen terwijl het huidige pakket beleid downloadt, analyseert, compileert of toepast. Probeer het opnieuw vanuit About nadat Status geen actieve update meer toont.
+
+## Handmatige pakketupdate \{#manual-package-update}
+
+De stabiele opdracht blijft beschikbaar wanneer de actie in About niet kan worden gebruikt:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Download voordat u deze uitvoert de stabiele `.sha256`-asset en vergelijk de hash met het pakket zoals beschreven in [Installatie](/docs/installation#verify-the-checksum). De vlag `-f` is vereist, zodat `pkg` een nieuwe build installeert, zelfs wanneer deze vanaf dezelfde stabiele URL kwam.
+
+Het About-recht is alleen-lezen. **Check Now** en **Update** worden alleen weergegeven en geaccepteerd voor een aangemelde gebruiker met het recht voor Sinkhole General-instellingen of het pfSense-recht `page-all`. Een gebruiker met alleen het About-recht kan nog steeds de geïnstalleerde versie, releasestatus en releaselink lezen.
+

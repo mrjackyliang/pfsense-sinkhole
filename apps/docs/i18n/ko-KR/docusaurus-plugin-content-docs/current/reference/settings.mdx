@@ -1,0 +1,146 @@
+---
+id: settings
+title: 설정 참조
+description: Sinkhole 필드, 기본값, 일정, 목록 및 범위 선택, 알림 한도, Bypass 보호, IP 정책, 업데이트 확인 및 언어 동작을 찾아봅니다.
+keywords:
+  - sinkhole for pfsense
+  - 설정
+  - 기본값
+  - webgui
+  - 구성
+tags:
+  - reference
+  - settings
+  - webgui
+---
+
+**Firewall → Sinkhole** 아래에 있는 모든 Sinkhole 구성 영역의 용도와 기본 동작을 찾아봅니다.
+
+## General \{#general}
+
+| 필드               | 기본값   | 설명                                                                         |
+|------------------|-------|----------------------------------------------------------------------------|
+| Enable           | Off   | 예약 목록 업데이트와 Sinkhole의 DNS Resolver 통합을 활성화합니다.                             |
+| Update Frequency | Daily | DNS, Bypass 및 IP/국가 목록 일정으로 Hourly, Every 6 hours, Daily 또는 Weekly를 선택합니다. |
+| Keep Settings    | On    | 패키지를 제거할 때 구성과 영구 저장 데이터를 보존합니다.                                           |
+
+예약 시간에는 안정적으로 임의 지정된 요소를 사용합니다. Hourly는 한 번 정해진 분에 매시간 실행되고, Every 6 hours는 6시간마다 같은 분을 사용하며, Daily는 `00:<minute>`, Weekly는 일요일 `00:<minute>`에 실행됩니다.
+
+## Package Updates \{#package-updates}
+
+| 필드                   | 기본값    | 설명                                                           |
+|----------------------|--------|--------------------------------------------------------------|
+| Update Checks        | Weekly | 새 GitHub 릴리스 확인 일정으로 Daily, Weekly, Monthly 또는 Never를 선택합니다. |
+| Remote Notifications | Off    | 각 새 버전 알림을 pfSense에 구성된 원격 서비스로도 전송합니다.                      |
+
+각 새 버전은 로컬 pfSense 알림 하나를 만듭니다. **About → Check Now**는 일정을 변경하지 않고 동일한 제한된 릴리스 확인을 즉시 실행합니다.
+
+## Lists \{#lists}
+
+| 필드              | 기본값   | 설명                                                   |
+|-----------------|-------|------------------------------------------------------|
+| Name            | Empty | 할당, 알림 및 Status에서 사용하는 로컬 레이블입니다.                    |
+| URL             | Empty | 자격 증명이 포함되지 않은 HTTP 또는 HTTPS 출처입니다.                  |
+| Enabled         | On    | 할당된 경우 업데이트와 컴파일된 정책에 출처를 포함합니다.                     |
+| Global          | On    | 장치 및 네트워크 판단 후 모든 클라이언트에 목록을 적용합니다.                  |
+| Allowed Domains | Empty | 한 줄당 전역 허용 도메인 하나이며 각 항목은 정확한 도메인과 모든 하위 도메인을 허용합니다. |
+
+**Add from Catalog**는 필요할 때 AdGuard Home 목록 레지스트리와 pfBlockerNG 피드 카탈로그를 검색합니다. 결과를 추가하면 URL을 직접 입력했을 때와 같은 일반 행이 생성됩니다.
+
+우회 피드는 이 카탈로그에서 제외됩니다.
+
+## 서비스 \{#services}
+
+각 범위의 서비스 선택은 기본적으로 비어 있습니다. 전용 Bypass 보호가 담당하는 레지스트리 서비스는 Services에서 숨겨지고 저장된 선택에서도 제거됩니다. Private Relay는 Bypass 탭에서만 구성합니다.
+
+## Network Scopes \{#network-scopes}
+
+| 필드              | 기본값   | 설명                                                                           |
+|-----------------|-------|------------------------------------------------------------------------------|
+| Interface       | Empty | 현재 IPv4 및 IPv6 서브넷으로 네트워크를 식별하는 구성된 pfSense 인터페이스입니다.                        |
+| Lists           | Empty | 네트워크의 클라이언트를 차단하는 추가 DNS 목록입니다.                                              |
+| Allowed Domains | Empty | 한 줄당 네트워크 예외 하나이며 각 예외는 해당 네트워크 목록과 모든 전역 정책보다 먼저 정확한 도메인과 모든 하위 도메인을 허용합니다. |
+| Enabled         | On    | 클라이언트 일치와 컴파일된 정책에 이 행을 포함합니다.                                               |
+
+각 인터페이스는 한 번만 나타날 수 있습니다. 사용할 수 없게 된 저장 인터페이스도 삭제되지 않고 수정할 수 있도록 표시됩니다.
+
+## Device Scopes \{#device-scopes}
+
+| 필드                  | 기본값        | 설명                                                                    |
+|---------------------|------------|-----------------------------------------------------------------------|
+| Name                | Empty      | 정책과 Status에 표시되는 로컬 레이블입니다.                                           |
+| Identified By       | IP address | IP address, DHCP static mapping 또는 MAC address를 선택합니다.                |
+| IP or MAC Address   | Empty      | IP address 또는 MAC address를 선택했을 때 사용할 정확한 식별자입니다.                     |
+| DHCP Static Mapping | Empty      | 해당 식별 방법을 사용할 때 선택하는 기존 매핑입니다.                                        |
+| Lists               | Empty      | 이 장치를 차단하는 추가 DNS 목록입니다.                                              |
+| Allowed Domains     | Empty      | 한 줄당 장치 예외 하나이며 각 예외는 모든 네트워크 및 전역 판단보다 먼저 정확한 도메인과 모든 하위 도메인을 허용합니다. |
+| Enabled             | On         | 클라이언트 일치와 컴파일된 정책에 이 행을 포함합니다.                                        |
+
+정적 매핑은 구성된 주소와 해당 매핑의 MAC에서 관찰한 현재 주소를 함께 사용합니다. MAC 행은 현재 ARP, NDP 및 DHCP 임대 데이터를 사용합니다.
+
+## Alert Rules \{#alert-rules}
+
+| 필드                   | 기본값      | 설명                                                    |
+|----------------------|----------|-------------------------------------------------------|
+| Description          | Empty    | 규칙의 로컬 레이블입니다.                                        |
+| Lists                | Any      | 모든 목록 또는 선택한 구성 목록만 일치시킵니다.                           |
+| Clients              | Everyone | 모든 클라이언트 또는 선택한 네트워크 및 장치 범위를 일치시킵니다.                 |
+| Repeat After         | 60       | 같은 규칙, 클라이언트, 도메인 및 목록이 다시 알림을 보낼 때까지의 분이며 1~1440입니다. |
+| WebGUI Notice        | On       | 규칙이 일치하면 pfSense 알림을 추가합니다.                           |
+| Remote Notifications | On       | 규칙이 일치하면 pfSense에 구성된 알림 서비스를 사용합니다.                  |
+| Enabled              | On       | 컴파일된 알림 정책에 규칙을 포함합니다.                                |
+
+분 단위 처리기는 실행당 최대 20개, 규칙당 시간당 최대 60개의 메시지를 보낸 후 초과분을 요약합니다. Sinkhole WebGUI 미확인 알림은 최대 50개를 유지하고 실행 시간은 40초로 제한하며, 10분이 지난 이벤트는 만료됩니다.
+
+## Bypass 보호 \{#bypass-protection}
+
+| 필드                  | 기본값   | 설명                                                                       |
+|---------------------|-------|--------------------------------------------------------------------------|
+| Apply to            | Empty | 모든 Bypass 보호가 공유하는 클라이언트 측 도착 인터페이스입니다.                                  |
+| Redirect            | Off   | 선택한 인터페이스의 일반 UDP 및 TCP 포트 53 트래픽을 방화벽으로 보냅니다.                           |
+| Exempt Sources      | Empty | 일반 DNS 리디렉션을 우회하는 IP 주소, CIDR, 별칭 또는 `This Firewall` 항목을 한 줄에 하나씩 지정합니다. |
+| Exempt Destinations | Empty | 일반 DNS 리디렉션을 우회하는 목적지 IP 주소, CIDR 또는 별칭을 한 줄에 하나씩 지정합니다.                 |
+| TLS and QUIC        | Off   | 방화벽 이외의 목적지로 향하는 TCP 및 UDP 포트 853을 차단합니다.                                |
+| Providers           | Off   | 활성화된 **Encrypted DNS** Bypass Lists의 이름과 주소를 차단합니다.                      |
+| Firefox             | Off   | Firefox의 자동 DNS-over-HTTPS 카나리아 이름과 그 하위 도메인에 `NXDOMAIN`을 반환합니다.         |
+| Private Relay       | Off   | Apple의 두 Private Relay 가용성 이름에 `NXDOMAIN`을 반환합니다.                        |
+| Discovery           | Off   | DDR을 그대로 두거나, 방화벽의 DNS over TLS를 광고하거나, 레코드 없이 `NOERROR`로 응답합니다.         |
+| Tor                 | Off   | 활성화된 **Tor** Bypass Lists의 이름과 주소를 차단합니다.                                |
+| VPN providers       | Off   | 활성화된 **VPN** Bypass Lists의 이름과 주소를 차단합니다.                                |
+| Standard VPN ports  | Off   | 방화벽 이외의 목적지로 향하는 OpenVPN, WireGuard, IPsec UDP 포트 및 ESP를 차단합니다.          |
+
+저장된 모든 리디렉션 예외가 유효해야 리디렉션 규칙을 사용할 수 있습니다. IPv4는 Resolver가 수신하는 경우에만 `127.0.0.1`을 대상으로 하며 그 외에는 인터페이스 주소를 사용합니다. IPv6는 항상 인터페이스 주소를 사용합니다. **Discovery → Advertise**에는 DNS Resolver의 SSL/TLS 서비스와 인증서 호스트 이름이 필요합니다.
+
+### Bypass Lists \{#bypass-lists}
+
+| 필드      | 기본값           | 설명                                               |
+|---------|---------------|--------------------------------------------------|
+| Name    | Empty         | Bypass와 Status에 표시되는 로컬 레이블입니다.                  |
+| Kind    | Encrypted DNS | **Encrypted DNS**, **Tor** 또는 **VPN** 정책을 선택합니다. |
+| URL     | Empty         | 도메인, 주소 및 CIDR이 혼합된 HTTP 또는 HTTPS 소스입니다.         |
+| Enabled | Off           | 저장된 목록을 예약된 가져오기와 그에 대응하는 활성화된 보호에 포함합니다.        |
+
+Bypass List 입력은 한 줄에 하나의 항목과 `#` 주석을 사용합니다. 가져오기에 실패하면 마지막으로 저장된 정상 복사본을 유지합니다. 목록 도메인의 허용 결정은 Bypass List 이름보다 우선하지만 Firefox, Private Relay 또는 Discovery 신호보다 우선하지 않습니다.
+
+**Add from Catalog**는 열거나 새로 고칠 때만 AdGuard Home 레지스트리와 pfBlockerNG의 DNS, IPv4 및 IPv6 섹션에서 우회 피드를 검색합니다. 각 결과는 **Encrypted DNS**, **Tor** 또는 **VPN** 중 하나의 고정된 종류를 가지며 활성화된 Bypass List로 추가됩니다.
+
+## IP and Country Blocking \{#ip-and-country-blocking}
+
+| 필드                  | 기본값   | 설명                                             |
+|---------------------|-------|------------------------------------------------|
+| Enable              | Off   | 독립적으로 로드되는 `sinkhole/ip` 방화벽 앵커를 활성화합니다.       |
+| Interfaces          | Empty | 차단 규칙이 적용되는 도착 인터페이스입니다.                       |
+| Directions          | Empty | 인바운드 출발지 차단, 아웃바운드 목적지 차단 또는 둘 다 선택합니다.        |
+| Countries           | Empty | 한 줄당 GeoLite2 두 글자 국가 코드 하나입니다.                |
+| MaxMind Account ID  | Empty | GeoLite2 Country 아카이브를 가져오는 데 사용하는 계정입니다.      |
+| MaxMind License Key | Unset | 관리자가 제공하는 쓰기 전용 키이며 비워 두면 저장된 값을 유지합니다.        |
+| Clear License Key   | Off   | 저장할 때 저장된 MaxMind 키를 삭제합니다.                    |
+| IP Allowlist        | Empty | 최종 차단 테이블에서 제외할 IP 주소 또는 CIDR을 한 줄에 하나씩 지정합니다. |
+
+각 IP 목록 행에는 이름, URL, IPv4/IPv6/Both 패밀리 선택 및 Enabled 스위치가 있습니다. 또한 Sinkhole은 자체 규칙이 보호 인프라를 차단하지 않도록 최종 테이블에서 방화벽 인터페이스, 게이트웨이 및 DNS 주소를 제거합니다.
+
+IP 카탈로그에서는 Bypass 카탈로그가 담당하는 모든 Encrypted DNS, Tor 및 VPN 피드를 제외합니다.
+
+## 언어 \{#language}
+
+Sinkhole WebGUI는 pfSense 언어 설정을 따르며 지원되는 18개 로캘 모두에 대한 완전한 카탈로그를 제공합니다. 카탈로그 키가 예기치 않게 누락되면 Sinkhole은 해당 키에 영어를 사용합니다.

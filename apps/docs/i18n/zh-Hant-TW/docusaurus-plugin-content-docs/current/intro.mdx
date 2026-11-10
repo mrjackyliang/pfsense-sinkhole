@@ -1,0 +1,74 @@
+---
+id: intro
+title: 概述
+description: 在 pfSense 上封鎖不需要的網站，並為整個網路、每個 VLAN 或單台設備分別設定策略，而無需增加另一台 DNS 主機。
+keywords:
+  - sinkhole for pfsense
+  - 概述
+  - dns 封鎖
+  - 網路策略
+  - 封鎖清單
+tags:
+  - setup
+  - overview
+  - dns
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+直接在 pfSense 內，為整個網路、一個 VLAN 或一台設備分別封鎖不需要的網站。
+
+## Sinkhole 的作用 \{#what-sinkhole-does}
+
+Sinkhole for pfSense 讓家長和雇主可以控制哪些<Terminology title="被選中用於封鎖的名稱或地址" to="/docs/reference/terminology#block-list">封鎖清單</Terminology>應用於網路的各個部分。它在防火牆上保留最後一份有效副本，因此重啓或重新載入後，DNS 可以立即回應，同時在後台下載較新的副本。
+
+被封鎖的名稱會返回 `0.0.0.0` 或 `::`。如果 CNAME 鏈到達被封鎖的名稱，該查詢也會被封鎖；而在決定層級明確允許的名稱仍會被允許。
+
+## 為什麼使用 Sinkhole？ \{#why-use-sinkhole}
+
+1. 在全局、網路和設備<Terminology title="封鎖清單的應用範圍" to="/docs/reference/terminology#scope">作用域</Terminology>應用策略，讓兒童、訪客、員工和單台設備可以使用不同的清單。
+2. 使用<Terminology title="儲存在防火牆上的最後一份有效封鎖清單副本" to="/docs/reference/terminology#saved-list">已儲存清單</Terminology>，因此 DNS 不必等待下載，更新失敗後也不會失去可用清單。
+3. 僅針對您選擇的清單和用戶端，通過 pfSense 自帶的通知系統發送<Terminology title="匹配清單和用戶端後發送通知的規則" to="/docs/reference/terminology#alert-rule">警報規則</Terminology>通知。
+4. 為普通 DNS、加密 DNS 探索和供應商、Tor 中繼以及 VPN 供應商或端口提供可選的<Terminology title="讓所選用戶端保持使用受檢查 DNS 路徑的控制" to="/docs/reference/terminology#bypass-protection">防止繞過</Terminology>。
+5. 當 DNS 過濾不足時提供獨立的 IP 和國家/地區封鎖功能，而且不需要第二台主機或雲服務。
+
+## DNS 集成的工作方式 \{#how-dns-integration-works}
+
+Sinkhole 作為 Python 模塊執行在 pfSense 基於 Unbound 的<Terminology title="pfSense 的 Unbound DNS 服務" to="/docs/reference/terminology#dns-resolver">DNS Resolver</Terminology>中。Unbound 啓動時，該模塊只載入本地編譯檔案，並監視較新的本地代次，不會讓 DNS 查詢等待。
+
+DNS Resolver 只提供一個 Python 腳本槽位。只有當該槽位為空或已經屬於 Sinkhole 時，Sinkhole 才會使用它；它拒絕替換其他所有者，例如 pfBlockerNG 的 DNSBL 模塊。
+
+:::warning
+
+Sinkhole 和 pfBlockerNG DNSBL 無法同時過濾 DNS，因為兩者都需要 Resolver 的唯一 Python 腳本槽位。
+
+:::
+
+## 仍由您控制的內容 \{#what-stays-under-your-control}
+
+- **Lists** — 通過 URL 新增您信任的來源，或使用中立的<Terminology title="WebGUI 中按需使用的目錄搜索" to="/docs/reference/terminology#popular-list-search">常用清單搜索</Terminology>查找來源。Sinkhole 不發佈也不推薦任何清單。
+- **Scopes** — 選擇全局清單、某個 pfSense 介面或 VLAN 的清單，以及通過 IP 地址、DHCP 靜態映射或 MAC 地址識別的設備清單。
+- **Allowed Domains** — 在全局、網路或設備層級允許某個域名及其子域名，而無需放棄整份清單。
+- **Alerts** — 選擇哪些清單和用戶端組合創建本地 WebGUI 通知，或使用 pfSense 已配置的遠程通知服務。
+- **Bypass** — 保持所有控制關閉，或選擇用戶端介面並明確啟用普通 DNS 重定向、加密 DNS 訊號、供應商列表或隧道保護。
+- **IP blocking** — 保持關閉，或選擇 IP 清單、國家/地區、介面、方向和允許的地址。
+
+## 限制 \{#limits}
+
+DNS 封鎖並不是完整的流量控制。防止繞過只有在啟用各項控制後才涵蓋常見的替代路徑，並且無法識別所有加密或自訂隧道。
+
+封鎖事件和通知會透露用戶端嘗試訪問的內容。除了您選擇通過 pfSense 發送的通知外，這些信息都保留在防火牆上。
+
+## 語言 \{#languages}
+
+WebGUI 遵循 pfSense 中選擇的語言；尚無翻譯時會回退到英語。其他 WebGUI 翻譯仍在進行中，在每份目錄通過審核前都會繼續使用該回退。
+
+文檔站點提供英語和 pfSense 的其他 17 個區域設定。翻譯頁面保留英語錨點，因此每種語言的連結都會到達相同章節。
+
+## 後續步驟 \{#next-steps}
+
+- **[安裝套件](/docs/installation)** — 驗證並安裝穩定版套件。
+- **[設定 Sinkhole](/docs/first-run)** — 新增第一份清單、選擇其作用域並驗證活動代次。
+- **[瞭解作用域](/docs/configure/scopes)** — 按照設備、網路和全局的準確決定順序操作。
+- **[查看安全模型](/docs/safety/how-updates-work)** — 瞭解已儲存副本和原子部署如何保持 DNS 可用。

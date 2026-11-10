@@ -1,0 +1,73 @@
+---
+id: first-run
+title: Configurer Sinkhole
+description: Ajoutez une liste fiable, choisissez une politique globale ou ciblée, activez l’intégration au Resolver, lancez la première mise à jour et vérifiez la génération active.
+keywords:
+  - sinkhole for pfsense
+  - première configuration
+  - dns resolver
+  - liste de blocage
+  - status
+tags:
+  - setup
+  - first run
+  - dns
+sidebar_position: 3
+---
+
+Configurez une liste fiable et vérifiez ses états enregistré, compilé, déployé et chargé avant d’étendre la politique.
+
+## Vérifier le Resolver \{#check-the-resolver}
+
+1. Ouvrez **Services → DNS Resolver** et vérifiez que le Resolver est activé.
+2. Si pfBlockerNG DNSBL est activé, choisissez quel paquet assurera le filtrage DNS, car les deux ne peuvent pas utiliser simultanément l’emplacement Python d’Unbound.
+3. Ouvrez **Firewall → Sinkhole → General** et laissez **Enable** désactivé pendant la préparation de la première politique.
+
+Sinkhole refuse d’enregistrer **Enable** lorsqu’un autre script Python occupe l’emplacement. Si vous désactivez Sinkhole par la suite, il restaure les anciens paramètres Python du Resolver tant qu’il les détient encore.
+
+## Ajouter une liste \{#add-a-list}
+
+1. Ouvrez **Lists** et ajoutez l’URL d’une source fiable, ou ouvrez **Add from Catalog** pour rechercher dans les deux catalogues à la demande.
+2. Donnez un nom local à la source et laissez **Enabled** sélectionné afin que Sinkhole la télécharge.
+3. Laissez **Global** sélectionné uniquement si la liste doit s’appliquer après toutes les règles d’appareil et de réseau.
+4. Ajoutez, si nécessaire, des **Allowed Domains** globaux, un domaine par ligne, lorsqu’un faux positif connu doit être autorisé.
+
+Sinkhole ne recommande aucune source. [Listes et copies enregistrées](/docs/configure/lists) décrit les formats acceptés et la manière dont les résultats du catalogue deviennent des lignes de liste ordinaires.
+
+## Ajouter des portées facultatives \{#add-optional-scopes}
+
+Ouvrez **Scopes** lorsqu’un réseau ou un appareil nécessite une politique au-delà du niveau global :
+
+- Ajoutez un **Network** pour une interface pfSense configurée, puis sélectionnez ses listes et ses domaines autorisés.
+- Ajoutez un **Device** par adresse IP, association DHCP statique ou adresse MAC, puis sélectionnez ses listes et ses domaines autorisés.
+
+Un appareil hérite du réseau auquel il appartient actuellement, et ce réseau hérite des listes globales. [Portées et domaines autorisés](/docs/configure/scopes) présente l’ordre de décision qui détermine si un nom est autorisé ou bloqué.
+
+## Activer et mettre à jour \{#enable-and-update}
+
+1. Revenez à **General** et sélectionnez **Enable**.
+2. Choisissez **Update Frequency** pour les listes DNS activées et enregistrez.
+3. Ouvrez **Status** et sélectionnez **Update Now**.
+4. Attendez que **Update running** revienne à `No`.
+
+Le commutateur General active les mises à jour planifiées des listes DNS et l’intégration au DNS Resolver. Les Bypass Lists activées et la politique IP/par pays utilisent indépendamment la même planification de mise à jour ; chaque protection Bypass et IP reste désactivée jusqu’à son activation par un administrateur.
+
+## Vérifier l’état actif \{#verify-the-active-state}
+
+La première mise à jour est prête lorsque les panneaux de Status affichent tous les résultats suivants :
+
+- **Lists** affiche un nombre d’entrées non nul et une **Last Successful Update** pour chaque source fonctionnelle.
+- **Compile Needed** et **Deployment Needed** affichent `No` dans **Summary**.
+- **Compiled Generation**, **Deployed Generation** et **Loaded Generation** identifient la génération actuelle.
+- **DNS Resolver Python Script Owner** affiche `sinkhole`.
+- **Sinkhole** affiche `Active` sans motif.
+
+Si la page signale un motif d’inactivité ou une génération en attente, [Status](/docs/operate/status) explique l’état et [Dépannage](/docs/operate/troubleshooting) traite chaque cause probable.
+
+## Ajouter prudemment les alertes et la protection Bypass \{#add-alerts-and-bypass-protection-carefully}
+
+Il est recommandé de vérifier les réponses DNS par portée avant d’ajouter une règle d’alerte ou une protection Bypass. Les alertes peuvent révéler l’activité des clients, tandis que les réglages Bypass peuvent rediriger ou bloquer le trafic arrivant sur les interfaces sélectionnées.
+
+- [Alertes](/docs/configure/alerts) limite la distribution selon la liste, le client, la fenêtre de répétition et des plafonds fixes.
+- [Protection contre le contournement](/docs/configure/bypass-protection) traite de la redirection du DNS en clair, des signaux de DNS chiffré, des listes de fournisseurs et des protections contre les tunnels.
+- [Blocage IP et par pays](/docs/configure/ip-and-country-blocking) traite du filtre de paquets indépendant et désactivé par défaut.

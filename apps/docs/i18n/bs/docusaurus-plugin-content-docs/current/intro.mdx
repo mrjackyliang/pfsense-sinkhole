@@ -1,0 +1,74 @@
+---
+id: intro
+title: Pregled
+description: Blokirajte neželjene web lokacije na pfSenseu zasebnim pravilima za cijelu mrežu, svaki VLAN ili jedan uređaj, bez dodatnog DNS hosta.
+keywords:
+  - sinkhole for pfsense
+  - pregled
+  - dns blokiranje
+  - mrežna pravila
+  - liste za blokiranje
+tags:
+  - setup
+  - overview
+  - dns
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Blokirajte neželjene web lokacije zasebnim pravilima za cijelu mrežu, jedan VLAN ili jedan uređaj, i to u potpunosti unutar pfSensea.
+
+## Šta Sinkhole radi \{#what-sinkhole-does}
+
+Sinkhole for pfSense roditeljima i poslodavcima daje kontrolu nad tim koje se <Terminology title="nazivi ili adrese odabrani za blokiranje" to="/docs/reference/terminology#block-list">liste za blokiranje</Terminology> primjenjuju na svaki dio mreže. Posljednje ispravne kopije čuva na zaštitnom zidu, pa DNS može odgovoriti odmah nakon ponovnog pokretanja ili učitavanja dok se novije kopije preuzimaju u pozadini.
+
+Blokirani nazivi odgovaraju adresom `0.0.0.0` ili `::`. Blokira se i CNAME lanac koji dođe do blokiranog naziva, dok naziv dopušten na nivou koji donosi odluku ostaje dopušten.
+
+## Zašto koristiti Sinkhole? \{#why-use-sinkhole}
+
+1. Primjenjuje pravila u globalnim, mrežnim i uređajskim <Terminology title="mjesto primjene liste za blokiranje" to="/docs/reference/terminology#scope">opsezima</Terminology>, tako da djeca, gosti, zaposlenici i pojedinačni uređaji mogu dobiti različite liste.
+2. Koristi <Terminology title="posljednja ispravna kopija liste za blokiranje sačuvana na zaštitnom zidu" to="/docs/reference/terminology#saved-list">sačuvane liste</Terminology>, pa DNS nikada ne čeka preuzimanje niti gubi ispravnu listu nakon neuspjelog ažuriranja.
+3. Šalje <Terminology title="podudaranje liste i klijenta koje šalje obavijest" to="/docs/reference/terminology#alert-rule">pravilo upozorenja</Terminology> samo za liste i klijente koje odaberete, putem vlastitog sistema obavijesti pfSensea.
+4. Omogućava opcionalnu <Terminology title="kontrole koje zadržavaju odabrane klijente na pregledanim DNS putanjama" to="/docs/reference/terminology#bypass-protection">zaštitu od zaobilaženja</Terminology> za obični DNS, otkrivanje i pružaoce šifriranog DNS-a, Tor releje te VPN pružaoce ili portove.
+5. Dodaje zasebno blokiranje IP adresa i država kada DNS filtriranje nije dovoljno, bez potrebe za drugim hostom ili uslugom u oblaku.
+
+## Kako radi DNS integracija \{#how-dns-integration-works}
+
+Sinkhole radi kao Python modul unutar <Terminology title="pfSenseova DNS usluga zasnovana na Unboundu" to="/docs/reference/terminology#dns-resolver">DNS Resolvera</Terminology> u pfSenseu, koji se zasniva na Unboundu. Modul pri pokretanju Unbounda učitava samo lokalne, kompajlirane datoteke i prati novije lokalne generacije bez zadržavanja DNS upita.
+
+DNS Resolver ima jedno mjesto za Python skriptu. Sinkhole ga zauzima samo kada je prazno ili već pripada Sinkholeu te odbija zamijeniti drugog vlasnika, poput DNSBL modula pfBlockerNG-a.
+
+:::warning
+
+Sinkhole i pfBlockerNG DNSBL ne mogu istovremeno filtrirati DNS jer oba trebaju jedino mjesto za Python skriptu u Resolveru.
+
+:::
+
+## Šta ostaje pod vašom kontrolom \{#what-stays-under-your-control}
+
+- **Lists** — Dodajte pouzdane izvore putem URL-a ili ih pronađite neutralnom <Terminology title="pretraživanje kataloga na zahtjev u WebGUI-ju" to="/docs/reference/terminology#popular-list-search">pretragom popularnih lista</Terminology>. Sinkhole ne objavljuje niti preporučuje bilo koju listu.
+- **Scopes** — Odaberite globalne liste, liste za jedan pfSense interfejs ili VLAN te liste za uređaj identificiran IP adresom, DHCP statičkim mapiranjem ili MAC adresom.
+- **Allowed domains** — Propustite domenu i njene poddomene na globalnom, mrežnom ili uređajskom nivou bez uklanjanja cijele liste.
+- **Alerts** — Odaberite kombinacije lista i klijenata koje stvaraju lokalne WebGUI obavijesti ili koriste udaljene usluge obavijesti konfigurirane u pfSenseu.
+- **Bypass** — Ostavite svaku kontrolu isključenom ili odaberite interfejse prema klijentima i izričito omogućite preusmjeravanje običnog DNS-a, signale šifriranog DNS-a, liste pružalaca ili zaštitu od tunela.
+- **IP blocking** — Ostavite ga isključenim ili odaberite IP liste, države, interfejse, smjerove i dopuštene adrese.
+
+## Ograničenja \{#limits}
+
+DNS blokiranje nije potpuna kontrola saobraćaja. Zaštita od zaobilaženja obuhvata uobičajene alternativne putanje samo kada je svaka kontrola omogućena i ne može prepoznati svaki šifrirani ili prilagođeni tunel.
+
+Događaji blokiranja i obavijesti otkrivaju šta su klijenti pokušali dosegnuti. Ti podaci ostaju na zaštitnom zidu, osim obavijesti koje odaberete poslati putem pfSensea.
+
+## Jezici \{#languages}
+
+WebGUI prati jezik odabran u pfSenseu i vraća se na engleski gdje prijevod još nije dostupan. Dodatni prijevodi WebGUI-ja su u izradi i ostaju na tom zamjenskom jeziku dok svaki katalog ne bude pregledan.
+
+Dokumentacijska lokacija nudi engleski i ostalih 17 lokaliteta pfSensea. Prevedene stranice zadržavaju engleska sidra, tako da veze u svakom jeziku vode do istog odjeljka.
+
+## Sljedeći koraci \{#next-steps}
+
+- **[Instalirajte paket](/docs/installation)** — Provjerite i instalirajte stabilni paket izdanja.
+- **[Postavite Sinkhole](/docs/first-run)** — Dodajte prvu listu, odaberite njen opseg i provjerite aktivnu generaciju.
+- **[Razumijte opsege](/docs/configure/scopes)** — Slijedite tačan redoslijed odlučivanja za uređaj, mrežu i globalni nivo.
+- **[Pregledajte sigurnosni model](/docs/safety/how-updates-work)** — Pogledajte kako sačuvane kopije i atomsko postavljanje održavaju DNS dostupnim.

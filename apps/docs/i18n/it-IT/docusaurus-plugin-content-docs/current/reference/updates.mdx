@@ -1,0 +1,65 @@
+---
+id: updates
+title: Aggiornamenti del pacchetto
+description: Configura i controlli delle release, leggi avvisi e barra About e comprendi le verifiche limitate di checksum, firma, metadati, lock e installazione.
+keywords:
+  - sinkhole for pfsense
+  - aggiornamenti del pacchetto
+  - aggiornamento automatico
+  - verifica del checksum
+  - avvisi di release
+tags:
+  - reference
+  - updates
+  - security
+---
+
+import aboutUpdateBar from './_assets_/updates-1.png';
+
+Sinkhole può controllare le proprie release GitHub, inviare notifiche tramite pfSense e installare un pacchetto più recente verificato dalla scheda About.
+
+## Controlli pianificati delle release \{#scheduled-release-checks}
+
+**General → Update Checks** seleziona Daily, Weekly, Monthly o Never; Weekly è l’impostazione predefinita. Sinkhole memorizza componenti casuali stabili della pianificazione, così il salvataggio delle impostazioni non sposta continuamente l’ora del controllo.
+
+Un controllo registra ultima versione, pagina della release, ora del controllo e ultimo errore. **About → Check Now** esegue immediatamente lo stesso controllo.
+
+## Avvisi di aggiornamento \{#update-notices}
+
+Ogni nuova versione rilevata crea un avviso WebGUI pfSense locale che rimanda alla scheda About di Sinkhole. I controlli ripetuti non creano avvisi duplicati per la stessa versione.
+
+Seleziona **Remote Notifications** per usare anche i servizi configurati in **System → Advanced → Notifications**. L’impostazione è disattivata per impostazione predefinita e riguarda gli avvisi di versione, non le regole di avviso per i blocchi delle liste.
+
+## Barra di aggiornamento di About \{#about-update-bar}
+
+La barra di aggiornamento mostra versione installata, ultima versione controllata, ultimo controllo, link alla release, errore e avanzamento dell’aggiornamento separato. Il suo stato visivo distingue tra nessun aggiornamento in sospeso, release più recente, aggiornamento in corso, riuscito e non riuscito.
+
+**Update** appare quando l’ultima versione registrata è più recente. La pagina interroga l’attività separata e ne riporta il risultato senza mantenere aperta la richiesta del browser.
+
+<img src={aboutUpdateBar} alt="Scheda About con un aggiornamento Sinkhole disponibile e i controlli Update e What's New" width={1024} height={846} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Verifica prima dell’installazione \{#verification-before-installation}
+
+L’aggiornamento automatico accetta risorse solo dal percorso di download delle release GitHub di questo progetto e applica limiti di dimensione e timeout. Richiede il pacchetto stabile e il relativo file `.sha256`, verifica il digest SHA-256 e quindi controlla i metadati del pacchetto prima dell’installazione con `pkg add -f`.
+
+Quando `/usr/local/share/pfSense-pkg-Sinkhole/release-signing.pub` contiene chiavi OpenSSH Ed25519 attendibili, la risorsa `.sig` separata corrispondente diventa obbligatoria. Sinkhole verifica la firma nel proprio namespace di release prima di consentire a `pkg` di esaminare il pacchetto.
+
+Un elenco di attendibilità installato vuoto significa che non è richiesta una firma, ma checksum e metadati del pacchetto vengono comunque verificati. Una risorsa mancante, non valida, non attendibile, troppo grande o non corrispondente interrompe l’aggiornamento e lascia installato il pacchetto corrente.
+
+## Lock degli aggiornamenti \{#update-locking}
+
+Il controllo e l’aggiornamento automatico del pacchetto condividono `/var/run/sinkhole-update.lock` con gli aggiornamenti delle liste DNS e IP/paesi. Se è in corso un aggiornamento delle liste, l’azione **Update** in About non può iniziare finché l’attività non termina.
+
+Il lock impedisce che i file del pacchetto cambino mentre il pacchetto corrente scarica, analizza, compila o applica i criteri. Riprova da About quando Status non mostra più un aggiornamento in esecuzione.
+
+## Aggiornamento manuale del pacchetto \{#manual-package-update}
+
+Il comando stabile rimane disponibile quando non è possibile usare l’azione di About:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Prima di eseguirlo, scarica la risorsa `.sha256` stabile e confrontane l’hash con il pacchetto come descritto in [Installazione](/docs/installation#verify-the-checksum). `-f` è obbligatorio affinché `pkg` installi un nuovo build anche se proviene dallo stesso URL stabile.
+
+Il privilegio About è di sola lettura. **Check Now** e **Update** vengono mostrati e accettati solo per un utente autenticato con il privilegio delle impostazioni General di Sinkhole o con il privilegio pfSense `page-all`. Un utente con il solo privilegio About può comunque leggere la versione installata, lo stato della release e il relativo collegamento.

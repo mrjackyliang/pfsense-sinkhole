@@ -1,0 +1,109 @@
+---
+id: bypass-protection
+title: Bypass Protection
+description: Keep selected client interfaces on Sinkhole-controlled DNS paths with optional plain-DNS redirect, encrypted-DNS signals, provider lists, and tunnel blocks.
+keywords:
+  - sinkhole for pfsense
+  - bypass protection
+  - dns redirect
+  - encrypted dns
+  - vpn blocking
+tags:
+  - configure
+  - bypass
+  - dns
+---
+
+import bypassProtection from './_assets_/bypass-protection-1.png';
+
+Keep DNS queries from selected client interfaces on paths that Sinkhole can inspect. Every protection is off by default, no interface is selected by default, and an upgrade doesn't enable a protection or list.
+
+## Choose the Interfaces \{#choose-the-interfaces}
+
+Open **Firewall → Sinkhole → Bypass** and select **Apply to** interfaces before enabling a protection. This one selection applies to every setting on the page. Protections inspect only traffic arriving from clients on those interfaces; they don't affect the firewall's own lookups or outbound traffic.
+
+Network and device matching uses those interfaces' current subnets, just like ordinary Sinkhole scopes. A client outside the selected subnets receives no Bypass DNS answer.
+
+<img src={bypassProtection} alt="Bypass tab showing LAN selected, plain-DNS redirect off, encrypted-DNS and tunnel protections on, Discovery set to Answer with no records, and three demo Bypass Lists" width={1024} height={1326} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Redirect Plain DNS \{#redirect-plain-dns}
+
+Select **Redirect → Send port 53 to the firewall** to send ordinary TCP and UDP DNS traffic on the selected interfaces to pfSense. Sinkhole preserves the source address so network and device policy still applies.
+
+The redirect keeps its existing listener-aware targets and exemptions:
+
+| Family | Target                                                                                     |
+|--------|--------------------------------------------------------------------------------------------|
+| IPv4   | `127.0.0.1` while the Resolver listens on localhost; otherwise the interface IPv4 address. |
+| IPv6   | The interface IPv6 address, never `::1`.                                                   |
+
+- **Exempt Sources** continue reaching another resolver.
+- **Exempt Destinations** continue receiving DNS traffic, which supports an internal resolver on another network.
+
+Each exemption accepts one IPv4 address, IPv6 address, CIDR network, or existing pfSense host/network alias per line. An invalid saved exemption pauses all redirect rules until it is fixed or removed. Redirected clients still need access through the Resolver's access-control settings.
+
+## Protect Encrypted DNS \{#protect-encrypted-dns}
+
+The encrypted-DNS settings are independent:
+
+- **TLS and QUIC** blocks TCP and UDP port 853 to every destination except the firewall.
+- **Providers** blocks names and addresses from enabled Bypass Lists whose kind is **Encrypted DNS**.
+- **Firefox** answers `use-application-dns.net` and its subdomains with `NXDOMAIN`, which turns off Firefox's automatic DNS over HTTPS selection.
+- **Private Relay** answers `mask.icloud.com` and `mask-h2.icloud.com` with `NXDOMAIN`, which tells compatible Apple devices that Private Relay isn't available on this network.
+
+Provider-list names are blocked in DNS. IPv4 addresses, IPv6 addresses, and CIDRs from the same lists are blocked on every port and protocol in the independent `sinkhole/bypass` firewall anchor. Sinkhole removes the firewall's interface addresses, gateway addresses, and DNS server addresses—including ones learned from DHCP or PPP—from those tables before loading them.
+
+Allowed domains keep priority over provider-list name blocks. They don't override the Firefox, Private Relay, or Discovery answers because those answers are network signals rather than list blocks.
+
+## Configure Resolver Discovery \{#configure-resolver-discovery}
+
+Discovery controls queries for `_dns.resolver.arpa`, the Designated Resolver Discovery name defined by RFC 9462:
+
+| Choice                                    | Answer                                                                                              |
+|-------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| **Off**                                   | Leaves the query untouched.                                                                         |
+| **Advertise the firewall's DNS over TLS** | Returns an SVCB answer with `alpn=dot`, port `853`, and the hostname from the Resolver certificate. |
+| **Answer with no records**                | Returns `NOERROR` with an empty answer.                                                             |
+
+**Advertise** requires the DNS Resolver's SSL/TLS service to be enabled with a usable certificate hostname. The Bypass page reports whether that service is on, and saving fails with a clear validation message when it isn't available.
+
+With Sinkhole enabled and an **Apply to** interface selected, turning Discovery on adds this managed block to the DNS Resolver's **Custom options**:
+
+```text
+# Sinkhole: begin (managed by the Sinkhole package)
+server:
+local-zone: "_dns.resolver.arpa." transparent
+# Sinkhole: end
+```
+
+Turning Discovery off or removing Sinkhole removes the block. Sinkhole leaves every other **Custom options** line unchanged. Clients outside the selected interfaces, including the firewall itself, continue receiving `NXDOMAIN` for `_dns.resolver.arpa`.
+
+## Protect Against Tunnels \{#protect-against-tunnels}
+
+- **Tor → Block listed Tor relays** applies enabled Bypass Lists of kind **Tor**.
+- **VPN → Block listed VPN providers** applies enabled Bypass Lists of kind **VPN**.
+- **VPN → Block standard VPN ports** blocks TCP and UDP `1194`, UDP `51820`, UDP `500` and `4500`, and ESP to every destination except the firewall.
+
+Tor and VPN list names and addresses use the same DNS and firewall behavior as encrypted-DNS provider lists. These controls reduce common alternate paths, but they don't identify every encrypted or custom tunnel.
+
+## Add from Catalog \{#add-from-catalog}
+
+Open **Add from Catalog** on the Bypass tab to search the AdGuard Home list registry and the DNS, IPv4, and IPv6 sections of pfBlockerNG's feed catalog. Results are limited to bypass feeds and have a fixed **Encrypted DNS**, **Tor**, or **VPN** kind.
+
+Each card's **Contents** line says **Domains**, **IPv4 addresses**, or **IPv6 addresses**. When you add a pfBlockerNG IPv4 or IPv6 result, Sinkhole appends ` (IPv4)` or ` (IPv6)` to its saved name; domain results keep the plain catalog name.
+
+The source catalogs are fetched only when the catalog is opened or **Refresh** is selected. Adding a result creates an enabled Bypass List that follows the normal list-update schedule.
+
+## Add Bypass Lists \{#add-bypass-lists}
+
+Select **Add** beneath **Bypass Lists**, then enter a local name, kind, and HTTP or HTTPS URL. New rows are disabled until explicitly enabled.
+
+Each source accepts one entry per line. A list can mix domains, IPv4 addresses, IPv6 addresses, and CIDRs; text after `#` is a comment. Invalid and overlong lines are skipped. A download that exceeds the fixed byte or accepted-entry limit is rejected, leaving the last good copy in place.
+
+Bypass Lists update on the configured list schedule with the same bounded download client as other lists. A failed fetch keeps the last good saved copy, and **Status → Bypass Lists** reports entries, last fetch, and the most recent error for each row. Sinkhole doesn't bundle or recommend a Bypass List.
+
+## Verify the Active State \{#verify-the-active-state}
+
+After saving, open **Status → Bypass** and confirm each intended protection is `On`, the selected interfaces are correct, and **Discovery Zone** is `Present` when Discovery is on. Confirm **Firewall rules loaded** and **Firewall rules current** are `Yes` for firewall protections. The Bypass Lists table shows the saved entry count and last fetch.
+
+The plain-DNS redirect retains its existing two-observation minute reconciliation after Resolver listener changes. The `sinkhole/bypass` anchor is loaded independently of `sinkhole/ip`, so disabling either feature doesn't disturb the other.

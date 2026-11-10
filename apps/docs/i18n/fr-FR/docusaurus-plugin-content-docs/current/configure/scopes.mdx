@@ -1,0 +1,80 @@
+---
+id: scopes
+title: Portées et domaines autorisés
+description: Attribuez listes et domaines autorisés aux portées globale, interface et appareil, puis suivez l’ordre exact du niveau le plus précis pour chaque requête DNS.
+keywords:
+  - sinkhole for pfsense
+  - portées
+  - blocage vlan
+  - politique appareil
+  - domaines autorisés
+tags:
+  - configure
+  - scopes
+  - dns
+---
+
+Attribuez des listes et des domaines autorisés aux niveaux global, réseau et appareil afin que chaque client reçoive la politique prévue pour son emplacement actuel.
+
+## Pourquoi utiliser des portées ? \{#why-use-scopes}
+
+1. Donne à chaque interface pfSense ou VLAN sa propre politique tout en conservant des règles globales pour tous.
+2. Donne à un appareil une décision plus précise sans nécessiter un serveur DNS séparé.
+3. Permet aux domaines autorisés de corriger les faux positifs au niveau concerné sans retirer une liste entière.
+4. Sépare les adresses client des listes compilées afin que les changements DHCP, de voisinage ou d’interface ne rechargent pas Unbound.
+
+## Portée globale \{#global-scope}
+
+Une liste avec **Global** sélectionné s’applique à tous les clients après les décisions d’appareil et de réseau. Les domaines autorisés globaux sont saisis dans l’onglet **Lists** et permettent au domaine indiqué et à ses sous-domaines de traverser les listes globales.
+
+Un client qui ne correspond à aucune portée réseau ou appareil activée reçoit uniquement ce niveau.
+
+## Portées réseau \{#network-scopes}
+
+Ouvrez **Firewall → Sinkhole → Scopes**, puis sélectionnez **Add** sous la table Networks. L’éditeur sélectionne par défaut LAN ou la première interface disponible autre que WAN, et omet les interfaces qui possèdent déjà une portée réseau. Un client appartient à ce réseau lorsque son adresse se trouve dans l’un des sous-réseaux IPv4 ou IPv6 actuels de l’interface.
+
+Chaque ligne réseau sélectionne des listes supplémentaires, des domaines autorisés et l’état d’activation de la portée. L’enregistrement revient à Scopes ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier. Un appareil qui change de réseau reçoit la politique du réseau auquel correspond son adresse actuelle.
+
+## Portées appareil \{#device-scopes}
+
+Sélectionnez **Add** sous la table Devices, indiquez un nom et choisissez une méthode d’identification. L’éditeur affiche uniquement le champ d’identifiant qui correspond à la méthode sélectionnée :
+
+| Méthode             | Adresses utilisées pour l’appareil                                                              |
+|---------------------|-------------------------------------------------------------------------------------------------|
+| IP address          | L’adresse IPv4 ou IPv6 configurée.                                                              |
+| DHCP static mapping | Son adresse configurée ainsi que les adresses actuelles observées pour la MAC de l’association. |
+| MAC address         | Les adresses actuelles ARP, NDP et de baux DHCP pour cette MAC.                                 |
+
+La ligne de l’appareil sélectionne ses listes, ses domaines autorisés et son état d’activation. L’enregistrement revient à Scopes ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier. Une tâche en arrière-plan actualise les sous-réseaux et adresses d’appareil chaque minute tant que le blocage DNS comporte une portée réseau ou appareil activée, ou que la protection DNS de Bypass nécessite l’identification des clients. Le Sync du paquet lance la même actualisation uniquement dans cette condition.
+
+## Ordre de décision \{#decision-order}
+
+Le niveau correspondant le plus précis décide de chaque requête dans cet ordre exact :
+
+1. **Domaines autorisés de l’appareil** — Autorise immédiatement lorsque le nom demandé correspond.
+2. **Listes de l’appareil** — Bloque immédiatement lorsqu’une liste sélectionnée de l’appareil correspond.
+3. **Domaines autorisés du réseau** — Autorise immédiatement lorsque l’exception du réseau correspond.
+4. **Listes du réseau** — Bloque immédiatement lorsqu’une liste sélectionnée du réseau correspond.
+5. **Domaines autorisés globaux** — Autorise immédiatement lorsque l’exception globale correspond.
+6. **Listes globales** — Bloque lorsqu’une liste globale correspond.
+
+La requête est autorisée lorsqu’aucune étape ne décide. Les domaines autorisés d’un niveau remplacent les listes héritées de niveaux moins précis, mais pas les listes d’un niveau plus précis qui a déjà décidé.
+
+## Comportement des domaines autorisés \{#allowed-domain-behavior}
+
+Chaque domaine autorisé s’applique au domaine exact et à tous ses sous-domaines. Par exemple, autoriser `service.example` autorise également `api.service.example` à ce niveau.
+
+- Une exception d’appareil peut traverser les listes de l’appareil, du réseau et globales, car elle est vérifiée en premier.
+- Une exception de réseau peut traverser les listes du réseau et globales, mais pas une décision de liste d’appareil.
+- Une exception globale peut traverser uniquement les listes globales.
+
+## Conflits d’adresses \{#address-conflicts}
+
+Lorsque deux lignes d’appareil revendiquent la même adresse actuelle, le premier appareil dans l’ordre de la table l’emporte. **Status → Scopes** affiche l’adresse sous **Conflict** pour chaque ligne concernée afin de corriger l’ordre ou les identifiants.
+
+## Vérifier une portée \{#verify-a-scope}
+
+1. Exécutez `/usr/local/sbin/sinkhole --refresh-clients` ou attendez l’actualisation minute.
+2. Ouvrez **Status → Scopes** et vérifiez les sous-réseaux actuels du réseau et les adresses actuelles de l’appareil.
+3. Interrogez un nom depuis un client de cette portée et comparez le résultat à l’ordre de décision ci-dessus.
+4. Vérifiez l’absence de conflit d’adresse avant de vous fier au comportement propre à l’appareil.

@@ -1,0 +1,65 @@
+---
+id: updates
+title: Ažuriranja paketa
+description: Konfigurirajte provjere izdanja, čitajte obavijesti i traku ažuriranja About te razumijte ograničene provjere sažetka, potpisa, metapodataka i instaliranja.
+keywords:
+  - sinkhole for pfsense
+  - ažuriranja paketa
+  - samoažuriranje
+  - provjera kontrolnog zbira
+  - obavijesti izdanja
+tags:
+  - reference
+  - updates
+  - security
+---
+
+import aboutUpdateBar from './_assets_/updates-1.png';
+
+Sinkhole može provjeravati svoja GitHub izdanja, slati obavijesti putem pfSensea i instalirati provjereni noviji paket s kartice About.
+
+## Zakazane provjere izdanja \{#scheduled-release-checks}
+
+**General → Update Checks** bira Daily, Weekly, Monthly ili Never; zadana vrijednost je Weekly. Sinkhole čuva stabilne nasumične komponente rasporeda, tako da spremanje postavki ne pomjera stalno vrijeme provjere.
+
+Provjera bilježi najnoviju verziju, stranicu izdanja, vrijeme provjere i posljednju grešku. **About → Check Now** odmah pokreće istu provjeru.
+
+## Obavijesti o ažuriranju \{#update-notices}
+
+Svaka novootkrivena verzija kreira jednu lokalnu WebGUI obavijest pfSensea koja vodi na karticu About u Sinkholeu. Ponovljene provjere ne kreiraju duple obavijesti za istu verziju.
+
+Odaberite **Remote Notifications** da biste koristili i usluge konfigurirane pod **System → Advanced → Notifications**. Postavka je prema zadanim vrijednostima isključena i utiče na obavijesti o verzijama, a ne na pravila upozorenja za blokiranje lista.
+
+## Traka ažuriranja About \{#about-update-bar}
+
+Traka ažuriranja prikazuje instaliranu verziju, posljednju provjerenu verziju, posljednju provjeru, vezu izdanja, grešku i napredak odvojenog ažuriranja. Njeno vizuelno stanje razlikuje stanje bez ažuriranja na čekanju, novije izdanje, pokrenuto ažuriranje, uspjeh i neuspjeh.
+
+**Update** se prikazuje kada je zabilježena najnovija verzija novija. Stranica provjerava odvojeni posao i prijavljuje njegov rezultat bez držanja zahtjeva preglednika otvorenim.
+
+<img src={aboutUpdateBar} alt="Kartica About prikazuje dostupno ažuriranje Sinkholea s kontrolama Update i What's New" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Provjera prije instaliranja \{#verification-before-installation}
+
+Samoažuriranje prihvata datoteke samo s putanje za preuzimanje GitHub izdanja ovog projekta i primjenjuje ograničenja veličine i vremena preuzimanja. Zahtijeva stabilni paket i njegovu datoteku `.sha256`, provjerava SHA-256 sažetak, a zatim pregleda metapodatke paketa prije instaliranja pomoću `pkg add -f`.
+
+Kada `/usr/local/share/pfSense-pkg-Sinkhole/release-signing.pub` sadrži pouzdane Ed25519 OpenSSH ključeve, odgovarajuća odvojena datoteka `.sig` postaje obavezna. Sinkhole provjerava taj potpis u prostoru naziva svog izdanja prije nego što `pkg` smije pregledati paket.
+
+Prazna instalirana lista pouzdanih ključeva znači da potpis nije potreban, ali provjera kontrolnog zbira i metapodataka paketa i dalje se primjenjuje. Nedostajuća, neispravna, nepouzdana, prevelika ili nepodudarna datoteka zaustavlja ažuriranje i ostavlja instalirani paket na mjestu.
+
+## Zaključavanje ažuriranja \{#update-locking}
+
+Provjera paketa i samoažuriranje dijele `/var/run/sinkhole-update.lock` s ažuriranjima DNS lista i IP-a/država. Ako je ažuriranje liste u toku, radnja **Update** u About ne može početi dok taj posao ne završi.
+
+Zaključavanje sprečava promjenu datoteka paketa dok trenutni paket preuzima, parsira, kompajlira ili primjenjuje pravila. Pokušajte ponovo iz About nakon što Status više ne prikazuje pokrenuto ažuriranje.
+
+## Ručno ažuriranje paketa \{#manual-package-update}
+
+Stabilna naredba ostaje dostupna kada se radnja About ne može koristiti:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Prije pokretanja preuzmite stabilnu datoteku `.sha256` i uporedite njen hash s paketom kako je opisano u [Instaliranju](/docs/installation#verify-the-checksum). Opcija `-f` je potrebna kako bi `pkg` instalirao novu izgradnju čak i kada dolazi s istog stabilnog URL-a.
+
+Privilegija About je samo za čitanje. **Check Now** i **Update** prikazuju se i prihvataju samo za prijavljenog korisnika s privilegijom općih postavki Sinkhole ili pfSense privilegijom `page-all`. Korisnik koji ima samo privilegiju About i dalje može vidjeti instaliranu verziju, stanje izdanja i vezu do izdanja.

@@ -1,0 +1,14 @@
+{
+  "item.label.Home": {
+    "message": "首页"
+  },
+  "item.label.Guides": {
+    "message": "文档"
+  },
+  "item.label.Status": {
+    "message": "状态"
+  },
+  "item.label.Troubleshooting": {
+    "message": "故障排除"
+  }
+}

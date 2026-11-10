@@ -1,0 +1,75 @@
+---
+id: intro
+title: Überblick
+description: Blockiere unerwünschte Websites in pfSense mit eigenen Richtlinien für das gesamte Netzwerk, einzelne VLANs oder Geräte, ohne einen weiteren DNS-Host.
+keywords:
+  - sinkhole for pfsense
+  - überblick
+  - dns-blockierung
+  - netzwerkrichtlinie
+  - blocklisten
+tags:
+  - setup
+  - overview
+  - dns
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Blockiere unerwünschte Websites mit eigenen Richtlinien für das gesamte Netzwerk, ein VLAN oder ein Gerät, vollständig innerhalb von pfSense.
+
+## Was Sinkhole tut \{#what-sinkhole-does}
+
+Sinkhole for pfSense gibt Eltern und Arbeitgebern Kontrolle darüber, welche <Terminology title="zum Blockieren ausgewählte Namen oder Adressen" to="/docs/reference/terminology#block-list">Blocklisten</Terminology> für die einzelnen Bereiche eines Netzwerks gelten. Die jeweils letzte gültige Kopie bleibt auf der Firewall, sodass DNS nach einem Neustart oder Neuladen sofort antworten kann, während neuere Kopien im Hintergrund heruntergeladen werden.
+
+Blockierte Namen antworten mit `0.0.0.0` oder `::`. Eine CNAME-Kette, die einen blockierten Namen erreicht, wird ebenfalls blockiert, während ein auf der entscheidenden Ebene erlaubter Name zugelassen bleibt.
+
+## Warum Sinkhole verwenden? \{#why-use-sinkhole}
+
+1. Wendet Richtlinien auf globale, Netzwerk- und Geräte-<Terminology title="Geltungsbereich einer Blockliste" to="/docs/reference/terminology#scope">Scopes</Terminology> an, damit Kinder, Gäste, Mitarbeiter und einzelne Geräte unterschiedliche Listen erhalten können.
+2. Verwendet <Terminology title="letzte gültige Blocklistenkopie auf der Firewall" to="/docs/reference/terminology#saved-list">gespeicherte Listen</Terminology>, damit DNS nie auf einen Download wartet und nach einer fehlgeschlagenen Aktualisierung keine funktionierende Liste verliert.
+3. Sendet über das pfSense-eigene Benachrichtigungssystem nur dann eine <Terminology title="Listen- und Clienttreffer, der eine Benachrichtigung sendet" to="/docs/reference/terminology#alert-rule">Alarmregel</Terminology>, wenn die von dir gewählten Listen und Clients betroffen sind.
+4. Stellt optionalen <Terminology title="Kontrollen, die ausgewählte Clients auf geprüften DNS-Pfaden halten" to="/docs/reference/terminology#bypass-protection">Bypass-Schutz</Terminology> für Klartext-DNS, Erkennung und Anbieter von verschlüsseltem DNS, Tor-Relays sowie VPN-Anbieter oder -Ports bereit.
+5. Ergänzt eine separate IP- und Länderblockierung, wenn DNS-Filterung nicht ausreicht, ohne einen zweiten Host oder Cloud-Dienst zu erfordern.
+
+## Wie die DNS-Integration funktioniert \{#how-dns-integration-works}
+
+Sinkhole läuft als Python-Modul im Unbound-basierten <Terminology title="Unbound-DNS-Dienst von pfSense" to="/docs/reference/terminology#dns-resolver">DNS Resolver</Terminology> von pfSense. Das Modul lädt beim Start von Unbound ausschließlich lokale, kompilierte Dateien und überwacht neuere lokale Generationen, ohne eine DNS-Abfrage warten zu lassen.
+
+Der DNS Resolver stellt einen einzigen Python-Skriptplatz bereit. Sinkhole belegt ihn nur, wenn er frei ist oder bereits Sinkhole gehört, und ersetzt keinen anderen Besitzer wie das DNSBL-Modul von pfBlockerNG.
+
+:::warning
+
+Sinkhole und pfBlockerNG DNSBL können DNS nicht gleichzeitig filtern, da beide den einzigen Python-Skriptplatz des Resolvers benötigen.
+
+:::
+
+## Was unter deiner Kontrolle bleibt \{#what-stays-under-your-control}
+
+- **Lists** — Füge vertrauenswürdige Quellen per URL hinzu oder finde sie mit der neutralen <Terminology title="Katalogsuche auf Abruf in der WebGUI" to="/docs/reference/terminology#popular-list-search">Suche nach populären Listen</Terminology>. Sinkhole veröffentlicht und empfiehlt keine Liste.
+- **Scopes** — Wähle globale Listen, Listen für eine pfSense-Schnittstelle oder ein VLAN und Listen für ein Gerät, das über IP-Adresse, statische DHCP-Zuordnung oder MAC-Adresse identifiziert wird.
+- **Allowed domains** — Erlaube eine Domain und ihre Subdomains auf globaler, Netzwerk- oder Geräteebene, ohne eine vollständige Liste zu entfernen.
+- **Alerts** — Wähle die Kombinationen aus Liste und Client, die lokale WebGUI-Hinweise erzeugen oder die in pfSense konfigurierten externen Benachrichtigungsdienste verwenden.
+- **Bypass** — Lasse jede Kontrolle deaktiviert oder wähle clientseitige Schnittstellen aus und aktiviere ausdrücklich Klartext-DNS-Umleitung, Signale für verschlüsseltes DNS, Anbieterlisten oder Tunnel-Schutzfunktionen.
+- **IP blocking** — Lasse die Funktion deaktiviert oder wähle IP-Listen, Länder, Schnittstellen, Richtungen und zugelassene Adressen aus.
+
+## Grenzen \{#limits}
+
+DNS-Blockierung ist keine vollständige Verkehrskontrolle. Der Bypass-Schutz deckt häufige alternative Pfade nur ab, wenn jede Kontrolle aktiviert ist, und kann nicht jeden verschlüsselten oder benutzerdefinierten Tunnel erkennen.
+
+Blockierungsereignisse und Hinweise zeigen, welche Ziele Clients aufzurufen versucht haben. Diese Informationen bleiben auf der Firewall, abgesehen von Benachrichtigungen, die du über pfSense senden lässt.
+
+## Sprachen \{#languages}
+
+Die WebGUI folgt der in pfSense ausgewählten Sprache und fällt auf Englisch zurück, wenn eine Übersetzung noch nicht verfügbar ist. Weitere WebGUI-Übersetzungen sind in Arbeit und verwenden diesen Fallback, bis der jeweilige Katalog geprüft wurde.
+
+Die Dokumentationswebsite bietet Englisch und die 17 weiteren pfSense-Locales. Übersetzte Seiten behalten die englischen Anker bei, sodass Links in jeder Sprache denselben Abschnitt erreichen.
+
+## Nächste Schritte \{#next-steps}
+
+- **[Paket installieren](/docs/installation)** — Prüfe und installiere das stabile Release-Paket.
+- **[Sinkhole einrichten](/docs/first-run)** — Füge eine erste Liste hinzu, wähle ihren Scope und prüfe die aktive Generation.
+- **[Scopes verstehen](/docs/configure/scopes)** — Folge der genauen Entscheidungsreihenfolge für Gerät, Netzwerk und globale Ebene.
+- **[Sicherheitsmodell prüfen](/docs/safety/how-updates-work)** — Erfahre, wie gespeicherte Kopien und atomare Bereitstellung DNS verfügbar halten.
+

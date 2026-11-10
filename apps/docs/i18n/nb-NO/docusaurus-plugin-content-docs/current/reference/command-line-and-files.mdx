@@ -1,0 +1,107 @@
+---
+id: command-line-and-files
+title: Kommandolinje og filer
+description: Kjør vedlikeholdsmodusene i Sinkhole, og identifiser vedvarende lagrede lister, oppdateringsstatus, buffere, låser, brannmurdata og kjøretidsfiler for Unbound.
+keywords:
+  - sinkhole for pfsense
+  - kommandolinje
+  - filbaner
+  - vedlikehold
+  - kjøretidsfiler
+tags:
+  - reference
+  - command-line
+  - files
+---
+
+Bruk den faste kommandoen `/usr/local/sbin/sinkhole` for diagnostikk og de samme vedlikeholdsmodusene som startes av cron og WebGUI.
+
+## Kommandomoduser \{#command-modes}
+
+| Kommando                     | Virkemåte                                                                                              |
+|------------------------------|--------------------------------------------------------------------------------------------------------|
+| `sinkhole --update`          | Kjører den planlagte oppdateringsbanen for DNS-, Bypass- og aktiverte IP-/landlister.                  |
+| `sinkhole --manual`          | Kjører den fullstendige manuelle oppdateringen som brukes av **Status → Update Now**.                  |
+| `sinkhole --apply`           | Bruker lagret konfigurasjon i bakgrunnen og utfører bare nødvendig nedlastingsarbeid.                  |
+| `sinkhole --refresh-clients` | Bygger nettverksdelnett og enhetsadresser i klientkartet på nytt.                                      |
+| `sinkhole --alerts`          | Leser blokkeringshendelser og behandler samsvarende varslingsregler.                                   |
+| `sinkhole --redirect-check`  | Avstemmer ønskede regler for omdirigering av vanlig DNS og de uavhengig lastede Bypass- og IP-ankrene. |
+| `sinkhole --check-updates`   | Kontrollerer den nyeste GitHub-utgivelsen og synkroniserer oppdateringsvarselet.                       |
+| `sinkhole --self-update`     | Laster ned, verifiserer, undersøker og installerer den nyeste utgivelsen som ligger i kø.              |
+| `sinkhole --help`            | Skriver ut den støttede brukslinjen.                                                                   |
+
+Bruk den installerte banen i automatisering, for eksempel `/usr/local/sbin/sinkhole --refresh-clients`. Modusene utelukker hverandre. En DNS-/Bypass-/IP-listeoppdatering eller automatisk oppdatering som finner den delte oppdateringslåsen allerede holdt, avsluttes uten å starte en konkurrerende operasjon.
+
+## Vedvarende filer under `/cf/conf/sinkhole` \{#persistent-files}
+
+| Bane                                    | Formål                                                                                                 |
+|-----------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `lists/<id>.domains`                    | Normaliserte siste gyldige domener for én DNS-liste.                                                   |
+| `lists/<id>.json`                       | Oppdateringsmetadata for denne DNS-listen.                                                             |
+| `ip-lists/<id>.networks`                | Normaliserte siste gyldige nettverk for én IP-liste.                                                   |
+| `ip-lists/<id>.json`                    | Oppdateringsmetadata for denne IP-listen.                                                              |
+| `bypass-lists/<id>.entries`             | Normaliserte blandede oppføringer fra siste gyldige kopi av én Bypass List.                            |
+| `bypass-lists/<id>.json`                | Oppdateringsmetadata for denne Bypass List.                                                            |
+| `state.json`                            | Vedvarende tilstand for kompilering, distribusjon, forrige Resolver-innstilling, tidsplan og fjerning. |
+| `updates.json`                          | Tilstand for kontroll av nyeste utgivelse og deduplisering av varsler.                                 |
+| `update-status.json`                    | Fremdrift for frakoblet automatisk pakkeoppdatering.                                                   |
+| `unbound/sinkhole/`                     | Valgfritt vedvarende speil av gjeldende kompilerte generasjon for gjenoppretting av RAM-disk.          |
+| `unbound/sinkhole.d/`                   | Valgfritt vedvarende speil av lagring for kompilerte generasjoner.                                     |
+| `unbound/sinkhole-clients/clients.json` | Valgfritt vedvarende speil av klientkartet.                                                            |
+
+Speilet under `unbound/` brukes når pfSense har `/var` på en RAM-disk. Pakke-Sync gjenoppretter det til kjøretidstreet før Resolver trenger det.
+
+## Arbeidsdata under `/var/db` \{#working-data}
+
+| Bane                                 | Formål                                                            |
+|--------------------------------------|-------------------------------------------------------------------|
+| `sinkhole-alerts.json`               | Tilstand for gjentakelsesvindu og timegrense for varsler.         |
+| `sinkhole-catalog-adguard-home.json` | Bufret listeregister fra AdGuard Home.                            |
+| `sinkhole-catalog-pfblockerng.json`  | Bufret feedkatalog fra pfBlockerNG.                               |
+| `sinkhole-block-v4.txt`              | Endelig sammenslått og fratrukket IPv4-blokkeringstabell.         |
+| `sinkhole-block-v6.txt`              | Endelig sammenslått og fratrukket IPv6-blokkeringstabell.         |
+| `sinkhole-bypass-v4.txt`             | Endelig IPv4-Bypass-tabell etter fratrekk av beskyttede adresser. |
+| `sinkhole-bypass-v6.txt`             | Endelig IPv6-Bypass-tabell etter fratrekk av beskyttede adresser. |
+| `sinkhole-geolite2-country.zip`      | Verifisert GeoLite2 Country-arkiv.                                |
+| `sinkhole-geolite2-country.json`     | Oppdateringsmetadata for GeoLite2.                                |
+
+Katalogbuffere og genererte IP-tabeller er reproduserbare arbeidsdata. Varslingstilstanden forhindrer gjentatt levering på tvers av minuttkjøringer.
+
+## Midlertidige filer under `/var/run` \{#transient-files}
+
+| Bane                            | Formål                                                                                  |
+|---------------------------------|-----------------------------------------------------------------------------------------|
+| `sinkhole-update.lock`          | Delt langvarig lås for liste-, IP- og pakkeoppdateringer.                               |
+| `sinkhole-runtime.lock`         | Kort lås for kompilering, aktivering og Resolver-integrasjon.                           |
+| `sinkhole-clients.lock`         | Lås for oppdatering av klientkartet.                                                    |
+| `sinkhole-alerts.lock`          | Lås for behandling av varsler.                                                          |
+| `sinkhole-redirect-check.lock`  | Lås for minuttkontrollen av omdirigering.                                               |
+| `sinkhole-redirect-check.json`  | Første observasjon av avvik som brukes av omdirigeringskontrollen med to observasjoner. |
+| `sinkhole-status.json`          | Gjeldende status for oppdatering, kompilering, distribusjon, klient og varsling.        |
+| `sinkhole-status.json.lock`     | Koordineringslås for statusfilen.                                                       |
+| `sinkhole-ip-anchor.conf`       | Gjeldende genererte regler for ankeret `sinkhole/ip`.                                   |
+| `sinkhole-ip-anchor.sha256`     | Sammendrag som brukes til å sammenligne generert og lastet IP-policy.                   |
+| `sinkhole-ip-status.json`       | Status for IP-lister, GeoLite2, tabeller og anker.                                      |
+| `sinkhole-bypass-anchor.conf`   | Gjeldende genererte regler for ankeret `sinkhole/bypass`.                               |
+| `sinkhole-bypass-anchor.sha256` | Sammendrag for å sammenligne generert og lastet Bypass-policy.                          |
+
+Låsefiler koordinerer jobber. At de finnes, beviser ikke alene at en aktiv prosess holder dem. Bruk Status og kommandoutdata før du behandler en av dem som utdatert.
+
+## Resolver-kjøretid under `/var/unbound` \{#resolver-runtime}
+
+| Bane                                 | Formål                                                                       |
+|--------------------------------------|------------------------------------------------------------------------------|
+| `sinkhole.py`                        | Gjennomgått Python-modul kopiert til kjøretidsroten i Unbound.               |
+| `sinkhole/`                          | Manifest og data for aktiv generasjon som leses av modulen.                  |
+| `sinkhole.d/`                        | Lagring av kompilerte generasjoner eid av root.                              |
+| `sinkhole.d/<generation>/bypass.tsv` | Kompilerte leverandør-, Tor- og VPN-navn for Bypass-DNS-svar.                |
+| `sinkhole-clients/clients.json`      | Gjeldende tilordning fra klientadresse til omfang.                           |
+| `sinkhole-state/loaded`              | Generasjons-ID som modulen rapporterer som lastet.                           |
+| `sinkhole-state/events`              | Sammenslåtte hendelser med blokkerte svar som venter på varslingsbehandling. |
+| `sinkhole-state/events.processing`   | Hendelsesgruppe som eies av varslingsprosessen.                              |
+| `sinkhole-state/events-dropped`      | Antall hendelser som ble forkastet etter at den avgrensede køen ble full.    |
+
+Disse filene er kjøretidsmateriale, ikke konfigurasjon. Sinkhole gjenoppretter eller genererer dem på nytt gjennom pakke-Sync og fjerner dem når pakken avinstalleres.
+
+Minuttjobben for klientkartet og bakgrunnsoppdateringen ved Sync kjører bare når DNS-blokkering har et aktivert nettverks- eller enhetsomfang, eller når Bypass DNS-beskyttelse trenger klientgjenkjenning. Når alle Sinkhole-funksjoner er deaktivert, fjerner neste Sync klientkartet under kjøring og det valgfrie RAM-disk-speilet og starter ingen oppdatering.
+

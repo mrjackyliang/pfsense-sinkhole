@@ -1,0 +1,532 @@
+#!/usr/local/bin/php
+<?php
+
+declare(strict_types=1);
+
+use PfSense\Sinkhole\Domain\DomainParser;
+use PfSense\Sinkhole\Domain\BypassParser;
+use PfSense\Sinkhole\Domain\ListConfiguration;
+use PfSense\Sinkhole\Domain\IpParser;
+use PfSense\Sinkhole\Domain\ValidationException;
+use PfSense\Sinkhole\Runtime\AlertProcessor;
+use PfSense\Sinkhole\Runtime\BypassListStore;
+use PfSense\Sinkhole\Runtime\BypassUpdater;
+use PfSense\Sinkhole\Runtime\Compiler;
+use PfSense\Sinkhole\Runtime\ClientMap;
+use PfSense\Sinkhole\Runtime\CurlDownloadClient;
+use PfSense\Sinkhole\Runtime\FileLock;
+use PfSense\Sinkhole\Runtime\GeoLite2;
+use PfSense\Sinkhole\Runtime\IpListStore;
+use PfSense\Sinkhole\Runtime\IpStatusStore;
+use PfSense\Sinkhole\Runtime\IpUpdater;
+use PfSense\Sinkhole\Runtime\PackagePaths;
+use PfSense\Sinkhole\Runtime\PfSenseAdapter;
+use PfSense\Sinkhole\Runtime\SavedListStore;
+use PfSense\Sinkhole\Runtime\StateStore;
+use PfSense\Sinkhole\Runtime\Translator;
+use PfSense\Sinkhole\Runtime\UpdateLockRunner;
+use PfSense\Sinkhole\Runtime\UpdateManager;
+use PfSense\Sinkhole\Runtime\Updater;
+
+require_once('/usr/local/pkg/sinkhole/Compiler.php');
+require_once('/usr/local/pkg/sinkhole/AlertProcessor.php');
+require_once('/usr/local/pkg/sinkhole/BypassListStore.php');
+require_once('/usr/local/pkg/sinkhole/BypassParser.php');
+require_once('/usr/local/pkg/sinkhole/BypassUpdater.php');
+require_once('/usr/local/pkg/sinkhole/ClientMap.php');
+require_once('/usr/local/pkg/sinkhole/ClientSource.php');
+require_once('/usr/local/pkg/sinkhole/CurlDownloadClient.php');
+require_once('/usr/local/pkg/sinkhole/DomainParser.php');
+require_once('/usr/local/pkg/sinkhole/ListConfiguration.php');
+require_once('/usr/local/pkg/sinkhole/IpParser.php');
+require_once('/usr/local/pkg/sinkhole/GeoLite2.php');
+require_once('/usr/local/pkg/sinkhole/IpListStore.php');
+require_once('/usr/local/pkg/sinkhole/IpStatusStore.php');
+require_once('/usr/local/pkg/sinkhole/IpUpdater.php');
+require_once('/usr/local/pkg/sinkhole/FileLock.php');
+require_once('/usr/local/pkg/sinkhole/PackagePaths.php');
+require_once('/usr/local/pkg/sinkhole/PfSenseAdapter.php');
+require_once('/usr/local/pkg/sinkhole/SavedListStore.php');
+require_once('/usr/local/pkg/sinkhole/StateStore.php');
+require_once('/usr/local/pkg/sinkhole/Updater.php');
+require_once('/usr/local/pkg/sinkhole/Translator.php');
+require_once('/usr/local/pkg/sinkhole/UpdateManager.php');
+require_once('/usr/local/pkg/sinkhole/ValidationException.php');
+
+/**
+ * Sinkhole - Environment Override.
+ *
+ * Test release servers can replace only the API endpoint and trusted download
+ * prefix. Trust material always comes from the installed package data directory.
+ *
+ * @param string $name - Environment variable name.
+ * @param string $fallback - Production value.
+ *
+ * @return string
+ *
+ * @since 1.0.0
+ */
+function sinkholeEnvironmentOverride(string $name, string $fallback): string
+{
+    $value = getenv($name);
+
+    return is_string($value) && $value !== '' ? $value : $fallback;
+}
+
+/**
+ * Sinkhole - Run Release Update.
+ *
+ * Runs a release check or verified self-update under the package-wide update
+ * lock shared with list and IP updates.
+ *
+ * @param bool $selfUpdate - Whether to install instead of only checking.
+ * @param PackagePaths $paths - Package paths.
+ *
+ * @return int
+ *
+ * @since 1.0.0
+ */
+function sinkholeRunReleaseUpdate(bool $selfUpdate, PackagePaths $paths): int
+{
+    $lock = new FileLock($paths->updateLockFile);
+
+    try {
+        UpdateManager::assertEnvironment();
+        $installedVersion = UpdateManager::installedVersion();
+
+        if ($installedVersion === null) {
+            throw new RuntimeException(Translator::translate('installed_package_version_unknown'));
+        }
+
+        if ($lock->acquire() === false) {
+            $message = Translator::translate('another_package_operation_running');
+
+            if ($selfUpdate) {
+                UpdateManager::failQueuedSelfUpdate($message, $paths->updateStatusFile);
+            }
+
+            fwrite(STDOUT, $message . PHP_EOL);
+
+            return 0;
+        }
+
+        $settings = config_get_path('installedpackages/sinkhole/config/0', []);
+        $settings = is_array($settings) ? $settings : [];
+        $remoteNotifications = ($settings['update_remote_notifications'] ?? '') === 'on';
+        $manager = new UpdateManager(
+            $installedVersion,
+            sinkholeEnvironmentOverride(
+                'NOVA_PFSENSE_UPDATE_RELEASES_API',
+                UpdateManager::RELEASES_API,
+            ),
+            sinkholeEnvironmentOverride(
+                'NOVA_PFSENSE_UPDATE_DOWNLOAD_PREFIX',
+                UpdateManager::DOWNLOAD_PREFIX,
+            ),
+            $paths->updatesFile,
+            $paths->updateStatusFile,
+        );
+        $state = $selfUpdate
+            ? $manager->selfUpdate($remoteNotifications)
+            : $manager->check($remoteNotifications);
+
+        if ($selfUpdate === false) {
+            $latestVersion = $state['latest_version'] ?? null;
+            $message = is_string($latestVersion) && $latestVersion !== ''
+                ? Translator::translate('latest_available_version', [$latestVersion])
+                : Translator::translate('no_public_release');
+
+            fwrite(STDOUT, $message . PHP_EOL);
+        }
+
+        return 0;
+    } catch (Throwable $throwable) {
+        if ($selfUpdate) {
+            try {
+                UpdateManager::failQueuedSelfUpdate(
+                    $throwable->getMessage(),
+                    $paths->updateStatusFile,
+                );
+            } catch (Throwable) {
+                // Preserve the original release-update failure for terminal output.
+            }
+        }
+
+        fwrite(STDERR, Translator::translate(
+            'release_update_failed',
+            [$throwable->getMessage()],
+        ) . PHP_EOL);
+
+        return 1;
+    } finally {
+        $lock->release();
+    }
+}
+
+/**
+ * Sinkhole - Translate Throwable.
+ *
+ * @param Throwable $throwable - Terminal failure.
+ *
+ * @return string
+ *
+ * @since 1.0.0
+ */
+function sinkholeThrowableMessage(Throwable $throwable): string
+{
+    if ($throwable instanceof ValidationException) {
+        return Translator::translateMapped(
+            'validation',
+            $throwable->messageKey(),
+            $throwable->messageArguments(),
+        );
+    }
+
+    return Translator::translate('unexpected_error', [$throwable->getMessage()]);
+}
+
+/**
+ * Sinkhole - Main.
+ *
+ * Parses the fixed scheduled and WebGUI flags, takes the shared package lock, and
+ * delegates all update behavior to testable runtime classes.
+ *
+ * @param list<string> $arguments - Command-line arguments.
+ *
+ * @return int
+ *
+ * @since 1.0.0
+ */
+function sinkholeMain(array $arguments): int
+{
+    $manual = false;
+    $apply = false;
+    $refreshClients = false;
+    $alerts = false;
+    $redirectCheck = false;
+    $checkUpdates = false;
+    $selfUpdate = false;
+    $update = false;
+
+    foreach (array_slice($arguments, 1) as $argument) {
+        switch ($argument) {
+            case '--manual': {
+                $manual = true;
+                break;
+            }
+
+            case '--update': {
+                $update = true;
+                break;
+            }
+
+            case '--apply': {
+                $apply = true;
+                break;
+            }
+
+            case '--refresh-clients': {
+                $refreshClients = true;
+                break;
+            }
+
+            case '--alerts': {
+                $alerts = true;
+                break;
+            }
+
+            case '--redirect-check': {
+                $redirectCheck = true;
+                break;
+            }
+
+            case '--check-updates': {
+                $checkUpdates = true;
+                break;
+            }
+
+            case '--self-update': {
+                $selfUpdate = true;
+                break;
+            }
+
+            case '--help': {
+                fwrite(
+                    STDOUT,
+                    Translator::translate('cli_usage') . PHP_EOL,
+                );
+
+                return 0;
+            }
+
+            default: {
+                fwrite(STDERR, Translator::translate(
+                    'cli_unknown_option',
+                    [$argument],
+                ) . PHP_EOL);
+
+                return 64;
+            }
+        }
+    }
+
+    if (
+        ($update ? 1 : 0)
+        + ($manual ? 1 : 0)
+        + ($apply ? 1 : 0)
+        + ($refreshClients ? 1 : 0)
+        + ($alerts ? 1 : 0)
+        + ($redirectCheck ? 1 : 0)
+        + ($checkUpdates ? 1 : 0)
+        + ($selfUpdate ? 1 : 0) > 1
+    ) {
+        fwrite(STDERR, Translator::translate('cli_options_mutually_exclusive') . PHP_EOL);
+
+        return 64;
+    }
+
+    $paths = new PackagePaths();
+
+    if ($checkUpdates || $selfUpdate) {
+        return sinkholeRunReleaseUpdate($selfUpdate, $paths);
+    }
+
+    $adapter = new PfSenseAdapter($paths, commandLineMode: true);
+    $lock = new FileLock($paths->updateLockFile);
+    $stateStore = new StateStore($paths->stateFile, $paths->statusFile);
+
+    try {
+        $adapter->assertEnvironment();
+
+        if ($redirectCheck) {
+            $redirectStatus = $adapter->reconcileRedirectRules();
+
+            fwrite(STDOUT, Translator::translate(
+                'cli_redirect_check',
+                [Translator::translateMapped(
+                    'redirect_check_status',
+                    $redirectStatus,
+                    [],
+                    'completed',
+                )],
+            ) . PHP_EOL);
+
+            return 0;
+        }
+
+        if ($alerts) {
+            $alertLock = new FileLock($paths->alertLockFile);
+
+            if ($alertLock->acquire() === false) {
+                fwrite(STDOUT, Translator::translate('cli_alerts_locked') . PHP_EOL);
+
+                return 0;
+            }
+
+            try {
+                $noticesFile = '/etc/inc/notices.inc';
+
+                if (is_readable($noticesFile) === false) {
+                    throw new RuntimeException('Required pfSense file is unavailable: ' . $noticesFile);
+                }
+
+                require_once($noticesFile);
+
+                if (
+                    !function_exists('file_notice')
+                    || !function_exists('get_notices')
+                    || !function_exists('notify_all_remote')
+                ) {
+                    throw new RuntimeException('Required pfSense notification functions are unavailable.');
+                }
+
+                $processor = new AlertProcessor($paths, $stateStore);
+                $result = $processor->run(
+                    $adapter->getAlerts(),
+                    ListConfiguration::normalizeLists($adapter->getLists()),
+                    $adapter->getNetworks(),
+                    $adapter->getDevices(),
+                    $adapter->getConfiguredInterfaces(),
+                );
+                fwrite(STDOUT, Translator::translate('cli_alerts_summary', [
+                    $result['events_read'],
+                    $result['events_stale'],
+                    $result['notifications_sent'],
+                    $result['notifications_held_back'],
+                ]) . PHP_EOL);
+
+                return ($result['error'] === null) ? 0 : 1;
+            } finally {
+                $alertLock->release();
+            }
+        }
+
+        $clientMap = new ClientMap($paths, $adapter, $stateStore);
+
+        if ($refreshClients) {
+            if ($adapter->updateShouldStop()) {
+                fwrite(STDOUT, Translator::translate(
+                    'cli_client_map',
+                    [Translator::translate('status_stopped')],
+                ) . PHP_EOL);
+
+                return 0;
+            }
+
+            $refreshResult = $clientMap->refresh();
+            fwrite(STDOUT, Translator::translate(
+                'cli_client_map',
+                [Translator::translateMapped(
+                    'client_status',
+                    $refreshResult['status'],
+                    [],
+                    'unknown',
+                )],
+            ) . PHP_EOL);
+
+            return ($refreshResult['status'] === 'error') ? 1 : 0;
+        }
+
+        $store = new SavedListStore($paths);
+        $downloadClient = new CurlDownloadClient();
+        $bypassStore = new BypassListStore($paths);
+        $compiler = new Compiler(
+            $paths,
+            $store,
+            $stateStore,
+            null,
+            $bypassStore,
+        );
+        $ipStore = new IpListStore($paths);
+        $ipUpdater = new IpUpdater(
+            $adapter,
+            $downloadClient,
+            new IpParser(),
+            $ipStore,
+            $paths,
+            new GeoLite2(),
+            new IpStatusStore($paths->ipStatusFile),
+        );
+        $bypassUpdater = new BypassUpdater(
+            $adapter,
+            $downloadClient,
+            new BypassParser(),
+            $bypassStore,
+            $paths,
+            $compiler,
+        );
+        $updater = new Updater(
+            $adapter,
+            $downloadClient,
+            new DomainParser(),
+            $store,
+            $compiler,
+            $stateStore,
+            $clientMap,
+            $ipUpdater,
+            $bypassUpdater,
+        );
+        $manualRun = $manual;
+        $runner = new UpdateLockRunner($lock, $stateStore);
+        $runResult = $runner->run(
+            $apply,
+            static function (bool $runApply) use (
+                &$manualRun,
+                $store,
+                $ipStore,
+                $bypassStore,
+                $updater,
+            ): array {
+                $store->sweepTemporaryFiles();
+                $ipStore->sweepTemporaryFiles();
+                $bypassStore->sweepTemporaryFiles();
+                $result = $updater->run($manualRun, $runApply);
+                $manualRun = false;
+
+                return $result;
+            },
+            static function () use ($adapter): void {
+                $adapter->refreshConfiguration();
+            },
+        );
+
+        foreach ($runResult['failures'] as $failure) {
+            $adapter->log('Update run failed: ' . $failure->getMessage());
+            fwrite(STDERR, Translator::translate(
+                'cli_update_run_failed',
+                [sinkholeThrowableMessage($failure)],
+            ) . PHP_EOL);
+        }
+
+        if (count($runResult['runs']) === 0) {
+            if (count($runResult['failures']) > 0) {
+                return UpdateLockRunner::exitCode($runResult['failures'], 0);
+            }
+
+            $adapter->log(
+                $apply
+                    ? 'An update is already running; apply work is pending.'
+                    : 'Another update is already running.',
+            );
+
+            return 0;
+        }
+
+        $result = array_shift($runResult['runs']);
+
+        foreach ($runResult['runs'] as $pendingResult) {
+            $result['attempted'] += $pendingResult['attempted'];
+            $result['updated'] += $pendingResult['updated'];
+            $result['failed'] += $pendingResult['failed'];
+            $result['compiled'] = $result['compiled'] || $pendingResult['compiled'];
+            $result['added_names'] += $pendingResult['added_names'];
+
+            if ($pendingResult['status'] === 'stopped') {
+                $result['status'] = 'stopped';
+            }
+        }
+
+        if ($result['failed'] > 0) {
+            $result['status'] = 'warning';
+        }
+
+        fwrite(STDOUT, Translator::translate('cli_update_summary', [
+            Translator::translateMapped(
+                'update_status',
+                $result['status'],
+                [],
+                'unknown',
+            ),
+            $result['attempted'],
+            $result['updated'],
+            $result['failed'],
+            Translator::translateMapped(
+                'boolean',
+                ($result['compiled']) ? 'true' : 'false',
+            ),
+        ]) . PHP_EOL);
+
+        return UpdateLockRunner::exitCode(
+            $runResult['failures'],
+            $result['failed'],
+        );
+    } catch (Throwable $throwable) {
+        $failureLabel = ($redirectCheck) ? 'Redirect check failed' : 'Update failed';
+
+        try {
+            $adapter->log($failureLabel . ': ' . $throwable->getMessage());
+        } catch (Throwable) {
+            // Terminal output remains available when pfSense logging is unavailable.
+        }
+
+        fwrite(STDERR, Translator::translateMapped(
+            'cli_failure',
+            ($redirectCheck) ? 'redirect_check' : 'update',
+            [sinkholeThrowableMessage($throwable)],
+        ) . PHP_EOL);
+
+        return 1;
+    }
+}
+
+exit(sinkholeMain($argv));

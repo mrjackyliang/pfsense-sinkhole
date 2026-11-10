@@ -1,0 +1,86 @@
+---
+id: ip-and-country-blocking
+title: IP- und Länderblockierung
+description: Blockiere ausgewählte Quell- oder Zielnetze mit IP-Listen und GeoLite2-Ländern, ziehe geschützte Adressen ab und verwalte den Anker sinkhole/ip.
+keywords:
+  - sinkhole for pfsense
+  - ip-blockierung
+  - länderblockierung
+  - geolite2
+  - pf-anker
+tags:
+  - configure
+  - ip blocking
+  - firewall
+---
+
+Blockiere ausgewählte IP-Quellen oder -Ziele unabhängig von DNS-Richtlinien mit paketverwalteten Tabellen im pf-Anker `sinkhole/ip`.
+
+## Warum IP-Blockierung verwenden? \{#why-use-ip-blocking}
+
+1. Erfasst Verkehr anhand von Adresse oder Land, wenn kein DNS-Name beteiligt ist.
+2. Gilt unabhängig auf ausgewählten Schnittstellen und in ausgewählten Richtungen, sodass sich Richtlinien für WAN und Clientnetzwerke unterscheiden können.
+3. Bewahrt normalisierte, letzte gültige IP-Kopien auf und aktualisiert Live-Tabellen atomar.
+4. Schützt Firewall-, Gateway- und DNS-Adressen davor, versehentlich aus einer Quellliste übernommen zu werden.
+
+## Funktion aktivieren \{#enable-the-feature}
+
+Öffne **Firewall → Sinkhole → IP** und wähle **Enable** erst aus, nachdem Schnittstellen und Richtungen gewählt wurden. IP- und Länderblockierung ist standardmäßig deaktiviert und hängt nicht vom allgemeinen DNS-Schalter ab.
+
+| Einstellung | Verhalten                                                                                                       |
+|-------------|-----------------------------------------------------------------------------------------------------------------|
+| Interfaces  | Erzeugt Regeln auf den ausgewählten Eingangsschnittstellen.                                                     |
+| Inbound     | Blockiert Pakete, die von einer aufgeführten Quelladresse eintreffen, typischerweise auf einem WAN.             |
+| Outbound    | Blockiert Pakete, die an eine aufgeführte Zieladresse gerichtet eintreffen, typischerweise in Clientnetzwerken. |
+
+Der Anker enthält `block drop in quick`-Regeln und keine Pass-Regeln. Sinkhole referenziert ihn über die frühe Paketregelposition von pfSense, damit die Blockierungen vor gewöhnlichen Pass-Quick-Regeln ausgeführt werden. Die Seite zeigt zuerst die Panels für IP-Listen und Katalog, gefolgt von den seitenweiten IP- und Ländereinstellungen mit **Save** unter dem Panel.
+
+## IP-Listen hinzufügen \{#add-ip-lists}
+
+Wähle unter der Tabelle IP Lists **Add**, um den Editor für IP-Listen zu öffnen. Ein Eintrag verwendet eine HTTP- oder HTTPS-URL, wählt IPv4, IPv6 oder beide Familien und legt fest, ob die Quelle aktiviert ist. Nach dem Speichern kehrst du zum Tab IP zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile.
+
+Listen lassen sich außerdem über die IP-Abschnitte des Feed-Katalogs von pfBlockerNG finden.
+
+Gültige Zeilen sind einzelne IPv4- oder IPv6-Adressen sowie CIDR-Netzwerke. Ungültige Zeilen werden übersprungen und gezählt; ein Download ohne gültigen Eintrag ersetzt die letzte gültige gespeicherte Kopie nicht.
+
+Der Katalog wird nur heruntergeladen, wenn seine Suche geöffnet oder aktualisiert wird, und verwendet denselben eintägigen Cache der letzten gültigen Kopie wie die DNS-Katalogsuche. Das Hinzufügen eines Ergebnisses erstellt einen gewöhnlichen IP-Listeneintrag ohne Bewertung oder Empfehlung.
+
+Bypass-Feeds für Encrypted DNS, Tor und VPN sind aus dem IP-Katalog ausgeschlossen und erscheinen nur auf dem Tab Bypass.
+
+Die Zeile **Contents** jeder Karte zeigt **IPv4 addresses** oder **IPv6 addresses**. Wenn du ein pfBlockerNG-Ergebnis hinzufügst, hängt Sinkhole ` (IPv4)` oder ` (IPv6)` an den gespeicherten Namen an und kürzt bei Bedarf nur den Basisnamen.
+
+## Länder hinzufügen \{#add-countries}
+
+Länder stammen aus den CSV-Daten von MaxMind GeoLite2 Country und werden als zweistellige ISO-Codes eingegeben. Ihre Netzwerke werden den blockierten Familientabellen hinzugefügt.
+
+- **MaxMind Account ID** ist erforderlich, wenn Länder ausgewählt sind.
+- **MaxMind License Key** wird vom Administrator bereitgestellt, wie ein pfSense-Passwortfeld gespeichert und nach dem Speichern nie angezeigt.
+- **Clear License Key** entfernt das gespeicherte Geheimnis ausdrücklich.
+
+Sinkhole überprüft und importiert das GeoLite2-Archiv und aktualisiert es höchstens einmal pro Woche. Das Paket liefert niemals ein MaxMind-Konto oder einen Lizenzschlüssel mit.
+
+## Adressen zulassen und schützen \{#allow-and-protect-addresses}
+
+Die **IP Allowlist** akzeptiert IPv4- oder IPv6-Adressen, CIDR-Netzwerke und vorhandene Host-/Netzwerk-Aliasse. Zugelassene Bereiche werden von der zusammengeführten blockierten Menge abgezogen, bevor die Tabellendateien geschrieben werden.
+
+Sinkhole zieht außerdem automatisch folgende geschützte Adressen ab:
+
+- Jede der Firewall zugewiesene Adresse.
+- Gateway-Adressen, einschließlich der über DHCP oder PPP erlernten Adressen.
+- DNS-Serveradressen, einschließlich der über DHCP oder PPP erlernten Adressen.
+
+Durch das Abziehen kann ein blockiertes CIDR in kleinere Netzwerke aufgeteilt werden, damit nur die geschützte Adresse zugelassen wird.
+
+## Anker verstehen \{#understand-the-anchor}
+
+Das Paket lädt `sinkhole/ip` selbst mit zwei persistenten Familientabellen und den ausgewählten Schnittstellenregeln. Listenaktualisierungen ersetzen nur die Tabellen in diesem Anker, während Sync und die Minutenprüfung den vollständigen Anker laden können.
+
+Der Ankerinhalt übersteht normale pfSense-Filterneuladungen und gehört nicht zur Tabellenbereinigung des Hauptregelsatzes. Wird die IP-Blockierung deaktiviert oder Sinkhole entfernt, wird der Anker geleert.
+
+## Zustand prüfen \{#verify-the-state}
+
+**Status → IP and Country Blocking** zeigt Aktivierungszustand, Schnittstellen, Richtungen, Länder, Schlüsselstatus, Tabellengrößen, übersprungene Zeilen, letzte erfolgreiche Aktualisierung, GeoLite2-Aktualisierungszeit, Ankerzustand, Regelanzahl und letzten Fehler. Jeder IP-Listeneintrag zeigt außerdem Familie, Einträge, übersprungene Zeilen, letzten Abruf und Fehler.
+
+Der Ankerzustand **Out of Date** bedeutet, dass der geladene Text oder die Tabellen nicht mit den aktuellen Einstellungen übereinstimmen. Der minutenweise Abgleich lädt einen leeren oder geänderten Anker sofort; [Fehlerbehebung](/docs/operate/troubleshooting#ip-blocking-does-not-match-settings) beschreibt die Prüfungen.
+
+Einträge in IP-Listen, die breiter als IPv4 `/8` oder IPv6 `/16` sind, werden übersprungen und gezählt; die Grenznetze `/8` und `/16` werden akzeptiert. Diese Begrenzung gilt nicht für die IP Allowlist, da sie Blockierungen nur reduziert. Vor dem Schreiben der Tabellen zieht Sinkhole immer alle IPv4- und IPv6-Adressen der Firewall-Schnittstellen, die vollständigen Subnetze der für IP-Blockierung ausgewählten Schnittstellen, virtuelle CARP- und IP-Alias-Adressen sowie konfigurierte Gateways und DNS-Server ab.

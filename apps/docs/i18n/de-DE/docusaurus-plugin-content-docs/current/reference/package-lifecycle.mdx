@@ -1,0 +1,68 @@
+---
+id: package-lifecycle
+title: Paketlebenszyklus
+description: Verstehe Installation, Upgrade, Boot- und WAN-Sync, Erhalt bei pfSense-Upgrades, Keep Settings, Resolver-Wiederherstellung und vollständige Entfernung.
+keywords:
+  - sinkhole for pfsense
+  - paketlebenszyklus
+  - keep settings
+  - pfsense-upgrade
+  - deinstallation
+tags:
+  - reference
+  - lifecycle
+  - removal
+---
+
+Sinkhole folgt den pfSense-Paket-Hooks für Installation, wiederholten Sync, Upgrade und Entfernung und bewahrt Resolver sowie gespeicherte Daten bewusst.
+
+## Installation und Upgrade \{#install-and-upgrade}
+
+Installiere oder aktualisiere über die stabile Release-URL:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Der Installations-Hook schreibt die Paketintegration vor jedem erforderlichen Dienst- oder Filter-Neuladen. Upgrade-Hooks sind wiederholbar und behalten Einstellungen sowie gespeicherte Listen bei, während installierte Programmdateien ersetzt werden.
+
+Direkt aus GitHub installierte Pakete werden nicht auf der pfSense-Seite **System → Package Manager → Installed Packages** aufgeführt. Verwende die Befehlszeile oder die verifizierte Aktualisierungsaktion auf dem Sinkhole-Tab About, statt nach einem Eintrag aus dem Netgate-Repository zu suchen.
+
+## Paket-Sync \{#package-sync}
+
+pfSense ruft Paket-Sync beim Start und nach jeder Änderung der WAN-Adresse auf. Sinkhole verwendet ihn, um bei Bedarf Zeitpläne, aktuelle Clientadressen, Resolver-Integration, Laufzeitgenerationen, Klartext-DNS-Umleitungsregeln sowie die unabhängigen Bypass- und IP-Anker wiederherzustellen.
+
+Ein Sync ohne Änderungen schreibt keine Konfigurationsrevision, kompiliert nichts und lässt Unbound unverändert. Auf einem RAM-Disk-System stellt der Sync beim Start fehlende Inhalte unter `/var/unbound` aus der persistenten Spiegelung wieder her und startet den Resolver nur bei Bedarf neu.
+
+## Warum ein pfSense-Upgrade Sinkhole behält \{#why-a-pfsense-upgrade-keeps-sinkhole}
+
+Release-Pakete deklarieren die ABI als `FreeBSD:*` und setzen das Vital-Flag des Pakets. Der Platzhalter macht ein Release-Paket über FreeBSD-Hauptversionen hinweg installierbar, während „vital“ verhindert, dass der automatische Entfernungslauf beim pfSense-Upgrade ein Paket löscht, das im Netgate-Repository fehlt.
+
+Diese Bewahrung stellt keine Kompatibilitätszusage für eine ungetestete pfSense-Version dar. Prüfe [Kompatibilität](/docs/compatibility) und verifiziere das Paket nach dem Plattform-Upgrade auf einer Test-Firewall.
+
+## Keep Settings \{#keep-settings}
+
+**General → Keep Settings** ist standardmäßig ausgewählt. Wenn die Option ausgewählt ist, bleiben bei der Paketentfernung die pfSense-Konfiguration von Sinkhole und die Daten unter `/cf/conf/sinkhole` erhalten, sodass gespeicherte Listen und Richtlinien nach einer Neuinstallation verfügbar sind.
+
+Dieser Standard schützt Daten außerdem bei einem Paketmanager-Upgrade, das eine Entfernung mit anschließender Installation ausführt. Deaktiviere die Option nur, wenn Konfiguration und gespeicherte Daten vollständig gelöscht werden sollen.
+
+## Sinkhole entfernen \{#remove-sinkhole}
+
+Das Release-Paket ist vital. Erzwinge daher die ausdrückliche Entfernung und behalte dabei die regulären Lifecycle-Hooks bei:
+
+```sh
+pkg delete -f pfSense-pkg-Sinkhole
+```
+
+Die Entfernung beendet geplante Aufträge, blockiert neue Aktualisierungen, stellt die vorherigen Python-Einstellungen des Resolvers wieder her, entfernt Sinkholes verwalteten Discovery-Block aus den **Custom options** des DNS Resolvers, entfernt Laufzeitinhalte unter `/var/unbound`, löscht flüchtige Sperren und Statusdaten, zieht Klartext-DNS-Umleitungsregeln zurück, leert die Anker `sinkhole/bypass` und `sinkhole/ip` und entfernt zwischengespeicherte Bypass Lists sowie Tabellendateien. Der verwaltete Discovery-Block wird unabhängig davon entfernt, ob **Keep Settings** ein- oder ausgeschaltet ist. Außerdem entfernt die Entfernung die unter `/usr/local` installierten Paketdateien.
+
+Wenn **Keep Settings** aktiviert ist, bleiben Konfiguration und dauerhaft gespeicherte Listen für eine Neuinstallation erhalten. Wenn die Option deaktiviert ist, löscht die Entfernung alle Sinkhole-Einstellungen und gespeicherten Daten, einschließlich `/cf/conf/sinkhole` und des gesamten Sinkhole-Zweigs in der pfSense-Paketkonfiguration.
+
+## Entfernung prüfen \{#verify-removal}
+
+1. Bestätige, dass **Firewall → Sinkhole** nicht mehr vorhanden ist.
+2. Bestätige, dass Python-Skript und -Reihenfolge des DNS Resolvers den Werten vor Sinkhole entsprechen.
+3. Bestätige, dass keine Sinkhole-cron-Einträge, kein Klartext-DNS-Umleitungsblock, kein `sinkhole/bypass`-Anker und kein `sinkhole/ip`-Anker verbleiben.
+4. Wenn Keep Settings deaktiviert war, bestätige, dass `/cf/conf/sinkhole` nicht vorhanden ist.
+
+Wenn eine Aktualisierung aktiv war, fordert die Entfernungsmarkierung sie auf, zwischen begrenzten Phasen anzuhalten, bevor persistente Daten verändert werden. Die Entfernung zeichnet den ersten Bereinigungsfehler auf und versucht dennoch die übrigen unabhängigen Bereinigungsschritte.

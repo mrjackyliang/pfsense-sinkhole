@@ -1,0 +1,75 @@
+---
+id: intro
+title: Overzicht
+description: Blokkeer ongewenste websites op pfSense met afzonderlijk beleid voor het hele netwerk, elke VLAN of één apparaat, zonder een extra DNS-host toe te voegen.
+keywords:
+  - sinkhole voor pfsense
+  - overzicht
+  - dns-blokkering
+  - netwerkbeleid
+  - blokkeerlijsten
+tags:
+  - setup
+  - overview
+  - dns
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Blokkeer ongewenste websites met afzonderlijk beleid voor het hele netwerk, één VLAN of één apparaat, volledig binnen pfSense.
+
+## Wat Sinkhole doet \{#what-sinkhole-does}
+
+Sinkhole for pfSense geeft ouders en werkgevers controle over welke <Terminology title="namen of adressen die voor blokkering zijn geselecteerd" to="/docs/reference/terminology#block-list">blokkeerlijsten</Terminology> op elk deel van een netwerk worden toegepast. De laatste geldige kopieën blijven op de firewall staan, zodat DNS na een herstart of herlading onmiddellijk kan antwoorden terwijl nieuwere kopieën op de achtergrond worden gedownload.
+
+Geblokkeerde namen antwoorden met `0.0.0.0` of `::`. Een CNAME-keten die een geblokkeerde naam bereikt, wordt eveneens geblokkeerd, terwijl een naam die op het beslissende niveau is toegestaan, toegestaan blijft.
+
+## Waarom Sinkhole gebruiken? \{#why-use-sinkhole}
+
+1. Past beleid toe op globale, netwerk- en apparaat<Terminology title="waar een blokkeerlijst wordt toegepast" to="/docs/reference/terminology#scope">scopes</Terminology>, zodat kinderen, gasten, werknemers en afzonderlijke apparaten verschillende lijsten kunnen krijgen.
+2. Gebruikt <Terminology title="laatste geldige kopie van een blokkeerlijst op de firewall" to="/docs/reference/terminology#saved-list">opgeslagen lijsten</Terminology>, zodat DNS nooit op een download wacht en na een mislukte update geen werkende lijst verliest.
+3. Verzendt een <Terminology title="overeenkomst tussen lijst en client die een melding verzendt" to="/docs/reference/terminology#alert-rule">waarschuwingsregel</Terminology> alleen voor de lijsten en clients die u kiest, via het eigen meldingssysteem van pfSense.
+4. Biedt optionele <Terminology title="instellingen die geselecteerde clients op geïnspecteerde DNS-paden houden" to="/docs/reference/terminology#bypass-protection">beveiliging tegen omzeiling</Terminology> voor gewone DNS, ontdekking en providers van versleutelde DNS, Tor-relays en VPN-providers of -poorten.
+5. Voegt afzonderlijke IP- en landblokkering toe wanneer DNS-filtering niet volstaat, zonder een tweede host of cloudservice te vereisen.
+
+## Hoe de DNS-integratie werkt \{#how-dns-integration-works}
+
+Sinkhole draait als Python-module in de op Unbound gebaseerde <Terminology title="Unbound DNS-service van pfSense" to="/docs/reference/terminology#dns-resolver">DNS Resolver</Terminology> van pfSense. De module laadt bij het starten van Unbound alleen lokale, gecompileerde bestanden en controleert op nieuwere lokale generaties zonder een DNS-query te laten wachten.
+
+De DNS Resolver biedt één positie voor een Python-script. Sinkhole neemt die alleen in wanneer de positie leeg is of al aan Sinkhole toebehoort, en weigert een andere eigenaar te vervangen, zoals de DNSBL-module van pfBlockerNG.
+
+:::warning
+
+Sinkhole en pfBlockerNG DNSBL kunnen DNS niet gelijktijdig filteren, omdat beide de enige Python-scriptpositie van de Resolver nodig hebben.
+
+:::
+
+## Wat onder uw controle blijft \{#what-stays-under-your-control}
+
+- **Lists** — Voeg vertrouwde bronnen via een URL toe of zoek ze met de neutrale <Terminology title="cataloguszoekfunctie op aanvraag in de WebGUI" to="/docs/reference/terminology#popular-list-search">zoekfunctie voor populaire lijsten</Terminology>. Sinkhole publiceert of beveelt geen enkele lijst aan.
+- **Scopes** — Kies globale lijsten, lijsten voor één pfSense-interface of VLAN en lijsten voor een apparaat dat via IP-adres, statische DHCP-toewijzing of MAC-adres wordt geïdentificeerd.
+- **Allowed domains** — Sta een domein en de subdomeinen ervan op globaal, netwerk- of apparaatniveau toe zonder een volledige lijst te verwijderen.
+- **Alerts** — Kies de combinaties van lijsten en clients die lokale WebGUI-meldingen maken of de geconfigureerde externe meldingsservices van pfSense gebruiken.
+- **Bypass** — Laat elke instelling uitgeschakeld of selecteer clientgerichte interfaces en schakel expliciet de omleiding van gewone DNS, signalen voor versleutelde DNS, providerlijsten of tunnelbeveiligingen in.
+- **IP blocking** — Laat dit uitgeschakeld of selecteer IP-lijsten, landen, interfaces, richtingen en toegestane adressen.
+
+## Beperkingen \{#limits}
+
+DNS-blokkering is geen volledige verkeerscontrole. Beveiliging tegen omzeiling dekt veelgebruikte alternatieve paden alleen als elke instelling is ingeschakeld en kan niet elke versleutelde of aangepaste tunnel herkennen.
+
+Blokkeringsgebeurtenissen en meldingen laten zien wat clients probeerden te bereiken. Die informatie blijft op de firewall, afgezien van meldingen die u via pfSense laat verzenden.
+
+## Talen \{#languages}
+
+De WebGUI volgt de taal die in pfSense is geselecteerd en valt terug op Engels wanneer een vertaling nog niet beschikbaar is. Aanvullende WebGUI-vertalingen zijn in ontwikkeling en blijven deze terugval gebruiken totdat elke catalogus is beoordeeld.
+
+De documentatiesite biedt Engels en de andere 17 pfSense-locales. Vertaalde pagina's behouden de Engelse ankers, zodat koppelingen in elke taal dezelfde sectie bereiken.
+
+## Volgende stappen \{#next-steps}
+
+- **[Het pakket installeren](/docs/installation)** — Controleer en installeer het stabiele releasepakket.
+- **[Sinkhole instellen](/docs/first-run)** — Voeg een eerste lijst toe, kies de scope en controleer de actieve generatie.
+- **[Scopes begrijpen](/docs/configure/scopes)** — Volg de exacte beslisvolgorde voor apparaat, netwerk en globaal beleid.
+- **[Het veiligheidsmodel bekijken](/docs/safety/how-updates-work)** — Lees hoe opgeslagen kopieën en atomaire uitrol DNS beschikbaar houden.
+

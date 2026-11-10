@@ -1,0 +1,77 @@
+---
+id: alerts
+title: Alerts
+description: Match blocked answers by list and client, deliver through pfSense notices or remote services, and understand repeat, hourly, unread, and run caps.
+keywords:
+  - sinkhole for pfsense
+  - alerts
+  - pfsense notifications
+  - repeat window
+  - notification caps
+tags:
+  - configure
+  - alerts
+  - notifications
+---
+
+Send notifications only for blocked answers whose list and client match an enabled alert rule.
+
+## Why Use Alert Rules? \{#why-use-alert-rules}
+
+1. Watches selected lists and clients so routine blocks outside that policy stay quiet.
+2. Uses pfSense's existing local and remote notification channels so Sinkhole needs no separate delivery service.
+3. Suppresses repeats and summarizes bursts so a chatty domain can't flood the WebGUI or an inbox.
+4. Keeps queued events bounded and outside DNS query handling so delivery never delays an answer.
+
+## Create a Rule \{#create-a-rule}
+
+Open **Firewall → Sinkhole → Alerts**, select **Add** below the alert-rule table, then complete **Add Alert Rule** on the editor page:
+
+| Field                | Description                                                              |
+|----------------------|--------------------------------------------------------------------------|
+| Description          | Local rule name shown in notification text and summaries.                |
+| Any block list       | Matches a block from any list, instead of only the chosen lists.         |
+| Chosen block lists   | Lists that can satisfy the rule when **Any** is off.                     |
+| Everyone             | Matches every client, instead of only chosen networks and devices.       |
+| Chosen networks      | Network scopes that can satisfy the rule when **Everyone** is off.       |
+| Chosen devices       | Device scopes that can satisfy the rule when **Everyone** is off.        |
+| Repeat after         | Minutes before the same rule, client, domain, and list can notify again. |
+| WebGUI notice        | Adds a local Sinkhole notice to pfSense.                                 |
+| Remote notifications | Uses the remote services configured in pfSense.                          |
+| Enabled              | Lets blocked answers match this rule.                                    |
+
+The chosen-list field is hidden while **Any block list** is selected, and the network and device fields are hidden while **Everyone** is selected. Saving returns to Alerts; select the pencil or double-click a row to edit it.
+
+A block matches only when one of the lists that blocked the name is selected by the rule and the client is selected by the same rule. The default repeat window is 60 minutes, and the accepted range is 1 through 1,440 minutes.
+
+## Delivery Channels \{#delivery-channels}
+
+- **WebGUI notice** uses pfSense's local `file_notice()` channel and links back to the Alerts tab.
+- **Remote notifications** use pfSense's configured `notify_all_remote()` services.
+
+Sinkhole creates no email, chat, webhook, or other channel of its own. Remote services are configured and tested under **System → Advanced → Notifications** in pfSense.
+
+## Fixed Limits \{#fixed-limits}
+
+| Limit                         | Behavior                                                               |
+|-------------------------------|------------------------------------------------------------------------|
+| 20 messages per minute run    | Extra blocks fold into one or more rule summaries within the same cap. |
+| 60 messages per rule per hour | The sixtieth slot is reserved for an hourly overflow summary.          |
+| 50 unread WebGUI notices      | Additional local notices wait until some Sinkhole notices are read.    |
+| 40-second processing budget   | Unfinished sends remain for the next minute job instead of holding it. |
+| 10-minute event age           | Older queued events are discarded as stale.                            |
+
+Status counts events read, stale events, notifications sent, notifications held back, and module-dropped events. When no enabled alert rule remains, Sinkhole removes the event file and repeat state.
+
+## Privacy and Logging \{#privacy-and-logging}
+
+Alert text identifies the blocked name, client, network, list, and rule. A CNAME block also identifies the listed CNAME target.
+
+pfSense's local notice function writes `New alert found: <message>` to the system log, so the domain and device also appear under **Status → System Logs → System → General**. It is recommended to treat both notices and logs as browsing-policy records.
+
+## Verify an Alert \{#verify-an-alert}
+
+1. Confirm that the rule, selected list, and selected client scope are enabled.
+2. Confirm that the client is currently mapped to the intended network or device on Status.
+3. Query a name that the selected list blocks and check the configured pfSense channel.
+4. If no second notice arrives, compare the attempt with the rule's repeat window and fixed caps.

@@ -1,0 +1,68 @@
+---
+id: package-lifecycle
+title: Životni ciklus paketa
+description: Razumijte instaliranje, nadogradnju, Sync pri pokretanju i promjeni WAN-a, očuvanje vitalnog paketa pri nadogradnji pfSensea, Keep Settings i potpuno uklanjanje.
+keywords:
+  - sinkhole for pfsense
+  - životni ciklus paketa
+  - keep settings
+  - nadogradnja pfsensea
+  - deinstaliranje
+tags:
+  - reference
+  - lifecycle
+  - removal
+---
+
+Sinkhole slijedi kuke paketa pfSensea za instaliranje, ponovljeni Sync, nadogradnju i uklanjanje, uz namjerno očuvanje Resolvera i sačuvanih podataka.
+
+## Instaliranje i nadogradnja \{#install-and-upgrade}
+
+Instalirajte ili ažurirajte sa stabilnog URL-a izdanja:
+
+```sh
+pkg add -f https://github.com/mrjackyliang/pfsense-sinkhole/releases/latest/download/pfSense-pkg-Sinkhole.pkg
+```
+
+Kuka instaliranja zapisuje integraciju paketa prije svakog potrebnog ponovnog učitavanja usluge ili filtera. Kuke nadogradnje mogu se ponavljati i zadržavaju postavke i sačuvane liste dok zamjenjuju instalirane programske datoteke.
+
+Paketi instalirani direktno s GitHuba nisu navedeni na stranici **System → Package Manager → Installed Packages** u pfSenseu. Koristite komandnu liniju ili provjerenu radnju ažuriranja Sinkhole About umjesto traženja unosa u Netgateovom repozitoriju.
+
+## Sync paketa \{#package-sync}
+
+pfSense poziva Sync paketa pri pokretanju i nakon svake promjene WAN adrese. Sinkhole ga koristi da po potrebi vrati rasporede, trenutne adrese klijenata, integraciju Resolvera, izvršne generacije, pravila preusmjeravanja običnog DNS-a te nezavisna Bypass i IP sidra.
+
+Sync bez promjena ne zapisuje reviziju konfiguracije, ništa ne kompajlira i ostavlja Unbound na miru. Na sistemu s RAM diskom, Sync pri pokretanju vraća nedostajući sadržaj `/var/unbound` iz trajne kopije i ponovo pokreće Resolver samo kada je potrebno.
+
+## Zašto nadogradnja pfSensea zadržava Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
+
+Paketi izdanja navode ABI kao `FreeBSD:*` i postavljaju oznaku vitalnog paketa. Zamjenski znak omogućava instaliranje jednog paketa izdanja na više glavnih verzija FreeBSD-a, dok vitalna oznaka sprečava postupak automatskog uklanjanja pri nadogradnji pfSensea da izbriše paket kojeg nema u Netgateovom repozitoriju.
+
+Takvo očuvanje ne predstavlja tvrdnju o kompatibilnosti s netestiranim izdanjem pfSensea. Pregledajte [Kompatibilnost](/docs/compatibility) i provjerite paket na testnom zaštitnom zidu nakon nadogradnje platforme.
+
+## Keep Settings \{#keep-settings}
+
+**General → Keep Settings** je prema zadanim postavkama odabran. Kada je odabran, uklanjanje paketa čuva konfiguraciju Sinkholea u pfSenseu i podatke `/cf/conf/sinkhole`, tako da su sačuvane liste i pravila dostupni nakon ponovnog instaliranja.
+
+Ova zadana vrijednost također štiti podatke tokom nadogradnje upravitelja paketa koja izvršava uklanjanje praćeno instaliranjem. Poništite je samo kada želite potpuno brisanje konfiguracije i sačuvanih podataka.
+
+## Uklonite Sinkhole \{#remove-sinkhole}
+
+Paket izdanja je vitalan, pa prisilite izričito uklanjanje uz zadržavanje njegovih uobičajenih kuka životnog ciklusa:
+
+```sh
+pkg delete -f pfSense-pkg-Sinkhole
+```
+
+Uklanjanje zaustavlja zakazane poslove, blokira nova ažuriranja, vraća prethodne Python postavke Resolvera, uklanja Sinkholeov upravljani Discovery blok iz **Custom options** DNS Resolvera, uklanja izvršni sadržaj `/var/unbound`, čisti privremena zaključavanja i stanje, povlači pravila preusmjeravanja običnog DNS-a, prazni sidra `sinkhole/bypass` i `sinkhole/ip` te uklanja Bypass keširane liste i datoteke tabela. Upravljani Discovery blok uklanja bez obzira na to da li je **Keep Settings** uključen ili isključen. Uklanja i datoteke paketa instalirane pod `/usr/local`.
+
+Kada je **Keep Settings** uključen, konfiguracija i trajno sačuvane liste ostaju za ponovno instaliranje. Kada je isključen, uklanjanje briše sve postavke i sačuvane podatke Sinkholea, uključujući `/cf/conf/sinkhole` i cijelu granu Sinkholea u konfiguraciji paketa pfSensea.
+
+## Provjerite uklanjanje \{#verify-removal}
+
+1. Potvrdite da **Firewall → Sinkhole** više nije prisutan.
+2. Potvrdite da Python skripta i redoslijed DNS Resolvera odgovaraju vrijednostima koje su prethodile Sinkholeu.
+3. Potvrdite da nije ostao nijedan cron unos Sinkholea, blok preusmjeravanja običnog DNS-a, sidro `sinkhole/bypass` ni sidro `sinkhole/ip`.
+4. Ako je Keep Settings bio isključen, potvrdite da `/cf/conf/sinkhole` ne postoji.
+
+Ako je ažuriranje bilo aktivno, oznaka uklanjanja traži da se zaustavi između ograničenih faza prije dodirivanja trajnih podataka. Uklanjanje bilježi prvi neuspjeh čišćenja, ali i dalje pokušava preostale nezavisne korake čišćenja.

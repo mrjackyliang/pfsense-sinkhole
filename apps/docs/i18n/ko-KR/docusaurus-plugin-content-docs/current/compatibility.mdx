@@ -1,0 +1,72 @@
+---
+id: compatibility
+title: 호환성
+description: Sinkhole의 FreeBSD 패키지 ABI, pfSense 테스트 정책, DNS Resolver 요구 사항, Python 슬롯 충돌, 언어 상태 및 알려진 제한을 확인합니다.
+keywords:
+  - sinkhole for pfsense
+  - 호환성
+  - freebsd abi
+  - pfsense 릴리스
+  - unbound python
+tags:
+  - setup
+  - compatibility
+  - pfsense
+sidebar_position: 4
+---
+
+DNS 또는 IP 정책을 Sinkhole에 맡기기 전에 패키지, Resolver 및 네트워크 요구 사항을 확인합니다.
+
+## pfSense 및 FreeBSD \{#pfsense-and-freebsd}
+
+- 릴리스 패키지는 워크플로에 구성된 FreeBSD 주 버전에서 빌드한 다음 `FreeBSD:*` ABI로 다시 빌드하므로 하나의 패키지를 여러 FreeBSD 주 버전에 설치할 수 있습니다.
+- 패키지는 필수 패키지로 표시되므로 Netgate 저장소에 없다는 이유만으로 pfSense 업그레이드 중 자동 제거 과정에서 삭제되지 않습니다.
+- 광범위한 패키지 ABI가 모든 pfSense 릴리스와의 호환성을 입증하는 것은 아닙니다. pfSense API와 포함된 서비스는 계속 변경될 수 있습니다.
+
+## 테스트된 릴리스 \{#tested-releases}
+
+다음 pfSense 릴리스는 엔드투엔드 검증을 통과했습니다.
+
+| pfSense 릴리스          | FreeBSD |
+|----------------------|---------|
+| pfSense CE 2.9.0     | 16.0    |
+| pfSense CE 2.8.1     | 15.0    |
+| pfSense Plus 26.07   | 16.0    |
+| pfSense Plus 26.03.1 | 16.0    |
+
+각 테스트 릴리스에서 설치, 업데이트, 차단 테스트 및 제거를 엔드투엔드로 통과했습니다.
+
+**About** 탭은 일치하는 릴리스를 **This firewall**로 표시합니다. 목록에 없는 방화벽에는 `FreeBSD:*` ABI를 지원 보장으로 간주하는 대신 **Not tested** 행을 추가합니다.
+
+## DNS Resolver 요구 사항 \{#dns-resolver-requirements}
+
+- pfSense의 Unbound 기반 DNS Resolver가 활성화되어 있어야 합니다.
+- Resolver의 단일 Python 스크립트 슬롯이 비어 있거나 이미 Sinkhole 소유여야 합니다.
+- Sinkhole은 `pre_validator` 모듈 위치를 사용하며 Python 모드, 슬롯 소유자, 위치 또는 런타임 파일이 일치하지 않으면 비활성 상태를 보고합니다.
+
+pfBlockerNG DNSBL은 Sinkhole과 동일한 Python 스크립트 슬롯을 사용합니다. `pfb_unbound` 또는 다른 스크립트가 슬롯을 소유하는 동안 Sinkhole은 이를 차지하지 않습니다.
+
+## 네트워크 요구 사항 \{#network-requirements}
+
+- 네트워크 범위는 구성된 pfSense 인터페이스의 현재 IPv4 및 IPv6 서브넷을 사용합니다.
+- MAC 주소 또는 정적 매핑으로 식별한 장치는 현재 ARP, NDP, DHCP 임대, 정적 매핑 및 인터페이스 데이터에 의존합니다.
+- **Bypass**의 일반 DNS 리디렉션에는 선택한 인터페이스의 주소 패밀리와 일치하는 Resolver 리스너가 필요합니다.
+- 리디렉션된 클라이언트도 Resolver의 액세스 제어 설정에서 허용되어야 합니다.
+
+## 선택적 국가 데이터 \{#optional-country-data}
+
+국가 차단에는 관리자의 MaxMind 계정 ID와 GeoLite2 라이선스 키가 필요합니다. Sinkhole은 키를 제공하거나 기록하지 않으며, IP 목록만 선택한 경우 국가 데이터 없이도 IP 차단이 작동합니다.
+
+## 알려진 제한 사항 \{#known-limits}
+
+- Bypass 보호는 선택한 인터페이스와 관리자가 활성화한 프로토콜, 신호, 이름, 주소 및 표준 포트만 다룹니다.
+- 사용자 지정 암호화 DNS 및 터널 구성은 여전히 DNS 기반 정책을 우회할 수 있으므로 Sinkhole은 완전한 보호를 보장하지 않습니다.
+- Unbound의 기본 로컬 영역인 `test.`, `invalid.`, `onion.`, `localhost.`는 Python 모듈보다 먼저 응답하므로 실제 필터링 테스트에 적합하지 않습니다.
+- 장치 주소가 충돌하면 표 순서상 첫 번째 장치가 사용되며 Status에 충돌이 표시됩니다.
+- 이름 300,000개를 사용한 측정 테스트에서 Unbound RSS는 41 MiB에서 103 MiB로 증가했고, 최대 정책 메모리는 이름당 약 157바이트였습니다.
+
+## 언어 \{#languages}
+
+패키지는 pfSense 언어 설정에 따라 WebGUI, 명령줄, 유효성 검사, Status 및 알림 문구를 선택합니다. 영어가 원본 카탈로그이며, 현재 번역이 없으면 영어로 대체합니다.
+
+추가 패키지 번역은 진행 중이지만 문서는 pfSense 로캘 18개에서 모두 사용할 수 있습니다. Sinkhole, pfSense, FreeBSD, MaxMind 같은 브랜드와 제품 이름은 변경하지 않습니다.

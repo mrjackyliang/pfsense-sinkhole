@@ -1,0 +1,80 @@
+---
+id: testing-and-verification
+title: Tests et vérification
+description: Vérifiez installation, propriété du Resolver, décisions par portée, notifications, protection Bypass, blocage IP, mises à jour et suppression sûre sur un pare-feu de laboratoire.
+keywords:
+  - sinkhole for pfsense
+  - tests
+  - vérification
+  - pare-feu de laboratoire
+  - sécurité de publication
+tags:
+  - safety
+  - testing
+  - verification
+---
+
+Testez Sinkhole sur un laboratoire pfSense jetable avant d’introduire sa politique DNS, NAT ou de pare-feu dans un réseau de production.
+
+## Vérifier le téléchargement du paquet \{#verify-the-package-download}
+
+Téléchargez le paquet stable et la ressource `.sha256` depuis la même version GitHub. Comparez l’empreinte SHA-256 du paquet au seul hachage de `pfSense-pkg-Sinkhole.pkg.sha256` avant d’exécuter `pkg add -f`.
+
+Un téléchargement HTTPS ne remplace pas à lui seul la comparaison des sommes de contrôle. Conservez le paquet et sa somme ensemble lorsque vous les transférez vers un pare-feu par une autre machine.
+
+## Vérifier une installation de base \{#verify-a-basic-installation}
+
+1. Vérifiez que **Firewall → Sinkhole** s’ouvre et que la version installée apparaît dans **About**.
+2. Vérifiez que **Services → DNS Resolver** est activé et que son emplacement Python n’appartient pas à un autre paquet.
+3. Activez Sinkhole, enregistrez et vérifiez que **Status → Sinkhole** vaut `Active`.
+4. Vérifiez que les identifiants des générations compilée, déployée et chargée correspondent après la première mise à jour réussie.
+
+Sinkhole refuse de remplacer pfBlockerNG DNSBL ou un autre script dans l’unique emplacement de module Python d’Unbound. Considérez cet état inactif comme un conflit de configuration, pas comme un échec d’installation.
+
+## Vérifier la politique DNS \{#verify-dns-policy}
+
+Utilisez des domaines de test inventés provenant d’une liste que vous contrôlez plutôt qu’une liste publique. Testez une décision à la fois depuis des clients dont l’identité d’appareil et de réseau est visible dans Status.
+
+1. Vérifiez qu’un nom non répertorié se résout normalement.
+2. Vérifiez qu’une liste globale bloque son nom de test.
+3. Ajoutez un domaine autorisé au réseau et vérifiez qu’il traverse les listes du réseau et globales.
+4. Ajoutez une décision d’appareil et vérifiez l’[ordre documenté](/docs/configure/scopes#decision-order).
+5. Supprimez les données de test et vérifiez que la prochaine génération déployée restaure la réponse attendue.
+
+Évitez `test.`, `invalid.`, `onion.` et `localhost.`, car Unbound répond à ces zones intégrées avant les modules Python. Videz les caches DNS côté client entre les vérifications lorsque le résultat pourrait sinon être réutilisé.
+
+## Vérifier les alertes \{#verify-alerts}
+
+Créez une règle étroite pour le blocage d’un domaine de test inventé et un client de laboratoire connu. Vérifiez que la tâche minute suivante enregistre l’événement et l’envoie par le système de notification pfSense configuré.
+
+Répétez dans la fenêtre de répétition de la règle pour vérifier la suppression de l’avis. Supprimez ensuite la règle et vérifiez que Status ne signale plus d’erreur de traitement des alertes.
+
+## Vérifier la protection Bypass \{#verify-bypass-protection}
+
+Choisissez une interface de laboratoire isolée et activez une seule protection Bypass à la fois. Après chaque test, vérifiez qu’un client équivalent sur une interface non sélectionnée reste intact.
+
+1. Activez **Redirect**, vérifiez que sa famille d’adresses possède une écoute du Resolver et envoyez des requêtes DNS ordinaires sur les ports UDP et TCP 53 vers une autre destination. Vérifiez que pfSense les reçoit.
+2. Ajoutez volontairement une exemption non valide uniquement dans une configuration jetable et vérifiez que la redirection devient **Paused** au lieu de charger des règles partielles. Restaurez des données valides, attendez les deux observations minute et vérifiez que **pfSense loaded rules** revient à `Yes`.
+3. Activez **TLS and QUIC**, puis vérifiez que les ports TCP et UDP 853 vers une destination de laboratoire sont bloqués, contrairement au trafic vers le pare-feu.
+4. Ajoutez une Bypass List désactivée contenant uniquement des domaines, adresses et CIDR inventés, des commentaires et des données incorrectes. Activez-la avec sa protection correspondante, puis vérifiez que les noms et adresses valides sont bloqués, les lignes non valides ignorées et qu’une récupération échouée ultérieure conserve la copie enregistrée.
+5. Vérifiez que les requêtes de test Firefox et Private Relay reçoivent `NXDOMAIN`. Vérifiez que DDR renvoie une réponse `NOERROR` vide en mode **Answer with no records**.
+6. Avec le service SSL/TLS du Resolver configuré dans le laboratoire, vérifiez que **Advertise** renvoie SVCB avec le nom d’hôte du certificat, `alpn=dot` et le port `853`. Désactivez ce service et vérifiez que l’enregistrement de **Advertise** échoue à la validation.
+7. Activez les ports VPN standard et testez TCP et UDP `1194`, UDP `51820`, UDP `500` et `4500`, ainsi qu’ESP vers une destination de laboratoire. Vérifiez que le trafic adressé au pare-feu n’est pas bloqué.
+
+Après chaque test du pare-feu, vérifiez que **Status → Bypass** indique l’état de règle attendu et que `sinkhole/ip`, lorsqu’il est activé séparément, reste chargé.
+
+## Vérifier le blocage IP et par pays \{#verify-ip-and-country-blocking}
+
+Utilisez une liste IP de test inventée et une adresse qui ne peut affecter ni l’administration du pare-feu, ni les passerelles, ni le DNS. Vérifiez le nombre final dans la table de famille, l’interface et la direction sélectionnées et **IP Anchor → Yes** avant de tester le trafic.
+
+Vérifiez qu’une plage de test autorisée est retirée de la table de blocage. Si vous testez GeoLite2, utilisez la propre clé MaxMind de l’administrateur et retirez-la de toute sortie capturée.
+
+## Vérifier les mises à jour et la suppression \{#verify-update-and-removal-behavior}
+
+Exécutez une mise à jour manuelle des listes et vérifiez que le DNS continue de répondre pendant que Status traverse les états de mise à jour, compilation, déploiement et chargement. Une source volontairement défaillante doit conserver sa copie enregistrée antérieure et afficher l’erreur.
+
+Avant la suppression, décidez si **Keep Settings** doit conserver la configuration et les listes enregistrées. Supprimez avec `pkg delete -f pfSense-pkg-Sinkhole`, puis vérifiez la disparition de l’intégration au Resolver, des tâches planifiées, des règles de redirection du DNS ordinaire, des ancres `sinkhole/bypass` et `sinkhole/ip`, des données Bypass en cache et des fichiers d’exécution temporaires.
+
+## Consigner l’environnement \{#record-the-environment}
+
+Pour un compte rendu utile, notez la version de Sinkhole, l’édition et la version de pfSense, la version de FreeBSD, les fonctions sélectionnées, l’état dans Status et des lignes `Sinkhole:` nettoyées du journal système. Aucune version de pfSense n’est actuellement indiquée comme officiellement testée ; les tests de compatibilité ont lieu avant chaque version de Sinkhole.

@@ -1,0 +1,72 @@
+---
+id: compatibility
+title: 兼容性
+description: 檢查 Sinkhole 的 FreeBSD 套件 ABI、pfSense 測試政策、DNS Resolver 要求、Python 槽位衝突、語言狀態和已知限制。
+keywords:
+  - sinkhole for pfsense
+  - 兼容性
+  - freebsd abi
+  - pfsense 發行版
+  - unbound python
+tags:
+  - setup
+  - compatibility
+  - pfsense
+sidebar_position: 4
+---
+
+在依靠 Sinkhole 實施 DNS 或 IP 策略前，請檢查套件、Resolver 和網路要求。
+
+## pfSense 和 FreeBSD \{#pfsense-and-freebsd}
+
+- 發行套件在工作流配置的 FreeBSD 主版本上構建，然後用 `FreeBSD:*` ABI 重新構建，使一個套件可以跨 FreeBSD 主版本安裝。
+- 套件被標記為 vital，因此 pfSense 升級時的自動刪除步驟不會僅因為它不在 Netgate 存儲庫中就將其丟棄。
+- 寬泛的套件 ABI 不能證明與每個 pfSense 發行版兼容，因為 pfSense API 和內置服務仍可能改變。
+
+## 已測試的發行版 \{#tested-releases}
+
+以下 pfSense 發行版已通過端到端驗證：
+
+| pfSense 發行版          | FreeBSD |
+|----------------------|---------|
+| pfSense CE 2.9.0     | 16.0    |
+| pfSense CE 2.8.1     | 15.0    |
+| pfSense Plus 26.07   | 16.0    |
+| pfSense Plus 26.03.1 | 16.0    |
+
+每個已測試發行版都端到端通過了安裝、更新、一次封鎖測試和刪除。
+
+**About** 選項卡用 **This firewall** 標記相符的發行版。對於未列出的防火牆，它會新增 **Not tested** 列，而不會把 `FreeBSD:*` ABI 當成支援聲明。
+
+## DNS Resolver 要求 \{#dns-resolver-requirements}
+
+- 需要啓用 pfSense 基於 Unbound 的 DNS Resolver。
+- Resolver 的唯一 Python 腳本槽位需要為空或已經由 Sinkhole 佔用。
+- Sinkhole 使用 `pre_validator` 模塊位置；如果 Python 模式、槽位所有者、位置或執行時檔案不匹配，它會報告非活動狀態。
+
+pfBlockerNG DNSBL 與 Sinkhole 使用同一個 Python 腳本槽位。當 `pfb_unbound` 或任何其他腳本佔用該槽位時，Sinkhole 拒絕接管。
+
+## 網路要求 \{#network-requirements}
+
+- 網路作用域使用已配置 pfSense 介面的當前 IPv4 和 IPv6 子網。
+- 通過 MAC 地址或靜態映射識別的設備依賴當前 ARP、NDP、DHCP 租約、靜態映射和介面資料。
+- **Bypass** 中的普通 DNS 重定向要求所選介面具有相應地址族，並有匹配的 Resolver 監聽器。
+- 被重定向的用戶端仍需獲得 Resolver 訪問控制設定的允許。
+
+## 可選國家/地區資料 \{#optional-country-data}
+
+國家/地區封鎖需要管理員自己的 MaxMind 帳戶 ID 和 GeoLite2 許可證金鑰。Sinkhole 不附帶也不記錄金鑰；僅選擇 IP 清單時，IP 封鎖無需國家/地區資料也能工作。
+
+## 已知限制 \{#known-limits}
+
+- Bypass 保護僅涵蓋所選介面，以及管理員啟用的協定、訊號、名稱、地址和標準端口。
+- 自訂加密 DNS 和隧道設定仍可能繞過基於 DNS 的策略，所以 Sinkhole 不承諾完全防護。
+- Unbound 內置的 `test.`、`invalid.`、`onion.` 和 `localhost.` 本地區域會在 Python 模塊前回應，不適合實時過濾測試。
+- 設備地址衝突歸表格中第一台設備所有，Status 會報告衝突。
+- 在包含 300,000 個名稱的實測中，Unbound RSS 從 41 MiB 上升到 103 MiB，策略記憶體峰值約為每個名稱 157 字節。
+
+## 語言 \{#languages}
+
+套件根據 pfSense 語言設定選擇 WebGUI、命令行、驗證、Status 和通知文本。英語是源目錄，缺少翻譯時目前會回退到英語。
+
+其他套件翻譯仍在進行中，而文檔已提供 pfSense 的全部 18 個區域設定。Sinkhole、pfSense、FreeBSD 和 MaxMind 等品牌和產品名稱保持不變。

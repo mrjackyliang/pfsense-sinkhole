@@ -1,0 +1,57 @@
+---
+id: terminology
+title: 術語
+description: 定義 Sinkhole WebGUI、Status 面板、指南和參考頁面中使用的 DNS、清單、作用域、警報和 Bypass 術語。
+keywords:
+  - sinkhole for pfsense
+  - 術語
+  - 詞彙表
+  - dns sinkhole
+  - 封鎖清單
+tags:
+  - reference
+  - terminology
+  - glossary
+---
+
+這些術語在 Sinkhole WebGUI 和文檔中始終具有相同含義。
+
+## DNS Sinkhole \{#dns-sinkhole}
+
+使用一個無處可達的地址回應被封鎖的名稱，使請求停止。
+
+## DNS Resolver \{#dns-resolver}
+
+pfSense 基於 Unbound 的 DNS 服務。
+
+## 封鎖清單 \{#block-list}
+
+通過 URL 或搜索新增的待封鎖名稱或地址清單。
+
+## 已儲存清單 \{#saved-list}
+
+儲存在防火牆上的封鎖清單最後有效副本。
+
+## 作用域 \{#scope}
+
+封鎖清單的應用範圍：整個網路、某個 VLAN 或單個設備。
+
+## 全局清單 \{#global-lists}
+
+應用於網路中每個用戶端的封鎖清單。
+
+## 警報規則 \{#alert-rule}
+
+封鎖事件會發送 pfSense 通知的清單和作用域。
+
+## 防止繞過 \{#bypass-protection}
+
+可選的介面級控制，透過重定向普通 DNS 或封鎖常見的加密 DNS 和隧道替代路徑，讓用戶端保持使用 Sinkhole 可以檢查的 DNS 路徑。
+
+## 普通 DNS 重定向 \{#plain-dns-redirect}
+
+將設備的普通 TCP 和 UDP 端口 53 查詢傳送到防火牆的可選 Bypass 設定。
+
+## 常用清單搜索 \{#popular-list-search}
+
+WebGUI 對廣泛使用的封鎖清單進行的搜索，例如 AdGuard Home 的選擇器。
