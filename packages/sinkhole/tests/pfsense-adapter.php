@@ -14,6 +14,38 @@ use PfSense\Sinkhole\Runtime\StateStore;
 
 set_include_path(__DIR__ . '/stubs' . PATH_SEPARATOR . get_include_path());
 
+/** @var list<array> @since 1.0.0 */
+$sinkholeAdapterTestNotices = [];
+
+if (!function_exists('file_notice')) {
+    /**
+     * Sinkhole Adapter Test - File Notice.
+     *
+     * @return void
+     *
+     * @since 1.0.0
+     */
+    function file_notice(
+        string $id,
+        string $notice,
+        string $category = 'General',
+        string $url = '',
+        int $priority = 1,
+        bool $localOnly = false,
+    ): void {
+        global $sinkholeAdapterTestNotices;
+
+        $sinkholeAdapterTestNotices[] = compact(
+            'id',
+            'notice',
+            'category',
+            'url',
+            'priority',
+            'localOnly',
+        );
+    }
+}
+
 require_once(__DIR__ . '/TestSupport.php');
 require_once(__DIR__ . '/stubs/config.inc');
 require_once(__DIR__ . '/stubs/services.inc');
@@ -49,6 +81,7 @@ function sinkholeAdapterTestPaths(string $root): PackagePaths
         'redirect_check_lock_file' => $root . '/sinkhole-redirect-check.lock',
         'redirect_check_state_file' => $root . '/sinkhole-redirect-check.json',
         'redirect_rule_error_file' => $root . '/rules.packages.sinkhole',
+        'boot_status_file' => $root . '/sinkhole-boot-restore',
         'alert_repeat_state_file' => $root . '/sinkhole-alerts.json',
         'catalog_cache_directory' => $root . '/catalog-cache',
         'command' => '/usr/local/sbin/sinkhole',
@@ -57,6 +90,37 @@ function sinkholeAdapterTestPaths(string $root): PackagePaths
         'storage_user' => '',
         'storage_group' => '',
     ]);
+}
+
+/**
+ * Sinkhole Adapter Test - Write Boot Status.
+ *
+ * @param PackagePaths $paths - Package paths.
+ * @param string $level - Outcome level.
+ * @param string $message - Outcome message.
+ *
+ * @return int
+ *
+ * @since 1.0.0
+ */
+function sinkholeAdapterTestWriteBootStatus(
+    PackagePaths $paths,
+    string $level,
+    string $message,
+): int {
+    file_put_contents(
+        $paths->bootStatusFile,
+        '1700000000' . "\t" . $level . "\t" . $message . PHP_EOL,
+    );
+    chmod($paths->bootStatusFile, 0644);
+    clearstatcache(true, $paths->bootStatusFile);
+    $ownerId = fileowner($paths->bootStatusFile);
+
+    if (!is_int($ownerId)) {
+        throw new RuntimeException('Unable to read the boot-status owner ID.');
+    }
+
+    return $ownerId;
 }
 
 /**
@@ -1927,6 +1991,209 @@ sinkholeTestRun([
                 false,
                 $stateStore->removing(),
                 'The later Sync must remain outside package removal.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'sync relays and safely discards boot restore status' => static function (): void {
+        global $sinkholeAdapterTestNotices;
+
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            sinkholeStubReset([
+                'installedpackages' => [
+                    'sinkhole' => [
+                        'config' => [[
+                            'enabled' => '',
+                            'update_frequency' => 'daily',
+                        ]],
+                    ],
+                ],
+                'unbound' => ['enable' => ''],
+                'system' => ['language' => 'en_US'],
+            ]);
+            $sinkholeAdapterTestNotices = [];
+            $paths = sinkholeAdapterTestPaths($directory);
+            $stateStore = new StateStore($paths->stateFile, $paths->statusFile);
+            $relayed = [];
+            $bootStatusLogger = static function (
+                string $level,
+                string $message,
+            ) use (&$relayed): void {
+                $relayed[] = compact('level', 'message');
+            };
+            $noticeMessage = 'Restored the Sinkhole runtime before Unbound start.';
+            $ownerId = sinkholeAdapterTestWriteBootStatus(
+                $paths,
+                'notice',
+                $noticeMessage,
+            );
+            $adapter = new PfSenseAdapter(
+                $paths,
+                $stateStore,
+                bootStatusOwnerId: $ownerId,
+                bootStatusLogger: $bootStatusLogger,
+            );
+            pfsensePackageSinkholeAdapter($adapter);
+
+            pfsensePackageSinkholeSync(0);
+
+            sinkholeTestAssertSame(
+                [['level' => 'notice', 'message' => $noticeMessage]],
+                $relayed,
+                'A disabled-package Sync must relay a valid notice outcome.',
+            );
+            sinkholeTestAssertSame(
+                [],
+                $sinkholeAdapterTestNotices,
+                'A successful boot restore must not raise a pfSense notice.',
+            );
+            sinkholeTestAssertSame(
+                false,
+                file_exists($paths->bootStatusFile),
+                'A relayed notice outcome must be removed.',
+            );
+
+            $stateStore->markRemoving();
+            $errorMessage = 'Sinkhole module mirror is unavailable.';
+            sinkholeAdapterTestWriteBootStatus($paths, 'err', $errorMessage);
+
+            pfsensePackageSinkholeSync(0);
+
+            sinkholeTestAssertSame(
+                [
+                    ['level' => 'notice', 'message' => $noticeMessage],
+                    ['level' => 'err', 'message' => $errorMessage],
+                ],
+                $relayed,
+                'A removal-time Sync must relay a valid error outcome.',
+            );
+            sinkholeTestAssertSame(
+                [[
+                    'id' => PfSenseAdapter::BOOT_RESTORE_NOTICE_IDENTIFIER,
+                    'notice' => 'Sinkhole boot restore failed: ' . $errorMessage,
+                    'category' => 'Sinkhole',
+                    'url' => '/sinkhole-status.php',
+                    'priority' => 1,
+                    'localOnly' => true,
+                ]],
+                $sinkholeAdapterTestNotices,
+                'A failed boot restore must raise one local Sinkhole notice.',
+            );
+            sinkholeTestAssertSame(
+                false,
+                file_exists($paths->bootStatusFile),
+                'A relayed error outcome must be removed.',
+            );
+
+            $relayCount = count($relayed);
+            $noticeCount = count($sinkholeAdapterTestNotices);
+            $invalidCases = [
+                'malformed' => static function () use ($paths): void {
+                    file_put_contents($paths->bootStatusFile, "malformed\n");
+                    chmod($paths->bootStatusFile, 0644);
+                },
+                'oversized' => static function () use ($paths): void {
+                    file_put_contents(
+                        $paths->bootStatusFile,
+                        str_repeat('x', PfSenseAdapter::BOOT_STATUS_MAXIMUM_BYTES + 1),
+                    );
+                    chmod($paths->bootStatusFile, 0644);
+                },
+            ];
+
+            foreach ($invalidCases as $label => $prepare) {
+                $prepare();
+                pfsensePackageSinkholeSync(0);
+                clearstatcache(true, $paths->bootStatusFile);
+
+                sinkholeTestAssertSame(
+                    false,
+                    file_exists($paths->bootStatusFile),
+                    'A ' . $label . ' boot status must be removed.',
+                );
+                sinkholeTestAssertSame(
+                    $relayCount,
+                    count($relayed),
+                    'A ' . $label . ' boot status must not be relayed.',
+                );
+                sinkholeTestAssertSame(
+                    $noticeCount,
+                    count($sinkholeAdapterTestNotices),
+                    'A ' . $label . ' boot status must not raise a notice.',
+                );
+            }
+
+            $symlinkTarget = $directory . '/boot-status-target';
+            file_put_contents($symlinkTarget, "target\n");
+            symlink($symlinkTarget, $paths->bootStatusFile);
+
+            pfsensePackageSinkholeSync(0);
+            clearstatcache(true, $paths->bootStatusFile);
+
+            sinkholeTestAssertSame(
+                false,
+                is_link($paths->bootStatusFile),
+                'A symlinked boot status must be unlinked.',
+            );
+            sinkholeTestAssertSame(
+                "target\n",
+                file_get_contents($symlinkTarget),
+                'Removing a boot-status symlink must not change its target.',
+            );
+            sinkholeTestAssertSame(
+                $relayCount,
+                count($relayed),
+                'A symlinked boot status must not be relayed.',
+            );
+            sinkholeTestAssertSame(
+                $noticeCount,
+                count($sinkholeAdapterTestNotices),
+                'A symlinked boot status must not raise a notice.',
+            );
+
+            sinkholeAdapterTestWriteBootStatus($paths, 'notice', $noticeMessage);
+            $wrongOwnerId = ($ownerId === 0) ? 1 : 0;
+            pfsensePackageSinkholeAdapter(new PfSenseAdapter(
+                $paths,
+                $stateStore,
+                bootStatusOwnerId: $wrongOwnerId,
+                bootStatusLogger: $bootStatusLogger,
+            ));
+
+            pfsensePackageSinkholeSync(0);
+            clearstatcache(true, $paths->bootStatusFile);
+
+            sinkholeTestAssertSame(
+                false,
+                file_exists($paths->bootStatusFile),
+                'A wrong-owner boot status must be removed.',
+            );
+            sinkholeTestAssertSame(
+                $relayCount,
+                count($relayed),
+                'A wrong-owner boot status must not be relayed.',
+            );
+            sinkholeTestAssertSame(
+                $noticeCount,
+                count($sinkholeAdapterTestNotices),
+                'A wrong-owner boot status must not raise a notice.',
+            );
+
+            pfsensePackageSinkholeAdapter($adapter);
+            pfsensePackageSinkholeSync(0);
+
+            sinkholeTestAssertSame(
+                $relayCount,
+                count($relayed),
+                'A missing boot status must be a log no-op.',
+            );
+            sinkholeTestAssertSame(
+                $noticeCount,
+                count($sinkholeAdapterTestNotices),
+                'A missing boot status must be a notice no-op.',
             );
         } finally {
             sinkholeTestRemoveTemporaryDirectory($directory);

@@ -7,6 +7,8 @@ unbound_user="${SINKHOLE_UNBOUND_USER:-unbound}"
 unbound_group="${SINKHOLE_UNBOUND_GROUP:-unbound}"
 root_user="${SINKHOLE_ROOT_USER:-root}"
 root_group="${SINKHOLE_ROOT_GROUP:-wheel}"
+logger_command="${SINKHOLE_LOGGER:-logger}"
+boot_status="${SINKHOLE_BOOT_STATUS:-/var/run/sinkhole-boot-restore}"
 runtime_storage="${runtime_root}/sinkhole.d"
 runtime_state="${runtime_root}/sinkhole-state"
 runtime_clients="${runtime_root}/sinkhole-clients"
@@ -14,6 +16,10 @@ runtime_link="${runtime_root}/sinkhole"
 temporary_module=''
 temporary_clients=''
 new_generation=''
+temporary_boot_status=''
+failure_reason=''
+restored_generation=''
+restored_clients='false'
 
 cleanup() {
   if [ -n "${temporary_module}" ] && [ -e "${temporary_module}" ]; then
@@ -27,11 +33,85 @@ cleanup() {
   if [ -n "${temporary_clients}" ] && [ -e "${temporary_clients}" ]; then
     rm -f -- "${temporary_clients}"
   fi
+
+  if [ -n "${temporary_boot_status}" ] \
+    && { [ -e "${temporary_boot_status}" ] || [ -L "${temporary_boot_status}" ]; }; then
+    rm -f -- "${temporary_boot_status}"
+  fi
+}
+
+log_outcome() {
+  priority=$1
+  message=$2
+
+  "${logger_command}" -t sinkhole -p "${priority}" "${message}" >/dev/null 2>&1 || :
+}
+
+write_boot_status() {
+  level=$1
+  message=$2
+  timestamp="$(date '+%s' 2>/dev/null)" || return 0
+
+  temporary_boot_status="$(mktemp "${boot_status}.XXXXXXXX" 2>/dev/null)" || {
+    temporary_boot_status=''
+    return 0
+  }
+
+  if ! printf '%s\t%s\t%s\n' "${timestamp}" "${level}" "${message}" \
+    >"${temporary_boot_status}" \
+    || ! chmod 0644 "${temporary_boot_status}" \
+    || ! chown -h "${root_user}:${root_group}" "${temporary_boot_status}" \
+    || ! mv -fh -- "${temporary_boot_status}" "${boot_status}"; then
+    if rm -f -- "${temporary_boot_status}" >/dev/null 2>&1; then
+      temporary_boot_status=''
+    fi
+
+    return 0
+  fi
+
+  temporary_boot_status=''
+}
+
+on_exit() {
+  exit_status=$?
+
+  trap - EXIT HUP INT TERM
+  set +e
+
+  cleanup
+
+  if [ "${exit_status}" -eq 0 ]; then
+    if [ "${restored_clients}" = 'true' ]; then
+      success_message="Restored the Sinkhole module, lists generation ${restored_generation} and client map to ${runtime_root} before Unbound start."
+    else
+      success_message="Restored the Sinkhole module and lists generation ${restored_generation} to ${runtime_root} before Unbound start."
+    fi
+
+    write_boot_status notice "${success_message}"
+    log_outcome daemon.notice "${success_message}"
+  else
+    if [ -z "${failure_reason}" ]; then
+      failure_reason="Sinkhole boot restore failed unexpectedly with exit status ${exit_status}."
+    fi
+
+    write_boot_status err "${failure_reason}"
+    log_outcome daemon.err "${failure_reason}"
+  fi
+
+  cleanup
+
+  exit "${exit_status}"
+}
+
+report_failure() {
+  failure_reason=$1
+
+  printf '%s\n' "${failure_reason}" >&2
 }
 
 ensure_runtime_root() {
   if [ -L "${runtime_root}" ]; then
-    echo 'Sinkhole runtime root must not be a symbolic link.' >&2
+    report_failure 'Sinkhole runtime root must not be a symbolic link.'
     return 1
   fi
 
@@ -43,7 +123,7 @@ ensure_runtime_root() {
     chown -h "${unbound_user}:${unbound_group}" "${runtime_root}"
 
     if [ -L "${runtime_root}" ] || [ ! -d "${runtime_root}" ]; then
-      echo 'Sinkhole runtime root changed during creation.' >&2
+      report_failure 'Sinkhole runtime root changed during creation.'
       return 1
     fi
   fi
@@ -51,7 +131,7 @@ ensure_runtime_root() {
 
 ensure_runtime_storage() {
   if [ -L "${runtime_storage}" ]; then
-    echo 'Sinkhole runtime storage must not be a symbolic link.' >&2
+    report_failure 'Sinkhole runtime storage must not be a symbolic link.'
     return 1
   fi
 
@@ -63,7 +143,7 @@ ensure_runtime_storage() {
     chown -h "${root_user}:${root_group}" "${runtime_storage}"
 
     if [ -L "${runtime_storage}" ] || [ ! -d "${runtime_storage}" ]; then
-      echo 'Sinkhole runtime storage changed during creation.' >&2
+      report_failure 'Sinkhole runtime storage changed during creation.'
       return 1
     fi
   fi
@@ -82,7 +162,7 @@ ensure_runtime_state() {
     chown -h "${unbound_user}:${unbound_group}" "${runtime_state}"
 
     if [ -L "${runtime_state}" ] || [ ! -d "${runtime_state}" ]; then
-      echo 'Sinkhole runtime state changed during creation.' >&2
+      report_failure 'Sinkhole runtime state changed during creation.'
       return 1
     fi
   fi
@@ -92,7 +172,7 @@ restore_module() {
   local_source="${mirror_root}/sinkhole.py"
 
   if [ ! -f "${local_source}" ] || [ -L "${local_source}" ]; then
-    echo 'Sinkhole module mirror is unavailable.' >&2
+    report_failure 'Sinkhole module mirror is unavailable.'
     return 1
   fi
 
@@ -119,7 +199,7 @@ restore_module() {
   done
 
   if [ -z "${temporary_module}" ] || [ -L "${temporary_module}" ] || [ ! -f "${temporary_module}" ]; then
-    echo 'Unable to create the Sinkhole runtime module.' >&2
+    report_failure 'Unable to create the Sinkhole runtime module.'
     return 1
   fi
 
@@ -133,14 +213,14 @@ restore_generation() {
 
   if ! printf '%s\n' "${active_target}" \
     | grep -Eq '^sinkhole\.d/\.sinkhole-generation-[0-9a-f]{16}$'; then
-    echo 'Sinkhole data mirror has an invalid active generation.' >&2
+    report_failure 'Sinkhole data mirror has an invalid active generation.'
     return 1
   fi
 
   source_generation="${mirror_root}/${active_target}"
 
   if [ ! -d "${source_generation}" ] || [ -L "${source_generation}" ]; then
-    echo 'Sinkhole data mirror is unavailable.' >&2
+    report_failure 'Sinkhole data mirror is unavailable.'
     return 1
   fi
 
@@ -148,7 +228,7 @@ restore_generation() {
     source_file="${source_generation}/${data_file}"
 
     if [ ! -f "${source_file}" ] || [ -L "${source_file}" ]; then
-      echo "Sinkhole data mirror is missing ${data_file}." >&2
+      report_failure "Sinkhole data mirror is missing ${data_file}."
       return 1
     fi
   done
@@ -168,7 +248,7 @@ restore_generation() {
     fi
 
     if [ ! -f "${source_file}" ] || [ -L "${source_file}" ]; then
-      echo "Sinkhole data mirror has an unsafe ${data_file}." >&2
+      report_failure "Sinkhole data mirror has an unsafe ${data_file}."
       return 1
     fi
 
@@ -194,7 +274,7 @@ restore_generation() {
   umask "${old_umask}"
 
   if [ -z "${new_generation}" ]; then
-    echo 'Unable to create a Sinkhole runtime generation.' >&2
+    report_failure 'Unable to create a Sinkhole runtime generation.'
     return 1
   fi
 
@@ -207,13 +287,14 @@ restore_generation() {
     chown -h "${root_user}:${root_group}" "${new_generation}/${data_file}"
   done
 
-
   for data_file in ${scope_allow_files}; do
     install -m 0644 \
       "${source_generation}/${data_file}" \
       "${new_generation}/${data_file}"
     chown -h "${root_user}:${root_group}" "${new_generation}/${data_file}"
   done
+
+  restored_generation="$(sed -n '1p' "${new_generation}/generation")"
 
   generation_name="$(basename -- "${new_generation}")"
   link_target="sinkhole.d/${generation_name}"
@@ -253,7 +334,7 @@ restore_clients() {
 
   if [ ! -d "${source_directory}" ] || [ -L "${source_directory}" ] \
     || [ ! -f "${source_file}" ] || [ -L "${source_file}" ]; then
-    echo 'Sinkhole client map mirror is unsafe.' >&2
+    report_failure 'Sinkhole client map mirror is unsafe.'
     return 1
   fi
 
@@ -289,17 +370,21 @@ restore_clients() {
 
   if [ -z "${temporary_clients}" ] || [ ! -f "${temporary_clients}" ] \
     || [ -L "${temporary_clients}" ]; then
-    echo 'Unable to restore the Sinkhole client map.' >&2
+    report_failure 'Unable to restore the Sinkhole client map.'
     return 1
   fi
 
   chown -h "${root_user}:${root_group}" "${temporary_clients}"
   mv -fh -- "${temporary_clients}" "${runtime_clients}/clients.json"
   temporary_clients=''
+  restored_clients='true'
 }
 
 main() {
-  trap cleanup EXIT HUP INT TERM
+  trap on_exit EXIT
+  trap 'exit 129' HUP
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
 
   ensure_runtime_root
   ensure_runtime_storage

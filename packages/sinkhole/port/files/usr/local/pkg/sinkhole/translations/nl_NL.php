@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Kies hoe vaak ingeschakelde blokkeerlijsten worden bijgewerkt.',
     'keep_settings' => 'Instellingen behouden',
     'keep_settings_help' => 'Behoudt lijsten en instellingen wanneer het pakket wordt verwijderd.',
+    'boot_restore_failed_notice' => 'Sinkhole-herstel bij het opstarten is mislukt: %1$s',
     'unexpected_error' => 'Onverwachte fout: %1$s',
     'update_frequency_invalid' => 'De updatefrequentie is ongeldig.',
     'saved_block_lists_invalid' => 'De opgeslagen blokkeerlijsten zijn ongeldig.',

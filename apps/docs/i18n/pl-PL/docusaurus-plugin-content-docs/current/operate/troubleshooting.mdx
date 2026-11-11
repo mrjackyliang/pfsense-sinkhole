@@ -36,6 +36,8 @@ Użyj przyczyny podanej po **Summary → Sinkhole**:
 
 W systemach z `/var` w pamięci Sync pakietów wykonywany przy każdym uruchomieniu przywraca brakujące pliki środowiska uruchomieniowego i w razie potrzeby ponownie uruchamia Unbound po uruchomieniu pakietów. Dlatego plik brakujący krótko po uruchomieniu powinien zostać odtworzony podczas uruchamiania pakietów.
 
+Nieudane przywracanie podczas rozruchu jest rejestrowane pod `sinkhole` w **Status → System Logs → System → General** i powoduje także wyświetlenie powiadomienia Sinkhole.
+
 ## Domena nie jest blokowana \{#a-domain-is-not-blocked}
 
 1. Sprawdź, czy lista jest włączona i ma zapisane wpisy, a jej ostatnia prawidłowa kopia nie została zastąpiona po błędzie.

@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Wähle aus, wie oft aktivierte Blocklisten aktualisiert werden.',
     'keep_settings' => 'Einstellungen behalten',
     'keep_settings_help' => 'Behält Listen und Einstellungen bei, wenn das Paket entfernt wird.',
+    'boot_restore_failed_notice' => 'Die Sinkhole-Wiederherstellung beim Start ist fehlgeschlagen: %1$s',
     'unexpected_error' => 'Unerwarteter Fehler: %1$s',
     'update_frequency_invalid' => 'Die Aktualisierungshäufigkeit ist ungültig.',
     'saved_block_lists_invalid' => 'Die gespeicherten Blocklisten sind ungültig.',

@@ -36,6 +36,8 @@ Gebruik de reden na **Summary → Sinkhole**:
 
 Op systemen met `/var` in het geheugen herstelt pakket-Sync bij elke start ontbrekende runtimebestanden en start Unbound waar nodig opnieuw nadat de pakketten zijn gestart. Een runtimebestand dat vroeg na het opstarten ontbreekt, moet daarom tijdens het starten van de pakketten worden hersteld.
 
+Een mislukte herstelactie bij het opstarten wordt onder `sinkhole` vastgelegd in **Status → System Logs → System → General** en er wordt ook een Sinkhole-melding aangemaakt.
+
 ## Een domein wordt niet geblokkeerd \{#a-domain-is-not-blocked}
 
 1. Controleer of de lijst is ingeschakeld en opgeslagen vermeldingen bevat, waarbij na een fout de laatste geldige kopie niet is vervangen.

@@ -93,9 +93,11 @@ pfsense-sinkhole/
   `stage-package.mjs` copies the port to `build/port` and stamps the version, and
   `build-package.sh` runs `make package` in a pfSense ports checkout, rebuilds the artifact
   as a vital `FreeBSD:*` package and writes versioned and stable release copies.
-  `test-domain.sh`,
-  `test-python.sh`, `test-restore-runtime.sh` and `test-e2e.sh` run the package's offline
-  PHP, Python, boot-restore and cross-language suites.
+  `check-freebsd.sh` runs the FreeBSD-only checks inside the build VM before packaging.
+  `test-domain.sh`, `test-python.sh`, `test-restore-runtime.sh` and `test-e2e.sh` run the
+  package's offline PHP, Python, boot-restore and cross-language suites. The boot-restore
+  test skips with one diagnostic only on a non-FreeBSD host whose `sh` lacks `pipefail` or
+  whose `mv -fh` is not BSD-compatible; it never skips on FreeBSD.
 - **`packages/sinkhole/tests/`** — Domain/Bypass/IP parser, GeoLite2, popular-list catalog fixture,
   card grouping/filtering, blocked-service registry/cache/storage/compilation, cache fallback,
   search/add, scoped compiler, alert-manifest, DNS redirect, Bypass and IP filter-rule
@@ -146,8 +148,8 @@ separate interface/direction-scoped IP-list and MaxMind country blocking.
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/IpStatusStore.php`                 | Stores bounded secret-free transient IP update status                                                                                                                                                                                   | IP status schema changes                                                              |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/IpUpdater.php`                     | Updates IP lists and weekly GeoLite2 data, subtracts protected addresses, atomically writes tables and loads/replaces the live anchor                                                                                                   | IP/country update orchestration changes                                               |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/ListConfiguration.php`             | Validates list rows and maps CDATA descriptions to display names                                                                                                                                                                        | List fields, URL validation or persisted-name changes                                 |
-| `packages/sinkhole/port/files/usr/local/pkg/sinkhole/PackagePaths.php`                  | Fixed persistent update state/status, runtime, Bypass/IP anchor and table data, GeoLite2, lock, catalog and service-registry cache, rule observation and package-rule error paths                                                       | A package-owned path or test override changes                                         |
-| `packages/sinkhole/port/files/usr/local/pkg/sinkhole/PfSenseAdapter.php`                | pfSense lifecycle, Resolver listener/TLS/process state, protected IP discovery, package-rule and independent Bypass/IP anchor status, fixed pfctl commands and asynchronous filter-reload boundary                                      | Platform integration, Unbound, pf anchors/tables or filter reload changes             |
+| `packages/sinkhole/port/files/usr/local/pkg/sinkhole/PackagePaths.php`                  | Fixed persistent update state/status, runtime and boot-status handoff, Bypass/IP anchor and table data, GeoLite2, lock, catalog and service-registry cache, rule observation and package-rule error paths                               | A package-owned path or test override changes                                         |
+| `packages/sinkhole/port/files/usr/local/pkg/sinkhole/PfSenseAdapter.php`                | pfSense lifecycle, tagged boot-status logging and notices, Resolver listener/TLS/process state, protected IP discovery, package-rule and independent Bypass/IP anchor status, fixed pfctl commands and asynchronous filter-reload boundary | Platform integration, Unbound, pf anchors/tables or filter reload changes             |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/RedirectConfiguration.php`         | Validates source/destination redirect settings and renders guarded listener-target NAT rules                                                                                                                                            | Redirect fields, validation or rule syntax changes                                    |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/ScopeConfiguration.php`            | Validates network/device rows and stable identities                                                                                                                                                                                     | Scope fields or validation changes                                                    |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/ServiceConfiguration.php`          | Normalizes per-scope service IDs into pfSense repeated-item storage while retaining unknown IDs for repair                                                                                                                              | Blocked-service storage or scope selection changes                                    |
@@ -163,9 +165,11 @@ separate interface/direction-scoped IP-list and MaxMind country blocking.
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/Updater.php`                       | Full update, refreshed apply reruns, failure aggregation and cache-clear handoff                                                                                                                                                        | Download, deploy or cache-clear orchestration changes                                 |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/ValidationException.php`           | Carries a catalog key and arguments from domain validation while retaining English for logs                                                                                                                                             | User-visible domain validation changes                                                |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/sinkhole_unbound.py`               | Scoped sinkhole, Bypass NXDOMAIN/NODATA/SVCB answers, cache suppression, block-event queueing, MODDONE invalidation and watcher module                                                                                                  | DNS matching, Bypass answers, cache storage, events, expiry or callback changes       |
-| `packages/sinkhole/port/files/usr/local/pkg/sinkhole/restore-runtime.sh`                | RAM-disk boot restore                                                                                                                                                                                                                   | Mirrored runtime restoration changes                                                  |
+| `packages/sinkhole/port/files/usr/local/pkg/sinkhole/restore-runtime.sh`                | RAM-disk boot restore with direct logging and an atomic outcome handoff for post-syslog package Sync                                                                                                                                     | Mirrored runtime restoration or boot logging changes                                  |
 | `packages/sinkhole/port/files/usr/local/sbin/sinkhole`                                  | Locked DNS/Bypass/IP list update, release check/self-update, manual, apply, client-refresh, alert and redirect/Bypass/IP-anchor reconciliation command                                                                                  | Background job behavior changes                                                       |
 | `packages/sinkhole/scripts/build-package.sh`                                            | FreeBSD package build, any-major/vital manifest rebuild, release copies and checksums                                                                                                                                                   | Package artifact behavior changes                                                     |
+| `packages/sinkhole/scripts/check-freebsd.sh`                                            | FreeBSD-only pre-package checks run inside the build VM                                                                                                                                                                                 | FreeBSD build-gate checks change                                                      |
+| `packages/sinkhole/scripts/test-restore-runtime.sh`                                     | Boot-restore behavior, status handoff, logging, cleanup and host capability gate                                                                                                                                                        | Boot-restore behavior or host detection changes                                       |
 | `packages/sinkhole/port/files/usr/local/www/sinkhole-lists.php`                         | Block-list table/actions, on-demand popular-list search and global allowed-domain settings                                                                                                                                              | List, catalog-search or global allowed-domain page behavior changes                   |
 | `packages/sinkhole/port/files/usr/local/www/sinkhole-lists_edit.php`                    | Block-list add, edit and invalid-row repair form                                                                                                                                                                                        | Block-list editor behavior changes                                                    |
 | `packages/sinkhole/port/files/usr/local/www/css/sinkhole.css`                           | Sinkhole-scoped responsive catalog-card and blocked-service-tile presentation                                                                                                                                                           | Catalog-card or service-tile layout changes                                           |
@@ -239,12 +243,21 @@ in `nova.config.json`.
 | `PFSENSE_FREEBSD_VERSION`             | No                | No        | GitHub repository variable: the FreeBSD major for release builds      |
 | `SGS_PERSONAL_ACCESS_TOKEN`           | For sponsor check | Yes       | GitHub secret for the sponsor-check workflow                          |
 | Other `SGS_*` variables               | For sponsor check | No        | GitHub variables for the sponsor-check workflow's labels and messages |
+| `SINKHOLE_MIRROR_ROOT`                | Tests only        | No        | Replaces the persistent boot mirror root for restore tests            |
+| `SINKHOLE_RUNTIME_ROOT`               | Tests only        | No        | Replaces the Unbound runtime root for restore tests                   |
+| `SINKHOLE_UNBOUND_USER`               | Tests only        | No        | Replaces the runtime-root owner for restore tests                     |
+| `SINKHOLE_UNBOUND_GROUP`              | Tests only        | No        | Replaces the runtime-root group for restore tests                     |
+| `SINKHOLE_ROOT_USER`                  | Tests only        | No        | Replaces the restored-file owner for restore tests                    |
+| `SINKHOLE_ROOT_GROUP`                 | Tests only        | No        | Replaces the restored-file group for restore tests                    |
+| `SINKHOLE_LOGGER`                     | Tests only        | No        | Replaces `logger` so restore tests can capture system-log arguments   |
+| `SINKHOLE_BOOT_STATUS`                | Tests only        | No        | Replaces the atomic boot-status handoff path for restore tests        |
 | `NOVA_PFSENSE_UPDATE_RELEASES_API`    | Tests only        | No        | Replaces the latest-release API for CLI fake-server tests             |
 | `NOVA_PFSENSE_UPDATE_DOWNLOAD_PREFIX` | Tests only        | No        | Replaces the trusted asset prefix for CLI fake-server tests           |
 
 Production pfSense operation does not set or depend on environment variables. Package settings
-live in pfSense's configuration; only the two release-test overrides above are read by the CLI,
-and no environment variable can replace the installed signing-key path.
+live in pfSense's configuration; the release CLI reads only its two release-test overrides, and
+the boot-restore script uses its eight overrides only for isolated tests. No environment variable
+can replace the installed signing-key path.
 
 ## Workspace Rules
 
@@ -872,10 +885,16 @@ on.
   malformed-alert isolation, coalesced counts, brief queue-lock waits, bounded queues and files,
   change-only drop markers, bidirectional watcher/reader flock behavior, watcher/deinit flushing
   and event-write failures that never escape into DNS.
-- **Boot restore** — `test-restore-runtime.sh` uses path and identity overrides to verify
+- **Boot restore** — `test-restore-runtime.sh` uses path, identity, logger and status overrides to verify
   that restoration preserves an existing Unbound root's mode, creates `sinkhole-state`,
   restores the root-owned 0755/0644 schema-2 client map and schema-3 generation including
-  `bypass.tsv`, and installs only readable, fixed runtime files.
+  `bypass.tsv`, installs only readable fixed runtime files, logs exactly one outcome, atomically
+  writes the matching timestamped status for success and each failure, ignores status-write
+  failures without changing the restore result, retains each specific failure reason and removes
+  temporary files after failure. On a
+  non-FreeBSD host it runs only when `sh` accepts `set -o pipefail` and `mv -fh` proves BSD
+  replacement behavior on temporary files. `check-freebsd.sh` runs it without a skip inside
+  the FreeBSD build VM before a publish build.
 - **Cross-language** — `test-e2e.sh` feeds real PHP parser/store/compiler output to the real
   Python module and checks parser parity for multi-name hosts rows, whitespace hash comments,
   cosmetic rules, underscores and rejected single labels, plus different network A, network B
@@ -888,8 +907,12 @@ on.
   built-in `test.`, `invalid.`, `onion.` and `localhost.` local zones answer before Python
   modules; live-Unbound fixtures therefore use names under `example.com`, `example.net` or
   `example.org`, while unit-only fixtures may still use `.test` or `.invalid`.
-  - The Shellcmd package rewrites `system/earlyshellcmd`. Every-boot package Sync restores
-    missing runtime files and restarts Unbound, so a RAM-disk boot heals after packages start.
+  - The Shellcmd package rewrites `system/earlyshellcmd`. Because pfSense runs early shell
+    commands before starting syslogd, the fixed boot restore atomically records one `notice` or
+    `err` outcome under `/var/run` in addition to its direct `logger` attempt. Every-boot package
+    Sync consumes that handoff after syslogd starts, logs it with the `sinkhole` tag, raises a
+    Sinkhole notice for failure, restores missing runtime files and restarts Unbound, so a
+    RAM-disk boot heals after packages start.
   - When a listed CNAME target has no record of the queried type, such as AAAA, the answer
     still contains the CNAME record but contains no address.
   - Released Unbound ignores reply-callback return values; the first implementation that

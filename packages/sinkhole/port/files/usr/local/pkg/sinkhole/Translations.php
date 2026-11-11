@@ -477,6 +477,7 @@ $english = [
     'update_frequency_help' => 'Choose how often enabled block lists update.',
     'keep_settings' => 'Keep Settings',
     'keep_settings_help' => 'Keep lists and settings when the package is removed.',
+    'boot_restore_failed_notice' => 'Sinkhole boot restore failed: %1$s',
     'unexpected_error' => 'Unexpected error: %1$s',
     'update_frequency_invalid' => 'The update frequency is invalid.',
     'saved_block_lists_invalid' => 'The saved block lists are invalid.',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PfSense\Sinkhole\Runtime;
 
+use Closure;
 use InvalidArgumentException;
 use PfSense\Sinkhole\Domain\AlertConfiguration;
 use PfSense\Sinkhole\Domain\BypassConfiguration;
@@ -70,6 +71,12 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     public const UNBOUND_RELOAD_COMMAND = '/usr/sbin/chroot -u unbound -g unbound / '
         . '/usr/local/sbin/unbound-control -c /var/unbound/unbound.conf reload';
 
+    /** @var int @since 1.0.0 */
+    public const BOOT_STATUS_MAXIMUM_BYTES = 2048;
+
+    /** @var string @since 1.0.0 */
+    public const BOOT_RESTORE_NOTICE_IDENTIFIER = 'sinkhole-boot-restore';
+
     /**
      * pfSense Adapter - Paths.
      *
@@ -102,6 +109,16 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     private readonly ClientMap $clientMap;
 
     /**
+     * pfSense Adapter - Boot Status Logger.
+     *
+     * @var Closure(string, string): void
+     *
+     * @since 1.0.0
+     * @private
+     */
+    private readonly Closure $bootStatusLogger;
+
+    /**
      * pfSense Adapter - Protected Address Helper Warnings.
      *
      * Optional runtime-discovery failures are logged once per adapter so repeated IP
@@ -124,6 +141,8 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @param int $loadedGenerationWaitSeconds - Loaded marker wait limit.
      * @param ClientMap|null $clientMap - Client map.
      * @param bool $commandLineMode - Whether this adapter belongs to "sbin/sinkhole".
+     * @param int $bootStatusOwnerId - Required boot-status owner ID.
+     * @param callable(string, string): void|null $bootStatusLogger - Tagged boot-status logger.
      *
      * @since 1.0.0
      */
@@ -133,9 +152,15 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         private readonly int $loadedGenerationWaitSeconds = 60,
         ?ClientMap $clientMap = null,
         private readonly bool $commandLineMode = false,
+        private readonly int $bootStatusOwnerId = 0,
+        ?callable $bootStatusLogger = null,
     ) {
         if ($this->loadedGenerationWaitSeconds < 0) {
             throw new RuntimeException('The loaded-generation wait limit is invalid.');
+        }
+
+        if ($this->bootStatusOwnerId < 0) {
+            throw new RuntimeException('The boot-status owner ID is invalid.');
         }
 
         $this->paths = $paths ?? new PackagePaths();
@@ -147,6 +172,19 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             $this->paths,
             $this,
             $this->stateStore,
+        );
+        $this->bootStatusLogger = Closure::fromCallable(
+            $bootStatusLogger ?? static function (string $level, string $message): void {
+                $priority = ($level === 'notice') ? LOG_NOTICE : LOG_ERR;
+
+                openlog('sinkhole', LOG_NDELAY, LOG_DAEMON);
+
+                try {
+                    syslog($priority, $message);
+                } finally {
+                    closelog();
+                }
+            },
         );
     }
 
@@ -3642,6 +3680,59 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     }
 
     /**
+     * pfSense Adapter - Relay Boot Restore Status.
+     *
+     * Consumes the fixed early-boot handoff after syslogd is available. Every read,
+     * log, notice, and removal step is best effort so package Sync cannot fail.
+     *
+     * @return void
+     *
+     * @since 1.0.0
+     */
+    public function relayBootRestoreStatus(): void
+    {
+        try {
+            $status = $this->readBootRestoreStatus();
+
+            if ($status === null) {
+                return;
+            }
+
+            try {
+                ($this->bootStatusLogger)($status['level'], $status['message']);
+            } catch (Throwable) {
+                // Boot status must never interrupt package synchronization.
+            }
+
+            if ($status['level'] === 'err') {
+                try {
+                    file_notice(
+                        self::BOOT_RESTORE_NOTICE_IDENTIFIER,
+                        Translator::translate(
+                            'boot_restore_failed_notice',
+                            [$status['message']],
+                        ),
+                        'Sinkhole',
+                        '/sinkhole-status.php',
+                        1,
+                        true,
+                    );
+                } catch (Throwable) {
+                    // Notice delivery is independent from status cleanup.
+                }
+            }
+        } catch (Throwable) {
+            // Invalid or unreadable boot status is discarded below.
+        } finally {
+            try {
+                FileSystem::removeFixedFile($this->paths->bootStatusFile);
+            } catch (Throwable) {
+                // A stale status must not break package synchronization.
+            }
+        }
+    }
+
+    /**
      * pfSense Adapter - Log.
      *
      * Removes line breaks and bounds operational messages before the system log call.
@@ -3657,6 +3748,90 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         $safeMessage = substr(str_replace(["\r", "\n"], ' ', $message), 0, 1000);
 
         log_error('Sinkhole: ' . $safeMessage);
+    }
+
+    /**
+     * pfSense Adapter - Read Boot Restore Status.
+     *
+     * @return array{level: string, message: string}|null
+     *
+     * @since 1.0.0
+     * @private
+     */
+    private function readBootRestoreStatus(): ?array
+    {
+        $path = $this->paths->bootStatusFile;
+
+        clearstatcache(true, $path);
+        $status = @lstat($path);
+
+        if (
+            !is_array($status)
+            || ($status['mode'] & 0170000) !== 0100000
+            || ($status['mode'] & 0777) !== 0644
+            || $status['uid'] !== $this->bootStatusOwnerId
+            || $status['size'] < 1
+            || $status['size'] > self::BOOT_STATUS_MAXIMUM_BYTES
+        ) {
+            return null;
+        }
+
+        $handle = @fopen($path, 'rb');
+
+        if ($handle === false) {
+            return null;
+        }
+
+        try {
+            $openedStatus = fstat($handle);
+
+            if (!is_array($openedStatus)) {
+                return null;
+            }
+
+            foreach (['dev', 'ino', 'mode', 'uid', 'size'] as $field) {
+                if ($openedStatus[$field] !== $status[$field]) {
+                    return null;
+                }
+            }
+
+            $contents = stream_get_contents($handle, self::BOOT_STATUS_MAXIMUM_BYTES + 1);
+            $finishedStatus = fstat($handle);
+
+            if (!is_string($contents) || !is_array($finishedStatus)) {
+                return null;
+            }
+
+            foreach (['dev', 'ino', 'mode', 'uid', 'size'] as $field) {
+                if ($finishedStatus[$field] !== $openedStatus[$field]) {
+                    return null;
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        if (strlen($contents) !== $status['size']) {
+            return null;
+        }
+
+        $matched = preg_match(
+            '/\A([0-9]+)\t(notice|err)\t([^\x00-\x1f\x7f]{1,1000})\n\z/D',
+            $contents,
+            $matches,
+        );
+
+        if (
+            $matched !== 1
+            || filter_var($matches[1], FILTER_VALIDATE_INT) === false
+        ) {
+            return null;
+        }
+
+        return [
+            'level' => $matches[2],
+            'message' => $matches[3],
+        ];
     }
 
     /**

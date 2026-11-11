@@ -36,6 +36,8 @@ Use o motivo depois de **Summary → Sinkhole**:
 
 Em sistemas com `/var` na memória, o Sync de pacotes executado a cada inicialização restaura arquivos de execução ausentes e reinicia o Unbound quando necessário depois que os pacotes iniciam. Portanto, um arquivo de execução ausente logo após a inicialização deve ser recuperado durante a inicialização dos pacotes.
 
+Uma restauração de inicialização com falha é registrada sob `sinkhole` em **Status → System Logs → System → General** e também gera um aviso do Sinkhole.
+
 ## Um domínio não é bloqueado \{#a-domain-is-not-blocked}
 
 1. Confirme que a lista está ativada e possui entradas salvas, sem substituir sua última cópia válida depois de um erro.

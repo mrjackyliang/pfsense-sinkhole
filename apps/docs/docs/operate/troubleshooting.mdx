@@ -36,6 +36,8 @@ Use the reason after **Summary → Sinkhole**:
 
 On systems with `/var` in memory, every-boot package Sync restores missing runtime files and restarts Unbound when needed after packages start. A missing early runtime immediately after boot should therefore heal during package startup.
 
+A failed boot restore is logged under `sinkhole` in **Status → System Logs → System → General** and also raises a Sinkhole notice.
+
 ## A Domain Is Not Blocked \{#a-domain-is-not-blocked}
 
 1. Confirm that the list is enabled and has saved entries without replacing its last-good copy after an error.

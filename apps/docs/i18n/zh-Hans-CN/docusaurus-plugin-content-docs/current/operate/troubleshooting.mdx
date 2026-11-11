@@ -36,6 +36,8 @@ tags:
 
 在 `/var` 位于内存中的系统上，每次启动时的软件包 Sync 会恢复缺失的运行时文件，并在软件包启动后按需重启 Unbound。因此，启动后立即缺失的早期运行时文件应在软件包启动期间自动恢复。
 
+启动恢复失败时，会以 `sinkhole` 标记记录在 **Status → System Logs → System → General** 中，并同时生成 Sinkhole 通知。
+
 ## 某个域名未被阻止 \{#a-domain-is-not-blocked}
 
 1. 确认列表已启用且具有已保存条目，并且错误没有替换其最后有效副本。

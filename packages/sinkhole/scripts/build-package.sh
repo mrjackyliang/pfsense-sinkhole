@@ -42,6 +42,13 @@ main() {
     exit 1
   fi
 
+  if [ -f "${SCRIPT_DIR}/check-freebsd.sh" ]; then
+    if ! (cd "${WORKSPACE_DIR}" && /bin/sh "${SCRIPT_DIR}/check-freebsd.sh"); then
+      echo 'FreeBSD checks failed; the package was not built.' >&2
+      exit 1
+    fi
+  fi
+
   trap cleanup EXIT HUP INT TERM
 
   mkdir -p -- "$(dirname -- "${PORT_DESTINATION}")"

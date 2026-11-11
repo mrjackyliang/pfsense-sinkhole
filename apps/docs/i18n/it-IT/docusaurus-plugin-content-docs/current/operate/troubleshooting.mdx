@@ -36,6 +36,8 @@ Usa il motivo dopo **Summary → Sinkhole**:
 
 Nei sistemi con `/var` in memoria, il Sync dei pacchetti a ogni avvio ripristina i file runtime mancanti e riavvia Unbound quando necessario dopo l’avvio dei pacchetti. Un file runtime mancante subito dopo l’avvio dovrebbe quindi essere ripristinato durante l’avvio dei pacchetti.
 
+Un ripristino non riuscito all’avvio viene registrato sotto `sinkhole` in **Status → System Logs → System → General** e genera anche un avviso Sinkhole.
+
 ## Un dominio non viene bloccato \{#a-domain-is-not-blocked}
 
 1. Verifica che la lista sia abilitata e contenga voci salvate senza aver sostituito l’ultima copia valida dopo un errore.

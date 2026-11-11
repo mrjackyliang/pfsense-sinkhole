@@ -1506,7 +1506,15 @@ function pfsensePackageSinkholeSync(
     int $lockTimeoutSeconds = Compiler::RUNTIME_LOCK_TIMEOUT_SECONDS,
 ): void
 {
-    $paths = pfsensePackageSinkholeAdapter()->packagePaths();
+    $adapter = pfsensePackageSinkholeAdapter();
+
+    try {
+        $adapter->relayBootRestoreStatus();
+    } catch (Throwable) {
+        // The early-boot status handoff must never interrupt package Sync.
+    }
+
+    $paths = $adapter->packagePaths();
     $stateStore = new StateStore($paths->stateFile, $paths->statusFile);
     $removing = true;
 

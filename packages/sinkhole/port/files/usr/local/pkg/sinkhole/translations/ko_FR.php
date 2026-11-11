@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => '활성화된 차단 목록의 업데이트 주기를 선택합니다.',
     'keep_settings' => '설정 유지',
     'keep_settings_help' => '패키지를 제거할 때 목록과 설정을 유지합니다.',
+    'boot_restore_failed_notice' => 'Sinkhole 부팅 복원에 실패했습니다: %1$s',
     'unexpected_error' => '예기치 않은 오류: %1$s',
     'update_frequency_invalid' => '업데이트 빈도가 잘못되었습니다.',
     'saved_block_lists_invalid' => '저장된 차단 목록이 잘못되었습니다.',

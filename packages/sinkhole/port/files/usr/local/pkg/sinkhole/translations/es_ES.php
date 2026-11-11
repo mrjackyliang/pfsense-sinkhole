@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Elige con qué frecuencia se actualizan las listas de bloqueo activadas.',
     'keep_settings' => 'Conservar configuración',
     'keep_settings_help' => 'Conserva las listas y la configuración cuando se elimine el paquete.',
+    'boot_restore_failed_notice' => 'Falló la restauración de Sinkhole durante el arranque: %1$s',
     'unexpected_error' => 'Error inesperado: %1$s',
     'update_frequency_invalid' => 'La frecuencia de actualización no es válida.',
     'saved_block_lists_invalid' => 'Las listas de bloqueo guardadas no son válidas.',

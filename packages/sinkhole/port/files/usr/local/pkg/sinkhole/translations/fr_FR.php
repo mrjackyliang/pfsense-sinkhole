@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Choisissez la fréquence de mise à jour des listes de blocage activées.',
     'keep_settings' => 'Conserver les paramètres',
     'keep_settings_help' => 'Conserve les listes et les paramètres lorsque le paquet est supprimé.',
+    'boot_restore_failed_notice' => 'La restauration de Sinkhole au démarrage a échoué : %1$s',
     'unexpected_error' => 'Erreur inattendue : %1$s',
     'update_frequency_invalid' => 'La fréquence des mises à jour n’est pas valide.',
     'saved_block_lists_invalid' => 'Les listes de blocage enregistrées ne sont pas valides.',

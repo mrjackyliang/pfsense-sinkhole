@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => '選擇已啟用封鎖清單的更新頻率。',
     'keep_settings' => '保留設定',
     'keep_settings_help' => '移除套件時保留清單和設定。',
+    'boot_restore_failed_notice' => 'Sinkhole 啟動還原失敗：%1$s',
     'unexpected_error' => '未預期的錯誤：%1$s',
     'update_frequency_invalid' => '更新頻率無效。',
     'saved_block_lists_invalid' => '已儲存的封鎖清單無效。',

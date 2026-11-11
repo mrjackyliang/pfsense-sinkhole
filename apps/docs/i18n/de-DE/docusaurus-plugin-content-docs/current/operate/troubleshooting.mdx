@@ -36,6 +36,8 @@ Verwende den Grund hinter **Summary → Sinkhole**:
 
 Auf Systemen mit `/var` im Arbeitsspeicher stellt der Paket-Sync bei jedem Start fehlende Laufzeitdateien wieder her und startet Unbound nach dem Paketstart bei Bedarf neu. Eine unmittelbar nach dem Start fehlende Laufzeitdatei sollte deshalb beim Paketstart repariert werden.
 
+Eine fehlgeschlagene Wiederherstellung beim Start wird unter `sinkhole` in **Status → System Logs → System → General** protokolliert und löst außerdem einen Sinkhole-Hinweis aus.
+
 ## Eine Domain wird nicht blockiert \{#a-domain-is-not-blocked}
 
 1. Bestätige, dass die Liste aktiviert ist, gespeicherte Einträge besitzt und ihre letzte gültige Kopie nach einem Fehler nicht ersetzt wurde.

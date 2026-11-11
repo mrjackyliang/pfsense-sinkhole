@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Выберите частоту обновления включённых списков блокировки.',
     'keep_settings' => 'Сохранять настройки',
     'keep_settings_help' => 'Сохраняйте списки и настройки при удалении пакета.',
+    'boot_restore_failed_notice' => 'Не удалось восстановить Sinkhole при загрузке: %1$s',
     'unexpected_error' => 'Непредвиденная ошибка: %1$s',
     'update_frequency_invalid' => 'Частота обновления недопустима.',
     'saved_block_lists_invalid' => 'Сохранённые списки блокировки недопустимы.',

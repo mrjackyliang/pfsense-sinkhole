@@ -36,6 +36,8 @@ Bruk årsaken etter **Summary → Sinkhole**:
 
 På systemer med `/var` i minnet gjenoppretter pakke-Sync ved hver oppstart manglende kjøretidsfiler og starter Unbound på nytt ved behov etter at pakkene starter. En manglende kjøretidsfil tidlig etter oppstart skal derfor repareres under pakkestarten.
 
+En mislykket gjenoppretting ved oppstart logges under `sinkhole` i **Status → System Logs → System → General** og oppretter også et Sinkhole-varsel.
+
 ## Et domene blokkeres ikke \{#a-domain-is-not-blocked}
 
 1. Bekreft at listen er aktivert og har lagrede oppføringer uten at den siste gyldige kopien er erstattet etter en feil.

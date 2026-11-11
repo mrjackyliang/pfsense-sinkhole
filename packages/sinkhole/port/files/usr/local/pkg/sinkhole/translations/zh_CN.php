@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => '选择已启用阻止列表的更新频率。',
     'keep_settings' => '保留设置',
     'keep_settings_help' => '移除软件包时保留列表和设置。',
+    'boot_restore_failed_notice' => 'Sinkhole 启动恢复失败：%1$s',
     'unexpected_error' => '意外错误：%1$s',
     'update_frequency_invalid' => '更新频率无效。',
     'saved_block_lists_invalid' => '已保存的阻止列表无效。',

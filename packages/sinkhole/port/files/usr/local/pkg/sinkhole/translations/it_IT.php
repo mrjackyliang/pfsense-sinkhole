@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Scegli la frequenza di aggiornamento delle liste di blocco abilitate.',
     'keep_settings' => 'Mantieni impostazioni',
     'keep_settings_help' => 'Mantiene liste e impostazioni quando il pacchetto viene rimosso.',
+    'boot_restore_failed_notice' => 'Il ripristino di Sinkhole all’avvio non è riuscito: %1$s',
     'unexpected_error' => 'Errore imprevisto: %1$s',
     'update_frequency_invalid' => 'La frequenza di aggiornamento non è valida.',
     'saved_block_lists_invalid' => 'Le liste di blocco salvate non sono valide.',

@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Velg hvor ofte aktiverte blokkeringslister oppdateres.',
     'keep_settings' => 'Behold innstillinger',
     'keep_settings_help' => 'Behold lister og innstillinger når pakken fjernes.',
+    'boot_restore_failed_notice' => 'Gjenoppretting av Sinkhole ved oppstart mislyktes: %1$s',
     'unexpected_error' => 'Uventet feil: %1$s',
     'update_frequency_invalid' => 'Oppdateringsfrekvensen er ugyldig.',
     'saved_block_lists_invalid' => 'De lagrede blokkeringslistene er ugyldige.',

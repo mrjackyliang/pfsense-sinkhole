@@ -36,6 +36,8 @@ Koristite razlog naveden iza **Summary → Sinkhole**:
 
 Na sistemima s `/var` u memoriji, Sync paketa pri svakom pokretanju vraća nedostajuće izvršne datoteke i po potrebi ponovo pokreće Unbound nakon pokretanja paketa. Nedostajuće rano izvršno okruženje neposredno nakon podizanja sistema stoga bi se trebalo oporaviti tokom pokretanja paketa.
 
+Neuspjelo vraćanje pri pokretanju bilježi se pod `sinkhole` u **Status → System Logs → System → General** i također stvara Sinkhole obavijest.
+
 ## Domena nije blokirana \{#a-domain-is-not-blocked}
 
 1. Potvrdite da je lista omogućena i da ima sačuvane zapise, a da njena posljednja ispravna kopija nije zamijenjena nakon greške.

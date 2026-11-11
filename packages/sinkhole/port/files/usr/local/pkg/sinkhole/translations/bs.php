@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Odaberite koliko često se omogućene liste blokiranja ažuriraju.',
     'keep_settings' => 'Zadrži postavke',
     'keep_settings_help' => 'Zadržite liste i postavke kada se paket ukloni.',
+    'boot_restore_failed_notice' => 'Vraćanje Sinkhole podataka pri pokretanju nije uspjelo: %1$s',
     'unexpected_error' => 'Neočekivana greška: %1$s',
     'update_frequency_invalid' => 'Učestalost ažuriranja nije važeća.',
     'saved_block_lists_invalid' => 'Sačuvane liste blokiranja nisu važeće.',

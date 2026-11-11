@@ -36,6 +36,8 @@ tags:
 
 在 `/var` 位於記憶體中的系統上，每次啓動時的套件 Sync 會恢復缺失的執行時檔案，並在套件啓動後按需重啓 Unbound。因此，啓動後立即缺失的早期執行時檔案應在套件啓動期間自動恢復。
 
+啓動還原失敗時，會以 `sinkhole` 標記記錄在 **Status → System Logs → System → General** 中，並同時產生 Sinkhole 通知。
+
 ## 某個域名未被封鎖 \{#a-domain-is-not-blocked}
 
 1. 確認清單已啓用且具有已儲存項目，並且錯誤沒有替換其最後有效副本。

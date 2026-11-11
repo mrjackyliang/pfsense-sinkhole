@@ -191,6 +191,16 @@ final class PackagePaths
     public const STATUS_LOCK_FILE = '/var/run/sinkhole-status.json.lock';
 
     /**
+     * Package Paths - Boot Restore Status File.
+     *
+     * The early boot restore writes one outcome here for package Sync to relay after
+     * pfSense has started syslogd.
+     *
+     * @since 1.0.0
+     */
+    public const BOOT_STATUS_FILE = '/var/run/sinkhole-boot-restore';
+
+    /**
      * Package Paths - Alert Repeat State File.
      *
      * @since 1.0.0
@@ -484,6 +494,9 @@ final class PackagePaths
     public readonly string $statusLockFile;
 
     /** @var string @since 1.0.0 */
+    public readonly string $bootStatusFile;
+
+    /** @var string @since 1.0.0 */
     public readonly string $alertRepeatStateFile;
 
     /** @var string @since 1.0.0 */
@@ -659,6 +672,10 @@ final class PackagePaths
             ?? (isset($overrides['status_file']) || isset($overrides['runtime_root_directory'])
                 ? $this->statusFile . '.lock'
                 : self::STATUS_LOCK_FILE);
+        $this->bootStatusFile = $overrides['boot_status_file']
+            ?? (isset($overrides['runtime_root_directory'])
+                ? $this->runtimeRootDirectory . '/sinkhole-boot-restore'
+                : self::BOOT_STATUS_FILE);
         $this->alertRepeatStateFile = $overrides['alert_repeat_state_file']
             ?? self::ALERT_REPEAT_STATE_FILE;
         $this->catalogCacheDirectory = $overrides['catalog_cache_directory']

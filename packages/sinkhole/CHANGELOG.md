@@ -1,5 +1,10 @@
 # pfsense-pkg-sinkhole
 
+## 1.0.2 - 2026-11-11
+
+### FIXED
+- A failed RAM-disk boot restore is written to the system log under `sinkhole` and raises a pfSense notice once Sinkhole starts, instead of failing silently.
+
 ## 1.0.1 - 2026-11-10
 
 ### UPDATED

@@ -36,6 +36,8 @@ Utilisez le motif indiqué après **Summary → Sinkhole** :
 
 Sur les systèmes où `/var` réside en mémoire, le Sync de chaque démarrage restaure les fichiers d’exécution manquants et redémarre Unbound si nécessaire après le démarrage des paquets. Un fichier manquant juste après le démarrage doit donc être restauré pendant le lancement des paquets.
 
+L’échec d’une restauration au démarrage est consigné sous `sinkhole` dans **Status → System Logs → System → General** et déclenche également un avis Sinkhole.
+
 ## Un domaine n’est pas bloqué \{#a-domain-is-not-blocked}
 
 1. Vérifiez que la liste est activée et possède des entrées enregistrées sans avoir remplacé sa dernière copie valide après une erreur.

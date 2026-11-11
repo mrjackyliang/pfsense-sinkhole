@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Wybierz częstotliwość aktualizacji włączonych list blokowania.',
     'keep_settings' => 'Zachowaj ustawienia',
     'keep_settings_help' => 'Zachowaj listy i ustawienia po usunięciu pakietu.',
+    'boot_restore_failed_notice' => 'Przywracanie Sinkhole podczas rozruchu nie powiodło się: %1$s',
     'unexpected_error' => 'Nieoczekiwany błąd: %1$s',
     'update_frequency_invalid' => 'Częstotliwość aktualizacji jest nieprawidłowa.',
     'saved_block_lists_invalid' => 'Zapisane listy blokowania są nieprawidłowe.',

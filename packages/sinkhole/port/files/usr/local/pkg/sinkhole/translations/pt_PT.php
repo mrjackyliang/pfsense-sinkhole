@@ -470,6 +470,7 @@ return [
     'update_frequency_help' => 'Escolha com que frequência as listas de bloqueio ativadas são atualizadas.',
     'keep_settings' => 'Manter definições',
     'keep_settings_help' => 'Mantenha as listas e definições quando o pacote for removido.',
+    'boot_restore_failed_notice' => 'A restauração do Sinkhole no arranque falhou: %1$s',
     'unexpected_error' => 'Erro inesperado: %1$s',
     'update_frequency_invalid' => 'A frequência de atualização é inválida.',
     'saved_block_lists_invalid' => 'As listas de bloqueio guardadas são inválidas.',
