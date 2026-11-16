@@ -24,7 +24,7 @@ Halte DNS-Abfragen ausgewählter Client-Schnittstellen auf Pfaden, die Sinkhole 
 
 Die Netzwerk- und Gerätezuordnung verwendet die aktuellen Subnetze dieser Schnittstellen, genau wie gewöhnliche Sinkhole-Scopes. Ein Client außerhalb der ausgewählten Subnetze erhält keine Bypass-DNS-Antwort.
 
-<img src={bypassProtection} alt="Bypass-Registerkarte mit ausgewähltem LAN, ausgeschalteter Umleitung für gewöhnliches DNS, aktivierten Schutzfunktionen für verschlüsseltes DNS und Tunnel, auf Answer with no records gesetzter Discovery und drei Demo-Bypass-Listen" width={1024} height={1326} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass-Registerkarte mit ausgewähltem LAN, ausgeschalteter Umleitung für gewöhnliches DNS, aktivierten Schutzfunktionen für verschlüsseltes DNS und Tunnel, auf Answer with no records gesetzter Discovery und drei Demo-Bypass-Listen" width={1024} height={1490} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Gewöhnliches DNS umleiten \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-Beim Ausschalten von Discovery oder Entfernen von Sinkhole wird der Block entfernt. Sinkhole lässt jede andere Zeile in den **Custom options** unverändert. Clients außerhalb der ausgewählten Schnittstellen, einschließlich der Firewall selbst, erhalten für `_dns.resolver.arpa` weiterhin `NXDOMAIN`.
+Beim Ausschalten von Discovery oder Entfernen von Sinkhole wird die Zonenzeile entfernt. Derselbe Block enthält auch alle [Resolver-Einstellungen](/docs/configure/resolver-settings), und Sinkhole lässt jede andere Zeile in den **Custom options** unverändert. Clients außerhalb der ausgewählten Schnittstellen, einschließlich der Firewall selbst, erhalten für `_dns.resolver.arpa` weiterhin `NXDOMAIN`.
 
 ## Vor Tunneln schützen \{#protect-against-tunnels}
 

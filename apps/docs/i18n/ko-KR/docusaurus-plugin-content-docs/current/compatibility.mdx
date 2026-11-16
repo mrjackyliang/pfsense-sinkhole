@@ -42,9 +42,10 @@ DNS 또는 IP 정책을 Sinkhole에 맡기기 전에 패키지, Resolver 및 네
 
 - pfSense의 Unbound 기반 DNS Resolver가 활성화되어 있어야 합니다.
 - Resolver의 단일 Python 스크립트 슬롯이 비어 있거나 이미 Sinkhole 소유여야 합니다.
+- pfBlockerNG를 제거하거나 기본 **Enable**을 꺼야 합니다.
 - Sinkhole은 `pre_validator` 모듈 위치를 사용하며 Python 모드, 슬롯 소유자, 위치 또는 런타임 파일이 일치하지 않으면 비활성 상태를 보고합니다.
 
-pfBlockerNG DNSBL은 Sinkhole과 동일한 Python 스크립트 슬롯을 사용합니다. `pfb_unbound` 또는 다른 스크립트가 슬롯을 소유하는 동안 Sinkhole은 이를 차지하지 않습니다.
+Python 모드에서 pfBlockerNG DNSBL은 Sinkhole과 동일한 Python 스크립트 슬롯을 사용합니다. `pfb_unbound` 또는 다른 스크립트가 슬롯을 소유하는 동안 Sinkhole은 이를 차지하지 않습니다. Unbound 모드에서는 DNSBL이 슬롯을 비워 두지만, pfBlockerNG가 **Enable**이 켜진 상태로 설치되어 있으면 Sinkhole은 역시 비활성 상태로 유지됩니다. pfBlockerNG를 제거한 뒤 남아 있는 설정은 해당되지 않습니다.
 
 ## 네트워크 요구 사항 \{#network-requirements}
 
@@ -67,6 +68,6 @@ pfBlockerNG DNSBL은 Sinkhole과 동일한 Python 스크립트 슬롯을 사용�
 
 ## 언어 \{#languages}
 
-패키지는 pfSense 언어 설정에 따라 WebGUI, 명령줄, 유효성 검사, Status 및 알림 문구를 선택합니다. 영어가 원본 카탈로그이며, 현재 번역이 없으면 영어로 대체합니다.
+패키지는 pfSense 언어 설정에 따라 WebGUI, 명령줄, 유효성 검사, Status 및 알림 문구를 선택합니다. 영어가 원본 카탈로그이며, 패키지에는 그 밖의 pfSense 로캘 17개에 대한 완전한 카탈로그가 포함되어 있습니다.
 
-추가 패키지 번역은 진행 중이지만 문서는 pfSense 로캘 18개에서 모두 사용할 수 있습니다. Sinkhole, pfSense, FreeBSD, MaxMind 같은 브랜드와 제품 이름은 변경하지 않습니다.
+WebGUI와 문서 모두 pfSense 로캘 18개에서 사용할 수 있습니다. Sinkhole, pfSense, FreeBSD, MaxMind 같은 브랜드와 제품 이름은 변경하지 않습니다.

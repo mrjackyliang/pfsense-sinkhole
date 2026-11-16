@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 Attribuez des listes et des domaines autorisés aux niveaux global, réseau et appareil afin que chaque client reçoive la politique prévue pour son emplacement actuel.
 
 ## Pourquoi utiliser des portées ? \{#why-use-scopes}
@@ -35,6 +38,8 @@ Ouvrez **Firewall → Sinkhole → Scopes**, puis sélectionnez **Add** sous la 
 
 Chaque ligne réseau sélectionne des listes supplémentaires, des domaines autorisés et l’état d’activation de la portée. L’enregistrement revient à Scopes ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier. Un appareil qui change de réseau reçoit la politique du réseau auquel correspond son adresse actuelle.
 
+<img src={scopesTab} alt="Onglet Scopes affichant une portée réseau LAN et trois appareils de démonstration identifiés par adresse IP ou MAC avec leurs adresses actuelles" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## Portées appareil \{#device-scopes}
 
 Sélectionnez **Add** sous la table Devices, indiquez un nom et choisissez une méthode d’identification. L’éditeur affiche uniquement le champ d’identifiant qui correspond à la méthode sélectionnée :
@@ -46,6 +51,8 @@ Sélectionnez **Add** sous la table Devices, indiquez un nom et choisissez une m
 | MAC address         | Les adresses actuelles ARP, NDP et de baux DHCP pour cette MAC.                                 |
 
 La ligne de l’appareil sélectionne ses listes, ses domaines autorisés et son état d’activation. L’enregistrement revient à Scopes ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier. Une tâche en arrière-plan actualise les sous-réseaux et adresses d’appareil chaque minute tant que le blocage DNS comporte une portée réseau ou appareil activée, ou que la protection DNS de Bypass nécessite l’identification des clients. Le Sync du paquet lance la même actualisation uniquement dans cette condition.
+
+<img src={deviceEditor} alt="Page Edit Device d’une tablette de démonstration identifiée par adresse IP, avec une liste sélectionnée et un domaine autorisé" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Ordre de décision \{#decision-order}
 

@@ -21,35 +21,37 @@ Blokker uønskede nettsteder med separate regler for hele nettverket, ett VLAN e
 
 ## Hva Sinkhole gjør \{#what-sinkhole-does}
 
-Sinkhole for pfSense gir foreldre og arbeidsgivere kontroll over hvilke <Terminology title="navn eller adresser som er valgt for blokkering" to="/docs/reference/terminology#block-list">blokkeringslister</Terminology> som gjelder for hver del av et nettverk. Den siste gyldige kopien beholdes på brannmuren, slik at DNS kan svare umiddelbart etter en omstart eller omlasting mens nyere kopier lastes ned i bakgrunnen.
+Sinkhole for pfSense gir foreldre og arbeidsgivere kontroll over hvilke <Terminology title="Navn eller adresser som skal blokkeres, hentet fra din URL" to="/docs/reference/terminology#lists-and-scopes">blokkeringslister</Terminology> som gjelder for hver del av et nettverk. Den siste gyldige kopien beholdes på brannmuren, slik at DNS kan svare umiddelbart etter en omstart eller omlasting mens nyere kopier lastes ned i bakgrunnen.
 
 Blokkerte navn svarer med `0.0.0.0` eller `::`. En CNAME-kjede som når et blokkert navn, blokkeres også, mens et navn som er tillatt på det avgjørende nivået, forblir tillatt.
 
 ## Hvorfor bruke Sinkhole? \{#why-use-sinkhole}
 
-1. Bruker policyer i globale, nettverks- og enhetsbaserte <Terminology title="hvor en blokkeringsliste gjelder" to="/docs/reference/terminology#scope">omfang</Terminology>, slik at barn, gjester, ansatte og enkeltstående enheter kan få ulike lister.
-2. Bruker <Terminology title="siste gyldige kopi av blokkeringslisten som beholdes på brannmuren" to="/docs/reference/terminology#saved-list">lagrede lister</Terminology>, slik at DNS aldri venter på en nedlasting eller mister en fungerende liste etter en mislykket oppdatering.
-3. Sender en <Terminology title="samsvar mellom liste og klient som sender et varsel" to="/docs/reference/terminology#alert-rule">varslingsregel</Terminology> bare for listene og klientene du velger, gjennom pfSense sitt eget varslingssystem.
-4. Tilbyr valgfri <Terminology title="kontroller som holder valgte klienter på inspiserte DNS-baner" to="/docs/reference/terminology#bypass-protection">beskyttelse mot omgåelse</Terminology> for vanlig DNS, oppdagelse og leverandører av kryptert DNS, Tor-reléer og VPN-leverandører eller -porter.
+1. Bruker policyer i globale, nettverks- og enhetsbaserte <Terminology title="Hvem en liste gjelder for: nettverket, et VLAN eller én enhet" to="/docs/reference/terminology#lists-and-scopes">omfang</Terminology>, slik at barn, gjester, ansatte og enkeltstående enheter kan få ulike lister.
+2. Bruker <Terminology title="Siste gyldige kopi, så DNS aldri venter på en nedlasting" to="/docs/reference/terminology#lists-and-scopes">lagrede lister</Terminology>, slik at DNS aldri venter på en nedlasting eller mister en fungerende liste etter en mislykket oppdatering.
+3. Sender en <Terminology title="Varsler når valgte lister blokkerer valgte klienter" to="/docs/reference/terminology#alerts">varslingsregel</Terminology> bare for listene og klientene du velger, gjennom pfSense sitt eget varslingssystem.
+4. Tilbyr valgfri <Terminology title="Hindrer enheter i å omgå Sinkhole med egen DNS" to="/docs/reference/terminology#bypass-protection">beskyttelse mot omgåelse</Terminology> for vanlig DNS, oppdagelse og leverandører av kryptert DNS, Tor-reléer og VPN-leverandører eller -porter.
 5. Legger til separat IP- og landblokkering når DNS-filtrering ikke er nok, uten å kreve en ekstra vert eller skytjeneste.
+6. Låser søkemotorer i <Terminology title="En søkemotors sikre modus, tvunget for alle enheter i et omfang" to="/docs/reference/terminology#lists-and-scopes">SafeSearch</Terminology> for omfangene du velger, slik at filtrerte resultater ikke avhenger av innstillingene på hver enhet.
 
 ## Slik fungerer DNS-integrasjonen \{#how-dns-integration-works}
 
-Sinkhole kjører som en Python-modul i den Unbound-baserte <Terminology title="pfSense sin Unbound-baserte DNS-tjeneste" to="/docs/reference/terminology#dns-resolver">DNS Resolver</Terminology> i pfSense. Modulen laster bare lokale, kompilerte filer når Unbound starter, og følger med på nyere lokale generasjoner uten å la en DNS-spørring vente.
+Sinkhole kjører som en Python-modul i den Unbound-baserte <Terminology title="Den innebygde Unbound-DNS-en i pfSense, der Sinkhole kjører" to="/docs/reference/terminology#dns-basics">DNS Resolver</Terminology> i pfSense. Modulen laster bare lokale, kompilerte filer når Unbound starter, og følger med på nyere lokale generasjoner uten å la en DNS-spørring vente.
 
 DNS Resolver har plass til ett Python-skript. Sinkhole tar plassen bare når den er tom eller allerede tilhører Sinkhole, og nekter å erstatte en annen eier, for eksempel DNSBL-modulen i pfBlockerNG.
 
 :::warning
 
-Sinkhole og pfBlockerNG DNSBL kan ikke filtrere DNS samtidig fordi begge trenger den eneste plassen for Python-skript i Resolver.
+Sinkhole og pfBlockerNG kan ikke filtrere DNS samtidig. Sinkhole forblir inaktiv mens pfBlockerNG er installert og aktivert, også når DNSBL kjører i Unbound-modus uten Python-plassen.
 
 :::
 
 ## Dette forblir under din kontroll \{#what-stays-under-your-control}
 
-- **Lists** — Legg til kilder du stoler på via URL, eller finn dem med det nøytrale <Terminology title="katalogsøk ved behov i WebGUI" to="/docs/reference/terminology#popular-list-search">søket etter populære lister</Terminology>. Sinkhole publiserer eller anbefaler ingen liste.
+- **Lists** — Legg til kilder du stoler på via URL, eller finn dem med det nøytrale <Terminology title="Finn kjente blokkeringslister uten å lete etter URL-er" to="/docs/reference/terminology#lists-and-scopes">søket etter populære lister</Terminology>. Sinkhole publiserer eller anbefaler ingen liste.
 - **Scopes** — Velg globale lister, lister for ett pfSense-grensesnitt eller VLAN og lister for en enhet identifisert med IP-adresse, statisk DHCP-tilordning eller MAC-adresse.
 - **Allowed domains** — Tillat et domene og underdomenene på globalt nivå, nettverksnivå eller enhetsnivå uten å fjerne en hel liste.
+- **SafeSearch** — Velg hvilke søkemotorer som låses i sikker modus for hvert omfang, og om YouTube skal være Moderate eller Strict.
 - **Alerts** — Velg kombinasjonene av lister og klienter som oppretter lokale WebGUI-varsler eller bruker de konfigurerte eksterne varslingstjenestene i pfSense.
 - **Bypass** — La alle kontroller være avslått, eller velg klientrettede grensesnitt og aktiver uttrykkelig omdirigering av vanlig DNS, signaler for kryptert DNS, leverandørlister eller tunnelbeskyttelse.
 - **IP blocking** — La funksjonen være avslått, eller velg IP-lister, land, grensesnitt, retninger og tillatte adresser.
@@ -62,7 +64,7 @@ Blokkeringshendelser og varsler viser hva klienter forsøkte å nå. Denne infor
 
 ## Språk \{#languages}
 
-WebGUI følger språket som er valgt i pfSense, og faller tilbake til engelsk der en oversettelse ennå ikke er tilgjengelig. Flere WebGUI-oversettelser er under arbeid og fortsetter å bruke denne reserveløsningen til hver katalog er gjennomgått.
+WebGUI følger språket som er valgt i pfSense, og er tilgjengelig på engelsk og de 17 andre pfSense-språkvariantene.
 
 Dokumentasjonssiden tilbyr engelsk og de 17 andre pfSense-språkvariantene. Oversatte sider beholder de engelske ankrene, slik at lenker går til samme del på alle språk.
 

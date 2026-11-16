@@ -14,6 +14,8 @@ tags:
   - dns
 ---
 
+import servicesTab from './_assets_/blocked-services-1.png';
+
 Usa **Firewall → Sinkhole → Services** quando vuoi bloccare un intero marchio senza scegliere e mantenere l’URL di una lista separata.
 
 ## Scegliere un ambito \{#choose-a-scope}
@@ -23,6 +25,8 @@ Seleziona **Global**, una rete configurata o un dispositivo configurato. Cerca u
 La selezione viene compilata al livello esistente di quell’ambito. I domini consentiti del dispositivo continuano ad avere la precedenza sulle sue regole di servizio, quelli della rete sulle sue regole di servizio e i domini consentiti globali sulle regole di servizio globali.
 
 I servizi coperti da una protezione Bypass dedicata non compaiono nella griglia, nei conteggi dei gruppi o nella ricerca. Private Relay si configura solo nella scheda Bypass.
+
+<img src={servicesTab} alt="Scheda Services filtrata sul gruppo Gaming per l’ambito di un dispositivo dimostrativo, con quattro servizi selezionati" width={1024} height={1288} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Registro e riparazione \{#registry-and-repair}
 

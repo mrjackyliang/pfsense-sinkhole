@@ -14,6 +14,8 @@ tags:
   - notifications
 ---
 
+import alertRuleEditor from './_assets_/alerts-1.png';
+
 Send bare varsler for blokkerte svar der listen og klienten samsvarer med en aktivert varslingsregel.
 
 ## Hvorfor bruke varslingsregler? \{#why-use-alert-rules}
@@ -43,6 +45,8 @@ Send bare varsler for blokkerte svar der listen og klienten samsvarer med en akt
 Feltet for valgte lister er skjult mens **Any block list** er valgt, og nettverks- og enhetsfeltene er skjult mens **Everyone** er valgt. Når du lagrer, går du tilbake til Alerts. Velg blyanten eller dobbeltklikk en rad for å redigere den.
 
 En blokkering samsvarer bare når én av listene som blokkerte navnet, er valgt av regelen, og klienten er valgt av den samme regelen. Standardvinduet for gjentakelse er 60 minutter, og det tillatte området er 1 til og med 1440 minutter.
+
+<img src={alertRuleEditor} alt="Siden Edit Alert Rule som matcher én valgt liste for én valgt demoenhet, med et gjentakelsesvindu på 60 minutter og begge leveringskanalene på" width={1024} height={994} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Leveringskanaler \{#delivery-channels}
 

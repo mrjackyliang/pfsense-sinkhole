@@ -1,0 +1,47 @@
+---
+title: "Sinkhole blokkeert op IP-adres en land, niet alleen op naam"
+description: Sinkhole 1.0 voegt IP-lijsten en landblokkering met MaxMind GeoLite2 toe in een eigen firewallanker, voor verkeer dat DNS nooit om een naam vraagt.
+slug: sinkhole-blocks-by-ip-address-and-country
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - ip-blokkering
+  - landblokkering
+  - geolite2
+  - pf-anker
+tags:
+  - release
+  - ip-blocking
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0, uitgebracht op 10 november 2026, blokkeert verkeer op IP-adres en op land naast op naam, in hetzelfde pakket en dezelfde WebGUI als de DNS-blokkeerlijsten.
+
+{/* truncate */}
+
+## Waarom het ertoe doet \{#why-it-matters}
+
+DNS-blokkering houdt een opzoeking tegen. Verkeer dat rechtstreeks naar een adres gaat, zoals scanners die een WAN bestoken of een app met vast ingestelde servers, vraagt DNS nooit iets en komt nooit een blokkeerlijst tegen.
+
+Sinkhole zet IP- en landblokkering op een eigen tabblad IP, los van het DNS-beleid, zodat één pakket namen, adressen en landen dekt.
+
+## Wat er inbegrepen is \{#whats-included}
+
+- **IP-lijsten** — Voeg lijsten toe via een URL, of vind ze in de IP-secties van de feedcatalogus van pfBlockerNG. Elke lijst kan IPv4, IPv6 of beide bevatten.
+- **Landblokkering** — Kies landen op tweeletterige code uit MaxMind GeoLite2-gegevens, onder je eigen MaxMind-account en licentiesleutel. Sinkhole levert nooit een sleutel mee.
+- **Interfaces en richtingen** — Blokkeer per interface bronnen op de lijst die op een WAN binnenkomen, bestemmingen op de lijst vanuit clientnetwerken, of beide.
+- **Een toestaanlijst** — Adressen, netwerken en aliassen op de IP Allowlist worden uit de geblokkeerde set gehaald voordat die wordt geladen.
+- **Beschermde adressen** — De eigen adressen van de firewall, gateways, DNS-servers en de subnetten van geselecteerde interfaces worden automatisch verwijderd, zodat een lijst je niet kan buitensluiten.
+
+De regels staan in een Sinkhole-firewallanker, `sinkhole/ip`, dat blijft staan bij het herladen van het pfSense-filter. Lijstupdates vervangen alleen de tabellen ervan, en een mislukte download behoudt de laatste geldige kopie.
+
+## Uit totdat je het inschakelt \{#off-until-you-turn-it-on}
+
+IP- en landblokkering staat standaard uit en werkt zelfstandig, zonder de DNS-schakelaar. Het tabblad Status toont tabelgroottes, de laatste update, het tijdstip van de GeoLite2-update en of het anker geladen en actueel is.
+
+## Aan de slag \{#get-started}
+
+Open **Firewall → Sinkhole → IP**, kies interfaces en richtingen en voeg daarna lijsten of landen toe. [IP- en landblokkering](/docs/configure/ip-and-country-blocking) behandelt elke instelling.
+
+Sinkhole for pfSense brengt afgebakende DNS-, IP- en landblokkering naar pfSense, met elke lijst opgeslagen op de firewall.

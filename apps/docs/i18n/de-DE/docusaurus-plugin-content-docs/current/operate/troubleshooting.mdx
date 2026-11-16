@@ -30,6 +30,7 @@ Verwende den Grund hinter **Summary → Sinkhole**:
 
 - **Sinkhole is disabled** — Wähle **General → Enable**, nachdem Resolver und Python-Platz bereit sind.
 - **DNS Resolver is disabled** — Aktiviere den Resolver und wende die Änderung an, bevor du Sinkhole speicherst.
+- **pfBlockerNG is installed and enabled** — Deaktiviere die Hauptoption **Enable** von pfBlockerNG oder entferne das Paket und speichere dann die General-Einstellungen von Sinkhole erneut. Einen bereits belegten Platz gibt Sinkhole beim nächsten geplanten Update, bei **Update Now** oder bei der nächsten Paketsynchronisierung zurück.
 - **Python script slot is owned** — Deaktiviere die konkurrierende DNSBL-/Python-Integration oder lasse Sinkhole deaktiviert; Sinkhole ersetzt sie nicht.
 - **Python mode or position changed** — Speichere die allgemeinen Sinkhole-Einstellungen erneut, damit Sync Python-Modus und `pre_validator` wiederherstellen kann, solange Sinkhole den Platz besitzt.
 - **Runtime files unavailable** — Führe Paket-Sync aus, indem du die allgemeinen Einstellungen speicherst, oder starte neu und lasse pfSense-Paket-Sync die RAM-Disk-Dateien wiederherstellen.
@@ -54,6 +55,15 @@ Wenn eine Bereitstellung Namen hinzufügt oder einen Teilbaum erweitert, lädt S
 Eine Abfrage, deren CNAME-Ziel aufgeführt ist, wird auch dann blockiert, wenn der ursprüngliche Name nicht aufgeführt ist. Besitzt das aufgeführte Ziel keinen Datensatz des angefragten Typs, etwa AAAA, kann die Antwort den CNAME beibehalten, aber keine Adresse enthalten.
 
 Ein erlaubter Abfragename bleibt erlaubt. Dadurch kann ein weniger spezifisches CNAME-Ziel eine ausdrückliche Entscheidung für eine erlaubte Domain des Abfragenamens nicht außer Kraft setzen.
+
+## SafeSearch greift nicht \{#safesearch-does-not-apply}
+
+1. Bestätige, dass der Netzwerk- oder Geräte-Scope des Clients unter **Scopes** aktiviert ist und die Suchmaschine unter **SafeSearch** für diesen Scope oder für Global markiert ist.
+2. Prüfe unter **Status → SafeSearch** die Adressen und den letzten Fehler des sicheren Hosts. Ein Host ohne Adressen hält seine Suchmaschine für den Scope blockiert, bis eine Auflösung gelingt.
+3. Bestätige, dass **Compile Needed** und **Deployment Needed** nach dem Speichern `No` anzeigen.
+4. Bestätige, dass der Client weder verschlüsseltes DNS noch einen anderen Resolver verwendet; [Bypass-Schutz](/docs/configure/bypass-protection) hält ausgewählte Schnittstellen auf dem DNS-Pfad von Sinkhole.
+
+Ein Browser kann die normale Adresse einer Suchmaschine einige Minuten lang zwischenspeichern. Teste daher in einem neuen privaten Fenster oder nachdem der DNS-Cache des Browsers geleert wurde.
 
 ## Ein Gerät erhält die falsche Richtlinie \{#a-device-gets-the-wrong-policy}
 

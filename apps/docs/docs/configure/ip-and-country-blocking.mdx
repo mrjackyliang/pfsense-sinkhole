@@ -14,6 +14,8 @@ tags:
   - firewall
 ---
 
+import ipTab from './_assets_/ip-and-country-blocking-1.png';
+
 Block selected IP sources or destinations independently from DNS policy with package-managed tables in the `sinkhole/ip` pf anchor.
 
 ## Why Use IP Blocking? \{#why-use-ip-blocking}
@@ -34,6 +36,8 @@ Open **Firewall → Sinkhole → IP** and select **Enable** only after interface
 | Outbound   | Blocks packets arriving toward a listed destination address, commonly on client networks. |
 
 The anchor contains `block drop in quick` rules and no pass rules. Sinkhole references it through pfSense's early package-rule position so the blocks run before ordinary pass-quick rules. The page shows IP-list and catalog panels first, followed by the page-wide IP and country settings with **Save** beneath the panel.
+
+<img src={ipTab} alt="IP tab showing two demo IP lists, the catalog panel, and IP and country blocking enabled on LAN in both directions" width={1024} height={1517} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Add IP Lists \{#add-ip-lists}
 

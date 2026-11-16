@@ -24,7 +24,7 @@ Open **Firewall → Sinkhole → Bypass** en selecteer interfaces bij **Apply to
 
 Netwerk- en apparaatovereenkomsten gebruiken de huidige subnetten van die interfaces, net als gewone Sinkhole-scopes. Een client buiten de geselecteerde subnetten ontvangt geen Bypass-DNS-antwoord.
 
-<img src={bypassProtection} alt="Tabblad Bypass met LAN geselecteerd, gewone DNS-omleiding uitgeschakeld, bescherming voor versleutelde DNS en tunnels ingeschakeld, Discovery ingesteld op Answer with no records en drie demo-Bypass Lists" width={1024} height={1346} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Tabblad Bypass met LAN geselecteerd, gewone DNS-omleiding uitgeschakeld, bescherming voor versleutelde DNS en tunnels ingeschakeld, Discovery ingesteld op Answer with no records en drie demo-Bypass Lists" width={1024} height={1510} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Gewone DNS omleiden \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-Als Discovery wordt uitgeschakeld of Sinkhole wordt verwijderd, wordt het blok verwijderd. Sinkhole laat elke andere regel in **Custom options** ongewijzigd. Clients buiten de geselecteerde interfaces, inclusief de firewall zelf, blijven `NXDOMAIN` ontvangen voor `_dns.resolver.arpa`.
+Als Discovery wordt uitgeschakeld of Sinkhole wordt verwijderd, wordt de zoneregel verwijderd. Hetzelfde blok bevat ook eventuele [Resolver-instellingen](/docs/configure/resolver-settings), en Sinkhole laat elke andere regel in **Custom options** ongewijzigd. Clients buiten de geselecteerde interfaces, inclusief de firewall zelf, blijven `NXDOMAIN` ontvangen voor `_dns.resolver.arpa`.
 
 ## Beschermen tegen tunnels \{#protect-against-tunnels}
 

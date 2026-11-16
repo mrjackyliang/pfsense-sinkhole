@@ -48,6 +48,7 @@ The final **Sinkhole** row in Summary is the quickest Resolver-integration check
 | `Active`                                 | Sinkhole is enabled, owns the Python slot, uses Python mode and `pre_validator`, and has runtime data. |
 | `Inactive: Sinkhole is disabled.`        | General **Enable** is off.                                                                             |
 | `Inactive: DNS Resolver is disabled.`    | pfSense's DNS Resolver is off.                                                                         |
+| `Inactive: pfBlockerNG is installed ...` | pfBlockerNG is installed with its main **Enable** on, in either DNSBL mode.                            |
 | `Inactive: ... slot is owned by ...`     | Another Python script, such as pfBlockerNG DNSBL, owns the single slot.                                |
 | `Inactive: Sinkhole does not own ...`    | The configured script isn't Sinkhole even though no different owner was reported.                      |
 | `Inactive: ... Python mode is disabled.` | The Resolver no longer has Python mode enabled.                                                        |
@@ -78,6 +79,10 @@ The page shows a warning box when compile or deployment is pending, including th
 The Scopes summary reports the client-map rebuild state. The separate **Networks** and **Devices** panels report each interface's current CIDRs and each device's current addresses. A conflict names an address claimed by multiple devices; the first device in table order owns that address for policy.
 
 The **Alerts** panel describes only the most recent minute job. **Notifications held back** includes cap or unread-notice suppression, while **Events dropped by module** indicates that the bounded in-memory or on-disk event queue filled.
+
+## SafeSearch State \{#safesearch-state}
+
+The **SafeSearch** panel counts the engines chosen for Global and each network and device scope. Below the counts, each safe host in use shows its last good IPv4 and IPv6 addresses, when it was last checked, and the last lookup error. A host with no addresses keeps its engine blocked for those scopes until a lookup succeeds.
 
 ## Bypass State \{#bypass-state}
 

@@ -14,6 +14,8 @@ tags:
   - firewall
 ---
 
+import ipTab from './_assets_/ip-and-country-blocking-1.png';
+
 `sinkhole/ip` pf 앵커에서 패키지가 관리하는 테이블을 사용해 DNS 정책과 별개로 선택한 IP 출발지 또는 목적지를 차단합니다.
 
 ## IP 차단을 사용하는 이유 \{#why-use-ip-blocking}
@@ -34,6 +36,8 @@ tags:
 | Outbound   | 목록에 있는 목적지 주소로 향하는 패킷을 차단하며, 일반적으로 클라이언트 네트워크에 사용합니다. |
 
 앵커에는 `block drop in quick` 규칙만 있고 통과 규칙은 없습니다. Sinkhole은 pfSense의 초기 패키지 규칙 위치에서 앵커를 참조하므로 일반 pass-quick 규칙보다 먼저 차단이 실행됩니다. 페이지에는 IP 목록 및 카탈로그 패널이 먼저 표시되고, 그 아래에 페이지 전체 IP 및 국가 설정과 **Save**가 표시됩니다.
+
+<img src={ipTab} alt="데모 IP 목록 2개, 카탈로그 패널, LAN에서 양방향으로 켜진 IP 및 국가 차단을 표시하는 IP 탭" width={1024} height={1517} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## IP 목록 추가 \{#add-ip-lists}
 

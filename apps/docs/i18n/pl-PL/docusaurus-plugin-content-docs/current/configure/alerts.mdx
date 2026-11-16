@@ -14,6 +14,8 @@ tags:
   - notifications
 ---
 
+import alertRuleEditor from './_assets_/alerts-1.png';
+
 Wysyłaj powiadomienia tylko dla zablokowanych odpowiedzi, których lista i klient pasują do włączonej reguły alertu.
 
 ## Dlaczego warto używać reguł alertów? \{#why-use-alert-rules}
@@ -43,6 +45,8 @@ Otwórz **Firewall → Sinkhole → Alerts**, wybierz **Add** pod tabelą reguł
 Pole wybranych list jest ukryte, gdy zaznaczono **Any block list**, a pola sieci i urządzeń są ukryte, gdy zaznaczono **Everyone**. Zapisanie powoduje powrót do Alerts; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować.
 
 Blokada pasuje tylko wtedy, gdy reguła wybiera jedną z list, które zablokowały nazwę, a ta sama reguła wybiera klienta. Domyślne okno powtórzeń wynosi 60 minut, a dozwolony zakres to od 1 do 1440 minut.
+
+<img src={alertRuleEditor} alt="Strona Edit Alert Rule dopasowująca jedną wybraną listę do jednego wybranego urządzenia demonstracyjnego, z 60-minutowym oknem powtórzeń i włączonymi oboma kanałami dostarczania" width={1024} height={1028} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Kanały dostarczania \{#delivery-channels}
 

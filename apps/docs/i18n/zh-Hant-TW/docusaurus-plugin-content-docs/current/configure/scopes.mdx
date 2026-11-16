@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 在全局、網路和設備層級分配清單和允許的域名，讓每個用戶端獲得適合其當前位置的策略。
 
 ## 為什麼使用作用域？ \{#why-use-scopes}
@@ -35,6 +38,8 @@ tags:
 
 每個網路行選擇額外清單、允許的域名以及是否啓用作用域。儲存後會返回 Scopes；選擇鉛筆圖示或雙擊某行即可編輯。在網路之間移動的設備會獲得其當前地址所匹配網路的策略。
 
+<img src={scopesTab} alt="Scopes 選項卡顯示一個 LAN 網路作用域，以及三個依 IP 或 MAC 位址識別的演示設備及其當前位址" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## 設備作用域 \{#device-scopes}
 
 選擇 Devices 表格下方的 **Add**，提供名稱並選擇一種識別方式。編輯器只顯示與所選方式對應的識別欄位：
@@ -46,6 +51,8 @@ tags:
 | MAC address         | 該 MAC 當前的 ARP、NDP 和 DHCP 租約地址。 |
 
 設備行選擇其清單、允許的域名和啓用狀態。儲存後會返回 Scopes；選擇鉛筆圖示或雙擊某行即可編輯。僅當 DNS 封鎖具有已啓用的網路或設備作用域，或 Bypass DNS 保護需要識別用戶端時，後台作業才會每分鐘刷新當前子網和設備地址。套件 Sync 也只會在相同條件下啓動此刷新。
+
+<img src={deviceEditor} alt="依 IP 位址識別的演示平板的 Edit Device 頁面，包含一個已選清單和一個允許網域" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 決定順序 \{#decision-order}
 

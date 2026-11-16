@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 Tilordne lister og tillatte domener på globalt nivå, nettverksnivå og enhetsnivå, slik at hver klient får policyen som er ment for den gjeldende plasseringen.
 
 ## Hvorfor bruke omfang? \{#why-use-scopes}
@@ -35,6 +38,8 @@ En klient som ikke samsvarer med et aktivert nettverks- eller enhetsomfang, mott
 
 Hver nettverksrad velger tilleggslister, tillatte domener og om omfanget er aktivert. Når du lagrer, går du tilbake til Scopes. Velg blyanten eller dobbeltklikk en rad for å redigere den. En enhet som flyttes mellom nettverk, mottar policyen for nettverket som samsvarer med den gjeldende adressen.
 
+<img src={scopesTab} alt="Fanen Scopes viser et LAN-nettverksomfang og tre demoenheter identifisert med IP- eller MAC-adresse med gjeldende adresser" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## Enhetsomfang \{#device-scopes}
 
 Velg **Add** under tabellen Devices, oppgi et navn og velg én identifikasjonsmetode. Redigeringsprogrammet viser bare identifikatorfeltet som gjelder for den valgte metoden:
@@ -46,6 +51,8 @@ Velg **Add** under tabellen Devices, oppgi et navn og velg én identifikasjonsme
 | MAC address         | Gjeldende ARP-, NDP- og DHCP-leieadresser for denne MAC-adressen.                                      |
 
 Enhetsraden velger listene, de tillatte domenene og aktiveringsstatusen. Når du lagrer, går du tilbake til Scopes. Velg blyanten eller dobbeltklikk en rad for å redigere den. En bakgrunnsjobb oppdaterer gjeldende delnett og enhetsadresser hvert minutt når DNS-blokkering har et aktivert nettverks- eller enhetsomfang, eller når Bypass DNS-beskyttelse trenger klientgjenkjenning. Pakke-Sync starter den samme oppdateringen bare under denne betingelsen.
+
+<img src={deviceEditor} alt="Siden Edit Device for et demonettbrett identifisert med IP-adresse, med én valgt liste og ett tillatt domene" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Avgjørelsesrekkefølge \{#decision-order}
 

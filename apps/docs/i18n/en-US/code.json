@@ -1,74 +1,214 @@
 {
-  "homepage.hero.eyebrow": {
-    "message": "Native pfSense package"
+  "home.meta.description": {
+    "message": "Apply saved DNS lists to the whole network, one VLAN, or one device, with intentional alerts and no second box.",
+    "description": "Homepage metadata description."
   },
-  "homepage.hero.heading": {
-    "message": "Choose what every network and device can reach."
+  "home.meta.title": {
+    "message": "Sinkhole for pfSense - Scoped DNS, IP, and Country Blocking",
+    "description": "Homepage browser title."
   },
-  "homepage.hero.tagline": {
-    "message": "Apply saved DNS lists to the whole network, one VLAN, or one device, with intentional alerts and no second box."
+  "home.hero.eyebrow": {
+    "message": "Native pfSense package",
+    "description": "Short label above the homepage headline."
   },
-  "homepage.hero.ctaLabel": {
-    "message": "Install Sinkhole"
+  "home.hero.heading": {
+    "message": "Choose what every network and device can reach.",
+    "description": "Homepage headline about scoped DNS blocking."
   },
-  "homepage.hero.secondaryCtaLabel": {
-    "message": "Plan your scopes"
+  "home.hero.tagline": {
+    "message": "Apply saved DNS lists to the whole network, one VLAN, or one device, with intentional alerts and no second box.",
+    "description": "Homepage summary of package behavior."
   },
-  "homepage.stats.heading": {
-    "message": "One firewall, policy at every useful level"
+  "home.hero.primaryAction": {
+    "message": "Get Started",
+    "description": "Primary homepage call to action."
   },
-  "homepage.stats.description": {
-    "message": "Sinkhole keeps policy local and makes its operating boundaries explicit."
+  "home.hero.secondaryAction": {
+    "message": "Learn More",
+    "description": "Secondary homepage call to action."
   },
-  "homepage.stats.policyScopes": {
-    "message": "Policy scopes"
+  "home.preview.ariaLabel": {
+    "message": "Example DNS decision for a device on a VLAN",
+    "description": "Accessible label for the homepage DNS decision preview."
   },
-  "homepage.stats.dnsListFormats": {
-    "message": "DNS list formats"
+  "home.preview.title": {
+    "message": "DNS Decision",
+    "description": "Title of the homepage DNS decision preview."
   },
-  "homepage.stats.catalogCache": {
-    "message": "Catalog cache"
+  "home.preview.blocked": {
+    "message": "Blocked",
+    "description": "Blocked state in the DNS decision preview."
   },
-  "homepage.stats.unboundSlot": {
-    "message": "Unbound module slot"
+  "home.preview.query": {
+    "message": "Query",
+    "description": "Queried-name label in the DNS decision preview."
   },
-  "homepage.features.heading": {
-    "message": "Control that stays on the firewall"
+  "home.preview.client": {
+    "message": "Client",
+    "description": "Client-address label in the DNS decision preview."
   },
-  "homepage.features.scopes.title": {
-    "message": "Scope every decision"
+  "home.preview.network": {
+    "message": "Network",
+    "description": "Network-scope label in the DNS decision preview."
   },
-  "homepage.features.scopes.description": {
-    "message": "Apply lists and allowed domains globally, by interface or VLAN, and by device."
+  "home.preview.deviceLists": {
+    "message": "Device lists",
+    "description": "Device-list step in the DNS decision preview."
   },
-  "homepage.features.savedLists.title": {
-    "message": "Keep last-good copies"
+  "home.preview.noMatch": {
+    "message": "No match",
+    "description": "No-match result of a decision step."
   },
-  "homepage.features.savedLists.description": {
-    "message": "Answer DNS from saved local lists through restarts, reloads, and failed downloads."
+  "home.preview.networkLists": {
+    "message": "Network lists",
+    "description": "Network-list step in the DNS decision preview."
   },
-  "homepage.features.alerts.title": {
-    "message": "Alert on purpose"
+  "home.preview.globalLists": {
+    "message": "Global lists",
+    "description": "Global-list step in the DNS decision preview."
   },
-  "homepage.features.alerts.description": {
-    "message": "Notify only for the lists, networks, and devices selected in each rule."
+  "home.preview.notReached": {
+    "message": "Not reached",
+    "description": "Result of a decision step that was never checked."
   },
-  "homepage.features.redirect.title": {
-    "message": "Redirect ordinary DNS"
+  "home.preview.result": {
+    "message": "answered from saved lists",
+    "description": "Result shown below the DNS decision preview."
   },
-  "homepage.features.redirect.description": {
-    "message": "Optionally send port 53 traffic on selected interfaces to pfSense with explicit exemptions."
+  "home.features.scopes.title": {
+    "message": "Scope Every Decision",
+    "description": "Feature title for global, network, and device scopes."
   },
-  "homepage.features.catalogs.title": {
-    "message": "Search, then decide"
+  "home.features.scopes.description": {
+    "message": "Apply lists and allowed domains globally, by interface or VLAN, and by device.",
+    "description": "Feature summary for global, network, and device scopes."
   },
-  "homepage.features.catalogs.description": {
-    "message": "Search supported catalogs on demand without bundling or recommending a list."
+  "home.features.savedLists.title": {
+    "message": "Keep Last-Good Copies",
+    "description": "Feature title for saved list copies."
   },
-  "homepage.features.ipCountry.title": {
-    "message": "Block addresses and countries"
+  "home.features.savedLists.description": {
+    "message": "Answer DNS from saved local lists through restarts, reloads, and failed downloads.",
+    "description": "Feature summary for saved list copies."
   },
-  "homepage.features.ipCountry.description": {
-    "message": "Apply IP lists and GeoLite2 country policy through the isolated sinkhole/ip anchor."
+  "home.features.alerts.title": {
+    "message": "Alert on Purpose",
+    "description": "Feature title for alert rules."
+  },
+  "home.features.alerts.description": {
+    "message": "Notify only for the lists, networks, and devices selected in each rule.",
+    "description": "Feature summary for alert rules."
+  },
+  "home.features.redirect.title": {
+    "message": "Protect DNS Paths",
+    "description": "Feature title for bypass protection."
+  },
+  "home.features.redirect.description": {
+    "message": "Optionally redirect plain DNS or block common encrypted-DNS and tunnel bypasses on selected interfaces.",
+    "description": "Feature summary for bypass protection."
+  },
+  "home.features.catalogs.title": {
+    "message": "Search, Then Decide",
+    "description": "Feature title for catalog search."
+  },
+  "home.features.catalogs.description": {
+    "message": "Search supported catalogs on demand without bundling or recommending a list.",
+    "description": "Feature summary for catalog search."
+  },
+  "home.features.ipCountry.title": {
+    "message": "Block Addresses and Countries",
+    "description": "Feature title for IP and country blocking."
+  },
+  "home.features.ipCountry.description": {
+    "message": "Apply IP lists and GeoLite2 country policy through the isolated sinkhole/ip anchor.",
+    "description": "Feature summary for IP and country blocking."
+  },
+  "home.blogPreview.heading": {
+    "message": "From the Blog",
+    "description": "Heading above the homepage blog preview."
+  },
+  "home.blogPreview.description": {
+    "message": "Launches, milestones, and what's new in Sinkhole for pfSense.",
+    "description": "Summary below the homepage blog preview heading."
+  },
+  "home.showcase.heading": {
+    "message": "Inside the pfSense WebGUI",
+    "description": "Heading above the WebGUI screenshots on the front page."
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Sinkhole pages",
+    "description": "Accessible label for the screenshot tabs on the front page."
+  },
+  "home.showcase.scopes.label": {
+    "message": "Scopes",
+    "description": "Front page screenshot tab for the Scopes page."
+  },
+  "home.showcase.scopes.heading": {
+    "message": "Different rules for each network and device",
+    "description": "Front page heading for the Scopes page screenshot."
+  },
+  "home.showcase.scopes.description": {
+    "message": "Give a network or a single device its own lists and allowed domains. Every DNS query follows the most specific scope that matches it.",
+    "description": "Front page description for the Scopes page screenshot."
+  },
+  "home.showcase.scopes.link": {
+    "message": "Set Up Scopes",
+    "description": "Front page link from the Scopes screenshot to its guide."
+  },
+  "home.showcase.scopes.alt": {
+    "message": "Sinkhole Scopes page with a LAN network scope and three device scopes",
+    "description": "Alt text for the Scopes page screenshot on the front page."
+  },
+  "home.showcase.services.label": {
+    "message": "Services",
+    "description": "Front page screenshot tab for the Blocked Services page."
+  },
+  "home.showcase.services.heading": {
+    "message": "Block a whole service with one click",
+    "description": "Front page heading for the Blocked Services page screenshot."
+  },
+  "home.showcase.services.description": {
+    "message": "Pick games, social media, streaming, and other services from a cached registry, for everyone or for one network or device. Allowed domains still win.",
+    "description": "Front page description for the Blocked Services page screenshot."
+  },
+  "home.showcase.services.link": {
+    "message": "Block Services",
+    "description": "Front page link from the Blocked Services screenshot to its guide."
+  },
+  "home.showcase.services.alt": {
+    "message": "Sinkhole Blocked Services page showing gaming services for a device scope",
+    "description": "Alt text for the Blocked Services page screenshot on the front page."
+  },
+  "home.showcase.status.label": {
+    "message": "Status",
+    "description": "Front page screenshot tab for the Status page."
+  },
+  "home.showcase.status.heading": {
+    "message": "Know what is loaded and what is out of date",
+    "description": "Front page heading for the Status page screenshot."
+  },
+  "home.showcase.status.description": {
+    "message": "Status shows every list with its entry count and last update, plus the scopes, networks, and devices Sinkhole is applying right now.",
+    "description": "Front page description for the Status page screenshot."
+  },
+  "home.showcase.status.link": {
+    "message": "Read the Status Page",
+    "description": "Front page link from the Status screenshot to its guide."
+  },
+  "home.showcase.status.alt": {
+    "message": "Sinkhole Status page with the lists, scopes, networks, and devices panels",
+    "description": "Alt text for the Status page screenshot on the front page."
+  },
+  "home.showcase.scopes.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: Scopes",
+    "description": "Browser tab title of the Scopes screenshot on the front page, as the pfSense WebGUI shows it."
+  },
+  "home.showcase.services.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: Services",
+    "description": "Browser tab title of the Blocked Services screenshot on the front page, as the pfSense WebGUI shows it."
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: Status",
+    "description": "Browser tab title of the Status screenshot on the front page, as the pfSense WebGUI shows it."
   }
 }

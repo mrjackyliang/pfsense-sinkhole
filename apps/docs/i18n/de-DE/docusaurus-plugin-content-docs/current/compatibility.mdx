@@ -42,9 +42,10 @@ Der Tab **About** kennzeichnet die passende Version mit **This firewall**. Für 
 
 - Der Unbound-basierte DNS Resolver von pfSense muss aktiviert sein.
 - Der einzige Python-Skriptplatz des Resolvers muss frei sein oder bereits Sinkhole gehören.
+- pfBlockerNG muss entfernt oder seine Hauptoption **Enable** deaktiviert sein.
 - Sinkhole verwendet die Modulposition `pre_validator` und meldet einen inaktiven Zustand, wenn Python-Modus, Besitzer des Platzes, Position oder Laufzeitdateien nicht übereinstimmen.
 
-pfBlockerNG DNSBL verwendet denselben Python-Skriptplatz wie Sinkhole. Sinkhole weigert sich, diesen Platz zu übernehmen, solange `pfb_unbound` oder ein anderes Skript ihn besitzt.
+pfBlockerNG DNSBL verwendet im Python-Modus denselben Python-Skriptplatz wie Sinkhole. Sinkhole weigert sich, diesen Platz zu übernehmen, solange `pfb_unbound` oder ein anderes Skript ihn besitzt. Im Unbound-Modus lässt DNSBL den Platz frei, deshalb bleibt Sinkhole auch inaktiv, solange pfBlockerNG mit aktiviertem **Enable** installiert ist. Einstellungen, die pfBlockerNG nach seiner Entfernung behält, zählen nicht.
 
 ## Netzwerkanforderungen \{#network-requirements}
 
@@ -67,6 +68,6 @@ Für die Länderblockierung sind die eigene MaxMind-Konto-ID und der GeoLite2-Li
 
 ## Sprachen \{#languages}
 
-Das Paket wählt die Formulierungen für WebGUI, Befehlszeile, Validierung, Status und Benachrichtigungen anhand der Spracheinstellung von pfSense. Englisch ist der Quellkatalog; fehlende Übersetzungen fallen derzeit auf Englisch zurück.
+Das Paket wählt die Formulierungen für WebGUI, Befehlszeile, Validierung, Status und Benachrichtigungen anhand der Spracheinstellung von pfSense. Englisch ist der Quellkatalog; das Paket enthält vollständige Kataloge für die 17 weiteren pfSense-Locales.
 
-Weitere Paketübersetzungen sind in Arbeit, während die Dokumentation in allen 18 pfSense-Locales verfügbar ist. Marken- und Produktnamen wie Sinkhole, pfSense, FreeBSD und MaxMind bleiben unverändert.
+WebGUI und Dokumentation sind in allen 18 pfSense-Locales verfügbar. Marken- und Produktnamen wie Sinkhole, pfSense, FreeBSD und MaxMind bleiben unverändert.

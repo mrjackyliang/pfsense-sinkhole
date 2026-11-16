@@ -4,7 +4,7 @@
     "description": "The blog list page heading"
   },
   "layout.description": {
-    "message": "",
+    "message": "Releases and milestones",
     "description": "The blog list page description below the heading"
   }
 }

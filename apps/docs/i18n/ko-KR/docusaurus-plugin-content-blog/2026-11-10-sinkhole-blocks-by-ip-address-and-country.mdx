@@ -1,0 +1,47 @@
+---
+title: "Sinkhole, 이름뿐 아니라 IP 주소와 국가로도 차단"
+description: Sinkhole 1.0은 DNS에 이름을 묻지 않는 트래픽을 위해 자체 방화벽 앵커에 IP 목록과 MaxMind GeoLite2 국가 차단을 추가합니다.
+slug: sinkhole-blocks-by-ip-address-and-country
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - ip 차단
+  - 국가 차단
+  - geolite2
+  - pf 앵커
+tags:
+  - release
+  - ip-blocking
+  - pfsense
+---
+
+2026년 11월 10일에 출시된 Sinkhole for pfSense 1.0은 이름뿐 아니라 IP 주소와 국가로도 트래픽을 차단하며, DNS 차단 목록과 같은 패키지, 같은 WebGUI에서 이를 다룹니다.
+
+{/* truncate */}
+
+## 중요한 이유 \{#why-it-matters}
+
+DNS 차단은 조회를 막습니다. WAN을 두드리는 스캐너나 서버 주소가 하드코딩된 앱처럼 주소로 바로 향하는 트래픽은 DNS에 묻지 않으므로 차단 목록을 만나지 않습니다.
+
+Sinkhole은 IP 및 국가 차단을 DNS 정책과 분리된 별도의 IP 탭에 두므로, 패키지 하나로 이름, 주소, 국가를 모두 다룹니다.
+
+## 포함된 기능 \{#whats-included}
+
+- **IP 목록** — URL로 목록을 추가하거나 pfBlockerNG 피드 카탈로그의 IP 섹션에서 찾습니다. 각 목록에는 IPv4, IPv6 또는 둘 다 담을 수 있습니다.
+- **국가 차단** — 사용자 자신의 MaxMind 계정과 라이선스 키로 MaxMind GeoLite2 데이터에서 두 글자 코드로 국가를 고릅니다. Sinkhole은 키를 함께 제공하지 않습니다.
+- **인터페이스와 방향** — 인터페이스별로 WAN으로 들어오는 목록의 출발지, 클라이언트 네트워크에서 나가는 목록의 목적지 또는 둘 다를 차단합니다.
+- **허용 목록** — IP Allowlist에 있는 주소, 네트워크, 별칭은 차단 집합이 로드되기 전에 제외됩니다.
+- **보호되는 주소** — 방화벽 자체 주소, 게이트웨이, DNS 서버, 선택한 인터페이스의 서브넷은 자동으로 제거되므로 목록 때문에 접속이 막히지 않습니다.
+
+규칙은 pfSense 필터를 다시 로드해도 그대로 유지되는 Sinkhole 방화벽 앵커 `sinkhole/ip`에 있습니다. 목록 업데이트는 앵커의 테이블만 교체하며, 다운로드에 실패하면 마지막 정상 사본을 유지합니다.
+
+## 켜기 전까지 꺼져 있음 \{#off-until-you-turn-it-on}
+
+IP 및 국가 차단은 기본적으로 꺼져 있으며, DNS 스위치와 관계없이 독립적으로 동작합니다. Status 탭에는 테이블 크기, 마지막 업데이트, GeoLite2 업데이트 시간, 앵커가 로드되어 최신 상태인지가 표시됩니다.
+
+## 시작하기 \{#get-started}
+
+**Firewall → Sinkhole → IP**를 열고 인터페이스와 방향을 선택한 다음 목록이나 국가를 추가합니다. 각 설정은 [IP 및 국가 차단](/docs/configure/ip-and-country-blocking)에서 다룹니다.
+
+Sinkhole for pfSense는 범위별 DNS, IP 및 국가 차단을 pfSense에 제공하며, 모든 목록을 방화벽에 저장합니다.

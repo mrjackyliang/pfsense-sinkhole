@@ -24,7 +24,7 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 Сопоставление сетей и устройств использует текущие подсети этих интерфейсов, как и обычные области действия Sinkhole. Клиент за пределами выбранных подсетей не получает ответ DNS Bypass.
 
-<img src={bypassProtection} alt="Вкладка Bypass с выбранным LAN, выключенным перенаправлением обычного DNS, включенной защитой шифрованного DNS и туннелей, режимом Discovery Answer with no records и тремя демонстрационными Bypass Lists" width={1024} height={1366} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Вкладка Bypass с выбранным LAN, выключенным перенаправлением обычного DNS, включенной защитой шифрованного DNS и туннелей, режимом Discovery Answer with no records и тремя демонстрационными Bypass Lists" width={1024} height={1530} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Перенаправление обычного DNS \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-При выключении Discovery или удалении Sinkhole блок удаляется. Sinkhole оставляет без изменений все остальные строки **Custom options**. Клиенты за пределами выбранных интерфейсов, включая сам межсетевой экран, по-прежнему получают `NXDOMAIN` для `_dns.resolver.arpa`.
+При выключении Discovery или удалении Sinkhole удаляется строка зоны. Тот же блок также содержит заданные [Настройки Resolver](/docs/configure/resolver-settings), а Sinkhole оставляет без изменений все остальные строки **Custom options**. Клиенты за пределами выбранных интерфейсов, включая сам межсетевой экран, по-прежнему получают `NXDOMAIN` для `_dns.resolver.arpa`.
 
 ## Защита от туннелей \{#protect-against-tunnels}
 

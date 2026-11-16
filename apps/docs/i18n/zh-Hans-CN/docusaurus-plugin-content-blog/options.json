@@ -1,0 +1,11 @@
+{
+  "title": {
+    "message": "博客"
+  },
+  "description": {
+    "message": "Sinkhole 的版本发布和里程碑：在 pfSense 内运行、按作用域进行的 DNS、IP 和国家/地区阻止。"
+  },
+  "sidebar.title": {
+    "message": "最新文章"
+  }
+}

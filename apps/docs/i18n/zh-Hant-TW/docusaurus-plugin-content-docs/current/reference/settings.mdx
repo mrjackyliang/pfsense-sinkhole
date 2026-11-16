@@ -14,6 +14,8 @@ tags:
   - webgui
 ---
 
+import generalTab from './_assets_/settings-1.png';
+
 查找 **Firewall → Sinkhole** 下每個 Sinkhole 配置區域的用途和預設行為。
 
 ## General \{#general}
@@ -25,6 +27,18 @@ tags:
 | Keep Settings    | On    | 刪除套件時保留配置和持久化已儲存資料。                                                 |
 
 計劃時間使用穩定的隨機組成部分。Hourly 在一個穩定分鐘執行；Every 6 hours 每六小時在同一分鐘執行；Daily 在 `00:<minute>` 執行；Weekly 在星期日 `00:<minute>` 執行。
+
+<img src={generalTab} alt="General 選項卡顯示已啟用 Sinkhole、每日清單更新、開啟 Keep Settings、plex.direct 重新綁定例外、開啟 Serve Expired 時的過期回應值以及每週檢查套件更新" width={1024} height={1009} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Resolver \{#resolver}
+
+| 字段                      | 預設值   | 說明                                 |
+|-------------------------|-------|------------------------------------|
+| Rebind Exceptions       | Empty | 儘管有 DNS 重新綁定保護，仍允許以私人地址回應的網域，每行一個。 |
+| Expired Answer Lifetime | Empty | 過期的快取回應仍可提供的秒數；`0` 表示不限制。          |
+| Expired Answer Wait     | Empty | 在提供過期回應之前等待新回應的毫秒數；`0` 表示立即回應。     |
+
+欄位留空時不寫入任何內容，並保留 Resolver 的預設值。[Resolver 設定](/docs/configure/resolver-settings)說明這些值何時生效。
 
 ## 套件更新 \{#package-updates}
 
@@ -52,6 +66,10 @@ tags:
 ## 服務 \{#services}
 
 每個範圍的服務選擇預設為空。由專用 Bypass 保護涵蓋的登錄服務會從「服務」中隱藏，並從已儲存的選擇中移除；Private Relay 只能在 Bypass 分頁設定。
+
+## SafeSearch \{#safesearch}
+
+每個作用域的 SafeSearch 選擇預設為空。每個作用域都可以鎖定 Google、YouTube（Moderate 或 Strict）、Bing、DuckDuckGo、Brave Search、Startpage、Ecosia、Yandex 和 Pixabay，或封鎖 Qwant。[SafeSearch](/docs/configure/safesearch) 列出各個名稱和安全主機。
 
 ## Network Scopes \{#network-scopes}
 

@@ -1,0 +1,52 @@
+---
+title: "Oto Sinkhole for pfSense: listy blokowania dla każdej sieci"
+description: Sinkhole 1.0 daje całej sieci, każdemu VLAN-owi i każdemu urządzeniu własne listy blokowania DNS w pfSense i po każdym restarcie odpowiada z zapisanych kopii.
+slug: introducing-sinkhole-for-pfsense
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - pakiet pfsense
+  - blokowanie dns
+  - listy blokowania dla vlan
+  - dns resolver
+tags:
+  - release
+  - dns
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0, wydany 10 listopada 2026 roku, to natywny pakiet pfSense, który daje całej sieci, każdemu VLAN-owi i każdemu urządzeniu własne listy blokowania DNS, bez drugiego serwera DNS obok zapory.
+
+{/* truncate */}
+
+## Dlaczego go stworzyłem \{#why-i-built-it}
+
+Chciałem różnego blokowania dla różnych części mojej sieci: jednego zestawu list dla dzieci, innego dla gości i list globalnych dla wszystkich. pfBlockerNG używa jednego zestawu list DNS dla każdego klienta, więc wróciłem do samego Unbound ze strefami zasad odpowiedzi.
+
+To rozwiązanie działało, ale każdy restart lub przeładowanie zapory oznaczało około dziesięciu minut bez internetu, dopóki listy ładowały się ponownie. Pi-hole i AdGuard Home potrafią dać klientom własne listy, ale oba wymagają osobnego hosta poza pfSense. Sinkhole to pakiet, którego potrzebowałem i nie mogłem znaleźć.
+
+## Co robi pakiet \{#what-it-does}
+
+Sinkhole działa jako moduł Python wewnątrz DNS Resolver w pfSense i odpowiada na zablokowaną nazwę adresami `0.0.0.0` i `::`.
+
+- **Listy dla każdego zakresu** — listy globalne dotyczą wszystkich. Zakres sieci dodaje listy dla jednego interfejsu lub VLAN-u, a zakres urządzenia dodaje listy dla jednego urządzenia, dopasowanego według adresu IP, statycznego mapowania DHCP lub adresu MAC.
+- **Dozwolone domeny na każdym poziomie** — wynik fałszywie dodatni poprawiasz tam, gdzie ma to znaczenie, bez rezygnowania z całej listy.
+- **Zapisane kopie każdej listy** — DNS odpowiada na podstawie ostatnich prawidłowych danych zaraz po restarcie DNS Resolver lub ponownym uruchomieniu systemu, także w instalacjach z dyskiem RAM. Nieudane pobranie zachowuje poprzednią kopię.
+- **Wybrane przez Ciebie alerty** — powiadomienie pfSense przychodzi tylko dla list, sieci i urządzeń wybranych w regule alertu, raz na urządzenie i domenę.
+- **Zablokowane usługi** — karta Services blokuje całe usługi w danym zakresie na podstawie publicznego rejestru usług.
+- **Wyszukiwanie popularnych list** — karty katalogu pomagają znaleźć powszechnie używane listy blokowania według kategorii lub opiekuna. Sinkhole nie publikuje ani nie poleca żadnej listy.
+
+Listy w formatach hosts, zwykłych domen i adblock ładują się bez restartu DNS Resolver.
+
+## Dowody \{#proof}
+
+Sinkhole 1.0 przeszedł kompletne testy instalacji, aktualizacji, blokowania i usuwania w czterech wydaniach pfSense: CE 2.9.0, CE 2.8.1, Plus 26.07 i Plus 26.03.1. W pomiarach z 300 000 zablokowanych nazw szczytowe zużycie pamięci przez zasady wyniosło około 157 bajtów na nazwę.
+
+WebGUI, karta Status i powiadomienia używają języka ustawionego w pfSense we wszystkich 18 językach, które oferuje pfSense.
+
+## Pierwsze kroki \{#get-started}
+
+Zainstaluj pakiet jednym poleceniem `pkg add` i otwórz **Firewall → Sinkhole**. Strona [Instalacja pakietu](/docs/installation) opisuje weryfikację sumy kontrolnej i pierwszą konfigurację.
+
+Sinkhole for pfSense zapewnia w pfSense blokowanie DNS, IP i krajów według zakresu, a każda lista jest zapisana na zaporze.

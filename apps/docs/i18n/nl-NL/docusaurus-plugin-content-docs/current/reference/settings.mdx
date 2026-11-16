@@ -14,6 +14,8 @@ tags:
   - webgui
 ---
 
+import generalTab from './_assets_/settings-1.png';
+
 Zoek het doel en standaardgedrag op van elk Sinkhole-configuratiegebied onder **Firewall → Sinkhole**.
 
 ## General \{#general}
@@ -25,6 +27,18 @@ Zoek het doel en standaardgedrag op van elk Sinkhole-configuratiegebied onder **
 | Keep Settings    | On        | Behoudt configuratie en permanent opgeslagen gegevens wanneer het pakket wordt verwijderd.              |
 
 Geplande tijden gebruiken stabiele willekeurige componenten. Hourly wordt op één stabiele minuut uitgevoerd, Every 6 hours gebruikt elke zes uur dezelfde minuut, Daily wordt uitgevoerd om `00:<minute>` en Weekly op zondag om `00:<minute>`.
+
+<img src={generalTab} alt="Tabblad General met Sinkhole ingeschakeld, dagelijkse lijstupdates, Keep Settings aan, een rebind-uitzondering voor plex.direct, waarden voor verlopen antwoorden met Serve Expired aan en wekelijkse controles op pakketupdates" width={1024} height={1086} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Resolver \{#resolver}
+
+| Veld                    | Standaard | Beschrijving                                                                                                                    |
+|-------------------------|-----------|---------------------------------------------------------------------------------------------------------------------------------|
+| Rebind Exceptions       | Empty     | Domeinen die ondanks de DNS-rebindingbeveiliging met privéadressen mogen antwoorden, één per regel.                             |
+| Expired Answer Lifetime | Empty     | Aantal seconden dat een verlopen gecachet antwoord nog mag worden geleverd; `0` betekent geen limiet.                           |
+| Expired Answer Wait     | Empty     | Aantal milliseconden dat op een vers antwoord wordt gewacht voordat een verlopen antwoord wordt geleverd; `0` antwoordt meteen. |
+
+Een leeg veld schrijft niets en behoudt de standaardwaarde van de Resolver. [Resolver-instellingen](/docs/configure/resolver-settings) legt uit wanneer de waarden gelden.
 
 ## Package Updates \{#package-updates}
 
@@ -52,6 +66,10 @@ Bypass-feeds zijn uitgesloten van deze catalogus.
 ## Diensten \{#services}
 
 Dienstselecties zijn standaard leeg voor elk bereik. Een registerdienst die onder een specifieke Bypass-beveiliging valt, wordt verborgen in Diensten en verwijderd uit opgeslagen selecties; Private Relay wordt alleen op het tabblad Bypass geconfigureerd.
+
+## SafeSearch \{#safesearch}
+
+SafeSearch-selecties zijn standaard leeg voor elke scope. Elke scope kan Google, YouTube (Moderate of Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex en Pixabay vergrendelen, of Qwant blokkeren. [SafeSearch](/docs/configure/safesearch) toont de namen en veilige hosts.
 
 ## Network Scopes \{#network-scopes}
 

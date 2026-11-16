@@ -1,0 +1,11 @@
+{
+  "title": {
+    "message": "Blogue"
+  },
+  "description": {
+    "message": "Versões e marcos do Sinkhole, o bloqueio de DNS, IP e países por âmbito que funciona dentro do pfSense."
+  },
+  "sidebar.title": {
+    "message": "Publicações recentes"
+  }
+}

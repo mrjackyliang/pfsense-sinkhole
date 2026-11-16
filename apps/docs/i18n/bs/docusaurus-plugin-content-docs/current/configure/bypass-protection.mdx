@@ -24,7 +24,7 @@ Otvorite **Firewall → Sinkhole → Bypass** i odaberite interfejse u polju **A
 
 Podudaranje mreža i uređaja koristi trenutne podmreže tih interfejsa, baš kao obični opsezi Sinkholea. Klijent izvan odabranih podmreža ne prima Bypass DNS odgovor.
 
-<img src={bypassProtection} alt="Kartica Bypass s odabranim LAN-om, isključenim preusmjeravanjem običnog DNS-a, uključenim zaštitama šifriranog DNS-a i tunela, opcijom Discovery postavljenom na Answer with no records i tri demonstracijske Bypass liste" width={1024} height={1326} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Kartica Bypass s odabranim LAN-om, isključenim preusmjeravanjem običnog DNS-a, uključenim zaštitama šifriranog DNS-a i tunela, opcijom Discovery postavljenom na Answer with no records i tri demonstracijske Bypass liste" width={1024} height={1470} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Preusmjerite obični DNS \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-Isključivanje opcije Discovery ili uklanjanje Sinkholea uklanja blok. Sinkhole ostavlja svaki drugi red u **Custom options** nepromijenjenim. Klijenti izvan odabranih interfejsa, uključujući sam zaštitni zid, i dalje primaju `NXDOMAIN` za `_dns.resolver.arpa`.
+Isključivanje opcije Discovery ili uklanjanje Sinkholea uklanja red zone. Isti blok sadrži i sve [postavke Resolvera](/docs/configure/resolver-settings), a Sinkhole ostavlja svaki drugi red u **Custom options** nepromijenjenim. Klijenti izvan odabranih interfejsa, uključujući sam zaštitni zid, i dalje primaju `NXDOMAIN` za `_dns.resolver.arpa`.
 
 ## Zaštitite od tunela \{#protect-against-tunnels}
 

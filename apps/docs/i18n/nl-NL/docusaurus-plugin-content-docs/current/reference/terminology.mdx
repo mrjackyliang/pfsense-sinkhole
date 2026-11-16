@@ -14,45 +14,42 @@ tags:
   - glossary
 ---
 
-Deze termen hebben in de volledige Sinkhole-WebGUI en documentatie dezelfde betekenis.
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-## DNS Sinkhole \{#dns-sinkhole}
+Deze termen hebben in de volledige Sinkhole-WebGUI en documentatie dezelfde betekenis. Tabellen noemen eerst de term, dan andere namen en daarna de definitie.
 
-Een geblokkeerde naam beantwoorden met een adres dat nergens naartoe leidt, zodat het verzoek stopt.
+:::tip[Woordenlijsttermen]
+In de hele documentatie ziet u <Terminology title="Een snelle herinnering, precies waar u leest" to="/docs/reference/terminology">gemarkeerde termen</Terminology> met een gestippelde onderstreping. Beweeg de muis over een term voor een korte herinnering aan de betekenis, of klik om naar de volledige definitie te gaan.
+:::
 
-## DNS Resolver \{#dns-resolver}
+## Basisbegrippen van DNS \{#dns-basics}
 
-De op Unbound gebaseerde DNS-service van pfSense.
+| Term             | Ook bekend als | Definitie                                                                                            |
+|------------------|----------------|------------------------------------------------------------------------------------------------------|
+| **DNS-sinkhole** | —              | Een geblokkeerde naam beantwoorden met een adres dat nergens naartoe leidt, zodat het verzoek stopt. |
+| **DNS Resolver** | Unbound        | De op Unbound gebaseerde DNS-service van pfSense.                                                    |
 
-## Blokkeerlijst \{#block-list}
+## Lijsten en scopes \{#lists-and-scopes}
 
-Een lijst met te blokkeren namen of adressen, toegevoegd via een URL of vanuit de zoekfunctie.
+| Term                              | Ook bekend als                | Definitie                                                                                                                                              |
+|-----------------------------------|-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **blokkeerlijst**                 | —                             | Een lijst met te blokkeren namen of adressen, toegevoegd via een URL of vanuit de zoekfunctie.                                                         |
+| **zoeken naar populaire lijsten** | —                             | De WebGUI-zoekfunctie voor veelgebruikte blokkeerlijsten, zoals de keuzelijst van AdGuard Home.                                                        |
+| **opgeslagen lijst**              | —                             | De laatste geldige kopie van een blokkeerlijst die op de firewall wordt bewaard.                                                                       |
+| **scope**                         | —                             | Waar een blokkeerlijst wordt toegepast: op het hele netwerk, een VLAN of één apparaat.                                                                 |
+| **globale lijsten**               | —                             | Blokkeerlijsten die op elke client in het netwerk worden toegepast.                                                                                    |
+| **SafeSearch**                    | Veilig zoeken, beperkte modus | De veilige modus van een zoekmachine, afgedwongen voor elk apparaat in een scope door de namen van de zoekmachine te beantwoorden met de veilige host. |
+| **rebind-uitzondering**           | private-domain                | Een domein dat ondanks de DNS-rebindingbeveiliging met een privéadres mag antwoorden.                                                                  |
 
-## Opgeslagen lijst \{#saved-list}
+## Waarschuwingen \{#alerts}
 
-De laatste geldige kopie van een blokkeerlijst die op de firewall wordt bewaard.
-
-## Scope \{#scope}
-
-Waar een blokkeerlijst wordt toegepast: op het hele netwerk, een VLAN of één apparaat.
-
-## Globale lijsten \{#global-lists}
-
-Blokkeerlijsten die op elke client in het netwerk worden toegepast.
-
-## Waarschuwingsregel \{#alert-rule}
-
-Een lijst en scope waarvan de blokkeringen een pfSense-melding verzenden.
+| Term                   | Ook bekend als | Definitie                                                                 |
+|------------------------|----------------|---------------------------------------------------------------------------|
+| **waarschuwingsregel** | —              | Een lijst en scope waarvan de blokkeringen een pfSense-melding verzenden. |
 
 ## Beveiliging tegen omzeiling \{#bypass-protection}
 
-Optionele instellingen per interface die clients op DNS-paden houden die Sinkhole kan inspecteren door gewone DNS om te leiden of veelgebruikte alternatieven voor versleutelde DNS en tunnels te blokkeren.
-
-## Omleiding van gewone DNS \{#plain-dns-redirect}
-
-De optionele Bypass-instelling die gewone TCP- en UDP-query's op poort 53 van apparaten naar de firewall stuurt.
-
-## Zoeken naar populaire lijsten \{#popular-list-search}
-
-De WebGUI-zoekfunctie voor veelgebruikte blokkeerlijsten, zoals de keuzelijst van AdGuard Home.
-
+| Term                            | Ook bekend als | Definitie                                                                                                                                                                                                    |
+|---------------------------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **beveiliging tegen omzeiling** | Bypass         | Optionele instellingen per interface die clients op DNS-paden houden die Sinkhole kan inspecteren door gewone DNS om te leiden of veelgebruikte alternatieven voor versleutelde DNS en tunnels te blokkeren. |
+| **omleiding van gewone DNS**    | —              | De optionele Bypass-instelling die gewone TCP- en UDP-query's op poort 53 van apparaten naar de firewall stuurt.                                                                                             |

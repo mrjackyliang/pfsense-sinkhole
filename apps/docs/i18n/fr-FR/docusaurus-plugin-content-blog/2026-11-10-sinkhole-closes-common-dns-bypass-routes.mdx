@@ -1,0 +1,60 @@
+---
+title: "Sinkhole ferme les voies courantes de contournement du blocage DNS"
+description: L’onglet Bypass de Sinkhole 1.0 empêche les appareils des interfaces choisies de contourner le DNS du pare-feu, avec chaque protection désactivée tant que vous ne l’activez pas.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - protection contre le contournement
+  - redirection dns
+  - dns chiffré
+  - blocage vpn
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+Sinkhole for pfSense 1.0, sorti le 10 novembre 2026, comprend un onglet Bypass qui empêche les appareils des interfaces que vous choisissez de contourner le DNS du pare-feu, la faille qui permet aux appareils d’échapper à la plupart des blocages DNS.
+
+{/* truncate */}
+
+## Pourquoi c’est important \{#why-it-matters}
+
+Le blocage DNS ne fonctionne que tant que les appareils interrogent le pare-feu. Un appareil avec un résolveur codé en dur, DNS over HTTPS, Tor ou un VPN peut ignorer entièrement les listes de blocage.
+
+Fermer ces chemins demandait auparavant des règles de redirection NAT et des règles de pare-feu créées à la main pour chaque interface. L’onglet Bypass fait de chaque protection un seul paramètre, appliqué aux interfaces que vous sélectionnez.
+
+## Le contenu de l’onglet Bypass \{#whats-on-the-bypass-tab}
+
+Chaque protection est désactivée par défaut, et aucune interface n’est sélectionnée tant que vous n’en choisissez pas une.
+
+### DNS en clair \{#plain-dns}
+
+- **Redirect** — Envoie le DNS ordinaire sur le port 53 vers le pare-feu tout en conservant l’adresse source de chaque appareil, si bien que les listes de réseau et d’appareil s’appliquent toujours.
+
+### DNS chiffré \{#encrypted-dns}
+
+- **TLS and QUIC** — Bloque le port 853 vers toutes les destinations sauf le pare-feu.
+- **Providers** — Bloque les noms et adresses des listes de fournisseurs de DNS chiffré que vous ajoutez.
+- **Firefox** — Désactive la sélection automatique de DNS over HTTPS de Firefox.
+- **Private Relay** — Indique aux appareils Apple compatibles qu’iCloud Private Relay n’est pas disponible sur ce réseau.
+- **Discovery** — Répond aux requêtes de découverte de DNS chiffré, ou annonce le DNS over TLS propre au pare-feu.
+
+### Tunnels \{#tunnels}
+
+- **Tor** — Bloque les relais Tor listés.
+- **VPN** — Bloque les fournisseurs VPN listés et les ports VPN standard : TCP et UDP 1194, UDP 51820, UDP 500 et 4500, ainsi qu’ESP.
+
+Les Bypass Lists s’ajoutent par URL ou depuis le catalogue Bypass, se mettent à jour selon la planification des listes et conservent leur dernière copie valide quand un téléchargement échoue.
+
+## Ce qu’il ne promet pas \{#what-it-doesnt-promise}
+
+Ces contrôles ferment les voies courantes, pas toutes les voies. Un tunnel chiffré personnalisé peut toujours passer outre une politique fondée sur le DNS, et la documentation le dit clairement.
+
+## Premiers pas \{#get-started}
+
+Ouvrez **Firewall → Sinkhole → Bypass**, sélectionnez les interfaces clientes et activez les protections voulues. [Protection contre le contournement](/docs/configure/bypass-protection) détaille chaque paramètre.
+
+Sinkhole for pfSense apporte à pfSense le blocage DNS, IP et par pays avec portées, avec chaque liste enregistrée sur le pare-feu.

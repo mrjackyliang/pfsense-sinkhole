@@ -1,0 +1,52 @@
+---
+title: "Møt Sinkhole for pfSense: blokkeringslister for hvert nettverk"
+description: Sinkhole 1.0 gir hele nettverket, hvert VLAN og hver enhet egne DNS-blokkeringslister i pfSense, og svarer fra lagrede kopier etter hver omstart.
+slug: introducing-sinkhole-for-pfsense
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - pfsense-pakke
+  - dns-blokkering
+  - vlan-blokkeringslister
+  - dns resolver
+tags:
+  - release
+  - dns
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0, utgitt 10. november 2026, er en innebygd pfSense-pakke som gir hele nettverket, hvert VLAN og hver enhet egne DNS-blokkeringslister, uten en ekstra DNS-server ved siden av brannmuren.
+
+{/* truncate */}
+
+## Hvorfor jeg laget den \{#why-i-built-it}
+
+Jeg ville ha ulik blokkering for ulike deler av nettverket: ett sett lister for barna, et annet for gjester og globale lister for alle. pfBlockerNG bruker ett sett DNS-lister for alle klienter, så jeg falt tilbake på ren Unbound med response policy zones.
+
+Det oppsettet fungerte, men hver omstart eller omlasting av brannmuren betydde rundt ti minutter uten internett mens listene ble lastet inn igjen. Pi-hole og AdGuard Home kan gi klienter egne lister, men begge trenger en egen vert utenfor pfSense. Sinkhole er pakken jeg trengte og ikke fant.
+
+## Hva den gjør \{#what-it-does}
+
+Sinkhole kjører som en Python-modul i DNS Resolver i pfSense og svarer på et blokkert navn med `0.0.0.0` og `::`.
+
+- **Lister for hvert omfang** — Globale lister gjelder for alle. Et nettverksomfang legger til lister for ett grensesnitt eller VLAN, og et enhetsomfang legger til lister for én enhet, gjenkjent på IP-adresse, statisk DHCP-tilordning eller MAC-adresse.
+- **Tillatte domener på hvert nivå** — En falsk positiv rettes der det betyr noe, uten å droppe en hel liste.
+- **Lagrede kopier av hver liste** — DNS svarer fra siste gyldige data rett etter en omstart av DNS Resolver eller en omstart av systemet, også på installasjoner med RAM-disk. En mislykket nedlasting beholder den forrige kopien.
+- **Varsler du velger** — Et pfSense-varsel kommer bare for listene, nettverkene og enhetene som en varslingsregel velger, én gang per enhet og domene.
+- **Blokkerte tjenester** — Fanen Services blokkerer hele tjenester per omfang ut fra et offentlig tjenesteregister.
+- **Søk i populære lister** — Katalogkort hjelper deg med å finne mye brukte blokkeringslister etter kategori eller vedlikeholder. Sinkhole publiserer eller anbefaler ingen liste.
+
+Lister i hosts-, ren domene- og adblock-format lastes inn uten at DNS Resolver startes på nytt.
+
+## Bevis \{#proof}
+
+Sinkhole 1.0 besto installasjon, oppdatering, en blokkeringstest og fjerning fra start til slutt på fire pfSense-utgivelser: CE 2.9.0, CE 2.8.1, Plus 26.07 og Plus 26.03.1. I målte tester med 300 000 blokkerte navn var toppminnet for policyen omtrent 157 byte per navn.
+
+WebGUI, fanen Status og varslene følger språkinnstillingen i pfSense på alle de 18 språkene pfSense tilbyr.
+
+## Kom i gang \{#get-started}
+
+Installer pakken med én `pkg add`-kommando og åpne **Firewall → Sinkhole**. [Installer pakken](/docs/installation) går gjennom kontrollsummen og det første oppsettet.
+
+Sinkhole for pfSense gir pfSense avgrenset DNS-, IP- og landblokkering, med hver liste lagret på brannmuren.

@@ -1,0 +1,72 @@
+---
+id: safesearch
+title: SafeSearch
+description: Lås søkemotorer i sikker modus for hele nettverket, ett VLAN eller én enhet ved å svare på navnene til hver motor med den publiserte sikre verten.
+keywords:
+  - sinkhole for pfsense
+  - safesearch
+  - trygt søk
+  - begrenset modus youtube
+  - nettverksomfang
+tags:
+  - configure
+  - safesearch
+  - dns
+---
+
+import safesearchTab from './_assets_/safesearch-1.png';
+
+Bruk **Firewall → Sinkhole → SafeSearch** for å holde søkemotorer i sikker modus for et nettverk eller en enhet, uten å endre noen innstillinger i nettleseren eller på enheten.
+
+## Hvorfor bruke SafeSearch? \{#why-use-safesearch}
+
+1. Låser sikker modus i nettverket, slik at en utlogget nettleser, en ny enhet eller et privat vindu likevel får filtrerte resultater.
+2. Dekker alle Googles landsdomener, ikke bare `google.com`, så det hjelper ikke å bytte til `google.co.uk`.
+3. Følger de samme omfangene som blokkeringslister, slik at et VLAN for barn kan få SafeSearch mens resten av nettverket ikke får det.
+
+## Velg et omfang og søkemotorer \{#choose-a-scope-and-engines}
+
+1. Velg **Global**, et konfigurert nettverk eller en konfigurert enhet i **Scope**.
+2. Kryss av for hver søkemotor som skal låses, og velg **Moderate** eller **Strict** for YouTube.
+3. Velg **Save**.
+
+Et nettverk eller en enhet må finnes under **Scopes** før det vises her. Når du lagrer, slås hver sikker vert opp med en gang, og endringen tas i bruk i bakgrunnen.
+
+<img src={safesearchTab} alt="Fanen SafeSearch for et demonettbrettomfang med SafeSearch låst for Google, Bing, DuckDuckGo og Brave Search, YouTube satt til Strict og de sikre adressene som er i bruk" width={1024} height={1271} style={{maxWidth: '100%', height: 'auto'}} />
+
+| Søkemotor    | Navn som besvares                                                                        | Sikker vert                                                                     |
+|--------------|------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| Google       | `google.<domain>` og `www.google.<domain>` for alle 194 søkedomener hos Google           | `forcesafesearch.google.com`                                                    |
+| YouTube      | `youtube.com`, `www.youtube.com`, `m.youtube.com`, navnene for YouTube-API og innbygging | `restrictmoderate.youtube.com` (Moderate) eller `restrict.youtube.com` (Strict) |
+| Bing         | `bing.com`, `www.bing.com`, `edgeservices.bing.com`                                      | `strict.bing.com`                                                               |
+| DuckDuckGo   | `duckduckgo.com`, `www.duckduckgo.com`, `start.duckduckgo.com`                           | `safe.duckduckgo.com`                                                           |
+| Brave Search | `search.brave.com`                                                                       | `forcesafe.search.brave.com`                                                    |
+| Startpage    | `startpage.com`, `www.startpage.com`                                                     | `safe.startpage.com`                                                            |
+| Ecosia       | `ecosia.org`, `www.ecosia.org`                                                           | `strict-safe-search.ecosia.org`                                                 |
+| Yandex       | Søkedomener hos Yandex og `ya.ru`                                                        | `familysearch.yandex.ru`                                                        |
+| Pixabay      | `pixabay.com`, `www.pixabay.com`                                                         | `safesearch.pixabay.com`                                                        |
+| Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                          | Ingen; Qwant blokkeres                                                          |
+
+Qwant publiserer ingen SafeSearch-vert, så hvis du velger Qwant, blokkeres Qwant for det omfanget.
+
+## Slik kombineres omfang \{#how-scopes-combine}
+
+En klient får alle søkemotorene som er valgt for **Global**, for nettverket den er på, og for enheten sin, samlet. Når YouTube forekommer med begge nivåene, vinner **Strict**.
+
+SafeSearch gjelder etter blokkering. Et navn som en liste eller blokkert tjeneste blokkerer for klienten, forblir blokkert, og tillatte domener slår ikke av SafeSearch. Som enhver klient uten omfang får brannmurens egne oppslag søkemotorene som er valgt for **Global**.
+
+## Slik fungerer svaret \{#how-the-answer-works}
+
+For en valgt søkemotor svarer Sinkhole på motorens navn med en CNAME til den sikre verten pluss adressene til den sikre verten, det samme svaret som en håndskrevet Unbound-visning gir. Andre posttyper, for eksempel HTTPS-poster, får bare CNAME-en, slik at en nettleser ikke kan bruke hint som leder utenom den sikre verten.
+
+Sinkhole slår opp adressene til hver sikker vert når du lagrer og ved hver listeoppdatering, og beholder de siste gyldige adressene når et oppslag mislykkes. En søkemotor der den sikre verten aldri har returnert en adresse, blokkeres for sine omfang til et oppslag lykkes.
+
+SafeSearch-svar lagres aldri i hurtigbufferen til Resolver, så svaret til én klient når aldri en klient utenfor omfanget.
+
+## Kontroller SafeSearch \{#verify-safesearch}
+
+1. Åpne **Status** og bekreft at panelet **SafeSearch** viser hver sikker vert med adresser og uten feil.
+2. Slå opp et motornavn fra en klient i omfanget, for eksempel `nslookup www.google.com`, og bekreft at svaret navngir den sikre verten.
+3. Bekreft fra en klient utenfor omfanget at det samme oppslaget returnerer motorens vanlige svar.
+
+Kryptert DNS som en klient sender et annet sted, hopper over alle DNS-policyer, også SafeSearch. [Beskyttelse mot omgåelse](/docs/configure/bypass-protection) holder valgte grensesnitt på Sinkholes DNS-bane.

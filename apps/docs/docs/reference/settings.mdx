@@ -14,6 +14,8 @@ tags:
   - webgui
 ---
 
+import generalTab from './_assets_/settings-1.png';
+
 Look up the purpose and default behavior of every Sinkhole configuration area under **Firewall → Sinkhole**.
 
 ## General \{#general}
@@ -25,6 +27,18 @@ Look up the purpose and default behavior of every Sinkhole configuration area un
 | Keep Settings    | On      | Preserves configuration and durable saved data when the package is removed.                  |
 
 Scheduled times use stable randomized components. Hourly runs at one stable minute, Every 6 hours uses the same minute every sixth hour, Daily runs at `00:<minute>`, and Weekly runs Sunday at `00:<minute>`.
+
+<img src={generalTab} alt="General tab with Sinkhole enabled, daily list updates, Keep Settings on, a plex.direct rebind exception, expired-answer values with Serve Expired on, and weekly package update checks" width={1024} height={1026} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Resolver \{#resolver}
+
+| Field                   | Default | Description                                                                                      |
+|-------------------------|---------|--------------------------------------------------------------------------------------------------|
+| Rebind Exceptions       | Empty   | Domains allowed to answer with private addresses despite DNS rebinding protection, one per line. |
+| Expired Answer Lifetime | Empty   | Seconds an expired cached answer may still be served; `0` means no limit.                        |
+| Expired Answer Wait     | Empty   | Milliseconds to wait for a fresh answer before serving an expired one; `0` answers at once.      |
+
+An empty field writes nothing and keeps the Resolver's default. [Resolver Settings](/docs/configure/resolver-settings) explains when the values apply.
 
 ## Package Updates \{#package-updates}
 
@@ -50,6 +64,10 @@ Each new version creates one local pfSense notice. **About → Check Now** runs 
 ## Services \{#services}
 
 Service selections default to empty for every scope. A registry service covered by a dedicated Bypass protection is hidden from Services and removed from saved selections; Private Relay is configured only on Bypass.
+
+## SafeSearch \{#safesearch}
+
+SafeSearch selections default to empty for every scope. Each scope can lock Google, YouTube (Moderate or Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex, and Pixabay, or block Qwant. [SafeSearch](/docs/configure/safesearch) lists the names and safe hosts.
 
 ## Network Scopes \{#network-scopes}
 

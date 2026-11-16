@@ -1,14 +1,54 @@
 {
-  "item.label.Home": {
-    "message": "Início",
-    "description": "Navbar item with label \"Home\""
+  "item.label.Docs": {
+    "message": "Documentação",
+    "description": "Navbar item with label \"Docs\""
   },
-  "item.label.Guides": {
-    "message": "Guias",
-    "description": "Navbar item with label \"Guides\""
+  "item.label.Overview": {
+    "message": "Visão geral",
+    "description": "Navbar item with label \"Overview\""
+  },
+  "item.label.Quick Start": {
+    "message": "Início rápido",
+    "description": "Navbar item with label \"Quick Start\""
+  },
+  "item.label.Blog": {
+    "message": "Blogue",
+    "description": "Navbar item with label \"Blog\""
+  },
+  "item.label.Configure": {
+    "message": "Configuração",
+    "description": "Navbar item with label \"Configure\""
+  },
+  "item.label.Operate": {
+    "message": "Operação",
+    "description": "Navbar item with label \"Operate\""
+  },
+  "item.label.Reference": {
+    "message": "Referência",
+    "description": "Navbar item with label \"Reference\""
+  },
+  "item.label.Safety": {
+    "message": "Segurança",
+    "description": "Navbar item with label \"Safety\""
+  },
+  "item.label.Contributing": {
+    "message": "Contribuir",
+    "description": "Navbar item with label \"Contributing\""
+  },
+  "item.label.Resources": {
+    "message": "Recursos",
+    "description": "Navbar item with label \"Resources\""
   },
   "item.label.Troubleshooting": {
     "message": "Resolução de problemas",
     "description": "Navbar item with label \"Troubleshooting\""
+  },
+  "item.label.Changelog": {
+    "message": "Registo de alterações",
+    "description": "Navbar item with label \"Changelog\""
+  },
+  "item.label.Report an Issue": {
+    "message": "Comunicar um problema",
+    "description": "Navbar item with label \"Report an Issue\""
   }
 }

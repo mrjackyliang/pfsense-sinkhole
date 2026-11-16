@@ -14,6 +14,8 @@ tags:
   - webgui
 ---
 
+import generalTab from './_assets_/settings-1.png';
+
 Sprawdź przeznaczenie i domyślne działanie każdego obszaru konfiguracji Sinkhole w **Firewall → Sinkhole**.
 
 ## General \{#general}
@@ -25,6 +27,18 @@ Sprawdź przeznaczenie i domyślne działanie każdego obszaru konfiguracji Sink
 | Keep Settings    | On        | Zachowuje konfigurację i trwałe zapisane dane po usunięciu pakietu.                           |
 
 Zaplanowane czasy używają stabilnych losowych składników. Hourly uruchamia się w jednej stabilnej minucie, Every 6 hours używa tej samej minuty co sześć godzin, Daily uruchamia się o `00:<minute>`, a Weekly w niedzielę o `00:<minute>`.
+
+<img src={generalTab} alt="Karta General z włączonym Sinkhole, codziennymi aktualizacjami list, włączonym Keep Settings, wyjątkiem ponownego wiązania dla plex.direct, wartościami wygasłych odpowiedzi przy włączonym Serve Expired i cotygodniowym sprawdzaniem aktualizacji pakietu" width={1024} height={1103} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Resolver \{#resolver}
+
+| Pole                    | Domyślnie | Opis                                                                                                                |
+|-------------------------|-----------|---------------------------------------------------------------------------------------------------------------------|
+| Rebind Exceptions       | Empty     | Domeny, które mogą odpowiadać adresami prywatnymi mimo ochrony przed DNS rebinding, jedna w wierszu.                |
+| Expired Answer Lifetime | Empty     | Liczba sekund, przez które wygasła odpowiedź z pamięci podręcznej może być nadal podawana; `0` oznacza brak limitu. |
+| Expired Answer Wait     | Empty     | Liczba milisekund oczekiwania na świeżą odpowiedź przed podaniem wygasłej; `0` odpowiada od razu.                   |
+
+Puste pole niczego nie zapisuje i zachowuje domyślną wartość Resolvera. [Ustawienia Resolvera](/docs/configure/resolver-settings) wyjaśniają, kiedy wartości obowiązują.
 
 ## Package Updates \{#package-updates}
 
@@ -52,6 +66,10 @@ Każda nowa wersja tworzy jedno lokalne powiadomienie pfSense. **About → Check
 ## Usługi \{#services}
 
 Wybór usług jest domyślnie pusty dla każdego zakresu. Usługa rejestru objęta dedykowaną ochroną Bypass jest ukrywana w Usługach i usuwana z zapisanych wyborów; Private Relay konfiguruje się tylko na karcie Bypass.
+
+## SafeSearch \{#safesearch}
+
+Wybór SafeSearch jest domyślnie pusty dla każdego zakresu. Każdy zakres może blokować w trybie bezpiecznym Google, YouTube (Moderate lub Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex i Pixabay albo zablokować Qwant. [SafeSearch](/docs/configure/safesearch) zawiera listę nazw i bezpiecznych hostów.
 
 ## Network Scopes \{#network-scopes}
 

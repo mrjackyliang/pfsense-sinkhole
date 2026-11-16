@@ -14,6 +14,8 @@ tags:
   - dns
 ---
 
+import servicesTab from './_assets_/blocked-services-1.png';
+
 Verwende **Firewall → Sinkhole → Services**, wenn du eine vollständige Marke blockieren möchtest, ohne eine separate Listen-URL auszuwählen und zu pflegen.
 
 ## Scope auswählen \{#choose-a-scope}
@@ -23,6 +25,8 @@ Wähle **Global**, ein konfiguriertes Netzwerk oder ein konfiguriertes Gerät. S
 Die Auswahl wird auf der bestehenden Ebene dieses Scopes kompiliert. Erlaubte Domains des Geräts haben weiterhin Vorrang vor dessen Dienstregeln, erlaubte Domains des Netzwerks vor dessen Dienstregeln und globale erlaubte Domains vor globalen Dienstregeln.
 
 Dienste, die durch einen eigenen Bypass-Schutz abgedeckt sind, erscheinen nicht im Raster, in Gruppenzählungen oder in der Suche. Private Relay wird nur auf dem Tab Bypass konfiguriert.
+
+<img src={servicesTab} alt="Tab Services, gefiltert auf die Gruppe Gaming für einen Demo-Geräte-Scope, mit vier ausgewählten Diensten" width={1024} height={1288} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Register und Reparatur \{#registry-and-repair}
 

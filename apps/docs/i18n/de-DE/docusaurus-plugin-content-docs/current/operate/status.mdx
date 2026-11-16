@@ -48,6 +48,7 @@ Die letzte Zeile **Sinkhole** in Summary ist die schnellste Prüfung der Resolve
 | `Active`                                 | Sinkhole ist aktiviert, besitzt den Python-Platz, verwendet Python-Modus und `pre_validator` und verfügt über Laufzeitdaten. |
 | `Inactive: Sinkhole is disabled.`        | **Enable** unter General ist deaktiviert.                                                                                    |
 | `Inactive: DNS Resolver is disabled.`    | Der DNS Resolver von pfSense ist deaktiviert.                                                                                |
+| `Inactive: pfBlockerNG is installed ...` | pfBlockerNG ist mit aktivierter Hauptoption **Enable** installiert, in beiden DNSBL-Modi.                                    |
 | `Inactive: ... slot is owned by ...`     | Ein anderes Python-Skript, etwa pfBlockerNG DNSBL, besitzt den einzigen Platz.                                               |
 | `Inactive: Sinkhole does not own ...`    | Das konfigurierte Skript ist nicht Sinkhole, obwohl kein anderer Besitzer gemeldet wurde.                                    |
 | `Inactive: ... Python mode is disabled.` | Der Python-Modus des Resolvers ist nicht mehr aktiviert.                                                                     |
@@ -78,6 +79,10 @@ Die Seite zeigt ein Warnfeld, wenn Kompilierung oder Bereitstellung aussteht, ei
 Die Scopes-Zusammenfassung meldet den Zustand des Client-Map-Neuaufbaus. Die getrennten Panels **Networks** und **Devices** melden die aktuellen CIDRs jeder Schnittstelle und die aktuellen Adressen jedes Geräts. Ein Konflikt nennt eine Adresse, die von mehreren Geräten beansprucht wird; das erste Gerät in Tabellenreihenfolge besitzt diese Adresse für die Richtlinie.
 
 Das Panel **Alerts** beschreibt nur den letzten Minutenlauf. **Notifications held back** umfasst die Unterdrückung durch Grenzen oder ungelesene Hinweise, während **Events dropped by module** anzeigt, dass die begrenzte Ereigniswarteschlange im Speicher oder auf der Festplatte voll war.
+
+## SafeSearch-Zustand \{#safesearch-state}
+
+Das Panel **SafeSearch** zählt die Suchmaschinen, die für Global sowie für jeden Netzwerk- und Geräte-Scope ausgewählt sind. Unter den Zählungen zeigt jeder verwendete sichere Host seine letzten gültigen IPv4- und IPv6-Adressen, den Zeitpunkt der letzten Prüfung und den letzten Auflösungsfehler. Ein Host ohne Adressen hält seine Suchmaschine für diese Scopes blockiert, bis eine Auflösung gelingt.
 
 ## Bypass-Zustand \{#bypass-state}
 

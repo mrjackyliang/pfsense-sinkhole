@@ -14,6 +14,8 @@ tags:
   - notifications
 ---
 
+import alertRuleEditor from './_assets_/alerts-1.png';
+
 Verzend alleen meldingen voor geblokkeerde antwoorden waarvan de lijst en client overeenkomen met een ingeschakelde waarschuwingsregel.
 
 ## Waarom waarschuwingsregels gebruiken? \{#why-use-alert-rules}
@@ -43,6 +45,8 @@ Open **Firewall → Sinkhole → Alerts**, selecteer **Add** onder de tabel met 
 Het veld voor gekozen lijsten is verborgen wanneer **Any block list** is geselecteerd, en de netwerk- en apparaatvelden zijn verborgen wanneer **Everyone** is geselecteerd. Na opslaan keert u terug naar Alerts; selecteer het potlood of dubbelklik op een rij om deze te bewerken.
 
 Een blokkering komt alleen overeen wanneer een van de lijsten die de naam heeft geblokkeerd door de regel is geselecteerd en de client door dezelfde regel is geselecteerd. Het standaardherhaalvenster is 60 minuten en het geaccepteerde bereik is 1 tot en met 1.440 minuten.
+
+<img src={alertRuleEditor} alt="Pagina Edit Alert Rule die één gekozen lijst voor één gekozen demoapparaat matcht, met een herhaalvenster van 60 minuten en beide bezorgkanalen aan" width={1024} height={994} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Bezorgkanalen \{#delivery-channels}
 

@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Versions et étapes clés de Sinkhole, le blocage DNS, IP et par pays avec portées qui s’exécute dans pfSense."
+  },
+  "sidebar.title": {
+    "message": "Articles récents"
+  }
+}

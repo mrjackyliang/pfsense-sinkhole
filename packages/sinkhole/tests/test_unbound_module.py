@@ -2408,6 +2408,230 @@ class SinkholeUnboundTest(unittest.TestCase):
         self.assertIsNone(self.module._active_data)
         self.assertTrue(any("domain count is invalid" in message for message in self.logs))
 
+    def write_safesearch_data(self, generation: str) -> dict[str, str]:
+        """Write the scoped fixture with a SafeSearch section and client map.
+
+        Args:
+            generation: Generation identifier.
+
+        Returns:
+            Stable list and scope IDs.
+
+        Since: 1.1.0
+        """
+
+        identifiers = self.write_scoped_data(generation)
+        manifest_path = self.data_directory / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["safesearch"] = {
+            "choices": {
+                "google": {
+                    "engine": "google",
+                    "target": "forcesafesearch.google.com",
+                    "ipv4": ["216.239.38.120"],
+                    "ipv6": ["2001:4860:4802:32::78"],
+                },
+                "youtube_moderate": {
+                    "engine": "youtube",
+                    "target": "restrictmoderate.youtube.com",
+                    "ipv4": ["216.239.38.119"],
+                    "ipv6": [],
+                },
+                "youtube_strict": {
+                    "engine": "youtube",
+                    "target": "restrict.youtube.com",
+                    "ipv4": ["216.239.38.120"],
+                    "ipv6": [],
+                },
+                "bing": {
+                    "engine": "bing",
+                    "target": "strict.bing.com",
+                    "ipv4": [],
+                    "ipv6": [],
+                },
+                "qwant": {
+                    "engine": "qwant",
+                    "target": "",
+                    "ipv4": [],
+                    "ipv6": [],
+                },
+            },
+            "engines": {
+                "google": ["google.com", "www.google.com"],
+                "youtube": ["www.youtube.com"],
+                "bing": ["www.bing.com"],
+                "qwant": ["qwant.com"],
+            },
+            "scopes": {
+                "global": [],
+                "networks": {
+                    identifiers["network_a"]: [
+                        "google",
+                        "youtube_moderate",
+                        "bing",
+                        "qwant",
+                    ],
+                },
+                "devices": {
+                    identifiers["device"]: ["youtube_strict"],
+                },
+            },
+        }
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.write_client_map(
+            [
+                {"id": identifiers["network_a"], "cidrs": ["192.0.2.0/24"]},
+                {"id": identifiers["network_b"], "cidrs": ["198.51.100.0/24"]},
+            ],
+            {"192.0.2.10": identifiers["device"]},
+        )
+
+        return identifiers
+
+    def test_safesearch_answers_scoped_clients_with_safe_hosts(self) -> None:
+        """Scoped clients receive CNAME answers; others pass, and none are cached.
+
+        Since: 1.1.0
+        """
+
+        self.write_safesearch_data("generation-safesearch")
+        self.initialize()
+        module_finished = self.module.MODULE_FINISHED
+        cases = [
+            (
+                "www.google.com.",
+                self.module.RR_TYPE_A,
+                "192.0.2.20",
+                [
+                    "www.google.com. 60 IN CNAME forcesafesearch.google.com.",
+                    "forcesafesearch.google.com. 60 IN A 216.239.38.120",
+                ],
+            ),
+            (
+                "google.com.",
+                self.module.RR_TYPE_AAAA,
+                "192.0.2.20",
+                [
+                    "google.com. 60 IN CNAME forcesafesearch.google.com.",
+                    "forcesafesearch.google.com. 60 IN AAAA 2001:4860:4802:32::78",
+                ],
+            ),
+            (
+                "www.google.com.",
+                65,
+                "192.0.2.20",
+                ["www.google.com. 60 IN CNAME forcesafesearch.google.com."],
+            ),
+            (
+                "www.youtube.com.",
+                self.module.RR_TYPE_A,
+                "192.0.2.20",
+                [
+                    "www.youtube.com. 60 IN CNAME restrictmoderate.youtube.com.",
+                    "restrictmoderate.youtube.com. 60 IN A 216.239.38.119",
+                ],
+            ),
+            (
+                "www.youtube.com.",
+                self.module.RR_TYPE_A,
+                "192.0.2.10",
+                [
+                    "www.youtube.com. 60 IN CNAME restrict.youtube.com.",
+                    "restrict.youtube.com. 60 IN A 216.239.38.120",
+                ],
+            ),
+            ("qwant.com.", self.module.RR_TYPE_A, "192.0.2.20", ["qwant.com. 60 IN A 0.0.0.0"]),
+            ("www.bing.com.", self.module.RR_TYPE_A, "192.0.2.20", ["www.bing.com. 60 IN A 0.0.0.0"]),
+        ]
+
+        for name, query_type, address, answer in cases:
+            with self.subTest(name=name, query_type=query_type, address=address):
+                FakeDnsMessage.created = []
+                qstate = self.query_state(name, query_type, address)
+
+                self.assertTrue(
+                    self.module.operate(0, self.module.MODULE_EVENT_NEW, qstate, None)
+                )
+                self.assertEqual(module_finished, qstate.ext_state[0])
+                self.assertEqual(answer, qstate.return_msg.answer)
+                self.assertEqual(1, qstate.no_cache_store)
+
+        for name, address in (
+            ("www.google.com.", "198.51.100.9"),
+            ("www.google.com.", None),
+            ("maps.google.com.", "192.0.2.20"),
+        ):
+            with self.subTest(passed=name, address=address):
+                qstate = self.query_state(name, self.module.RR_TYPE_A, address)
+
+                self.assertTrue(
+                    self.module.operate(0, self.module.MODULE_EVENT_NEW, qstate, None)
+                )
+                self.assertEqual(self.module.MODULE_WAIT_MODULE, qstate.ext_state[0])
+                self.assertIsNone(qstate.return_msg)
+
+        callback_state = self.query_state("www.google.com.", self.module.RR_TYPE_A)
+        self.module._query_response_callback(
+            callback_state,
+            types.SimpleNamespace(
+                rep=self.reply_info([("www.google.com.", self.module.RR_TYPE_A)])
+            ),
+        )
+        self.assertEqual(1, callback_state.no_cache_store)
+
+    def test_safesearch_blocking_list_wins_over_rewrite(self) -> None:
+        """A name a list blocks for the client stays blocked under SafeSearch.
+
+        Since: 1.1.0
+        """
+
+        identifiers = self.write_safesearch_data("generation-safesearch-block")
+        manifest_path = self.data_directory / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["safesearch"]["engines"]["google"].append("network-list.example.test")
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.initialize()
+        qstate = self.query_state(
+            "network-list.example.test.",
+            self.module.RR_TYPE_A,
+            "192.0.2.20",
+        )
+
+        self.module.operate(0, self.module.MODULE_EVENT_NEW, qstate, None)
+
+        self.assertEqual(
+            ["network-list.example.test. 60 IN A 0.0.0.0"],
+            qstate.return_msg.answer,
+        )
+        self.assertIn(identifiers["network_a"], self.module._active_data.safesearch_network_masks)
+
+    def test_invalid_safesearch_section_keeps_generation_unloaded(self) -> None:
+        """A malformed SafeSearch address rejects the whole generation.
+
+        Since: 1.1.0
+        """
+
+        self.write_safesearch_data("generation-safesearch-bad")
+        manifest_path = self.data_directory / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["safesearch"]["choices"]["google"]["ipv4"] = ["2001:db8::1"]
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+        self.assertTrue(self.module.init_standard(0, object()))
+        self.assertIsNone(self.module._active_data)
+        self.assertTrue(any("wrong family" in message for message in self.logs))
+
+    def test_manifest_without_safesearch_section_loads(self) -> None:
+        """Generations compiled before SafeSearch existed still load.
+
+        Since: 1.1.0
+        """
+
+        self.write_scoped_data("generation-no-safesearch")
+        self.initialize()
+
+        self.assertFalse(self.module._active_data.is_safesearch_name("www.google.com"))
+
     def test_get_q_ip_reads_mesh_reply_address(self) -> None:
         """Client lookup follows the pfBlockerNG mesh reply-list path.
 

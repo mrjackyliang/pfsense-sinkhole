@@ -48,6 +48,7 @@ Summary 中最后一行 **Sinkhole** 是最快的 Resolver 集成检查：
 | `Active`                                 | Sinkhole 已启用、拥有 Python 插槽、使用 Python 模式和 `pre_validator`，并且具有运行时数据。 |
 | `Inactive: Sinkhole is disabled.`        | General 中的 **Enable** 已关闭。                                         |
 | `Inactive: DNS Resolver is disabled.`    | pfSense 的 DNS Resolver 已关闭。                                        |
+| `Inactive: pfBlockerNG is installed ...` | pfBlockerNG 已安装且主 **Enable** 选项已开启，无论 DNSBL 处于哪种模式。                |
 | `Inactive: ... slot is owned by ...`     | 另一个 Python 脚本（例如 pfBlockerNG DNSBL）拥有唯一插槽。                         |
 | `Inactive: Sinkhole does not own ...`    | 即使未报告其他所有者，已配置的脚本也不是 Sinkhole。                                     |
 | `Inactive: ... Python mode is disabled.` | Resolver 不再启用 Python 模式。                                           |
@@ -78,6 +79,10 @@ Summary 中最后一行 **Sinkhole** 是最快的 Resolver 集成检查：
 Scopes 摘要报告客户端映射重建状态。独立的 **Networks** 和 **Devices** 面板报告每个接口的当前 CIDR 和每个设备的当前地址。冲突会指出由多个设备声明的地址；按表格顺序出现的第一个设备拥有该地址的策略。
 
 **Alerts** 面板只描述最近一次每分钟任务。**Notifications held back** 包括上限或未读通知抑制，**Events dropped by module** 则表示有界内存或磁盘事件队列已满。
+
+## SafeSearch 状态 \{#safesearch-state}
+
+**SafeSearch** 面板统计为 Global 以及每个网络和设备作用域所选的搜索引擎数量。计数下方列出每个正在使用的安全主机，显示其最后一次有效的 IPv4 和 IPv6 地址、上次检查时间以及最后一次查找错误。没有地址的主机会让其搜索引擎在这些作用域内保持阻止，直到查找成功。
 
 ## Bypass 状态 \{#bypass-state}
 

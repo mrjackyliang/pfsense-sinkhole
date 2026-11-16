@@ -24,7 +24,7 @@ Otwórz **Firewall → Sinkhole → Bypass** i wybierz interfejsy w polu **Apply
 
 Dopasowanie sieci i urządzeń używa bieżących podsieci tych interfejsów, tak samo jak zwykłe zakresy Sinkhole. Klient spoza wybranych podsieci nie otrzymuje odpowiedzi DNS Bypass.
 
-<img src={bypassProtection} alt="Karta Bypass z wybranym interfejsem LAN, wyłączonym przekierowaniem zwykłego DNS, włączoną ochroną szyfrowanego DNS i tuneli, opcją Discovery ustawioną na Answer with no records oraz trzema demonstracyjnymi Bypass Lists" width={1024} height={1326} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Karta Bypass z wybranym interfejsem LAN, wyłączonym przekierowaniem zwykłego DNS, włączoną ochroną szyfrowanego DNS i tuneli, opcją Discovery ustawioną na Answer with no records oraz trzema demonstracyjnymi Bypass Lists" width={1024} height={1470} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Przekierowywanie zwykłego DNS \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-Wyłączenie Discovery lub usunięcie Sinkhole usuwa blok. Sinkhole pozostawia bez zmian wszystkie pozostałe wiersze **Custom options**. Klienci poza wybranymi interfejsami, w tym sama zapora, nadal otrzymują `NXDOMAIN` dla `_dns.resolver.arpa`.
+Wyłączenie Discovery lub usunięcie Sinkhole usuwa wiersz strefy. Ten sam blok zawiera też ewentualne [Ustawienia Resolvera](/docs/configure/resolver-settings), a Sinkhole pozostawia bez zmian wszystkie pozostałe wiersze **Custom options**. Klienci poza wybranymi interfejsami, w tym sama zapora, nadal otrzymują `NXDOMAIN` dla `_dns.resolver.arpa`.
 
 ## Ochrona przed tunelami \{#protect-against-tunnels}
 

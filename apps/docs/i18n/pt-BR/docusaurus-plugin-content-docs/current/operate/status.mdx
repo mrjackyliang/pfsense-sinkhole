@@ -48,6 +48,7 @@ A última linha **Sinkhole** em Summary é a verificação mais rápida da integ
 | `Active`                                 | O Sinkhole está ativado, ocupa o espaço Python, usa o modo Python e `pre_validator` e possui dados de execução. |
 | `Inactive: Sinkhole is disabled.`        | General **Enable** está desativado.                                                                             |
 | `Inactive: DNS Resolver is disabled.`    | O DNS Resolver do pfSense está desativado.                                                                      |
+| `Inactive: pfBlockerNG is installed ...` | O pfBlockerNG está instalado com a opção principal **Enable** ativada, em qualquer modo do DNSBL.               |
 | `Inactive: ... slot is owned by ...`     | Outro script Python, como o DNSBL do pfBlockerNG, ocupa o único espaço.                                         |
 | `Inactive: Sinkhole does not own ...`    | O script configurado não é o Sinkhole, mesmo sem outro proprietário informado.                                  |
 | `Inactive: ... Python mode is disabled.` | O modo Python não está mais ativado no Resolver.                                                                |
@@ -78,6 +79,10 @@ A página exibe uma caixa de aviso quando a compilação ou a implantação est�
 O resumo Scopes informa o estado da reconstrução do mapa de clientes. Os painéis separados **Networks** e **Devices** informam os CIDRs atuais de cada interface e os endereços atuais de cada dispositivo. Um conflito identifica um endereço reivindicado por vários dispositivos; o primeiro dispositivo na ordem da tabela fica com esse endereço para a política.
 
 O painel **Alerts** descreve somente o processo de minuto mais recente. **Notifications held back** inclui a supressão por limite ou por avisos não lidos, enquanto **Events dropped by module** indica que a fila limitada de eventos na memória ou no disco ficou cheia.
+
+## Estado do SafeSearch \{#safesearch-state}
+
+O painel **SafeSearch** conta os mecanismos escolhidos para Global e para cada escopo de rede e de dispositivo. Abaixo das contagens, cada host seguro em uso mostra seus últimos endereços IPv4 e IPv6 válidos, quando foi verificado pela última vez e o último erro de consulta. Um host sem endereços mantém seu mecanismo bloqueado nesses escopos até que uma consulta tenha sucesso.
 
 ## Estado do Bypass \{#bypass-state}
 

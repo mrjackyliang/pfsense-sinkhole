@@ -30,6 +30,7 @@ tags:
 
 - **Sinkhole is disabled** — 在 Resolver 和 Python 插槽准备就绪后选择 **General → Enable**。
 - **DNS Resolver is disabled** — 在保存 Sinkhole 之前启用并应用 Resolver。
+- **pfBlockerNG is installed and enabled** — 关闭 pfBlockerNG 的主 **Enable** 选项或移除该软件包，然后再次保存 Sinkhole 的 General 设置。Sinkhole 已占用的槽位会在下一次计划更新、**Update Now** 或下一次软件包同步时交还。
 - **Python script slot is owned** — 禁用冲突的 DNSBL/Python 集成，或让 Sinkhole 保持禁用；Sinkhole 不会替换它。
 - **Python mode or position changed** — 再次保存 Sinkhole 的 General 设置，以便 Sync 在 Sinkhole 拥有插槽时恢复 Python 模式和 `pre_validator`。
 - **Runtime files unavailable** — 通过保存 General 设置运行软件包 Sync，或重新启动并让 pfSense 的软件包 Sync 恢复 RAM 磁盘文件。
@@ -54,6 +55,15 @@ Unbound 会先于 Python 模块应答内置的 `test.`、`invalid.`、`onion.` �
 如果查询的 CNAME 目标已列入列表，即使原始名称未列入列表，该查询也会被阻止。如果列入列表的目标没有所请求类型的记录（例如 AAAA），应答可以保留 CNAME 但不包含地址。
 
 明确允许的查询名称仍会保持允许。这样可防止不太具体的 CNAME 目标覆盖对所查询名称的显式允许域名决定。
+
+## SafeSearch 未生效 \{#safesearch-does-not-apply}
+
+1. 确认客户端的网络或设备作用域已在 **Scopes** 中启用，并且已在 **SafeSearch** 中为该作用域或 Global 勾选了该搜索引擎。
+2. 在 **Status → SafeSearch** 中查看安全主机的地址和最后一次错误。没有地址的主机会让其搜索引擎在该作用域内保持阻止，直到查找成功。
+3. 保存后确认 **Compile Needed** 和 **Deployment Needed** 均为 `No`。
+4. 确认客户端没有使用加密 DNS 或其他解析器；[防绕过保护](/docs/configure/bypass-protection)可让所选接口保持在 Sinkhole 的 DNS 路径上。
+
+浏览器可能会将搜索引擎的正常地址缓存几分钟，因此请在新的隐私窗口中测试，或等浏览器的 DNS 缓存清除后再测试。
 
 ## 设备获得了错误策略 \{#a-device-gets-the-wrong-policy}
 

@@ -1,74 +1,161 @@
 {
-  "homepage.hero.eyebrow": {
-    "message": "Izvorni pfSense paket"
-  },
-  "homepage.hero.heading": {
-    "message": "Odaberite šta svaka mreža i uređaj mogu dosegnuti."
-  },
-  "homepage.hero.tagline": {
+  "home.meta.description": {
     "message": "Primijenite sačuvane DNS liste na cijelu mrežu, VLAN ili uređaj, uz namjerna upozorenja i bez dodatnog servera."
   },
-  "homepage.hero.ctaLabel": {
-    "message": "Instalirajte Sinkhole"
+  "home.meta.title": {
+    "message": "Sinkhole for pfSense - Blokiranje DNS-a, IP adresa i država po opsezima"
   },
-  "homepage.hero.secondaryCtaLabel": {
-    "message": "Planirajte scopes"
+  "home.hero.eyebrow": {
+    "message": "Izvorni pfSense paket"
   },
-  "homepage.stats.heading": {
-    "message": "Jedan vatrozid, pravila na svakom korisnom nivou"
+  "home.hero.heading": {
+    "message": "Odaberite šta svaka mreža i uređaj mogu dosegnuti."
   },
-  "homepage.stats.description": {
-    "message": "Sinkhole čuva pravila lokalno i jasno prikazuje granice rada."
+  "home.hero.tagline": {
+    "message": "Primijenite sačuvane DNS liste na cijelu mrežu, VLAN ili uređaj, uz namjerna upozorenja i bez dodatnog servera."
   },
-  "homepage.stats.policyScopes": {
-    "message": "Opsezi pravila"
+  "home.hero.primaryAction": {
+    "message": "Započnite"
   },
-  "homepage.stats.dnsListFormats": {
-    "message": "Formati DNS lista"
+  "home.hero.secondaryAction": {
+    "message": "Saznajte više"
   },
-  "homepage.stats.catalogCache": {
-    "message": "Keš kataloga"
+  "home.preview.ariaLabel": {
+    "message": "Primjer DNS odluke za uređaj na VLAN-u"
   },
-  "homepage.stats.unboundSlot": {
-    "message": "Mjesto za Unbound modul"
+  "home.preview.title": {
+    "message": "DNS odluka"
   },
-  "homepage.features.heading": {
-    "message": "Kontrola koja ostaje na vatrozidu"
+  "home.preview.blocked": {
+    "message": "Blokirano"
   },
-  "homepage.features.scopes.title": {
+  "home.preview.query": {
+    "message": "Upit"
+  },
+  "home.preview.client": {
+    "message": "Klijent"
+  },
+  "home.preview.network": {
+    "message": "Mreža"
+  },
+  "home.preview.deviceLists": {
+    "message": "Liste uređaja"
+  },
+  "home.preview.noMatch": {
+    "message": "Nema podudaranja"
+  },
+  "home.preview.networkLists": {
+    "message": "Mrežne liste"
+  },
+  "home.preview.globalLists": {
+    "message": "Globalne liste"
+  },
+  "home.preview.notReached": {
+    "message": "Nije provjereno"
+  },
+  "home.preview.result": {
+    "message": "odgovoreno iz sačuvanih lista"
+  },
+  "home.features.scopes.title": {
     "message": "Odredite opseg svake odluke"
   },
-  "homepage.features.scopes.description": {
+  "home.features.scopes.description": {
     "message": "Primijenite liste i dozvoljene domene globalno, po interfejsu ili VLAN-u i po uređaju."
   },
-  "homepage.features.savedLists.title": {
+  "home.features.savedLists.title": {
     "message": "Čuvajte posljednje ispravne kopije"
   },
-  "homepage.features.savedLists.description": {
+  "home.features.savedLists.description": {
     "message": "Odgovarajte na DNS iz lokalnih lista kroz ponovna pokretanja, učitavanja i neuspjela preuzimanja."
   },
-  "homepage.features.alerts.title": {
+  "home.features.alerts.title": {
     "message": "Upozoravajte namjerno"
   },
-  "homepage.features.alerts.description": {
+  "home.features.alerts.description": {
     "message": "Obavijestite samo za liste, mreže i uređaje odabrane u svakom pravilu."
   },
-  "homepage.features.redirect.title": {
+  "home.features.redirect.title": {
     "message": "Zaštitite DNS putanje"
   },
-  "homepage.features.redirect.description": {
+  "home.features.redirect.description": {
     "message": "Po želji preusmjerite obični DNS ili blokirajte uobičajena zaobilaženja putem šifriranog DNS-a i tunela na odabranim interfejsima."
   },
-  "homepage.features.catalogs.title": {
+  "home.features.catalogs.title": {
     "message": "Pretražite pa odlučite"
   },
-  "homepage.features.catalogs.description": {
+  "home.features.catalogs.description": {
     "message": "Pretražite podržane kataloge na zahtjev bez uključivanja ili preporučivanja liste."
   },
-  "homepage.features.ipCountry.title": {
+  "home.features.ipCountry.title": {
     "message": "Blokirajte adrese i države"
   },
-  "homepage.features.ipCountry.description": {
-    "message": "Primijenite IP liste i GeoLite2 pravila za države kroz izolirano sidro `sinkhole/ip`."
+  "home.features.ipCountry.description": {
+    "message": "Primijenite IP liste i GeoLite2 pravila za države kroz izolirano sidro sinkhole/ip."
+  },
+  "home.blogPreview.heading": {
+    "message": "Iz bloga"
+  },
+  "home.blogPreview.description": {
+    "message": "Predstavljanja, prekretnice i novosti u paketu Sinkhole for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Unutar pfSense WebGUI-ja"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Sinkhole stranice"
+  },
+  "home.showcase.scopes.label": {
+    "message": "Opsezi"
+  },
+  "home.showcase.scopes.heading": {
+    "message": "Različita pravila za svaku mrežu i uređaj"
+  },
+  "home.showcase.scopes.description": {
+    "message": "Dodijelite mreži ili pojedinačnom uređaju vlastite liste i dopuštene domene. Svaki DNS upit slijedi najspecifičniji opseg koji mu odgovara."
+  },
+  "home.showcase.scopes.link": {
+    "message": "Postavite opsege"
+  },
+  "home.showcase.scopes.alt": {
+    "message": "Sinkhole stranica Opsezi s opsegom mreže LAN i tri opsega uređaja"
+  },
+  "home.showcase.services.label": {
+    "message": "Usluge"
+  },
+  "home.showcase.services.heading": {
+    "message": "Blokirajte cijelu uslugu jednim klikom"
+  },
+  "home.showcase.services.description": {
+    "message": "Odaberite igre, društvene mreže, streaming i druge usluge iz keširanog registra usluga, za sve ili za jednu mrežu ili uređaj. Dopuštene domene i dalje imaju prednost."
+  },
+  "home.showcase.services.link": {
+    "message": "Blokirajte usluge"
+  },
+  "home.showcase.services.alt": {
+    "message": "Sinkhole stranica Blokirane usluge s uslugama za igre za opseg uređaja"
+  },
+  "home.showcase.status.label": {
+    "message": "Stanje"
+  },
+  "home.showcase.status.heading": {
+    "message": "Znajte šta je učitano, a šta je zastarjelo"
+  },
+  "home.showcase.status.description": {
+    "message": "Stanje prikazuje svaku listu s brojem unosa i posljednjim ažuriranjem, kao i opsege, mreže i uređaje koje Sinkhole trenutno primjenjuje."
+  },
+  "home.showcase.status.link": {
+    "message": "Pročitajte o stranici Stanje"
+  },
+  "home.showcase.status.alt": {
+    "message": "Sinkhole stranica Stanje s panelima za liste, opsege, mreže i uređaje"
+  },
+  "home.showcase.scopes.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: Opsezi"
+  },
+  "home.showcase.services.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: Usluge"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: Stanje"
   }
 }

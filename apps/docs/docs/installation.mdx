@@ -23,6 +23,7 @@ Install or update Sinkhole from its stable GitHub release package, then confirm 
 - **HTTPS access to GitHub** — The firewall needs to download the package and checksum from GitHub Releases.
 - **DNS Resolver** — The pfSense DNS Resolver needs to be enabled before Sinkhole's DNS integration can be enabled.
 - **Available Python slot** — pfBlockerNG DNSBL or another Python script can't own the Resolver's single module slot.
+- **No active pfBlockerNG** — pfBlockerNG needs to be removed or have its main **Enable** turned off, in either DNSBL mode.
 - **Current backup** — It is recommended to download `config.xml` from **Diagnostics → Backup & Restore** before installing an unofficial package.
 
 :::warning

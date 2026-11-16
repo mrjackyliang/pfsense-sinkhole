@@ -1,14 +1,54 @@
 {
-  "item.label.Home": {
-    "message": "Главная",
-    "description": "Navbar item with label \"Home\""
+  "item.label.Docs": {
+    "message": "Документация",
+    "description": "Navbar item with label \"Docs\""
   },
-  "item.label.Guides": {
-    "message": "Руководства",
-    "description": "Navbar item with label \"Guides\""
+  "item.label.Overview": {
+    "message": "Обзор",
+    "description": "Navbar item with label \"Overview\""
+  },
+  "item.label.Quick Start": {
+    "message": "Быстрый старт",
+    "description": "Navbar item with label \"Quick Start\""
+  },
+  "item.label.Blog": {
+    "message": "Блог",
+    "description": "Navbar item with label \"Blog\""
+  },
+  "item.label.Configure": {
+    "message": "Настройка",
+    "description": "Navbar item with label \"Configure\""
+  },
+  "item.label.Operate": {
+    "message": "Эксплуатация",
+    "description": "Navbar item with label \"Operate\""
+  },
+  "item.label.Reference": {
+    "message": "Справочник",
+    "description": "Navbar item with label \"Reference\""
+  },
+  "item.label.Safety": {
+    "message": "Безопасность",
+    "description": "Navbar item with label \"Safety\""
+  },
+  "item.label.Contributing": {
+    "message": "Участие в разработке",
+    "description": "Navbar item with label \"Contributing\""
+  },
+  "item.label.Resources": {
+    "message": "Ресурсы",
+    "description": "Navbar item with label \"Resources\""
   },
   "item.label.Troubleshooting": {
     "message": "Устранение неполадок",
     "description": "Navbar item with label \"Troubleshooting\""
+  },
+  "item.label.Changelog": {
+    "message": "История изменений",
+    "description": "Navbar item with label \"Changelog\""
+  },
+  "item.label.Report an Issue": {
+    "message": "Сообщить о проблеме",
+    "description": "Navbar item with label \"Report an Issue\""
   }
 }

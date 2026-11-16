@@ -48,6 +48,7 @@ Ostatni wiersz **Sinkhole** w Summary jest najszybszą kontrolą integracji z Re
 | `Active`                                 | Sinkhole jest włączony, zajmuje miejsce Python, używa trybu Python i `pre_validator` oraz ma dane środowiska uruchomieniowego. |
 | `Inactive: Sinkhole is disabled.`        | General **Enable** jest wyłączone.                                                                                             |
 | `Inactive: DNS Resolver is disabled.`    | DNS Resolver w pfSense jest wyłączony.                                                                                         |
+| `Inactive: pfBlockerNG is installed ...` | pfBlockerNG jest zainstalowany z włączoną główną opcją **Enable**, niezależnie od trybu DNSBL.                                 |
 | `Inactive: ... slot is owned by ...`     | Inny skrypt Python, taki jak pfBlockerNG DNSBL, zajmuje jedyne miejsce.                                                        |
 | `Inactive: Sinkhole does not own ...`    | Skonfigurowany skrypt nie jest skryptem Sinkhole, mimo że nie zgłoszono innego właściciela.                                    |
 | `Inactive: ... Python mode is disabled.` | Resolver nie ma już włączonego trybu Python.                                                                                   |
@@ -78,6 +79,10 @@ Strona pokazuje pole ostrzeżenia, gdy kompilacja lub wdrożenie oczekuje, wraz 
 Podsumowanie Scopes zgłasza stan przebudowy mapy klientów. Oddzielne panele **Networks** i **Devices** zgłaszają bieżące CIDR-y każdego interfejsu i bieżące adresy każdego urządzenia. Konflikt wskazuje adres zgłaszany przez wiele urządzeń; pierwsze urządzenie w kolejności tabeli jest właścicielem adresu na potrzeby zasad.
 
 Panel **Alerts** opisuje tylko najnowsze zadanie minutowe. **Notifications held back** obejmuje tłumienie z powodu limitu lub nieprzeczytanego powiadomienia, a **Events dropped by module** oznacza zapełnienie ograniczonej kolejki zdarzeń w pamięci lub na dysku.
+
+## Stan SafeSearch \{#safesearch-state}
+
+Panel **SafeSearch** zlicza wyszukiwarki wybrane dla Global oraz dla każdego zakresu sieci i urządzenia. Pod licznikami każdy używany bezpieczny host pokazuje swoje ostatnie prawidłowe adresy IPv4 i IPv6, czas ostatniego sprawdzenia i ostatni błąd zapytania. Host bez adresów utrzymuje blokadę swojej wyszukiwarki w tych zakresach, dopóki zapytanie się nie powiedzie.
 
 ## Stan Bypass \{#bypass-state}
 

@@ -30,6 +30,7 @@ Utilisez le motif indiqué après **Summary → Sinkhole** :
 
 - **Sinkhole is disabled** — Sélectionnez **General → Enable** lorsque le Resolver et l’emplacement Python sont prêts.
 - **DNS Resolver is disabled** — Activez et appliquez le Resolver avant d’enregistrer Sinkhole.
+- **pfBlockerNG is installed and enabled** — Désactivez l’option principale **Enable** de pfBlockerNG ou supprimez le paquet, puis enregistrez à nouveau les paramètres General de Sinkhole. Sinkhole rend un emplacement qu’il détenait déjà lors de la prochaine mise à jour planifiée, de **Update Now** ou de la prochaine synchronisation du paquet.
 - **Python script slot is owned** — Désactivez l’intégration DNSBL/Python en conflit ou laissez Sinkhole désactivé ; Sinkhole ne la remplacera pas.
 - **Python mode or position changed** — Enregistrez à nouveau les réglages General de Sinkhole afin que Sync puisse restaurer le mode Python et `pre_validator` tant que Sinkhole détient l’emplacement.
 - **Runtime files unavailable** — Exécutez le Sync du paquet en enregistrant les réglages General, ou redémarrez afin que le Sync des paquets pfSense restaure les fichiers du disque mémoire.
@@ -54,6 +55,15 @@ Lorsqu’un déploiement ajoute des noms ou élargit un sous-arbre, Sinkhole rec
 Une requête dont la cible CNAME est répertoriée est bloquée même lorsque le nom d’origine ne l’est pas. Si la cible répertoriée ne possède aucun enregistrement du type demandé, par exemple AAAA, la réponse peut conserver le CNAME sans contenir d’adresse.
 
 Un nom de requête autorisé reste autorisé. Cela empêche une cible CNAME moins précise de remplacer une décision explicite de domaine autorisé pour le nom demandé.
+
+## SafeSearch ne s’applique pas \{#safesearch-does-not-apply}
+
+1. Vérifiez que la portée réseau ou appareil du client est activée dans **Scopes** et que le moteur est coché pour cette portée ou pour Global dans **SafeSearch**.
+2. Consultez **Status → SafeSearch** pour les adresses de l’hôte sécurisé et la dernière erreur. Un hôte sans adresse maintient son moteur bloqué pour la portée jusqu’à ce qu’une résolution réussisse.
+3. Vérifiez que **Compile Needed** et **Deployment Needed** valent `No` après l’enregistrement.
+4. Vérifiez que le client n’utilise pas de DNS chiffré ni un autre résolveur ; la [protection contre le contournement](/docs/configure/bypass-protection) maintient les interfaces sélectionnées sur le chemin DNS de Sinkhole.
+
+Un navigateur peut garder en cache l’adresse habituelle d’un moteur pendant quelques minutes : testez depuis une nouvelle fenêtre de navigation privée ou après l’expiration du cache DNS du navigateur.
 
 ## Un appareil reçoit la mauvaise politique \{#a-device-gets-the-wrong-policy}
 

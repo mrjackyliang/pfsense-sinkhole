@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 각 클라이언트가 현재 위치에 맞는 정책을 받도록 전역, 네트워크 및 장치 수준에 목록과 허용 도메인을 할당합니다.
 
 ## 범위를 사용하는 이유 \{#why-use-scopes}
@@ -35,6 +38,8 @@ tags:
 
 각 네트워크 행에서 추가 목록, 허용 도메인 및 범위 활성화 여부를 선택합니다. 저장하면 Scopes로 돌아갑니다. 연필을 선택하거나 행을 두 번 클릭하여 편집합니다. 장치가 네트워크 사이를 이동하면 현재 주소와 일치하는 네트워크의 정책을 받습니다.
 
+<img src={scopesTab} alt="LAN 네트워크 범위와 IP 또는 MAC 주소로 식별되는 데모 장치 3개 및 현재 주소를 표시하는 Scopes 탭" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## 장치 범위 \{#device-scopes}
 
 Devices 표 아래의 **Add**를 선택하고 이름을 입력한 다음 식별 방법 하나를 선택합니다. 편집기는 선택한 방법에 해당하는 식별자 필드만 표시합니다.
@@ -46,6 +51,8 @@ Devices 표 아래의 **Add**를 선택하고 이름을 입력한 다음 식별 
 | MAC address         | 해당 MAC의 현재 ARP, NDP 및 DHCP 임대 주소입니다. |
 
 장치 행에서 목록, 허용 도메인 및 활성 상태를 선택합니다. 저장하면 Scopes로 돌아갑니다. 연필을 선택하거나 행을 두 번 클릭하여 편집합니다. DNS 차단에 활성화된 네트워크 또는 장치 범위가 있거나 Bypass DNS 보호가 클라이언트 식별을 필요로 할 때만 백그라운드 작업이 현재 서브넷과 장치 주소를 매분 새로 고칩니다. 패키지 Sync도 같은 조건에서만 이 새로 고침을 시작합니다.
+
+<img src={deviceEditor} alt="선택한 목록 1개와 허용 도메인 1개가 있는, IP 주소로 식별되는 데모 태블릿의 Edit Device 페이지" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 판단 순서 \{#decision-order}
 

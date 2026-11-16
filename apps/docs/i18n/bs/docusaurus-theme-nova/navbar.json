@@ -1,14 +1,50 @@
 {
-  "item.label.Home": {
-    "message": "Početna",
-    "description": "Navbar item with label \"Home\""
+  "item.label.Docs": {
+    "message": "Dokumentacija",
+    "description": "Navbar item with label \"Docs\""
   },
-  "item.label.Guides": {
-    "message": "Vodiči",
-    "description": "Navbar item with label \"Guides\""
+  "item.label.Overview": {
+    "message": "Pregled",
+    "description": "Navbar item with label \"Overview\""
+  },
+  "item.label.Quick Start": {
+    "message": "Brzi početak",
+    "description": "Navbar item with label \"Quick Start\""
+  },
+  "item.label.Configure": {
+    "message": "Podešavanje",
+    "description": "Navbar item with label \"Configure\""
+  },
+  "item.label.Operate": {
+    "message": "Upotreba",
+    "description": "Navbar item with label \"Operate\""
+  },
+  "item.label.Reference": {
+    "message": "Tehničke informacije",
+    "description": "Navbar item with label \"Reference\""
+  },
+  "item.label.Safety": {
+    "message": "Sigurnost",
+    "description": "Navbar item with label \"Safety\""
+  },
+  "item.label.Contributing": {
+    "message": "Doprinos",
+    "description": "Navbar item with label \"Contributing\""
+  },
+  "item.label.Resources": {
+    "message": "Resursi",
+    "description": "Navbar item with label \"Resources\""
   },
   "item.label.Troubleshooting": {
     "message": "Rješavanje problema",
     "description": "Navbar item with label \"Troubleshooting\""
+  },
+  "item.label.Changelog": {
+    "message": "Dnevnik promjena",
+    "description": "Navbar item with label \"Changelog\""
+  },
+  "item.label.Report an Issue": {
+    "message": "Prijavi problem",
+    "description": "Navbar item with label \"Report an Issue\""
   }
 }

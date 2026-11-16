@@ -1,0 +1,52 @@
+---
+title: "介紹 Sinkhole for pfSense：為每個網路提供封鎖清單"
+description: Sinkhole 1.0 在 pfSense 內為整個網路、每個 VLAN 和每台設備分別提供 DNS 封鎖清單，並在每次重啓後使用已儲存的副本回應。
+slug: introducing-sinkhole-for-pfsense
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - pfsense 套件
+  - dns 封鎖
+  - vlan 封鎖清單
+  - dns resolver
+tags:
+  - release
+  - dns
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0 於 2026 年 11 月 10 日發行。它是一個原生 pfSense 套件，可以為整個網路、每個 VLAN 和每台設備分別提供 DNS 封鎖清單，而無需在防火牆旁邊再加一台 DNS 伺服器。
+
+{/* truncate */}
+
+## 我為什麼開發它 \{#why-i-built-it}
+
+我希望網路的不同部分使用不同的封鎖規則：一組清單給孩子，另一組給訪客，還有適用於所有人的全局清單。pfBlockerNG 對所有用戶端使用同一組 DNS 清單，所以我退而使用純 Unbound 搭配回應策略區域。
+
+這套方案可以運作，但每次防火牆重啓或重新載入，都要在清單重新載入期間斷網大約十分鐘。Pi-hole 和 AdGuard Home 可以為用戶端提供各自的清單，但兩者都需要 pfSense 之外的獨立主機。Sinkhole 就是我需要卻找不到的套件。
+
+## 功能簡介 \{#what-it-does}
+
+Sinkhole 作為 Python 模塊執行在 pfSense 的 DNS Resolver 中，對被封鎖的名稱返回 `0.0.0.0` 和 `::`。
+
+- **每個作用域的清單** — 全局清單適用於所有人。網路作用域為某個介面或 VLAN 新增清單，設備作用域為某台設備新增清單，設備依 IP 地址、DHCP 靜態映射或 MAC 地址比對。
+- **每個層級的允許域名** — 誤判可以在需要的層級修正，而無需放棄整份清單。
+- **每份清單的已儲存副本** — DNS Resolver 重啓或系統重新開機後，DNS 立即使用最後一份有效資料回應，RAM 磁碟安裝也是如此。下載失敗時會保留先前的副本。
+- **由您選擇的警報** — 只有警報規則所選的清單、網路和設備才會觸發 pfSense 通知，每個設備和域名只通知一次。
+- **封鎖的服務** — Services 分頁根據公開的服務登錄表，依作用域封鎖整個服務。
+- **常用清單搜索** — 目錄卡片協助您依類別或維護者查找廣泛使用的封鎖清單。Sinkhole 不發佈也不推薦任何清單。
+
+hosts、純域名和 adblock 格式的清單載入時無需重啓 DNS Resolver。
+
+## 驗證結果 \{#proof}
+
+Sinkhole 1.0 在四個 pfSense 版本上完成了安裝、更新、封鎖測試和移除的端對端驗證：CE 2.9.0、CE 2.8.1、Plus 26.07 和 Plus 26.03.1。在封鎖 300,000 個名稱的實測中，策略記憶體峰值約為每個名稱 157 位元組。
+
+WebGUI、Status 分頁和通知遵循 pfSense 的語言設定，支援 pfSense 提供的全部 18 種語言。
+
+## 開始使用 \{#get-started}
+
+用一條 `pkg add` 命令安裝套件，然後打開 **Firewall → Sinkhole**。[安裝套件](/docs/installation)說明了總和檢查碼以及首次設定。
+
+Sinkhole for pfSense 為 pfSense 帶來依作用域進行的 DNS、IP 和國家/地區封鎖，並將每份清單儲存在防火牆上。

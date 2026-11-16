@@ -381,6 +381,14 @@ final class Updater
         $compiled = false;
         $addedNames = 0;
 
+        try {
+            $changed = $this->platformAdapter->refreshSafeSearchTargets() || $changed;
+        } catch (Throwable $throwable) {
+            $this->platformAdapter->log(
+                'SafeSearch address lookup failed: ' . $throwable->getMessage(),
+            );
+        }
+
         if ($changed) {
             $this->compiler->markNeeded();
         }
@@ -438,6 +446,9 @@ final class Updater
                             ? $this->platformAdapter->getBlockedServices()
                             : [],
                         'bypass' => $this->platformAdapter->getBypassConfiguration(),
+                        'safesearch' => $dnsBlockingEnabled
+                            ? $this->platformAdapter->getSafeSearch()
+                            : [],
                     ];
                 },
                 false,

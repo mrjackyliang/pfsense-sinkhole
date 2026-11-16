@@ -24,7 +24,7 @@ Hold DNS-forespørsler fra valgte klientgrensesnitt på baner som Sinkhole kan i
 
 Nettverks- og enhetssamsvar bruker de gjeldende delnettene til disse grensesnittene, akkurat som vanlige Sinkhole-omfang. En klient utenfor de valgte delnettene mottar ikke noe Bypass-DNS-svar.
 
-<img src={bypassProtection} alt="Bypass-fanen med LAN valgt, omdirigering av vanlig DNS slått av, beskyttelse for kryptert DNS og tunneler slått på, Discovery satt til Answer with no records og tre demonstrasjonslister for Bypass" width={1024} height={1326} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass-fanen med LAN valgt, omdirigering av vanlig DNS slått av, beskyttelse for kryptert DNS og tunneler slått på, Discovery satt til Answer with no records og tre demonstrasjonslister for Bypass" width={1024} height={1470} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Omdiriger vanlig DNS \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-Når Discovery slås av eller Sinkhole fjernes, blir blokken fjernet. Sinkhole lar alle andre linjer i **Custom options** være uendret. Klienter utenfor de valgte grensesnittene, inkludert selve brannmuren, fortsetter å motta `NXDOMAIN` for `_dns.resolver.arpa`.
+Når Discovery slås av eller Sinkhole fjernes, blir sonelinjen fjernet. Den samme blokken inneholder også eventuelle [Resolver-innstillinger](/docs/configure/resolver-settings), og Sinkhole lar alle andre linjer i **Custom options** være uendret. Klienter utenfor de valgte grensesnittene, inkludert selve brannmuren, fortsetter å motta `NXDOMAIN` for `_dns.resolver.arpa`.
 
 ## Beskytt mot tunneler \{#protect-against-tunnels}
 

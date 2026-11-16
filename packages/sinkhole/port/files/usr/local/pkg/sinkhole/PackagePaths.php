@@ -535,6 +535,9 @@ final class PackagePaths
     /** @var string @since 1.0.0 */
     public readonly string $ipStatusFile;
 
+    /** @var string @since 1.1.0 */
+    public readonly string $safeSearchTargetsFile;
+
     /** @var string @since 1.0.0 */
     public readonly string $bypassListDirectory;
 
@@ -712,6 +715,8 @@ final class PackagePaths
             ?? (isset($overrides['runtime_root_directory'])
                 ? $this->runtimeRootDirectory . '/sinkhole-geolite2-country.json'
                 : self::GEOLITE2_METADATA_FILE);
+        $this->safeSearchTargetsFile = $overrides['safesearch_targets_file']
+            ?? $this->persistentDirectory . '/safesearch-targets.json';
         $this->ipStatusFile = $overrides['ip_status_file']
             ?? (isset($overrides['runtime_root_directory'])
                 ? $this->runtimeRootDirectory . '/sinkhole-ip-status.json'

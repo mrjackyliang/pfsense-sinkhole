@@ -40,6 +40,10 @@
 			<url>/sinkhole-services.php</url>
 		</tab>
 		<tab>
+			<text>SafeSearch</text>
+			<url>/sinkhole-safesearch.php</url>
+		</tab>
+		<tab>
 			<text>Scopes</text>
 			<url>/sinkhole-scopes.php</url>
 		</tab>
@@ -94,6 +98,32 @@
 			<type>checkbox</type>
 			<default_value>on</default_value>
 			<description>Keep lists and settings when the package is removed.</description>
+		</field>
+		<field>
+			<type>listtopic</type>
+			<name>Resolver</name>
+		</field>
+		<field>
+			<fielddescr>Rebind Exceptions</fielddescr>
+			<fieldname>rebind_exceptions</fieldname>
+			<type>textarea</type>
+			<rows>4</rows>
+			<cols>50</cols>
+			<description>Domains allowed to answer with private addresses despite DNS rebinding protection, one per line, such as plex.direct.</description>
+		</field>
+		<field>
+			<fielddescr>Expired Answer Lifetime</fielddescr>
+			<fieldname>serve_expired_ttl</fieldname>
+			<type>input</type>
+			<size>10</size>
+			<description>Seconds an expired cached answer may still be served. 0 means no limit; empty keeps the DNS Resolver default.</description>
+		</field>
+		<field>
+			<fielddescr>Expired Answer Wait</fielddescr>
+			<fieldname>serve_expired_client_timeout</fieldname>
+			<type>input</type>
+			<size>10</size>
+			<description>Milliseconds to wait for a fresh answer before serving an expired one. 0 answers from cache right away; empty keeps the DNS Resolver default.</description>
 		</field>
 		<field>
 			<type>listtopic</type>

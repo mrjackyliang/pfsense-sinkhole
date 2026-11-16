@@ -14,44 +14,42 @@ tags:
   - glossary
 ---
 
-Estos términos tienen el mismo significado en toda la WebGUI y la documentación de Sinkhole.
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-## DNS sinkhole \{#dns-sinkhole}
+Estos términos tienen el mismo significado en toda la WebGUI y la documentación de Sinkhole. Las tablas muestran primero el término, luego otros nombres y después la definición.
 
-Responder a un nombre bloqueado con una dirección que no conduce a ningún sitio para detener la solicitud.
+:::tip[Términos del glosario]
+En toda la documentación verá <Terminology title="Un recordatorio rápido, justo donde lee" to="/docs/reference/terminology">términos resaltados</Terminology> con un subrayado de puntos. Pase el cursor sobre cualquiera de ellos para recordar rápidamente su significado o haga clic para ir a la definición completa.
+:::
 
-## DNS Resolver \{#dns-resolver}
+## Conceptos básicos de DNS \{#dns-basics}
 
-El servicio DNS de pfSense basado en Unbound.
+| Término          | También conocido como | Definición                                                                                                 |
+|------------------|-----------------------|------------------------------------------------------------------------------------------------------------|
+| **DNS sinkhole** | —                     | Responder a un nombre bloqueado con una dirección que no conduce a ningún sitio para detener la solicitud. |
+| **DNS Resolver** | Unbound               | El servicio DNS de pfSense basado en Unbound.                                                              |
 
-## Lista de bloqueo \{#block-list}
+## Listas y ámbitos \{#lists-and-scopes}
 
-Una lista de nombres o direcciones que se bloquearán, añadida por URL o desde la búsqueda.
+| Término                          | También conocido como             | Definición                                                                                                                                |
+|----------------------------------|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| **lista de bloqueo**             | —                                 | Una lista de nombres o direcciones que se bloquearán, añadida por URL o desde la búsqueda.                                                |
+| **búsqueda de listas populares** | —                                 | La búsqueda en la WebGUI de listas de bloqueo muy usadas, similar al selector de AdGuard Home.                                            |
+| **lista guardada**               | —                                 | La última copia válida de una lista de bloqueo, conservada en el firewall.                                                                |
+| **ámbito**                       | —                                 | Dónde se aplica una lista de bloqueo: toda la red, una VLAN o un único dispositivo.                                                       |
+| **listas globales**              | —                                 | Listas de bloqueo que se aplican a todos los clientes de la red.                                                                          |
+| **SafeSearch**                   | Búsqueda segura, modo restringido | El modo seguro de un buscador, forzado en todos los dispositivos de un ámbito al responder a los nombres del buscador con su host seguro. |
+| **excepción de rebind**          | private-domain                    | Un dominio que puede responder con una dirección privada pese a la protección contra DNS rebinding.                                       |
 
-## Lista guardada \{#saved-list}
+## Alertas \{#alerts}
 
-La última copia válida de una lista de bloqueo, conservada en el firewall.
-
-## Ámbito \{#scope}
-
-Dónde se aplica una lista de bloqueo: toda la red, una VLAN o un único dispositivo.
-
-## Listas globales \{#global-lists}
-
-Listas de bloqueo que se aplican a todos los clientes de la red.
-
-## Regla de alerta \{#alert-rule}
-
-Una lista y un ámbito cuyos bloqueos envían una notificación de pfSense.
+| Término             | También conocido como | Definición                                                               |
+|---------------------|-----------------------|--------------------------------------------------------------------------|
+| **regla de alerta** | —                     | Una lista y un ámbito cuyos bloqueos envían una notificación de pfSense. |
 
 ## Protección contra evasiones \{#bypass-protection}
 
-Controles opcionales por interfaz que mantienen a los clientes en rutas DNS que Sinkhole puede inspeccionar mediante la redirección de DNS simple o el bloqueo de alternativas comunes de DNS cifrado y túneles.
-
-## Redirección de DNS simple \{#plain-dns-redirect}
-
-La opción Bypass que envía al firewall las consultas ordinarias TCP y UDP del puerto 53 de los dispositivos.
-
-## Búsqueda de listas populares \{#popular-list-search}
-
-La búsqueda en la WebGUI de listas de bloqueo muy usadas, similar al selector de AdGuard Home.
+| Término                         | También conocido como | Definición                                                                                                                                                                                                       |
+|---------------------------------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **protección contra evasiones** | Bypass                | Controles opcionales por interfaz que mantienen a los clientes en rutas DNS que Sinkhole puede inspeccionar mediante la redirección de DNS simple o el bloqueo de alternativas comunes de DNS cifrado y túneles. |
+| **redirección de DNS simple**   | —                     | La opción Bypass que envía al firewall las consultas ordinarias TCP y UDP del puerto 53 de los dispositivos.                                                                                                     |

@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 Dodijelite liste i dopuštene domene na globalnom, mrežnom i uređajskom nivou, tako da svaki klijent dobije pravila namijenjena njegovoj trenutnoj lokaciji.
 
 ## Zašto koristiti opsege? \{#why-use-scopes}
@@ -35,6 +38,8 @@ Otvorite **Firewall → Sinkhole → Scopes**, a zatim odaberite **Add** ispod t
 
 Svaki mrežni red bira dodatne liste, dopuštene domene i je li opseg omogućen. Spremanje vraća na Scopes; odaberite olovku ili dvaput kliknite red da biste ga uredili. Uređaj koji prelazi između mreža dobija pravila mreže kojoj odgovara njegova trenutna adresa.
 
+<img src={scopesTab} alt="Kartica Scopes prikazuje mrežni opseg LAN i tri demonstracijska uređaja identifikovana IP ili MAC adresom s njihovim trenutnim adresama" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## Opsezi uređaja \{#device-scopes}
 
 Odaberite **Add** ispod tabele Devices, unesite naziv i izaberite jedan način identifikacije. Uređivač prikazuje samo polje identifikatora koje se odnosi na odabrani način:
@@ -46,6 +51,8 @@ Odaberite **Add** ispod tabele Devices, unesite naziv i izaberite jedan način i
 | MAC address         | Trenutne adrese ARP-a, NDP-a i DHCP zakupa za taj MAC.                       |
 
 Red uređaja bira njegove liste, dopuštene domene i omogućeno stanje. Spremanje vraća na Scopes; odaberite olovku ili dvaput kliknite red da biste ga uredili. Pozadinski posao osvježava trenutne podmreže i adrese uređaja svake minute dok DNS blokiranje ima omogućeni mrežni ili uređajski opseg, ili dok Bypass DNS zaštita zahtijeva prepoznavanje klijenta. Sync paketa pokreće isto osvježavanje samo pod tim uslovom.
+
+<img src={deviceEditor} alt="Stranica Edit Device za demonstracijski tablet identifikovan IP adresom, s jednom odabranom listom i jednom dozvoljenom domenom" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Redoslijed odlučivanja \{#decision-order}
 

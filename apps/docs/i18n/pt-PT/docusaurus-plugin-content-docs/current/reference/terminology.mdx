@@ -14,45 +14,42 @@ tags:
   - glossary
 ---
 
-Estes termos têm o mesmo significado em toda a WebGUI e a documentação do Sinkhole.
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-## DNS Sinkhole \{#dns-sinkhole}
+Estes termos têm o mesmo significado em toda a WebGUI e a documentação do Sinkhole. As tabelas mostram primeiro o termo, depois outros nomes e, por fim, a definição.
 
-Responder a um nome bloqueado com um endereço que não leva a lugar algum, interrompendo a pedido.
+:::tip[Termos do glossário]
+Em toda a documentação, verá <Terminology title="Um lembrete rápido, mesmo onde está a ler" to="/docs/reference/terminology">termos destacados</Terminology> com sublinhado pontilhado. Passe o cursor sobre qualquer um deles para um lembrete rápido do significado ou clique para ir para a definição completa.
+:::
 
-## DNS Resolver \{#dns-resolver}
+## Noções básicas de DNS \{#dns-basics}
 
-O serviço de DNS do pfSense baseado no Unbound.
+| Termo            | Também conhecido como | Definição                                                                                         |
+|------------------|-----------------------|---------------------------------------------------------------------------------------------------|
+| **DNS sinkhole** | —                     | Responder a um nome bloqueado com um endereço que não leva a lugar algum, interrompendo o pedido. |
+| **DNS Resolver** | Unbound               | O serviço de DNS do pfSense baseado no Unbound.                                                   |
 
-## Block List \{#block-list}
+## Listas e âmbitos \{#lists-and-scopes}
 
-Uma lista de nomes ou endereços a bloquear, adicionada por URL ou pela pesquisa.
+| Termo                            | Também conhecido como          | Definição                                                                                                                                        |
+|----------------------------------|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| **lista de bloqueio**            | —                              | Uma lista de nomes ou endereços a bloquear, adicionada por URL ou pela pesquisa.                                                                 |
+| **pesquisa de listas populares** | —                              | A pesquisa da WebGUI por listas de bloqueio amplamente usadas, como o seletor do AdGuard Home.                                                   |
+| **lista guardada**               | —                              | A última cópia válida de uma lista de bloqueio, mantida na firewall.                                                                             |
+| **âmbito**                       | —                              | Onde uma lista de bloqueio se aplica: à rede inteira, a uma VLAN ou a um único dispositivo.                                                      |
+| **listas globais**               | —                              | Listas de bloqueio que se aplicam a todos os clientes da rede.                                                                                   |
+| **SafeSearch**                   | Pesquisa segura, modo restrito | O modo seguro de um motor de pesquisa, imposto a cada dispositivo de um âmbito ao responder aos nomes do motor com o respetivo anfitrião seguro. |
+| **exceção de rebind**            | private-domain                 | Um domínio autorizado a responder com um endereço privado apesar da proteção contra DNS rebinding.                                               |
 
-## Saved List \{#saved-list}
+## Alertas \{#alerts}
 
-A última cópia válida de uma lista de bloqueio, mantida na firewall.
-
-## Scope \{#scope}
-
-Onde uma lista de bloqueio aplica-se: à rede inteira, a uma VLAN ou a um único dispositivo.
-
-## Global Lists \{#global-lists}
-
-Listas de bloqueio que se aplicam a todos os clientes da rede.
-
-## Alert Rule \{#alert-rule}
-
-Uma lista e um âmbito cujos bloqueios enviam uma notificação do pfSense.
+| Termo               | Também conhecido como | Definição                                                                |
+|---------------------|-----------------------|--------------------------------------------------------------------------|
+| **regra de alerta** | —                     | Uma lista e um âmbito cujos bloqueios enviam uma notificação do pfSense. |
 
 ## Proteção contra evasão \{#bypass-protection}
 
-Controlos opcionais por interface que mantêm os clientes em caminhos DNS que o Sinkhole pode inspecionar, redirecionando o DNS comum ou bloqueando alternativas comuns de DNS encriptado e túneis.
-
-## Redirecionamento de DNS comum \{#plain-dns-redirect}
-
-A configuração Bypass opcional que envia à firewall as consultas comuns dos dispositivos por TCP e UDP na porta 53.
-
-## Popular-List Search \{#popular-list-search}
-
-A pesquisa da WebGUI por listas de bloqueio amplamente usadas, como o seletor do AdGuard Home.
-
+| Termo                             | Também conhecido como | Definição                                                                                                                                                                                          |
+|-----------------------------------|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **proteção contra evasão**        | Bypass                | Controlos opcionais por interface que mantêm os clientes em caminhos DNS que o Sinkhole pode inspecionar, redirecionando o DNS comum ou bloqueando alternativas comuns de DNS encriptado e túneis. |
+| **redirecionamento de DNS comum** | —                     | A configuração Bypass opcional que envia à firewall as consultas comuns dos dispositivos por TCP e UDP na porta 53.                                                                                |

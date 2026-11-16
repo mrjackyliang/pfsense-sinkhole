@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Versões e marcos do Sinkhole, o bloqueio de DNS, IP e países por escopo que roda dentro do pfSense."
+  },
+  "sidebar.title": {
+    "message": "Publicações recentes"
+  }
+}

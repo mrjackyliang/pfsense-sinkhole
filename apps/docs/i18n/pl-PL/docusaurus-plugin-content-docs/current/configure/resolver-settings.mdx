@@ -1,0 +1,55 @@
+---
+id: resolver-settings
+title: Ustawienia Resolvera
+description: Ustaw wyjątki rebind i czas obsługi wygasłych odpowiedzi DNS Resolvera na karcie General Sinkhole, bez ręcznie pisanych opcji niestandardowych.
+keywords:
+  - sinkhole for pfsense
+  - dns rebinding
+  - private-domain
+  - wygasłe odpowiedzi
+  - opcje niestandardowe
+tags:
+  - configure
+  - resolver
+  - dns
+---
+
+Użyj sekcji **Resolver** na karcie **Firewall → Sinkhole → General**, aby skonfigurować ustawienia DNS Resolvera, których nie oferują własne strony pfSense.
+
+## Dlaczego warto używać ustawień Resolvera? \{#why-use-resolver-settings}
+
+1. Utrzymuje działanie usług takich jak Plex za ochroną pfSense przed DNS rebinding bez ręcznie pisanych opcji niestandardowych.
+2. Pozwala odpowiedziom z pamięci podręcznej utrzymać szybki DNS, gdy serwer nadrzędny działa wolno lub jest niedostępny.
+3. Umieszcza te wiersze w tym samym zarządzanym bloku, który Sinkhole już posiada, więc pole **Custom options** DNS Resolvera może pozostać puste.
+
+## Wyjątki rebind \{#rebind-exceptions}
+
+Ochrona pfSense przed DNS rebinding odrzuca publiczne odpowiedzi wskazujące adresy prywatne. Usługi takie jak Plex (`plex.direct`) celowo odpowiadają adresem prywatnym, więc ich nazwy wymagają wyjątku.
+
+Wpisz jedną domenę w wierszu. Każdy wpis obejmuje domenę i wszystkie jej poddomeny. Ochrona jest włączona, chyba że wyłączono **System → Advanced → Admin Access → DNS Rebind Check**; przy wyłączonym sprawdzaniu wyjątki niczego nie zmieniają.
+
+## Wygasłe odpowiedzi \{#expired-answers}
+
+Ustawienie pfSense **Serve Expired** w **Services → DNS Resolver → Advanced Settings** pozwala Resolverowi odpowiadać z wygasłych wpisów pamięci podręcznej podczas ich odświeżania. Dwa powiązane ustawienia są dostępne tylko tutaj:
+
+| Pole                    | Ustawienie Unbound             | Opis                                                                                                    |
+|-------------------------|--------------------------------|---------------------------------------------------------------------------------------------------------|
+| Expired Answer Lifetime | `serve-expired-ttl`            | Liczba sekund, przez które wygasła odpowiedź może być nadal podawana. `0` oznacza brak limitu.          |
+| Expired Answer Wait     | `serve-expired-client-timeout` | Liczba milisekund oczekiwania najpierw na świeżą odpowiedź. `0` odpowiada od razu z pamięci podręcznej. |
+
+Oba działają tylko przy włączonym **Serve Expired**, a karta General informuje, czy jest ono włączone. Puste pole zachowuje domyślną wartość Resolvera. Ta sama strona Advanced Settings zawiera też **Prefetch Support** i **Prefetch DNS Key Support**.
+
+## Kiedy ustawienia obowiązują \{#when-the-settings-apply}
+
+Ustawienia działają, gdy Sinkhole jest włączony, a jego integracja z DNS Resolverem jest aktywna. Sinkhole zapisuje je w swoim zarządzanym bloku na końcu pola **Custom options** DNS Resolvera:
+
+```text
+# Sinkhole: begin (managed by the Sinkhole package)
+server:
+private-domain: "plex.direct"
+serve-expired-ttl: 86400
+serve-expired-client-timeout: 0
+# Sinkhole: end
+```
+
+Wyłączenie Sinkhole lub usunięcie pakietu usuwa blok i każdy jego wiersz. Sinkhole nigdy nie zmienia własnych wierszy administratora w **Custom options**.

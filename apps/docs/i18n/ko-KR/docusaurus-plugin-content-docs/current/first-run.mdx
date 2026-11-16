@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 정책을 확장하기 전에 신뢰하는 목록 하나를 설정하고 저장, 컴파일, 배포 및 로드 상태를 확인합니다.
 
 ## Resolver 확인 \{#check-the-resolver}
 
 1. **Services → DNS Resolver**를 열고 Resolver가 활성화되어 있는지 확인합니다.
-2. pfBlockerNG DNSBL이 활성화되어 있으면 두 패키지가 Unbound의 Python 슬롯을 동시에 사용할 수 없으므로 DNS 필터링을 소유할 패키지를 선택합니다.
+2. pfBlockerNG가 설치되어 활성화되어 있으면 두 패키지를 함께 실행할 수 없으므로 DNS를 필터링할 패키지를 선택합니다.
 3. **Firewall → Sinkhole → General**을 열고 첫 정책을 준비하는 동안 **Enable**을 꺼 둡니다.
 
-다른 Python 스크립트가 슬롯을 소유하고 있으면 Sinkhole은 **Enable** 저장을 거부합니다. 나중에 Sinkhole을 비활성화할 때 Python 설정이 여전히 Sinkhole 소유이면 Resolver의 이전 설정을 복원합니다.
+pfBlockerNG가 설치되어 활성화되어 있거나 다른 Python 스크립트가 슬롯을 소유하고 있으면 Sinkhole은 **Enable** 저장을 거부합니다. 나중에 Sinkhole을 비활성화할 때 Python 설정이 여전히 Sinkhole 소유이면 Resolver의 이전 설정을 복원합니다.
 
 ## 목록 추가 \{#add-a-list}
 
@@ -33,6 +35,8 @@ sidebar_position: 3
 4. 알려진 오탐을 허용해야 하면 전역 **Allowed Domains**에 한 줄당 한 도메인을 추가합니다.
 
 Sinkhole은 어떤 출처도 추천하지 않습니다. [목록과 저장된 사본](/docs/configure/lists)에서는 허용되는 형식과 카탈로그 결과가 일반 목록 행으로 추가되는 방식을 설명합니다.
+
+<img src={listsTab} alt="Global 및 Used By 열이 있는 데모 차단 목록 5개와 전역 허용 도메인 2개를 표시하는 Lists 탭" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 선택적 범위 추가 \{#add-optional-scopes}
 

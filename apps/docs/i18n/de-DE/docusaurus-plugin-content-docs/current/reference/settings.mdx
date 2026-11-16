@@ -14,6 +14,8 @@ tags:
   - webgui
 ---
 
+import generalTab from './_assets_/settings-1.png';
+
 Schlage Zweck und Standardverhalten aller Sinkhole-Konfigurationsbereiche unter **Firewall → Sinkhole** nach.
 
 ## General \{#general}
@@ -25,6 +27,18 @@ Schlage Zweck und Standardverhalten aller Sinkhole-Konfigurationsbereiche unter 
 | Keep Settings    | On       | Bewahrt Konfiguration und dauerhaft gespeicherte Daten, wenn das Paket entfernt wird.                  |
 
 Geplante Zeiten verwenden stabile Zufallskomponenten. Hourly läuft zu einer stabilen Minute, Every 6 hours verwendet dieselbe Minute in jeder sechsten Stunde, Daily läuft um `00:<minute>` und Weekly sonntags um `00:<minute>`.
+
+<img src={generalTab} alt="Tab General mit aktiviertem Sinkhole, täglichen Listenaktualisierungen, aktivem Keep Settings, einer Rebind-Ausnahme für plex.direct, Werten für abgelaufene Antworten bei aktivem Serve Expired und wöchentlicher Prüfung auf Paketupdates" width={1024} height={1066} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Resolver \{#resolver}
+
+| Feld                    | Standard | Beschreibung                                                                                                               |
+|-------------------------|----------|----------------------------------------------------------------------------------------------------------------------------|
+| Rebind Exceptions       | Empty    | Domains, die trotz DNS-Rebinding-Schutz mit privaten Adressen antworten dürfen, eine pro Zeile.                            |
+| Expired Answer Lifetime | Empty    | Sekunden, in denen eine abgelaufene zwischengespeicherte Antwort noch ausgeliefert werden darf; `0` bedeutet keine Grenze. |
+| Expired Answer Wait     | Empty    | Millisekunden, die auf eine frische Antwort gewartet wird, bevor eine abgelaufene ausgeliefert wird; `0` antwortet sofort. |
+
+Ein leeres Feld schreibt nichts und behält den Standard des Resolvers bei. [Resolver-Einstellungen](/docs/configure/resolver-settings) erklärt, wann die Werte gelten.
 
 ## Package Updates \{#package-updates}
 
@@ -52,6 +66,10 @@ Bypass-Feeds sind aus diesem Katalog ausgeschlossen.
 ## Dienste \{#services}
 
 Die Dienstauswahl ist für jeden Scope standardmäßig leer. Ein Registerdienst, der durch einen eigenen Bypass-Schutz abgedeckt ist, wird unter Dienste ausgeblendet und aus gespeicherten Auswahlen entfernt; Private Relay wird nur auf dem Tab Bypass konfiguriert.
+
+## SafeSearch \{#safesearch}
+
+Die SafeSearch-Auswahl ist für jeden Scope standardmäßig leer. Jeder Scope kann Google, YouTube (Moderate oder Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex und Pixabay fixieren oder Qwant blockieren. [SafeSearch](/docs/configure/safesearch) listet die Namen und sicheren Hosts auf.
 
 ## Network Scopes \{#network-scopes}
 

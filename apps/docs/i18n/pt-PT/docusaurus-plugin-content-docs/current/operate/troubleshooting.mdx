@@ -30,6 +30,7 @@ Use o motivo depois de **Summary → Sinkhole**:
 
 - **Sinkhole is disabled** — Selecione **General → Enable** depois que o Resolver e o espaço Python estiverem prontos.
 - **DNS Resolver is disabled** — Ative e aplique o Resolver antes de guardar o Sinkhole.
+- **pfBlockerNG is installed and enabled** — Desative a opção principal **Enable** do pfBlockerNG ou remova o pacote e, em seguida, guarde novamente as configurações General do Sinkhole. O Sinkhole devolve um espaço que já ocupava na próxima atualização agendada, com **Update Now** ou na próxima sincronização do pacote.
 - **Python script slot is owned** — Desative a integração DNSBL/Python em conflito ou mantenha o Sinkhole desativado; o Sinkhole não a substituirá.
 - **Python mode or position changed** — Salve novamente as configurações General do Sinkhole para que o Sync possa restaurar o modo Python e `pre_validator` enquanto o Sinkhole ocupar o espaço.
 - **Runtime files unavailable** — Execute o Sync do pacote salvando as configurações General ou reinicie e deixe o Sync de pacotes do pfSense restaurar os ficheiros do disco RAM.
@@ -54,6 +55,15 @@ Quando uma implementação adiciona nomes ou amplia uma subárvore, o Sinkhole r
 Uma consulta cujo destino CNAME está em uma lista é bloqueada mesmo quando o nome original não está listado. Se o destino listado não tiver um registo do tipo solicitado, como AAAA, a resposta pode manter o CNAME sem conter um endereço.
 
 Um nome consultado permitido continua permitido. Isso impede que um destino CNAME menos específico substitua uma decisão explícita de domínio permitido para o nome consultado.
+
+## O SafeSearch não é aplicado \{#safesearch-does-not-apply}
+
+1. Confirme que o âmbito de rede ou de dispositivo do cliente está ativado em **Scopes** e que o motor está assinalado em **SafeSearch** para esse âmbito ou para Global.
+2. Verifique em **Status → SafeSearch** os endereços do anfitrião seguro e o último erro. Um anfitrião sem endereços mantém o respetivo motor bloqueado no âmbito até uma consulta ter êxito.
+3. Confirme que **Compile Needed** e **Deployment Needed** são `No` depois de guardar.
+4. Confirme que o cliente não está a usar DNS encriptado nem outro resolvedor; a [Proteção contra evasão](/docs/configure/bypass-protection) mantém as interfaces selecionadas no caminho de DNS do Sinkhole.
+
+Um navegador pode manter o endereço normal de um motor em cache durante alguns minutos, pelo que deve testar numa nova janela privada ou depois de a cache de DNS do navegador ser limpa.
 
 ## Um dispositivo recebe a política errada \{#a-device-gets-the-wrong-policy}
 

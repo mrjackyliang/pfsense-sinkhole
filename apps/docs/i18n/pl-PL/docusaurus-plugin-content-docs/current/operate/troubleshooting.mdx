@@ -30,6 +30,7 @@ Użyj przyczyny podanej po **Summary → Sinkhole**:
 
 - **Sinkhole is disabled** — Zaznacz **General → Enable**, gdy Resolver i miejsce na skrypt Python będą gotowe.
 - **DNS Resolver is disabled** — Włącz i zastosuj Resolver przed zapisaniem Sinkhole.
+- **pfBlockerNG is installed and enabled** — Wyłącz główną opcję **Enable** w pfBlockerNG lub usuń pakiet, a następnie ponownie zapisz ustawienia General w Sinkhole. Sinkhole zwalnia zajmowane już miejsce przy następnej zaplanowanej aktualizacji, po **Update Now** lub przy następnej synchronizacji pakietu.
 - **Python script slot is owned** — Wyłącz kolidującą integrację DNSBL/Python albo pozostaw Sinkhole wyłączony; Sinkhole jej nie zastąpi.
 - **Python mode or position changed** — Ponownie zapisz ustawienia General Sinkhole, aby Sync mógł przywrócić tryb Python i `pre_validator`, gdy Sinkhole zajmuje miejsce.
 - **Runtime files unavailable** — Uruchom Sync pakietu, zapisując ustawienia General, albo uruchom ponownie system i pozwól Sync pakietów pfSense przywrócić pliki dysku RAM.
@@ -54,6 +55,15 @@ Gdy wdrożenie dodaje nazwy lub rozszerza poddrzewo, Sinkhole przeładowuje Unbo
 Zapytanie, którego cel CNAME znajduje się na liście, jest blokowane nawet wtedy, gdy pierwotna nazwa nie znajduje się na liście. Jeśli cel na liście nie ma rekordu żądanego typu, takiego jak AAAA, odpowiedź może zachować CNAME bez adresu.
 
 Dozwolona nazwa zapytania pozostaje dozwolona. Zapobiega to zastąpieniu jawnej decyzji o dozwolonej domenie dla nazwy zapytania przez mniej szczegółowy cel CNAME.
+
+## SafeSearch nie działa \{#safesearch-does-not-apply}
+
+1. Sprawdź, czy zakres sieci lub urządzenia klienta jest włączony na karcie **Scopes** i czy wyszukiwarka jest zaznaczona na karcie **SafeSearch** dla tego zakresu lub dla Global.
+2. Sprawdź w **Status → SafeSearch** adresy bezpiecznego hosta i ostatni błąd. Host bez adresów utrzymuje blokadę swojej wyszukiwarki w zakresie, dopóki zapytanie się nie powiedzie.
+3. Sprawdź, czy po zapisaniu **Compile Needed** i **Deployment Needed** mają wartość `No`.
+4. Sprawdź, czy klient nie używa szyfrowanego DNS ani innego resolvera; [Ochrona przed omijaniem](/docs/configure/bypass-protection) utrzymuje wybrane interfejsy na ścieżce DNS Sinkhole.
+
+Przeglądarka może przez kilka minut przechowywać w pamięci podręcznej zwykły adres wyszukiwarki, więc testuj w nowym oknie prywatnym lub po wyczyszczeniu pamięci podręcznej DNS przeglądarki.
 
 ## Urządzenie otrzymuje niewłaściwe zasady \{#a-device-gets-the-wrong-policy}
 

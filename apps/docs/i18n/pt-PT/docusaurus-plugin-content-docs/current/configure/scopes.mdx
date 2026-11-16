@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 Atribua listas e domínios permitidos nos níveis global, de rede e de dispositivo para que cada cliente receba a política destinada à sua localização atual.
 
 ## Por que usar âmbitos? \{#why-use-scopes}
@@ -35,6 +38,8 @@ Abra **Firewall → Sinkhole → Scopes** e selecione **Add** abaixo da tabela N
 
 Cada linha de rede seleciona listas adicionais, domínios permitidos e se o âmbito está ativado. Ao guardar, regressa a Scopes; selecione o lápis ou faça duplo clique numa linha para editá-la. Um dispositivo que muda de rede recebe a política da rede correspondente ao seu endereço atual.
 
+<img src={scopesTab} alt="Separador Scopes mostrando um âmbito de rede LAN e três dispositivos de demonstração identificados por endereço IP ou MAC com os respetivos endereços atuais" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## Âmbitos de dispositivo \{#device-scopes}
 
 Selecione **Add** abaixo da tabela Devices, informe um nome e escolha um método de identificação. O editor mostra apenas o campo de identificador correspondente ao método selecionado:
@@ -46,6 +51,8 @@ Selecione **Add** abaixo da tabela Devices, informe um nome e escolha um método
 | MAC address         | Os endereços atuais de ARP, NDP e concessões DHCP desse MAC.                      |
 
 A linha do dispositivo seleciona as suas listas, domínios permitidos e estado de ativação. Ao guardar, regressa a Scopes; selecione o lápis ou faça duplo clique numa linha para a editar. Um processo em segundo plano atualiza as sub-redes e os endereços atuais dos dispositivos a cada minuto quando o bloqueio de DNS tem um âmbito de rede ou dispositivo ativado, ou quando a proteção DNS do Bypass precisa de identificar clientes. O Sync do pacote inicia a mesma atualização apenas nessa condição.
+
+<img src={deviceEditor} alt="Página Edit Device de um tablet de demonstração identificado por endereço IP, com uma lista selecionada e um domínio permitido" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Ordem de decisão \{#decision-order}
 

@@ -387,7 +387,7 @@ sinkholeTestRun([
             sinkholeTestAssertSame(
                 array_map(
                     static fn (string $key): string => \PfSense\Sinkhole\Runtime\Translator::translateForLocale($locale, $key),
-                    ['general', 'lists', 'services', 'scopes', 'alerts', 'bypass', 'ip', 'status', 'about'],
+                    ['general', 'lists', 'services', 'safesearch', 'scopes', 'alerts', 'bypass', 'ip', 'status', 'about'],
                 ),
                 array_column(pfsensePackageSinkholeTabs('status'), 0),
                 'Every shared page tab must render for ' . $locale . '.',
@@ -1181,6 +1181,232 @@ sinkholeTestRun([
                 false,
                 file_exists($paths->runtimeScriptFile),
                 'The guard must not install runtime files.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'pfBlockerNG guard refuses an empty slot while pfBlockerNG is installed and enabled' => static function (): void {
+        global $sinkholeStubUnboundConfigureCount;
+        global $sinkholeStubWrites;
+
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            sinkholeStubReset([
+                'installedpackages' => [
+                    'package' => [
+                        ['name' => 'pfBlockerNG-devel', 'version' => '3.2.0_20'],
+                    ],
+                    'pfblockerng' => [
+                        'config' => [
+                            ['enable_cb' => 'on'],
+                        ],
+                    ],
+                    'sinkhole' => [
+                        'config' => [
+                            ['enabled' => 'on'],
+                        ],
+                    ],
+                ],
+                'unbound' => [
+                    'enable' => '',
+                    'python_script' => '',
+                ],
+                'system' => [],
+            ]);
+            $paths = sinkholeAdapterTestPaths($directory);
+            $adapter = new PfSenseAdapter($paths);
+            $result = $adapter->enableDnsResolverIntegration();
+
+            sinkholeTestAssertSame(true, $adapter->pfBlockerNgActive(), 'pfBlockerNG must be detected.');
+            sinkholeTestAssertSame(false, $result['active'], 'Sinkhole must not activate beside pfBlockerNG.');
+            sinkholeTestAssertSame('pfblockerng_active', $result['reason_key'], 'The pfBlockerNG reason must be reported.');
+            sinkholeTestAssertSame('', config_get_path('unbound/python_script'), 'The empty slot must stay empty.');
+            sinkholeTestAssertSame(false, config_path_enabled('unbound', 'python'), 'Python mode must stay off.');
+            sinkholeTestAssertSame([], $sinkholeStubWrites, 'The guard must not write configuration.');
+            sinkholeTestAssertSame(0, $sinkholeStubUnboundConfigureCount, 'The guard must not restart Unbound.');
+            sinkholeTestAssertSame(
+                false,
+                file_exists($paths->runtimeScriptFile),
+                'The guard must not install runtime files.',
+            );
+            sinkholeTestAssertSame(
+                'pfblockerng_active',
+                $adapter->dnsResolverStatus(true)['reason_key'],
+                'Status must report pfBlockerNG as the inactive reason.',
+            );
+            sinkholeTestAssertSame(false, $adapter->isIntegrationActive(), 'Integration must not count as active.');
+
+            $inputErrors = [];
+            pfsensePackageSinkholeValidate(
+                ['enabled' => 'on', 'update_frequency' => 'daily', 'update_check_frequency' => 'never'],
+                $inputErrors,
+            );
+            sinkholeTestAssertSame(
+                [pfsensePackageSinkholeTranslate('pfblockerng_active')],
+                $inputErrors,
+                'Saving Enable must fail while pfBlockerNG is active.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'pfBlockerNG guard ignores kept settings and a disabled package' => static function (): void {
+        $cases = [
+            'settings kept after removal' => [
+                'package' => [
+                    ['name' => 'Sinkhole', 'version' => '1.0.2'],
+                ],
+                'enable_cb' => 'on',
+            ],
+            'installed but disabled' => [
+                'package' => [
+                    ['name' => 'pfBlockerNG', 'version' => '3.2.0_8'],
+                ],
+                'enable_cb' => '',
+            ],
+        ];
+
+        foreach ($cases as $label => $case) {
+            $directory = sinkholeTestTemporaryDirectory();
+
+            try {
+                sinkholeStubReset([
+                    'installedpackages' => [
+                        'package' => $case['package'],
+                        'pfblockerng' => [
+                            'config' => [
+                                ['enable_cb' => $case['enable_cb']],
+                            ],
+                        ],
+                    ],
+                    'unbound' => [
+                        'enable' => '',
+                        'python_script' => '',
+                    ],
+                    'system' => [],
+                ]);
+                $adapter = new PfSenseAdapter(sinkholeAdapterTestPaths($directory));
+
+                sinkholeTestAssertSame(false, $adapter->pfBlockerNgActive(), $label . ' must not count as active.');
+                sinkholeTestAssertSame(
+                    true,
+                    $adapter->enableDnsResolverIntegration()['active'],
+                    $label . ' must leave the slot available.',
+                );
+
+                $inputErrors = [];
+                pfsensePackageSinkholeValidate(
+                    ['enabled' => 'on', 'update_frequency' => 'daily', 'update_check_frequency' => 'never'],
+                    $inputErrors,
+                );
+                sinkholeTestAssertSame([], $inputErrors, $label . ' must allow saving Enable.');
+            } finally {
+                sinkholeTestRemoveTemporaryDirectory($directory);
+            }
+        }
+    },
+    'Resolver settings join the managed block only while Sinkhole is enabled' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+        $admin = "server:\n  prefetch: yes";
+
+        try {
+            sinkholeStubReset([
+                'installedpackages' => [
+                    'sinkhole' => [
+                        'config' => [
+                            [
+                                'enabled' => 'on',
+                                'rebind_exceptions' => "plex.direct\nnas.example.com",
+                                'serve_expired_ttl' => '86400',
+                                'serve_expired_client_timeout' => '0',
+                            ],
+                        ],
+                    ],
+                ],
+                'unbound' => [
+                    'enable' => '',
+                    'python_script' => '',
+                    'custom_options' => base64_encode($admin),
+                ],
+                'system' => [],
+            ]);
+            $adapter = new PfSenseAdapter(sinkholeAdapterTestPaths($directory));
+            $adapter->enableDnsResolverIntegration();
+
+            sinkholeTestAssertSame(
+                $admin . "\n" . implode("\n", [
+                    UnboundCustomOptions::BEGIN_MARKER,
+                    'server:',
+                    'private-domain: "nas.example.com"',
+                    'private-domain: "plex.direct"',
+                    'serve-expired-ttl: 86400',
+                    'serve-expired-client-timeout: 0',
+                    UnboundCustomOptions::END_MARKER,
+                ]),
+                base64_decode((string) config_get_path('unbound/custom_options'), true),
+                'Enabled Sinkhole writes the Resolver directives after the administrator text.',
+            );
+
+            $adapter->disableDnsResolverIntegration();
+
+            sinkholeTestAssertSame(
+                $admin,
+                base64_decode((string) config_get_path('unbound/custom_options'), true),
+                'Disabling removes the managed block and keeps the administrator text.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'pfBlockerNG guard gives back a slot Sinkhole already owns' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            sinkholeStubReset([
+                'installedpackages' => [
+                    'sinkhole' => [
+                        'config' => [
+                            ['enabled' => 'on'],
+                        ],
+                    ],
+                ],
+                'unbound' => [
+                    'enable' => '',
+                    'python_order' => 'validator iterator',
+                    'python_script' => '',
+                ],
+                'system' => [],
+            ]);
+            $paths = sinkholeAdapterTestPaths($directory);
+            $stateStore = new StateStore($paths->stateFile);
+            $adapter = new PfSenseAdapter($paths, $stateStore);
+
+            sinkholeTestAssertSame(true, $adapter->enableDnsResolverIntegration()['active'], 'Sinkhole must start active.');
+            sinkholeTestAssertSame('sinkhole', config_get_path('unbound/python_script'), 'Sinkhole must own the slot.');
+
+            config_set_path('installedpackages/package', [
+                ['name' => 'pfBlockerNG', 'version' => '3.2.0_8'],
+            ]);
+            config_set_path('installedpackages/pfblockerng/config', [
+                ['enable_cb' => 'on'],
+            ]);
+            $result = $adapter->enableDnsResolverIntegration();
+
+            sinkholeTestAssertSame(false, $result['active'], 'Sinkhole must step aside for pfBlockerNG.');
+            sinkholeTestAssertSame('pfblockerng_active', $result['reason_key'], 'The pfBlockerNG reason must be reported.');
+            sinkholeTestAssertSame('', config_get_path('unbound/python_script'), 'The prior slot must restore.');
+            sinkholeTestAssertSame(
+                'validator iterator',
+                config_get_path('unbound/python_order'),
+                'The prior module order must restore.',
+            );
+            sinkholeTestAssertSame(false, config_path_enabled('unbound', 'python'), 'Python mode must restore.');
+            sinkholeTestAssertSame(
+                false,
+                file_exists($paths->runtimeScriptFile),
+                'The runtime module must be removed.',
             );
         } finally {
             sinkholeTestRemoveTemporaryDirectory($directory);

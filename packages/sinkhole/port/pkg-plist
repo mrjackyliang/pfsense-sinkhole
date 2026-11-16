@@ -33,6 +33,9 @@ pkg/sinkhole/PackagePaths.php
 pkg/sinkhole/PfSenseAdapter.php
 pkg/sinkhole/PlatformAdapter.php
 pkg/sinkhole/RedirectConfiguration.php
+pkg/sinkhole/SafeSearchConfiguration.php
+pkg/sinkhole/SafeSearchEngines.php
+pkg/sinkhole/SafeSearchTargets.php
 pkg/sinkhole/SavedListStore.php
 pkg/sinkhole/ScopeConfiguration.php
 pkg/sinkhole/ServiceConfiguration.php
@@ -77,6 +80,7 @@ www/sinkhole-bypass_edit.php
 www/sinkhole-lists.php
 www/sinkhole-lists_edit.php
 www/sinkhole-services.php
+www/sinkhole-safesearch.php
 www/sinkhole-ip.php
 www/sinkhole-ip_edit.php
 www/sinkhole-scopes.php

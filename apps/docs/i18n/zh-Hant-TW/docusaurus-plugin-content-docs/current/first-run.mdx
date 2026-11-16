@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 先設定一份可信清單並驗證其已儲存、已編譯、已部署和已載入狀態，再擴展策略。
 
 ## 檢查 Resolver \{#check-the-resolver}
 
 1. 打開 **Services → DNS Resolver**，確認 Resolver 已啓用。
-2. 如果啓用了 pfBlockerNG DNSBL，請選擇由哪個套件負責 DNS 過濾，因為兩個套件無法同時使用 Unbound 的 Python 槽位。
+2. 如果 pfBlockerNG 已安裝並啓用，請選擇由哪個套件過濾 DNS，因為這兩個套件無法同時執行。
 3. 打開 **Firewall → Sinkhole → General**，在準備第一份策略時保持 **Enable** 關閉。
 
-當另一個 Python 腳本佔用該槽位時，Sinkhole 拒絕儲存 **Enable**。以後禁用 Sinkhole 時，只要 Sinkhole 仍擁有這些設定，它就會恢復 Resolver 之前的 Python 設定。
+當 pfBlockerNG 已安裝並啓用，或另一個 Python 腳本佔用該槽位時，Sinkhole 拒絕儲存 **Enable**。以後禁用 Sinkhole 時，只要 Sinkhole 仍擁有這些設定，它就會恢復 Resolver 之前的 Python 設定。
 
 ## 新增清單 \{#add-a-list}
 
@@ -33,6 +35,8 @@ sidebar_position: 3
 4. 如果需要放行已知的誤報，請新增任意全局 **Allowed Domains**，每行一個域名。
 
 Sinkhole 不推薦任何來源。[清單和已儲存副本](/docs/configure/lists)說明可接受的格式，以及目錄結果如何成為普通清單行。
+
+<img src={listsTab} alt="Lists 選項卡顯示五個演示封鎖清單及其 Global 和 Used By 欄，以及兩個全域允許網域" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 新增可選作用域 \{#add-optional-scopes}
 

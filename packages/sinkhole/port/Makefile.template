@@ -100,6 +100,12 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/RedirectConfiguration.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/SafeSearchConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/SafeSearchEngines.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/SafeSearchTargets.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/SavedListStore.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ScopeConfiguration.php \
@@ -171,6 +177,8 @@ do-install:
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-lists_edit.php \
 		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-services.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-safesearch.php \
 		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-ip.php \
 		${STAGEDIR}${PREFIX}/www

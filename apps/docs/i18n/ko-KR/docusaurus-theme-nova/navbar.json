@@ -1,14 +1,54 @@
 {
-  "item.label.Home": {
-    "message": "홈",
-    "description": "Navbar item with label \"Home\""
+  "item.label.Docs": {
+    "message": "문서",
+    "description": "Navbar item with label \"Docs\""
   },
-  "item.label.Guides": {
-    "message": "가이드",
-    "description": "Navbar item with label \"Guides\""
+  "item.label.Overview": {
+    "message": "개요",
+    "description": "Navbar item with label \"Overview\""
+  },
+  "item.label.Quick Start": {
+    "message": "빠른 시작",
+    "description": "Navbar item with label \"Quick Start\""
+  },
+  "item.label.Blog": {
+    "message": "블로그",
+    "description": "Navbar item with label \"Blog\""
+  },
+  "item.label.Configure": {
+    "message": "구성",
+    "description": "Navbar item with label \"Configure\""
+  },
+  "item.label.Operate": {
+    "message": "운영",
+    "description": "Navbar item with label \"Operate\""
+  },
+  "item.label.Reference": {
+    "message": "참조",
+    "description": "Navbar item with label \"Reference\""
+  },
+  "item.label.Safety": {
+    "message": "안전",
+    "description": "Navbar item with label \"Safety\""
+  },
+  "item.label.Contributing": {
+    "message": "기여하기",
+    "description": "Navbar item with label \"Contributing\""
+  },
+  "item.label.Resources": {
+    "message": "리소스",
+    "description": "Navbar item with label \"Resources\""
   },
   "item.label.Troubleshooting": {
     "message": "문제 해결",
     "description": "Navbar item with label \"Troubleshooting\""
+  },
+  "item.label.Changelog": {
+    "message": "변경 로그",
+    "description": "Navbar item with label \"Changelog\""
+  },
+  "item.label.Report an Issue": {
+    "message": "문제 신고",
+    "description": "Navbar item with label \"Report an Issue\""
   }
 }

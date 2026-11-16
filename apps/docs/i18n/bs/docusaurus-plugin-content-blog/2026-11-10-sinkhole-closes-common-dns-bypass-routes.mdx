@@ -1,0 +1,60 @@
+---
+title: "Sinkhole zatvara uobičajene puteve oko DNS blokiranja"
+description: Kartica Bypass u Sinkholeu 1.0 sprečava uređaje na odabranim interfejsima da zaobiđu DNS zaštitnog zida, a svaka zaštita ostaje isključena dok je ne uključite.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - zaštita od zaobilaženja
+  - dns preusmjeravanje
+  - šifrirani dns
+  - blokiranje vpn-a
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+Sinkhole for pfSense 1.0, objavljen 10. novembra 2026, uključuje karticu Bypass koja sprečava uređaje na interfejsima koje odaberete da zaobiđu DNS zaštitnog zida, a upravo kroz taj propust uređaji izbjegavaju većinu DNS blokiranja.
+
+{/* truncate */}
+
+## Zašto je to važno \{#why-it-matters}
+
+DNS blokiranje radi samo dok uređaji pitaju zaštitni zid. Uređaj s fiksno upisanim resolverom, DNS-om preko HTTPS-a, Torom ili VPN-om može potpuno zaobići liste za blokiranje.
+
+Zatvaranje tih putanja ranije je značilo ručno napravljena NAT pravila preusmjeravanja i pravila zaštitnog zida za svaki interfejs. Kartica Bypass svaku zaštitu pretvara u jednu postavku, primijenjenu na interfejse koje odaberete.
+
+## Šta se nalazi na kartici Bypass \{#whats-on-the-bypass-tab}
+
+Svaka zaštita je podrazumijevano isključena i nijedan interfejs nije odabran dok ga sami ne odaberete.
+
+### Obični DNS \{#plain-dns}
+
+- **Redirect** — šalje običan DNS na portu 53 prema zaštitnom zidu i pritom čuva izvornu adresu svakog uređaja, pa se mrežne liste i liste uređaja i dalje primjenjuju.
+
+### Šifrirani DNS \{#encrypted-dns}
+
+- **TLS and QUIC** — blokira port 853 prema svakom odredištu osim zaštitnog zida.
+- **Providers** — blokira nazive i adrese s lista pružalaca šifriranog DNS-a koje dodate.
+- **Firefox** — isključuje Firefoxov automatski odabir DNS-a preko HTTPS-a.
+- **Private Relay** — kompatibilnim Apple uređajima poručuje da iCloud Private Relay nije dostupan na ovoj mreži.
+- **Discovery** — odgovara na upite za otkrivanje šifriranog DNS-a ili oglašava vlastiti DNS preko TLS-a zaštitnog zida.
+
+### Tuneli \{#tunnels}
+
+- **Tor** — blokira Tor releje s liste.
+- **VPN** — blokira VPN pružaoce s liste i standardne VPN portove: TCP i UDP 1194, UDP 51820, UDP 500 i 4500 te ESP.
+
+Bypass Lists dodaju se putem URL-a ili iz Bypass kataloga, ažuriraju se prema rasporedu lista i zadržavaju posljednju ispravnu kopiju kada preuzimanje ne uspije.
+
+## Šta ne obećava \{#what-it-doesnt-promise}
+
+Ove kontrole zatvaraju uobičajene puteve, a ne svaki put. Prilagođeni šifrirani tunel i dalje može zaobići pravila zasnovana na DNS-u, a dokumentacija to jasno navodi.
+
+## Započnite \{#get-started}
+
+Otvorite **Firewall → Sinkhole → Bypass**, odaberite klijentske interfejse i uključite zaštite koje želite. Uputstvo [Zaštita od zaobilaženja](/docs/configure/bypass-protection) opisuje svaku postavku.
+
+Sinkhole for pfSense donosi DNS, IP i blokiranje država po opsezima u pfSense, sa svakom listom sačuvanom na zaštitnom zidu.

@@ -1,33 +1,63 @@
 {
-  "layout.learn.title": {
-    "message": "Guias"
+  "layout.docs.title": {
+    "message": "Documentação"
   },
   "layout.resources.title": {
     "message": "Recursos"
   },
-  "sections.learn.0.label": {
-    "message": "Instalar o Sinkhole"
+  "layout.project.title": {
+    "message": "Projeto"
   },
-  "sections.learn.1.label": {
-    "message": "Listas e cópias guardadas"
+  "layout.legal.title": {
+    "message": "Informação legal"
   },
-  "sections.learn.2.label": {
-    "message": "Definir o âmbito da política DNS"
+  "sections.docs.0.label": {
+    "message": "Visão geral"
   },
-  "sections.learn.4.label": {
-    "message": "Resolução de problemas"
+  "sections.docs.1.label": {
+    "message": "Configuração"
+  },
+  "sections.docs.2.label": {
+    "message": "Operação"
+  },
+  "sections.docs.3.label": {
+    "message": "Referência"
+  },
+  "sections.docs.4.label": {
+    "message": "Segurança"
+  },
+  "sections.docs.5.label": {
+    "message": "Contribuir"
   },
   "sections.resources.0.label": {
-    "message": "Como funcionam as atualizações"
+    "message": "Blogue"
   },
   "sections.resources.1.label": {
-    "message": "Testes e verificação"
+    "message": "Resolução de problemas"
   },
   "sections.resources.2.label": {
-    "message": "Documentação pfSense"
+    "message": "Registo de alterações"
   },
   "sections.resources.3.label": {
+    "message": "Comunicar um problema"
+  },
+  "sections.resources.4.label": {
     "message": "Código-fonte"
+  },
+  "sections.project.0.label": {
+    "message": "Patrocinar"
+  },
+  "sections.project.1.label": {
+    "message": "Documentação pfSense"
+  },
+  "sections.project.2.label": {
+    "message": "Outros projetos"
+  },
+  "sections.legal.0.label": {
+    "message": "Licença"
+  },
+  "cta.label": {
+    "message": "Pronto para escolher o que a sua rede alcança?"
   },
   "copyright": {
     "message": "Copyright © 2026 Jacky Liang. MIT.",

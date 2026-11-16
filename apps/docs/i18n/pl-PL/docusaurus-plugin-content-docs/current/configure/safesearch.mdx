@@ -1,0 +1,72 @@
+---
+id: safesearch
+title: SafeSearch
+description: Zablokuj wyszukiwarki w trybie bezpiecznym dla całej sieci, jednego VLAN-u lub jednego urządzenia, odpowiadając na nazwy każdej wyszukiwarki jej opublikowanym bezpiecznym hostem.
+keywords:
+  - sinkhole for pfsense
+  - safesearch
+  - bezpieczne wyszukiwanie
+  - tryb ograniczony youtube
+  - zakres sieci
+tags:
+  - configure
+  - safesearch
+  - dns
+---
+
+import safesearchTab from './_assets_/safesearch-1.png';
+
+Użyj **Firewall → Sinkhole → SafeSearch**, aby utrzymać wyszukiwarki w trybie bezpiecznym dla sieci lub urządzenia bez zmieniania jakichkolwiek ustawień przeglądarki czy urządzenia.
+
+## Dlaczego warto używać SafeSearch? \{#why-use-safesearch}
+
+1. Wymusza tryb bezpieczny na poziomie sieci, dzięki czemu niezalogowana przeglądarka, nowe urządzenie lub okno prywatne nadal otrzymują filtrowane wyniki.
+2. Obejmuje każdą krajową domenę Google, nie tylko `google.com`, więc przejście na `google.co.uk` nie pozwala tego obejść.
+3. Korzysta z tych samych zakresów co listy blokowania, więc VLAN dla dzieci może mieć SafeSearch, a reszta sieci nie.
+
+## Wybieranie zakresu i wyszukiwarek \{#choose-a-scope-and-engines}
+
+1. Wybierz **Global**, skonfigurowaną sieć lub skonfigurowane urządzenie w polu **Scope**.
+2. Zaznacz każdą wyszukiwarkę do zablokowania i wybierz **Moderate** lub **Strict** dla YouTube.
+3. Wybierz **Save**.
+
+Sieć lub urządzenie musi istnieć na karcie **Scopes**, zanim pojawi się tutaj. Zapisanie od razu sprawdza każdy bezpieczny host i stosuje zmianę w tle.
+
+<img src={safesearchTab} alt="Karta SafeSearch dla zakresu tabletu demonstracyjnego z wymuszonym SafeSearch dla Google, Bing, DuckDuckGo i Brave Search, YouTube ustawionym na Strict oraz używanymi bezpiecznymi adresami" width={1024} height={1271} style={{maxWidth: '100%', height: 'auto'}} />
+
+| Wyszukiwarka | Obsługiwane nazwy                                                                      | Bezpieczny host                                                               |
+|--------------|----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| Google       | `google.<domain>` i `www.google.<domain>` dla wszystkich 194 domen wyszukiwania Google | `forcesafesearch.google.com`                                                  |
+| YouTube      | `youtube.com`, `www.youtube.com`, `m.youtube.com`, nazwy API i osadzania YouTube       | `restrictmoderate.youtube.com` (Moderate) lub `restrict.youtube.com` (Strict) |
+| Bing         | `bing.com`, `www.bing.com`, `edgeservices.bing.com`                                    | `strict.bing.com`                                                             |
+| DuckDuckGo   | `duckduckgo.com`, `www.duckduckgo.com`, `start.duckduckgo.com`                         | `safe.duckduckgo.com`                                                         |
+| Brave Search | `search.brave.com`                                                                     | `forcesafe.search.brave.com`                                                  |
+| Startpage    | `startpage.com`, `www.startpage.com`                                                   | `safe.startpage.com`                                                          |
+| Ecosia       | `ecosia.org`, `www.ecosia.org`                                                         | `strict-safe-search.ecosia.org`                                               |
+| Yandex       | Domeny wyszukiwania Yandex i `ya.ru`                                                   | `familysearch.yandex.ru`                                                      |
+| Pixabay      | `pixabay.com`, `www.pixabay.com`                                                       | `safesearch.pixabay.com`                                                      |
+| Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                        | Brak; Qwant jest blokowany                                                    |
+
+Qwant nie publikuje hosta SafeSearch, więc wybranie go blokuje Qwant w danym zakresie.
+
+## Łączenie zakresów \{#how-scopes-combine}
+
+Klient otrzymuje łącznie wszystkie wyszukiwarki wybrane dla **Global**, dla sieci, w której się znajduje, oraz dla swojego urządzenia. Gdy YouTube występuje z oboma poziomami, wygrywa **Strict**.
+
+SafeSearch działa po blokowaniu. Nazwa zablokowana dla klienta przez listę lub zablokowaną usługę pozostaje zablokowana, a dozwolone domeny nie wyłączają SafeSearch. Tak jak każdy klient bez zakresu, własne zapytania zapory otrzymują wyszukiwarki wybrane dla **Global**.
+
+## Jak działa odpowiedź \{#how-the-answer-works}
+
+Dla wybranej wyszukiwarki Sinkhole odpowiada na jej nazwę rekordem CNAME wskazującym bezpieczny host wraz z adresami tego hosta, czyli tą samą odpowiedzią, jaką daje ręcznie napisany widok Unbound. Inne typy rekordów, takie jak rekordy HTTPS, otrzymują tylko CNAME, więc przeglądarka nie może użyć wskazówek prowadzących z pominięciem bezpiecznego hosta.
+
+Sinkhole sprawdza adresy każdego bezpiecznego hosta przy zapisie i przy każdej aktualizacji list, a gdy zapytanie się nie powiedzie, zachowuje ostatnie prawidłowe adresy. Wyszukiwarka, której bezpieczny host nigdy nie zwrócił adresu, jest blokowana w swoich zakresach, dopóki zapytanie się nie powiedzie.
+
+Odpowiedzi SafeSearch nigdy nie trafiają do pamięci podręcznej Resolvera, więc odpowiedź dla jednego klienta nigdy nie dociera do klienta spoza zakresu.
+
+## Weryfikacja SafeSearch \{#verify-safesearch}
+
+1. Otwórz **Status** i sprawdź, czy panel **SafeSearch** pokazuje każdy bezpieczny host z adresami i bez błędu.
+2. Z klienta w zakresie wyszukaj nazwę wyszukiwarki, na przykład `nslookup www.google.com`, i sprawdź, czy odpowiedź wskazuje bezpieczny host.
+3. Z klienta spoza zakresu sprawdź, czy to samo zapytanie zwraca zwykłą odpowiedź wyszukiwarki.
+
+Szyfrowany DNS wysyłany przez klienta w inne miejsce omija wszystkie zasady DNS, w tym SafeSearch. [Ochrona przed omijaniem](/docs/configure/bypass-protection) utrzymuje wybrane interfejsy na ścieżce DNS Sinkhole.

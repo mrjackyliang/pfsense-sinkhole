@@ -1,74 +1,161 @@
 {
-  "homepage.hero.eyebrow": {
-    "message": "Natywny pakiet pfSense"
-  },
-  "homepage.hero.heading": {
-    "message": "Wybierz, do czego może dotrzeć każda sieć i każde urządzenie."
-  },
-  "homepage.hero.tagline": {
+  "home.meta.description": {
     "message": "Stosuj zapisane listy DNS do całej sieci, jednego VLAN-u lub urządzenia, z celowymi alertami i bez drugiego serwera."
   },
-  "homepage.hero.ctaLabel": {
-    "message": "Zainstaluj Sinkhole"
+  "home.meta.title": {
+    "message": "Sinkhole for pfSense - Blokowanie DNS, IP i krajów według zakresu"
   },
-  "homepage.hero.secondaryCtaLabel": {
-    "message": "Zaplanuj scopes"
+  "home.hero.eyebrow": {
+    "message": "Natywny pakiet pfSense"
   },
-  "homepage.stats.heading": {
-    "message": "Jedna zapora, zasady na każdym użytecznym poziomie"
+  "home.hero.heading": {
+    "message": "Wybierz, do czego może dotrzeć każda sieć i każde urządzenie."
   },
-  "homepage.stats.description": {
-    "message": "Sinkhole utrzymuje zasady lokalnie i jasno pokazuje granice działania."
+  "home.hero.tagline": {
+    "message": "Stosuj zapisane listy DNS do całej sieci, jednego VLAN-u lub urządzenia, z celowymi alertami i bez drugiego serwera."
   },
-  "homepage.stats.policyScopes": {
-    "message": "Zakresy zasad"
+  "home.hero.primaryAction": {
+    "message": "Rozpocznij"
   },
-  "homepage.stats.dnsListFormats": {
-    "message": "Formaty list DNS"
+  "home.hero.secondaryAction": {
+    "message": "Dowiedz się więcej"
   },
-  "homepage.stats.catalogCache": {
-    "message": "Pamięć podręczna katalogów"
+  "home.preview.ariaLabel": {
+    "message": "Przykładowa decyzja DNS dla urządzenia w sieci VLAN"
   },
-  "homepage.stats.unboundSlot": {
-    "message": "Miejsce modułu Unbound"
+  "home.preview.title": {
+    "message": "Decyzja DNS"
   },
-  "homepage.features.heading": {
-    "message": "Kontrola pozostająca na zaporze"
+  "home.preview.blocked": {
+    "message": "Zablokowano"
   },
-  "homepage.features.scopes.title": {
+  "home.preview.query": {
+    "message": "Zapytanie"
+  },
+  "home.preview.client": {
+    "message": "Klient"
+  },
+  "home.preview.network": {
+    "message": "Sieć"
+  },
+  "home.preview.deviceLists": {
+    "message": "Listy urządzenia"
+  },
+  "home.preview.noMatch": {
+    "message": "Brak dopasowania"
+  },
+  "home.preview.networkLists": {
+    "message": "Listy sieci"
+  },
+  "home.preview.globalLists": {
+    "message": "Listy globalne"
+  },
+  "home.preview.notReached": {
+    "message": "Nie sprawdzono"
+  },
+  "home.preview.result": {
+    "message": "odpowiedź z zapisanych list"
+  },
+  "home.features.scopes.title": {
     "message": "Określ zakres każdej decyzji"
   },
-  "homepage.features.scopes.description": {
+  "home.features.scopes.description": {
     "message": "Stosuj listy i dozwolone domeny globalnie, według interfejsu lub VLAN-u i według urządzenia."
   },
-  "homepage.features.savedLists.title": {
+  "home.features.savedLists.title": {
     "message": "Zachowuj ostatnie prawidłowe kopie"
   },
-  "homepage.features.savedLists.description": {
+  "home.features.savedLists.description": {
     "message": "Odpowiadaj na DNS z lokalnych list mimo restartów, przeładowań i nieudanych pobrań."
   },
-  "homepage.features.alerts.title": {
+  "home.features.alerts.title": {
     "message": "Alerty z zamiarem"
   },
-  "homepage.features.alerts.description": {
+  "home.features.alerts.description": {
     "message": "Powiadamiaj tylko o listach, sieciach i urządzeniach wybranych w każdej regule."
   },
-  "homepage.features.redirect.title": {
+  "home.features.redirect.title": {
     "message": "Chroń ścieżki DNS"
   },
-  "homepage.features.redirect.description": {
+  "home.features.redirect.description": {
     "message": "Opcjonalnie przekierowuj zwykły DNS lub blokuj typowe obejścia przez szyfrowany DNS i tunele na wybranych interfejsach."
   },
-  "homepage.features.catalogs.title": {
+  "home.features.catalogs.title": {
     "message": "Wyszukaj i zdecyduj"
   },
-  "homepage.features.catalogs.description": {
+  "home.features.catalogs.description": {
     "message": "Przeszukuj obsługiwane katalogi na żądanie bez dołączania ani polecania listy."
   },
-  "homepage.features.ipCountry.title": {
+  "home.features.ipCountry.title": {
     "message": "Blokuj adresy i kraje"
   },
-  "homepage.features.ipCountry.description": {
+  "home.features.ipCountry.description": {
     "message": "Stosuj listy IP i zasady krajów GeoLite2 przez izolowaną kotwicę `sinkhole/ip`."
+  },
+  "home.blogPreview.heading": {
+    "message": "Z bloga"
+  },
+  "home.blogPreview.description": {
+    "message": "Premiery, kamienie milowe i nowości w Sinkhole for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Wewnątrz WebGUI pfSense"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Strony Sinkhole"
+  },
+  "home.showcase.scopes.label": {
+    "message": "Zakresy"
+  },
+  "home.showcase.scopes.heading": {
+    "message": "Różne reguły dla każdej sieci i urządzenia"
+  },
+  "home.showcase.scopes.description": {
+    "message": "Nadaj sieci lub pojedynczemu urządzeniu własne listy i dozwolone domeny. Każde zapytanie DNS podlega najbardziej szczegółowemu pasującemu zakresowi."
+  },
+  "home.showcase.scopes.link": {
+    "message": "Skonfiguruj zakresy"
+  },
+  "home.showcase.scopes.alt": {
+    "message": "Strona Zakresy w Sinkhole z zakresem sieci LAN i trzema zakresami urządzeń"
+  },
+  "home.showcase.services.label": {
+    "message": "Usługi"
+  },
+  "home.showcase.services.heading": {
+    "message": "Zablokuj całą usługę jednym kliknięciem"
+  },
+  "home.showcase.services.description": {
+    "message": "Wybierz gry, media społecznościowe, streaming i inne usługi z buforowanego rejestru usług — dla wszystkich albo dla jednej sieci lub urządzenia. Dozwolone domeny nadal mają pierwszeństwo."
+  },
+  "home.showcase.services.link": {
+    "message": "Zablokuj usługi"
+  },
+  "home.showcase.services.alt": {
+    "message": "Strona Zablokowane usługi w Sinkhole z usługami gier dla zakresu urządzenia"
+  },
+  "home.showcase.status.label": {
+    "message": "Stan"
+  },
+  "home.showcase.status.heading": {
+    "message": "Wiedz, co jest załadowane, a co nieaktualne"
+  },
+  "home.showcase.status.description": {
+    "message": "Stan pokazuje każdą listę z liczbą wpisów i datą ostatniej aktualizacji oraz zakresy, sieci i urządzenia, które Sinkhole w tej chwili stosuje."
+  },
+  "home.showcase.status.link": {
+    "message": "Przeczytaj o stronie Stan"
+  },
+  "home.showcase.status.alt": {
+    "message": "Strona Stan w Sinkhole z panelami list, zakresów, sieci i urządzeń"
+  },
+  "home.showcase.scopes.title": {
+    "message": "pfSense.home.arpa - Zapora: Sinkhole: Zakresy"
+  },
+  "home.showcase.services.title": {
+    "message": "pfSense.home.arpa - Zapora: Sinkhole: Usługi"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Zapora: Sinkhole: Stan"
   }
 }

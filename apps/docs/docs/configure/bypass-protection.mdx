@@ -24,7 +24,7 @@ Open **Firewall → Sinkhole → Bypass** and select **Apply to** interfaces bef
 
 Network and device matching uses those interfaces' current subnets, just like ordinary Sinkhole scopes. A client outside the selected subnets receives no Bypass DNS answer.
 
-<img src={bypassProtection} alt="Bypass tab showing LAN selected, plain-DNS redirect off, encrypted-DNS and tunnel protections on, Discovery set to Answer with no records, and three demo Bypass Lists" width={1024} height={1326} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass tab showing LAN selected, plain-DNS redirect off, encrypted-DNS and tunnel protections on, Discovery set to Answer with no records, and three demo Bypass Lists" width={1024} height={1470} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Redirect Plain DNS \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-Turning Discovery off or removing Sinkhole removes the block. Sinkhole leaves every other **Custom options** line unchanged. Clients outside the selected interfaces, including the firewall itself, continue receiving `NXDOMAIN` for `_dns.resolver.arpa`.
+Turning Discovery off or removing Sinkhole removes the zone line. The same block also carries any [Resolver Settings](/docs/configure/resolver-settings), and Sinkhole leaves every other **Custom options** line unchanged. Clients outside the selected interfaces, including the firewall itself, continue receiving `NXDOMAIN` for `_dns.resolver.arpa`.
 
 ## Protect Against Tunnels \{#protect-against-tunnels}
 

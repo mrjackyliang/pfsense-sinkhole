@@ -37,7 +37,10 @@ MAXIMUM_QUEUED_EVENTS: Final[int] = 10_000
 CLIENT_LOOKUP_CACHE_SIZE: Final[int] = 4_096
 MANIFEST_SCHEMA_VERSION: Final[int] = 3
 CLIENT_MAP_SCHEMA_VERSION: Final[int] = 2
-STASH_VERSION: Final[int] = 4
+STASH_VERSION: Final[int] = 5
+MAXIMUM_SAFESEARCH_NAMES: Final[int] = 5_000
+MAXIMUM_SAFESEARCH_CHOICES: Final[int] = 32
+MAXIMUM_SAFESEARCH_ADDRESSES: Final[int] = 16
 STASH_ATTRIBUTE: Final[str] = "_sinkhole_unbound_policy_stash"
 BYPASS_KIND_BITS: Final[dict[str, int]] = {
     "encrypted_dns": 1,
@@ -84,6 +87,12 @@ class SinkholeData:
         "list_count",
         "list_ids_by_bit",
         "alert_rules",
+        "safesearch_names",
+        "safesearch_choices",
+        "safesearch_engine_masks",
+        "safesearch_global_mask",
+        "safesearch_network_masks",
+        "safesearch_device_masks",
     )
 
     def __init__(
@@ -115,6 +124,14 @@ class SinkholeData:
             ],
             ...,
         ],
+        safesearch: tuple[
+            dict[str, int],
+            tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...],
+            tuple[int, ...],
+            int,
+            dict[str, int],
+            dict[str, int],
+        ] | None = None,
     ) -> None:
         """Initialize one complete policy generation."""
 
@@ -137,6 +154,47 @@ class SinkholeData:
         self.list_count = list_count
         self.list_ids_by_bit = list_ids_by_bit
         self.alert_rules = alert_rules
+        (
+            self.safesearch_names,
+            self.safesearch_choices,
+            self.safesearch_engine_masks,
+            self.safesearch_global_mask,
+            self.safesearch_network_masks,
+            self.safesearch_device_masks,
+        ) = safesearch if safesearch is not None else ({}, (), (), 0, {}, {})
+
+    def is_safesearch_name(self, name: str) -> bool:
+        """Return whether cache storage could skip a scoped SafeSearch answer."""
+
+        return name in self.safesearch_names
+
+    def safesearch_choice(
+        self,
+        name: str,
+        device_id: str | None,
+        network_id: str | None,
+    ) -> tuple[str, tuple[str, ...], tuple[str, ...]] | None:
+        """Return the client's SafeSearch target and addresses for an engine name."""
+
+        engine_index = self.safesearch_names.get(name)
+
+        if engine_index is None:
+            return None
+
+        client_mask = self.safesearch_global_mask
+
+        if network_id is not None:
+            client_mask |= self.safesearch_network_masks.get(network_id, 0)
+
+        if device_id is not None:
+            client_mask |= self.safesearch_device_masks.get(device_id, 0)
+
+        choice_mask = client_mask & self.safesearch_engine_masks[engine_index]
+
+        if choice_mask == 0:
+            return None
+
+        return self.safesearch_choices[choice_mask.bit_length() - 1]
 
     def match(self, name: str) -> tuple[bool, bool]:
         """Return whether ``name`` is listed and blocked in the global scope."""
@@ -588,6 +646,161 @@ def _load_bypass_manifest(
     )
 
 
+def _safesearch_addresses(value: Any, version: int) -> tuple[str, ...]:
+    """Validate and canonicalize one compiled SafeSearch address family."""
+
+    if not isinstance(value, list) or len(value) > MAXIMUM_SAFESEARCH_ADDRESSES:
+        raise ValueError("the SafeSearch addresses are invalid")
+
+    addresses: list[str] = []
+
+    for address in value:
+        if not isinstance(address, str):
+            raise ValueError("the SafeSearch addresses are invalid")
+
+        parsed = ipaddress.ip_address(address)
+
+        if parsed.version != version:
+            raise ValueError("a SafeSearch address has the wrong family")
+
+        addresses.append(str(parsed))
+
+    return tuple(addresses)
+
+
+def _safesearch_selection_mask(value: Any, bits: dict[str, int]) -> int:
+    """Convert one scope's SafeSearch choice list to a bit mask."""
+
+    if not isinstance(value, list):
+        raise ValueError("a SafeSearch scope selection is invalid")
+
+    mask = 0
+
+    for identifier in value:
+        if not isinstance(identifier, str) or identifier not in bits:
+            raise ValueError("a SafeSearch scope references an unknown choice")
+
+        mask |= 1 << bits[identifier]
+
+    return mask
+
+
+def _load_safesearch_manifest(
+    value: Any,
+) -> tuple[
+    dict[str, int],
+    tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...],
+    tuple[int, ...],
+    int,
+    dict[str, int],
+    dict[str, int],
+]:
+    """Validate compiled SafeSearch choices, engine names and scope selections."""
+
+    if value is None:
+        return {}, (), (), 0, {}, {}
+
+    if not isinstance(value, dict):
+        raise ValueError("the manifest SafeSearch configuration is invalid")
+
+    choices = value.get("choices")
+    engines = value.get("engines")
+    scopes = value.get("scopes")
+
+    if (
+        not isinstance(choices, dict)
+        or not isinstance(engines, dict)
+        or not isinstance(scopes, dict)
+        or len(choices) > MAXIMUM_SAFESEARCH_CHOICES
+    ):
+        raise ValueError("the manifest SafeSearch configuration is invalid")
+
+    engine_indexes: dict[str, int] = {}
+    names: dict[str, int] = {}
+
+    for engine, engine_names in engines.items():
+        if (
+            not isinstance(engine, str)
+            or re.fullmatch(r"[a-z][a-z0-9_]{0,31}", engine) is None
+            or not isinstance(engine_names, list)
+        ):
+            raise ValueError("a SafeSearch engine is invalid")
+
+        engine_indexes[engine] = len(engine_indexes)
+
+        for engine_name in engine_names:
+            normalized = _normalize_compiled_name(engine_name)
+
+            if normalized is None or normalized != engine_name or normalized in names:
+                raise ValueError("a SafeSearch engine name is invalid")
+
+            names[normalized] = engine_indexes[engine]
+
+            if len(names) > MAXIMUM_SAFESEARCH_NAMES:
+                raise ValueError("the SafeSearch names exceed the limit")
+
+    bits: dict[str, int] = {}
+    compiled_choices: list[tuple[str, tuple[str, ...], tuple[str, ...]]] = []
+    engine_masks = [0] * len(engine_indexes)
+
+    for identifier, choice in choices.items():
+        if (
+            not isinstance(identifier, str)
+            or re.fullmatch(r"[a-z][a-z0-9_]{0,31}", identifier) is None
+            or not isinstance(choice, dict)
+            or choice.get("engine") not in engine_indexes
+        ):
+            raise ValueError("a SafeSearch choice is invalid")
+
+        target = choice.get("target")
+
+        if not isinstance(target, str) or (
+            target != "" and _normalize_compiled_name(target) != target
+        ):
+            raise ValueError("a SafeSearch target is invalid")
+
+        bits[identifier] = len(compiled_choices)
+        engine_masks[engine_indexes[choice["engine"]]] |= 1 << bits[identifier]
+        compiled_choices.append(
+            (
+                target,
+                _safesearch_addresses(choice.get("ipv4"), 4),
+                _safesearch_addresses(choice.get("ipv6"), 6),
+            )
+        )
+
+    global_mask = _safesearch_selection_mask(scopes.get("global"), bits)
+    scope_masks: list[dict[str, int]] = []
+
+    for kind in ("networks", "devices"):
+        group = scopes.get(kind)
+
+        if not isinstance(group, dict):
+            raise ValueError("a SafeSearch scope group is invalid")
+
+        masks: dict[str, int] = {}
+
+        for identifier, selection in group.items():
+            if (
+                not isinstance(identifier, str)
+                or re.fullmatch(r"[a-f0-9]{32}", identifier) is None
+            ):
+                raise ValueError("a SafeSearch scope identifier is invalid")
+
+            masks[identifier] = _safesearch_selection_mask(selection, bits)
+
+        scope_masks.append(masks)
+
+    return (
+        names,
+        tuple(compiled_choices),
+        tuple(engine_masks),
+        global_mask,
+        scope_masks[0],
+        scope_masks[1],
+    )
+
+
 def _check_stopped(stop_event: threading.Event | None, row_number: int) -> None:
     """Cancel a background loader at bounded 10,000-row checkpoints."""
 
@@ -840,6 +1053,7 @@ def _load_data(stop_event: threading.Event | None = None) -> SinkholeData:
         discovery_hostname,
         discovery_port,
     ) = _load_bypass_manifest(manifest.get("bypass"))
+    safesearch = _load_safesearch_manifest(manifest.get("safesearch"))
 
     manifest_lists = manifest.get("lists")
 
@@ -1018,6 +1232,7 @@ def _load_data(stop_event: threading.Event | None = None) -> SinkholeData:
             for identifier, _bit in sorted(bits.items(), key=lambda item: item[1])
         ),
         alert_rules=alerts,
+        safesearch=safesearch,
     )
 
 
@@ -1889,7 +2104,11 @@ def _query_response_callback(qstate: Any, response: Any, **kwargs: Any) -> bool:
             if owner is None:
                 continue
 
-            if data.is_listed(owner) or data.has_bypass_policy_name(owner):
+            if (
+                data.is_listed(owner)
+                or data.has_bypass_policy_name(owner)
+                or data.is_safesearch_name(owner)
+            ):
                 qstate.no_cache_store = 1
                 break
     except BaseException as exception:
@@ -1973,6 +2192,46 @@ def _finish_blocked_query(module_id: int, qstate: Any) -> bool:
         message.answer.append(f"{query_name} {BLOCK_TTL_SECONDS} IN A 0.0.0.0")
     elif query_type == RR_TYPE_AAAA:
         message.answer.append(f"{query_name} {BLOCK_TTL_SECONDS} IN AAAA ::")
+
+    if not message.set_return_msg(qstate):
+        qstate.ext_state[module_id] = MODULE_ERROR
+        return True
+
+    qstate.return_rcode = RCODE_NOERROR
+    qstate.return_msg.rep.security = 2
+    qstate.ext_state[module_id] = MODULE_FINISHED
+
+    return True
+
+
+def _finish_safesearch_query(
+    module_id: int,
+    qstate: Any,
+    choice: tuple[str, tuple[str, ...], tuple[str, ...]],
+) -> bool:
+    """Answer an engine name with a CNAME to its safe host and the host's addresses.
+
+    A choice with no safe host, or one whose addresses were never looked up, is
+    answered like a block so the engine never resolves without its safe mode.
+    """
+
+    target, ipv4_addresses, ipv6_addresses = choice
+
+    if target == "" or (not ipv4_addresses and not ipv6_addresses):
+        return _finish_blocked_query(module_id, qstate)
+
+    query_name = _wire_name_to_rr_text(qstate.qinfo.qname)
+    query_type = qstate.qinfo.qtype
+    message = DNSMessage(query_name, query_type, RR_CLASS_IN, PKT_QR | PKT_RA)
+    message.answer.append(f"{query_name} {BLOCK_TTL_SECONDS} IN CNAME {target}.")
+
+    if query_type in (RR_TYPE_A, 255):
+        for address in ipv4_addresses:
+            message.answer.append(f"{target}. {BLOCK_TTL_SECONDS} IN A {address}")
+
+    if query_type in (RR_TYPE_AAAA, 255):
+        for address in ipv6_addresses:
+            message.answer.append(f"{target}. {BLOCK_TTL_SECONDS} IN AAAA {address}")
 
     if not message.set_return_msg(qstate):
         qstate.ext_state[module_id] = MODULE_ERROR
@@ -2163,6 +2422,8 @@ def _valid_stash(value: Any) -> bool:
         and hasattr(data, "has_bypass_policy_name")
         and hasattr(data, "matching_alerts")
         and hasattr(data, "blocking_list_ids")
+        and hasattr(data, "is_safesearch_name")
+        and hasattr(data, "safesearch_choice")
         and isinstance(value.get("events"), list)
         and isinstance(value.get("events_dropped"), int)
         and not isinstance(value.get("events_dropped"), bool)
@@ -2433,7 +2694,11 @@ def operate(module_id: int, event: int, qstate: Any, qdata: Any) -> bool:
         qstate.ext_state[module_id] = MODULE_WAIT_MODULE
         return True
 
-    if data.is_listed(query_name) or data.has_bypass_policy_name(query_name):
+    if (
+        data.is_listed(query_name)
+        or data.has_bypass_policy_name(query_name)
+        or data.is_safesearch_name(query_name)
+    ):
         qstate.no_cache_store = 1
 
     client_address = get_q_ip(qstate)
@@ -2501,6 +2766,19 @@ def operate(module_id: int, event: int, qstate: Any, qdata: Any) -> bool:
                 and data.bypass_blocks_name(query_name, interface_name)
             ):
                 return _finish_blocked_query(module_id, qstate)
+
+            safesearch_choice = data.safesearch_choice(
+                query_name,
+                device_id,
+                network_id,
+            )
+
+            if safesearch_choice is not None:
+                return _finish_safesearch_query(
+                    module_id,
+                    qstate,
+                    safesearch_choice,
+                )
         except BaseException as exception:
             _log_reload_error(
                 f"client policy lookup failed: {_failure_message(exception)}"

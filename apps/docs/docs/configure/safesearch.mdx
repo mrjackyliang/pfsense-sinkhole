@@ -1,0 +1,72 @@
+---
+id: safesearch
+title: SafeSearch
+description: Lock search engines into their safe modes for the whole network, one VLAN, or one device by answering each engine's names with its published safe host.
+keywords:
+  - sinkhole for pfsense
+  - safesearch
+  - safe search
+  - youtube restricted mode
+  - network scope
+tags:
+  - configure
+  - safesearch
+  - dns
+---
+
+import safesearchTab from './_assets_/safesearch-1.png';
+
+Use **Firewall → Sinkhole → SafeSearch** to keep search engines in their safe modes for a network or device, without changing any browser or device setting.
+
+## Why Use SafeSearch? \{#why-use-safesearch}
+
+1. Locks safe mode at the network, so a signed-out browser, a new device, or a private window still gets filtered results.
+2. Covers every Google country domain, not just `google.com`, so switching to `google.co.uk` doesn't get around it.
+3. Follows the same scopes as block lists, so a kids' VLAN can get SafeSearch while the rest of the network doesn't.
+
+## Choose a Scope and Engines \{#choose-a-scope-and-engines}
+
+1. Select **Global**, a configured network, or a configured device in **Scope**.
+2. Tick each engine to lock, and choose **Moderate** or **Strict** for YouTube.
+3. Select **Save**.
+
+A network or device must exist on **Scopes** before it appears here. Saving looks up each safe host right away and applies the change in the background.
+
+<img src={safesearchTab} alt="SafeSearch tab for a demo tablet scope with SafeSearch locked for Google, Bing, DuckDuckGo, and Brave Search, YouTube set to Strict, and the safe addresses in use" width={1024} height={1271} style={{maxWidth: '100%', height: 'auto'}} />
+
+| Engine       | Names answered                                                                     | Safe host                                                                    |
+|--------------|------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| Google       | `google.<domain>` and `www.google.<domain>` for all 194 Google search domains      | `forcesafesearch.google.com`                                                 |
+| YouTube      | `youtube.com`, `www.youtube.com`, `m.youtube.com`, the YouTube API and embed names | `restrictmoderate.youtube.com` (Moderate) or `restrict.youtube.com` (Strict) |
+| Bing         | `bing.com`, `www.bing.com`, `edgeservices.bing.com`                                | `strict.bing.com`                                                            |
+| DuckDuckGo   | `duckduckgo.com`, `www.duckduckgo.com`, `start.duckduckgo.com`                     | `safe.duckduckgo.com`                                                        |
+| Brave Search | `search.brave.com`                                                                 | `forcesafe.search.brave.com`                                                 |
+| Startpage    | `startpage.com`, `www.startpage.com`                                               | `safe.startpage.com`                                                         |
+| Ecosia       | `ecosia.org`, `www.ecosia.org`                                                     | `strict-safe-search.ecosia.org`                                              |
+| Yandex       | Yandex search domains and `ya.ru`                                                  | `familysearch.yandex.ru`                                                     |
+| Pixabay      | `pixabay.com`, `www.pixabay.com`                                                   | `safesearch.pixabay.com`                                                     |
+| Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                    | None; Qwant is blocked                                                       |
+
+Qwant publishes no SafeSearch host, so choosing it blocks Qwant for that scope.
+
+## How Scopes Combine \{#how-scopes-combine}
+
+A client receives every engine chosen for **Global**, for the network it is on, and for its device, combined. When YouTube appears with both levels, **Strict** wins.
+
+SafeSearch applies after blocking. A name that a list or blocked service blocks for the client stays blocked, and allowed domains don't turn SafeSearch off. Like any client without a scope, the firewall's own lookups receive the engines chosen for **Global**.
+
+## How the Answer Works \{#how-the-answer-works}
+
+For a chosen engine, Sinkhole answers the engine's name with a CNAME to the safe host plus the safe host's addresses, the same answer a hand-written Unbound view gives. Other record types, such as HTTPS records, receive only the CNAME, so a browser can't use hints that lead around the safe host.
+
+Sinkhole looks up each safe host's addresses when you save and on every list update, and it keeps the last good addresses when a lookup fails. An engine whose safe host has never returned an address is blocked for its scopes until a lookup succeeds.
+
+SafeSearch answers are never stored in the Resolver's cache, so one client's answer never reaches a client outside the scope.
+
+## Verify SafeSearch \{#verify-safesearch}
+
+1. Open **Status** and confirm the **SafeSearch** panel lists each safe host with addresses and no error.
+2. From a client in the scope, look up an engine name, such as `nslookup www.google.com`, and confirm the answer names the safe host.
+3. From a client outside the scope, confirm the same lookup returns the engine's normal answer.
+
+Encrypted DNS that a client sends elsewhere skips every DNS policy, including SafeSearch. [Bypass Protection](/docs/configure/bypass-protection) keeps selected interfaces on Sinkhole's DNS path.

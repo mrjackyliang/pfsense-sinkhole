@@ -1,0 +1,60 @@
+---
+title: "Sinkhole chiude le vie comuni per aggirare il blocco DNS"
+description: La scheda Bypass di Sinkhole 1.0 impedisce ai dispositivi sulle interfacce scelte di aggirare il DNS del firewall, con ogni protezione disattivata finché non la attivi.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - protezione dal bypass
+  - reindirizzamento dns
+  - dns cifrato
+  - blocco vpn
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+Sinkhole for pfSense 1.0, rilasciato il 10 novembre 2026, include una scheda Bypass che impedisce ai dispositivi sulle interfacce che scegli di aggirare il DNS del firewall, la falla che permette ai dispositivi di eludere gran parte del blocco DNS.
+
+{/* truncate */}
+
+## Perché è importante \{#why-it-matters}
+
+Il blocco DNS funziona solo finché i dispositivi interrogano il firewall. Un dispositivo con un resolver preimpostato nel codice, DNS over HTTPS, Tor o una VPN può saltare del tutto le liste di blocco.
+
+Chiudere queste vie richiedeva un tempo regole di reindirizzamento NAT e regole del firewall create a mano per ogni interfaccia. La scheda Bypass trasforma ogni protezione in una singola impostazione, applicata alle interfacce che selezioni.
+
+## Cosa c’è nella scheda Bypass \{#whats-on-the-bypass-tab}
+
+Ogni protezione è disattivata per impostazione predefinita, e nessuna interfaccia è selezionata finché non ne scegli una.
+
+### DNS in chiaro \{#plain-dns}
+
+- **Redirect** — Invia il DNS ordinario sulla porta 53 al firewall mantenendo l’indirizzo sorgente di ogni dispositivo, così le liste di rete e del dispositivo continuano ad applicarsi.
+
+### DNS cifrato \{#encrypted-dns}
+
+- **TLS and QUIC** — Blocca la porta 853 verso ogni destinazione tranne il firewall.
+- **Providers** — Blocca i nomi e gli indirizzi presenti nelle liste di provider di DNS cifrato che aggiungi.
+- **Firefox** — Disattiva la selezione automatica del DNS over HTTPS di Firefox.
+- **Private Relay** — Comunica ai dispositivi Apple compatibili che iCloud Private Relay non è disponibile su questa rete.
+- **Discovery** — Risponde alle query di rilevamento del DNS cifrato, oppure annuncia il DNS over TLS del firewall stesso.
+
+### Tunnel \{#tunnels}
+
+- **Tor** — Blocca i relay Tor elencati.
+- **VPN** — Blocca i provider VPN elencati e le porte VPN standard: TCP e UDP 1194, UDP 51820, UDP 500 e 4500, ed ESP.
+
+Le Bypass Lists si aggiungono tramite URL o dal catalogo Bypass, si aggiornano secondo la pianificazione delle liste e mantengono l’ultima copia valida quando un download non riesce.
+
+## Cosa non promette \{#what-it-doesnt-promise}
+
+Questi controlli chiudono le vie comuni, non tutte le vie. Un tunnel cifrato personalizzato può comunque superare i criteri basati sul DNS, e la documentazione lo dice chiaramente.
+
+## Per iniziare \{#get-started}
+
+Apri **Firewall → Sinkhole → Bypass**, seleziona le interfacce client e attiva le protezioni che ti servono. [Protezione dal bypass](/docs/configure/bypass-protection) descrive ogni impostazione.
+
+Sinkhole for pfSense porta in pfSense il blocco DNS, IP e per paese per ambito, con ogni lista salvata sul firewall.

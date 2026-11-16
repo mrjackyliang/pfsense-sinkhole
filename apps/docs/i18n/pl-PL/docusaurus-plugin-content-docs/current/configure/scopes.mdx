@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 Przypisz listy i dozwolone domeny na poziomie globalnym, sieciowym i urządzenia, aby każdy klient otrzymywał zasady przeznaczone dla swojej bieżącej lokalizacji.
 
 ## Dlaczego warto używać zakresów? \{#why-use-scopes}
@@ -35,6 +38,8 @@ Otwórz **Firewall → Sinkhole → Scopes**, a następnie wybierz **Add** pod t
 
 Każdy wiersz sieci wybiera dodatkowe listy, dozwolone domeny i stan włączenia zakresu. Zapisanie powoduje powrót do Scopes; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować. Urządzenie przeniesione między sieciami otrzymuje zasady sieci pasującej do jego bieżącego adresu.
 
+<img src={scopesTab} alt="Karta Scopes pokazująca zakres sieci LAN i trzy urządzenia demonstracyjne identyfikowane adresem IP lub MAC wraz z ich bieżącymi adresami" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## Zakresy urządzeń \{#device-scopes}
 
 Wybierz **Add** pod tabelą Devices, podaj nazwę i wybierz jedną metodę identyfikacji. Edytor pokazuje tylko pole identyfikatora właściwe dla wybranej metody:
@@ -46,6 +51,8 @@ Wybierz **Add** pod tabelą Devices, podaj nazwę i wybierz jedną metodę ident
 | MAC address         | Bieżące adresy ARP, NDP i dzierżaw DHCP dla tego adresu MAC.                     |
 
 Wiersz urządzenia wybiera jego listy, dozwolone domeny i stan włączenia. Zapisanie powoduje powrót do Scopes; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować. Zadanie w tle odświeża bieżące podsieci i adresy urządzeń co minutę, gdy blokowanie DNS ma włączony zakres sieci lub urządzenia albo gdy ochrona DNS Bypass wymaga rozpoznawania klientów. Sync pakietu uruchamia to samo odświeżanie tylko pod tym warunkiem.
+
+<img src={deviceEditor} alt="Strona Edit Device demonstracyjnego tabletu identyfikowanego adresem IP, z jedną wybraną listą i jedną dozwoloną domeną" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Kolejność decyzji \{#decision-order}
 

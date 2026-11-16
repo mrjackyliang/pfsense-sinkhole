@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 在全局、网络和设备层级分配列表和允许的域名，让每个客户端获得适合其当前位置的策略。
 
 ## 为什么使用作用域？ \{#why-use-scopes}
@@ -35,6 +38,8 @@ tags:
 
 每个网络行选择额外列表、允许的域名以及是否启用作用域。保存后会返回 Scopes；选择铅笔图标或双击某行即可编辑。在网络之间移动的设备会获得其当前地址所匹配网络的策略。
 
+<img src={scopesTab} alt="Scopes 选项卡显示一个 LAN 网络作用域，以及三个按 IP 或 MAC 地址识别的演示设备及其当前地址" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## 设备作用域 \{#device-scopes}
 
 选择 Devices 表格下方的 **Add**，提供名称并选择一种识别方式。编辑器只显示与所选方式对应的标识符字段：
@@ -46,6 +51,8 @@ tags:
 | MAC address         | 该 MAC 当前的 ARP、NDP 和 DHCP 租约地址。 |
 
 设备行选择其列表、允许的域名和启用状态。保存后会返回 Scopes；选择铅笔图标或双击某行即可编辑。仅当 DNS 阻止具有已启用的网络或设备作用域，或 Bypass DNS 保护需要识别客户端时，后台作业才会每分钟刷新当前子网和设备地址。软件包 Sync 也只会在相同条件下启动此刷新。
+
+<img src={deviceEditor} alt="按 IP 地址识别的演示平板的 Edit Device 页面，包含一个已选列表和一个允许域名" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 决定顺序 \{#decision-order}
 

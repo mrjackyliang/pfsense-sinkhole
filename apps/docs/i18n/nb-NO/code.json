@@ -1,74 +1,158 @@
 {
-  "homepage.hero.eyebrow": {
-    "message": "Innebygd pfSense-pakke"
-  },
-  "homepage.hero.heading": {
-    "message": "Velg hva hvert nettverk og hver enhet kan nå."
-  },
-  "homepage.hero.tagline": {
+  "home.meta.description": {
     "message": "Bruk lagrede DNS-lister for hele nettverket, én VLAN eller én enhet, med målrettede varsler og uten en ekstra server."
   },
-  "homepage.hero.ctaLabel": {
-    "message": "Installer Sinkhole"
+  "home.meta.title": {
+    "message": "Sinkhole for pfSense - Avgrenset DNS-, IP- og landblokkering"
   },
-  "homepage.hero.secondaryCtaLabel": {
-    "message": "Planlegg scopes"
+  "home.hero.eyebrow": {
+    "message": "Innebygd pfSense-pakke"
   },
-  "homepage.stats.heading": {
-    "message": "Én brannmur, policy på hvert nyttig nivå"
+  "home.hero.heading": {
+    "message": "Velg hva hvert nettverk og hver enhet kan nå."
   },
-  "homepage.stats.description": {
-    "message": "Sinkhole holder policyen lokal og gjør driftsgrensene tydelige."
+  "home.hero.tagline": {
+    "message": "Bruk lagrede DNS-lister for hele nettverket, én VLAN eller én enhet, med målrettede varsler og uten en ekstra server."
   },
-  "homepage.stats.policyScopes": {
-    "message": "Policy-scopes"
+  "home.hero.primaryAction": {
+    "message": "Kom i gang"
   },
-  "homepage.stats.dnsListFormats": {
-    "message": "DNS-listeformater"
+  "home.hero.secondaryAction": {
+    "message": "Les mer"
   },
-  "homepage.stats.catalogCache": {
-    "message": "Katalogcache"
+  "home.preview.ariaLabel": {
+    "message": "Eksempel på en DNS-avgjørelse for en enhet på et VLAN"
   },
-  "homepage.stats.unboundSlot": {
-    "message": "Unbound-modulplass"
+  "home.preview.title": {
+    "message": "DNS-avgjørelse"
   },
-  "homepage.features.heading": {
-    "message": "Kontroll som blir på brannmuren"
+  "home.preview.blocked": {
+    "message": "Blokkert"
   },
-  "homepage.features.scopes.title": {
+  "home.preview.query": {
+    "message": "Oppslag"
+  },
+  "home.preview.client": {
+    "message": "Klient"
+  },
+  "home.preview.network": {
+    "message": "Nettverk"
+  },
+  "home.preview.deviceLists": {
+    "message": "Enhetslister"
+  },
+  "home.preview.noMatch": {
+    "message": "Ingen treff"
+  },
+  "home.preview.networkLists": {
+    "message": "Nettverkslister"
+  },
+  "home.preview.globalLists": {
+    "message": "Globale lister"
+  },
+  "home.preview.notReached": {
+    "message": "Ikke nådd"
+  },
+  "home.preview.result": {
+    "message": "besvart fra lagrede lister"
+  },
+  "home.features.scopes.title": {
     "message": "Avgrens hver avgjørelse"
   },
-  "homepage.features.scopes.description": {
+  "home.features.scopes.description": {
     "message": "Bruk lister og tillatte domener globalt, etter grensesnitt eller VLAN og etter enhet."
   },
-  "homepage.features.savedLists.title": {
+  "home.features.savedLists.title": {
     "message": "Behold siste gyldige kopier"
   },
-  "homepage.features.savedLists.description": {
+  "home.features.savedLists.description": {
     "message": "Svar på DNS fra lokale lister gjennom omstarter, omlastinger og mislykkede nedlastinger."
   },
-  "homepage.features.alerts.title": {
+  "home.features.alerts.title": {
     "message": "Varsle med hensikt"
   },
-  "homepage.features.alerts.description": {
+  "home.features.alerts.description": {
     "message": "Varsle bare for listene, nettverkene og enhetene som er valgt i hver regel."
   },
-  "homepage.features.redirect.title": {
+  "home.features.redirect.title": {
     "message": "Beskytt DNS-baner"
   },
-  "homepage.features.redirect.description": {
+  "home.features.redirect.description": {
     "message": "Omdiriger valgfritt vanlig DNS eller blokker vanlige omgåelser via kryptert DNS og tunneler på valgte grensesnitt."
   },
-  "homepage.features.catalogs.title": {
+  "home.features.catalogs.title": {
     "message": "Søk og bestem"
   },
-  "homepage.features.catalogs.description": {
+  "home.features.catalogs.description": {
     "message": "Søk i støttede kataloger ved behov uten å inkludere eller anbefale en liste."
   },
-  "homepage.features.ipCountry.title": {
+  "home.features.ipCountry.title": {
     "message": "Blokker adresser og land"
   },
-  "homepage.features.ipCountry.description": {
-    "message": "Bruk IP-lister og GeoLite2-landpolicy gjennom det isolerte ankeret `sinkhole/ip`."
+  "home.features.ipCountry.description": {
+    "message": "Bruk IP-lister og GeoLite2-landpolicy gjennom det isolerte ankeret sinkhole/ip."
+  },
+  "home.blogPreview.heading": {
+    "message": "Fra bloggen"
+  },
+  "home.blogPreview.description": {
+    "message": "Lanseringer, milepæler og nytt i Sinkhole for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Inne i pfSense WebGUI"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Sinkhole-sider"
+  },
+  "home.showcase.scopes.label": {
+    "message": "Omfang"
+  },
+  "home.showcase.scopes.heading": {
+    "message": "Egne regler for hvert nettverk og hver enhet"
+  },
+  "home.showcase.scopes.description": {
+    "message": "Gi et nettverk eller én enkelt enhet egne lister og tillatte domener. Hver DNS-forespørsel følger det mest spesifikke omfanget som passer."
+  },
+  "home.showcase.scopes.link": {
+    "message": "Sett opp omfang"
+  },
+  "home.showcase.scopes.alt": {
+    "message": "Sinkhole-siden Omfang med et nettverksomfang for LAN og tre enhetsomfang"
+  },
+  "home.showcase.services.label": {
+    "message": "Tjenester"
+  },
+  "home.showcase.services.heading": {
+    "message": "Blokker en hel tjeneste med ett klikk"
+  },
+  "home.showcase.services.description": {
+    "message": "Velg spill, sosiale medier, strømming og andre tjenester fra et hurtigbufret tjenesteregister, for alle eller for ett nettverk eller én enhet. Tillatte domener går fortsatt foran."
+  },
+  "home.showcase.services.link": {
+    "message": "Blokker tjenester"
+  },
+  "home.showcase.services.alt": {
+    "message": "Sinkhole-siden Blokkerte tjenester med spilltjenester for et enhetsomfang"
+  },
+  "home.showcase.status.heading": {
+    "message": "Se hva som er lastet inn og hva som er utdatert"
+  },
+  "home.showcase.status.description": {
+    "message": "Status viser hver liste med antall oppføringer og siste oppdatering, i tillegg til omfangene, nettverkene og enhetene Sinkhole bruker akkurat nå."
+  },
+  "home.showcase.status.link": {
+    "message": "Les om Status-siden"
+  },
+  "home.showcase.status.alt": {
+    "message": "Sinkhole-siden Status med panelene for lister, omfang, nettverk og enheter"
+  },
+  "home.showcase.scopes.title": {
+    "message": "pfSense.home.arpa - Brannmur: Sinkhole: Omfang"
+  },
+  "home.showcase.services.title": {
+    "message": "pfSense.home.arpa - Brannmur: Sinkhole: Tjenester"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Brannmur: Sinkhole: Status"
   }
 }

@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Releases en mijlpalen van Sinkhole, afgebakende DNS-, IP- en landblokkering die binnen pfSense draait."
+  },
+  "sidebar.title": {
+    "message": "Recente berichten"
+  }
+}

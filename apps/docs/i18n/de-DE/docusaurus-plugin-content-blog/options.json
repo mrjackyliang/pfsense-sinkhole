@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Releases und Meilensteine von Sinkhole, der DNS-, IP- und Länderblockierung mit Scopes, die direkt in pfSense läuft."
+  },
+  "sidebar.title": {
+    "message": "Neueste Beiträge"
+  }
+}

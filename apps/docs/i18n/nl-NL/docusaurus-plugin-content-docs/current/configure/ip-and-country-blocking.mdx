@@ -14,6 +14,8 @@ tags:
   - firewall
 ---
 
+import ipTab from './_assets_/ip-and-country-blocking-1.png';
+
 Blokkeer geselecteerde IP-bronnen of -bestemmingen onafhankelijk van het DNS-beleid met door het pakket beheerde tabellen in het pf-anker `sinkhole/ip`.
 
 ## Waarom IP-blokkering gebruiken? \{#why-use-ip-blocking}
@@ -34,6 +36,8 @@ Open **Firewall → Sinkhole → IP** en selecteer **Enable** pas nadat u interf
 | Outbound   | Blokkeert pakketten die aankomen op weg naar een bestemmingsadres in de lijst, gewoonlijk op clientnetwerken. |
 
 Het anker bevat `block drop in quick`-regels en geen doorlaatregels. Sinkhole verwijst ernaar via de vroege positie voor pakketregels van pfSense, zodat de blokkeringen vóór gewone pass-quick-regels worden uitgevoerd. De pagina toont eerst de panelen voor IP-lijsten en de catalogus, gevolgd door de paginabrede instellingen voor IP en landen met **Save** onder het paneel.
+
+<img src={ipTab} alt="Tabblad IP met twee IP-demolijsten, het catalogusvenster en IP- en landblokkering ingeschakeld op LAN in beide richtingen" width={1024} height={1554} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## IP-lijsten toevoegen \{#add-ip-lists}
 

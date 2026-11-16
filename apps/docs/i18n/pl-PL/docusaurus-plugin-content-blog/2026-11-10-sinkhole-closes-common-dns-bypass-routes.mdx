@@ -1,0 +1,60 @@
+---
+title: "Sinkhole zamyka typowe drogi omijania blokowania DNS"
+description: Karta Bypass w Sinkhole 1.0 nie pozwala urządzeniom na wybranych interfejsach omijać DNS zapory, a każda ochrona pozostaje wyłączona, dopóki jej nie włączysz.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - ochrona przed omijaniem
+  - przekierowanie dns
+  - szyfrowany dns
+  - blokowanie vpn
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+Sinkhole for pfSense 1.0, wydany 10 listopada 2026 roku, zawiera kartę Bypass, która nie pozwala urządzeniom na wybranych przez Ciebie interfejsach omijać DNS zapory, czyli luki, przez którą urządzenia unikają większości blokad DNS.
+
+{/* truncate */}
+
+## Dlaczego to ważne \{#why-it-matters}
+
+Blokowanie DNS działa tylko wtedy, gdy urządzenia pytają zaporę. Urządzenie z resolverem wpisanym na stałe, DNS over HTTPS, Tor lub VPN może całkowicie pominąć listy blokowania.
+
+Zamknięcie tych dróg wymagało dotąd ręcznie tworzonych reguł przekierowania NAT i reguł zapory dla każdego interfejsu. Karta Bypass zamienia każdą ochronę w jedno ustawienie stosowane do wybranych interfejsów.
+
+## Co jest na karcie Bypass \{#whats-on-the-bypass-tab}
+
+Każda ochrona jest domyślnie wyłączona i żaden interfejs nie jest wybrany, dopóki go nie wskażesz.
+
+### Zwykły DNS \{#plain-dns}
+
+- **Redirect** — kieruje zwykły ruch DNS na porcie 53 do zapory z zachowaniem adresu źródłowego każdego urządzenia, więc listy sieci i urządzeń nadal obowiązują.
+
+### Szyfrowany DNS \{#encrypted-dns}
+
+- **TLS and QUIC** — blokuje port 853 do każdego celu oprócz zapory.
+- **Providers** — blokuje nazwy i adresy z dodanych list dostawców szyfrowanego DNS.
+- **Firefox** — wyłącza automatyczny wybór DNS over HTTPS w Firefoksie.
+- **Private Relay** — informuje zgodne urządzenia Apple, że iCloud Private Relay nie jest dostępny w tej sieci.
+- **Discovery** — odpowiada na zapytania wykrywania szyfrowanego DNS albo ogłasza własny DNS over TLS zapory.
+
+### Tunele \{#tunnels}
+
+- **Tor** — blokuje wymienione na listach przekaźniki Tor.
+- **VPN** — blokuje wymienionych na listach dostawców VPN i standardowe porty VPN: TCP i UDP 1194, UDP 51820, UDP 500 i 4500 oraz ESP.
+
+Bypass Lists dodaje się przez adres URL lub z katalogu Bypass. Aktualizują się zgodnie z harmonogramem list i zachowują ostatnią prawidłową kopię, gdy pobieranie się nie powiedzie.
+
+## Czego nie obiecuje \{#what-it-doesnt-promise}
+
+Te mechanizmy zamykają typowe drogi, a nie wszystkie. Niestandardowy szyfrowany tunel nadal może ominąć zasady oparte na DNS, o czym dokumentacja mówi wprost.
+
+## Pierwsze kroki \{#get-started}
+
+Otwórz **Firewall → Sinkhole → Bypass**, wybierz interfejsy klienckie i włącz potrzebne zabezpieczenia. Strona [Ochrona przed omijaniem](/docs/configure/bypass-protection) opisuje każde ustawienie.
+
+Sinkhole for pfSense zapewnia w pfSense blokowanie DNS, IP i krajów według zakresu, a każda lista jest zapisana na zaporze.

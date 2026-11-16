@@ -1,10 +1,50 @@
 {
-  "item.label.Home": {
-    "message": "Accueil",
-    "description": "Navbar item with label \"Home\""
+  "item.label.Docs": {
+    "message": "Documentation",
+    "description": "Navbar item with label \"Docs\""
+  },
+  "item.label.Overview": {
+    "message": "Vue d’ensemble",
+    "description": "Navbar item with label \"Overview\""
+  },
+  "item.label.Quick Start": {
+    "message": "Démarrage rapide",
+    "description": "Navbar item with label \"Quick Start\""
+  },
+  "item.label.Configure": {
+    "message": "Configuration",
+    "description": "Navbar item with label \"Configure\""
+  },
+  "item.label.Operate": {
+    "message": "Exploitation",
+    "description": "Navbar item with label \"Operate\""
+  },
+  "item.label.Reference": {
+    "message": "Référence",
+    "description": "Navbar item with label \"Reference\""
+  },
+  "item.label.Safety": {
+    "message": "Sécurité",
+    "description": "Navbar item with label \"Safety\""
+  },
+  "item.label.Contributing": {
+    "message": "Contribuer",
+    "description": "Navbar item with label \"Contributing\""
+  },
+  "item.label.Resources": {
+    "message": "Ressources",
+    "description": "Navbar item with label \"Resources\""
   },
   "item.label.Troubleshooting": {
     "message": "Dépannage",
     "description": "Navbar item with label \"Troubleshooting\""
+  },
+  "item.label.Changelog": {
+    "message": "Journal des modifications",
+    "description": "Navbar item with label \"Changelog\""
+  },
+  "item.label.Report an Issue": {
+    "message": "Signaler un problème",
+    "description": "Navbar item with label \"Report an Issue\""
   }
 }

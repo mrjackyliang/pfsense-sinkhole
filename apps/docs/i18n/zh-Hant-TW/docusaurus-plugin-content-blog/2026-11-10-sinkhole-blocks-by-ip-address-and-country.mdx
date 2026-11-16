@@ -1,0 +1,47 @@
+---
+title: "Sinkhole 依 IP 地址和國家/地區封鎖，而不只是依名稱"
+description: Sinkhole 1.0 在獨立的防火牆錨點中加入 IP 清單和 MaxMind GeoLite2 國家/地區封鎖，用於處理從不向 DNS 查詢名稱的流量。
+slug: sinkhole-blocks-by-ip-address-and-country
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - ip 封鎖
+  - 國家/地區封鎖
+  - geolite2
+  - pf 錨點
+tags:
+  - release
+  - ip-blocking
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0 於 2026 年 11 月 10 日發行。除了依名稱封鎖，它還可以依 IP 地址和國家/地區封鎖流量，與 DNS 封鎖清單使用同一個套件和同一個 WebGUI。
+
+{/* truncate */}
+
+## 為什麼重要 \{#why-it-matters}
+
+DNS 封鎖攔截的是查詢。直接傳送到某個地址的流量，例如掃描 WAN 的掃描器或使用寫死伺服器的應用程式，從不查詢 DNS，也就不會遇到封鎖清單。
+
+Sinkhole 將 IP 和國家/地區封鎖放在獨立的 IP 分頁中，與 DNS 策略分開，因此一個套件即可涵蓋名稱、地址和國家/地區。
+
+## 包含的功能 \{#whats-included}
+
+- **IP 清單** — 透過 URL 新增清單，或在 pfBlockerNG 來源目錄的 IP 區段中查找。每份清單可以包含 IPv4、IPv6 或兩者。
+- **國家/地區封鎖** — 使用 MaxMind GeoLite2 資料，依兩字母代碼選擇國家/地區，並使用您自己的 MaxMind 帳戶和授權金鑰。Sinkhole 從不附帶金鑰。
+- **介面和方向** — 依介面封鎖從 WAN 進入的清單中的來源地址、從用戶端網路傳往清單中的目標地址，或兩者都封鎖。
+- **允許清單** — IP Allowlist 中的地址、網路和別名會在封鎖集合載入之前被排除。
+- **受保護的地址** — 防火牆自身的地址、閘道、DNS 伺服器以及所選介面的子網會自動移除，因此清單不會把您鎖在外面。
+
+規則位於 Sinkhole 的防火牆錨點 `sinkhole/ip` 中，pfSense 重新載入過濾器時該錨點保持不變。清單更新只取代其中的表格，下載失敗時保留最後一份有效副本。
+
+## 開啟前保持關閉 \{#off-until-you-turn-it-on}
+
+IP 和國家/地區封鎖預設為關閉，並且獨立運作，不依賴 DNS 開關。Status 分頁顯示表格大小、上次更新、GeoLite2 更新時間，以及錨點是否已載入且為最新。
+
+## 開始使用 \{#get-started}
+
+打開 **Firewall → Sinkhole → IP**，選擇介面和方向，然後新增清單或國家/地區。[IP 和國家/地區封鎖](/docs/configure/ip-and-country-blocking)說明了每項設定。
+
+Sinkhole for pfSense 為 pfSense 帶來依作用域進行的 DNS、IP 和國家/地區封鎖，並將每份清單儲存在防火牆上。

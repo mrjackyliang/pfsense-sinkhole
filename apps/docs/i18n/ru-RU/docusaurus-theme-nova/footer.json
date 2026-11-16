@@ -1,33 +1,63 @@
 {
-  "layout.learn.title": {
-    "message": "Руководства"
+  "layout.docs.title": {
+    "message": "Документация"
   },
   "layout.resources.title": {
     "message": "Ресурсы"
   },
-  "sections.learn.0.label": {
-    "message": "Установка Sinkhole"
+  "layout.project.title": {
+    "message": "Проект"
   },
-  "sections.learn.1.label": {
-    "message": "Списки и сохранённые копии"
+  "layout.legal.title": {
+    "message": "Правовая информация"
   },
-  "sections.learn.2.label": {
-    "message": "Область действия политики DNS"
+  "sections.docs.0.label": {
+    "message": "Обзор"
   },
-  "sections.learn.4.label": {
-    "message": "Устранение неполадок"
+  "sections.docs.1.label": {
+    "message": "Настройка"
+  },
+  "sections.docs.2.label": {
+    "message": "Эксплуатация"
+  },
+  "sections.docs.3.label": {
+    "message": "Справочник"
+  },
+  "sections.docs.4.label": {
+    "message": "Безопасность"
+  },
+  "sections.docs.5.label": {
+    "message": "Участие в разработке"
   },
   "sections.resources.0.label": {
-    "message": "Как работают обновления"
+    "message": "Блог"
   },
   "sections.resources.1.label": {
-    "message": "Тестирование и проверка"
+    "message": "Устранение неполадок"
   },
   "sections.resources.2.label": {
-    "message": "Документация pfSense"
+    "message": "История изменений"
   },
   "sections.resources.3.label": {
+    "message": "Сообщить о проблеме"
+  },
+  "sections.resources.4.label": {
     "message": "Исходный код"
+  },
+  "sections.project.0.label": {
+    "message": "Поддержать"
+  },
+  "sections.project.1.label": {
+    "message": "Документация pfSense"
+  },
+  "sections.project.2.label": {
+    "message": "Другие проекты"
+  },
+  "sections.legal.0.label": {
+    "message": "Лицензия"
+  },
+  "cta.label": {
+    "message": "Готовы выбрать, к чему обращается ваша сеть?"
   },
   "copyright": {
     "message": "Copyright © 2026 Jacky Liang. MIT.",

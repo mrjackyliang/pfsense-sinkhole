@@ -24,7 +24,7 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 네트워크 및 장치 일치는 일반 Sinkhole 범위와 마찬가지로 해당 인터페이스의 현재 서브넷을 사용합니다. 선택한 서브넷 밖의 클라이언트는 Bypass DNS 응답을 받지 않습니다.
 
-<img src={bypassProtection} alt="LAN이 선택되고 일반 DNS 리디렉션은 꺼져 있으며 암호화 DNS 및 터널 보호는 켜져 있고 Discovery가 Answer with no records로 설정되며 데모 Bypass List 세 개가 표시된 Bypass 탭" width={1024} height={1266} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="LAN이 선택되고 일반 DNS 리디렉션은 꺼져 있으며 암호화 DNS 및 터널 보호는 켜져 있고 Discovery가 Answer with no records로 설정되며 데모 Bypass List 세 개가 표시된 Bypass 탭" width={1024} height={1410} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 일반 DNS 리디렉션 \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-Discovery를 끄거나 Sinkhole을 제거하면 이 블록이 삭제됩니다. Sinkhole은 **Custom options**의 다른 모든 줄을 변경하지 않습니다. 방화벽 자체를 포함하여 선택한 인터페이스 밖의 클라이언트는 `_dns.resolver.arpa`에 대해 계속 `NXDOMAIN`을 받습니다.
+Discovery를 끄거나 Sinkhole을 제거하면 영역 줄이 삭제됩니다. 같은 블록에는 [Resolver 설정](/docs/configure/resolver-settings)도 함께 들어 있으며, Sinkhole은 **Custom options**의 다른 모든 줄을 변경하지 않습니다. 방화벽 자체를 포함하여 선택한 인터페이스 밖의 클라이언트는 `_dns.resolver.arpa`에 대해 계속 `NXDOMAIN`을 받습니다.
 
 ## 터널 방지 \{#protect-against-tunnels}
 

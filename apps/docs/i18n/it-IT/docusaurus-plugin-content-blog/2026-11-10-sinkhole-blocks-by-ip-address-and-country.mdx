@@ -1,0 +1,47 @@
+---
+title: "Sinkhole blocca per indirizzo IP e per paese, non solo per nome"
+description: Sinkhole 1.0 aggiunge liste IP e il blocco per paese con MaxMind GeoLite2 in una propria ancora del firewall, per il traffico che non chiede mai un nome al DNS.
+slug: sinkhole-blocks-by-ip-address-and-country
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - blocco ip
+  - blocco per paese
+  - geolite2
+  - ancora pf
+tags:
+  - release
+  - ip-blocking
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0, rilasciato il 10 novembre 2026, blocca il traffico per indirizzo IP e per paese oltre che per nome, nello stesso pacchetto e nella stessa WebGUI delle sue liste di blocco DNS.
+
+{/* truncate */}
+
+## Perché è importante \{#why-it-matters}
+
+Il blocco DNS ferma una risoluzione. Il traffico che va direttamente a un indirizzo, come gli scanner che colpiscono una WAN o un’app con server preimpostati nel codice, non interroga mai il DNS e non incontra mai una lista di blocco.
+
+Sinkhole mette il blocco IP e per paese in una propria scheda IP, separata dai criteri DNS, così un solo pacchetto copre nomi, indirizzi e paesi.
+
+## Cosa è incluso \{#whats-included}
+
+- **Liste IP** — Aggiungi liste tramite URL, oppure trovale nelle sezioni IP del catalogo dei feed di pfBlockerNG. Ogni lista può contenere IPv4, IPv6 o entrambi.
+- **Blocco per paese** — Scegli i paesi tramite codice di due lettere dai dati MaxMind GeoLite2, con il tuo account MaxMind e la tua chiave di licenza. Sinkhole non fornisce mai una chiave.
+- **Interfacce e direzioni** — Blocca le sorgenti elencate in arrivo su una WAN, le destinazioni elencate dalle reti client, o entrambe, per interfaccia.
+- **Una lista di elementi consentiti** — Indirizzi, reti e alias presenti nella IP Allowlist vengono esclusi dall’insieme bloccato prima del caricamento.
+- **Indirizzi protetti** — Gli indirizzi del firewall stesso, i gateway, i server DNS e le subnet delle interfacce selezionate vengono rimossi automaticamente, così una lista non può chiuderti fuori.
+
+Le regole si trovano in un’ancora del firewall di Sinkhole, `sinkhole/ip`, che resta al suo posto durante i ricaricamenti del filtro di pfSense. Gli aggiornamenti delle liste sostituiscono solo le sue tabelle, e un download non riuscito mantiene l’ultima copia valida.
+
+## Disattivato finché non lo attivi \{#off-until-you-turn-it-on}
+
+Il blocco IP e per paese è disattivato per impostazione predefinita e funziona in modo indipendente, senza l’interruttore DNS. La scheda Status mostra le dimensioni delle tabelle, l’ultimo aggiornamento, l’ora di aggiornamento di GeoLite2 e se l’ancora è caricata e aggiornata.
+
+## Per iniziare \{#get-started}
+
+Apri **Firewall → Sinkhole → IP**, scegli interfacce e direzioni, poi aggiungi liste o paesi. [Blocco IP e per paese](/docs/configure/ip-and-country-blocking) descrive ogni impostazione.
+
+Sinkhole for pfSense porta in pfSense il blocco DNS, IP e per paese per ambito, con ogni lista salvata sul firewall.

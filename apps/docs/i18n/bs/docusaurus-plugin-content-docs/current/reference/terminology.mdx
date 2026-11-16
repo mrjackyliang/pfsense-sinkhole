@@ -14,44 +14,42 @@ tags:
   - glossary
 ---
 
-Ovi termini imaju isto značenje u cijelom Sinkhole WebGUI-ju i dokumentaciji.
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-## DNS Sinkhole \{#dns-sinkhole}
+Ovi termini imaju isto značenje u cijelom Sinkhole WebGUI-ju i dokumentaciji. Tabele navode prvo termin, zatim druge nazive, pa definiciju.
 
-Odgovaranje na blokirani naziv adresom koja ne vodi nikamo, čime se zahtjev zaustavlja.
+:::tip[Pojmovnik]
+Kroz dokumentaciju ćete vidjeti <Terminology title="Brzi podsjetnik, tačno tamo gdje čitate" to="/docs/reference/terminology">istaknute termine</Terminology> s tačkastim podvlačenjem. Pređite mišem preko bilo kojeg od njih za brzi podsjetnik na njihovo značenje ili kliknite da skočite na punu definiciju.
+:::
 
-## DNS Resolver \{#dns-resolver}
+## Osnove DNS-a \{#dns-basics}
 
-DNS usluga pfSensea zasnovana na Unboundu.
+| Termin           | Poznato i kao | Definicija                                                                              |
+|------------------|---------------|-----------------------------------------------------------------------------------------|
+| **DNS sinkhole** | —             | Odgovaranje na blokirani naziv adresom koja ne vodi nikamo, čime se zahtjev zaustavlja. |
+| **DNS Resolver** | Unbound       | DNS usluga pfSensea zasnovana na Unboundu.                                              |
 
-## Lista za blokiranje \{#block-list}
+## Liste i opsezi \{#lists-and-scopes}
 
-Lista naziva ili adresa za blokiranje, dodana putem URL-a ili pretrage.
+| Termin                        | Poznato i kao                           | Definicija                                                                                                                              |
+|-------------------------------|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| **lista za blokiranje**       | —                                       | Lista naziva ili adresa za blokiranje, dodana putem URL-a ili pretrage.                                                                 |
+| **pretraga popularnih lista** | —                                       | WebGUI pretraga široko korištenih lista za blokiranje, poput birača AdGuard Homea.                                                      |
+| **sačuvana lista**            | —                                       | Posljednja ispravna kopija liste za blokiranje, sačuvana na zaštitnom zidu.                                                             |
+| **opseg**                     | —                                       | Mjesto primjene liste za blokiranje: cijela mreža, VLAN ili jedan uređaj.                                                               |
+| **globalne liste**            | —                                       | Liste za blokiranje koje se primjenjuju na svakog klijenta u mreži.                                                                     |
+| **SafeSearch**                | Sigurna pretraga, ograničeni način rada | Sigurni način rada pretraživača, nametnut svakom uređaju u opsegu tako što se na nazive pretraživača odgovara njegovim sigurnim hostom. |
+| **izuzetak od rebindinga**    | private-domain                          | Domena kojoj je dopušteno odgovarati privatnom adresom uprkos zaštiti od DNS rebindinga.                                                |
 
-## Sačuvana lista \{#saved-list}
+## Upozorenja \{#alerts}
 
-Posljednja ispravna kopija liste za blokiranje, sačuvana na zaštitnom zidu.
-
-## Opseg \{#scope}
-
-Mjesto primjene liste za blokiranje: cijela mreža, VLAN ili jedan uređaj.
-
-## Globalne liste \{#global-lists}
-
-Liste za blokiranje koje se primjenjuju na svakog klijenta u mreži.
-
-## Pravilo upozorenja \{#alert-rule}
-
-Lista i opseg čija blokiranja šalju obavijest pfSensea.
+| Termin                 | Poznato i kao | Definicija                                              |
+|------------------------|---------------|---------------------------------------------------------|
+| **pravilo upozorenja** | —             | Lista i opseg čija blokiranja šalju obavijest pfSensea. |
 
 ## Zaštita od zaobilaženja \{#bypass-protection}
 
-Opcionalne kontrole po interfejsu koje zadržavaju klijente na DNS putanjama koje Sinkhole može pregledati preusmjeravanjem običnog DNS-a ili blokiranjem uobičajenih alternativa šifriranog DNS-a i tunela.
-
-## Preusmjeravanje običnog DNS-a \{#plain-dns-redirect}
-
-Opcionalna postavka Bypass koja šalje obične TCP i UDP upite uređaja na portu 53 zaštitnom zidu.
-
-## Pretraga popularnih lista \{#popular-list-search}
-
-WebGUI pretraga široko korištenih lista za blokiranje, poput birača AdGuard Homea.
+| Termin                            | Poznato i kao | Definicija                                                                                                                                                                                                  |
+|-----------------------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **zaštita od zaobilaženja**       | Bypass        | Opcionalne kontrole po interfejsu koje zadržavaju klijente na DNS putanjama koje Sinkhole može pregledati preusmjeravanjem običnog DNS-a ili blokiranjem uobičajenih alternativa šifriranog DNS-a i tunela. |
+| **preusmjeravanje običnog DNS-a** | —             | Opcionalna postavka Bypass koja šalje obične TCP i UDP upite uređaja na portu 53 zaštitnom zidu.                                                                                                            |

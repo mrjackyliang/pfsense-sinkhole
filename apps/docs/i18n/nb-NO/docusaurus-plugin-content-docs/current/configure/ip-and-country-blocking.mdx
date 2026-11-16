@@ -14,6 +14,8 @@ tags:
   - firewall
 ---
 
+import ipTab from './_assets_/ip-and-country-blocking-1.png';
+
 Blokker valgte IP-kilder eller -mål uavhengig av DNS-policyen med pakkestyrte tabeller i pf-ankeret `sinkhole/ip`.
 
 ## Hvorfor bruke IP-blokkering? \{#why-use-ip-blocking}
@@ -34,6 +36,8 @@ Blokker valgte IP-kilder eller -mål uavhengig av DNS-policyen med pakkestyrte t
 | Outbound    | Blokkerer pakker som kommer mot en oppført måladresse, vanligvis på klientnettverk. |
 
 Ankeret inneholder `block drop in quick`-regler og ingen pass-regler. Sinkhole refererer til det gjennom den tidlige posisjonen for pakkeregler i pfSense, slik at blokkeringene kjører før vanlige pass-quick-regler. Siden viser panelene for IP-lister og katalog først, etterfulgt av de sideomfattende innstillingene for IP og land med **Save** under panelet.
+
+<img src={ipTab} alt="Fanen IP viser to IP-demolister, katalogpanelet og IP- og landblokkering slått på for LAN i begge retninger" width={1024} height={1537} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Legg til IP-lister \{#add-ip-lists}
 

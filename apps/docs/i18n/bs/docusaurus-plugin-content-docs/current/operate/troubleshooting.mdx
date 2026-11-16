@@ -30,6 +30,7 @@ Koristite razlog naveden iza **Summary → Sinkhole**:
 
 - **Sinkhole is disabled** — Odaberite **General → Enable** nakon što Resolver i Python mjesto budu spremni.
 - **DNS Resolver is disabled** — Omogućite i primijenite Resolver prije spremanja Sinkholea.
+- **pfBlockerNG is installed and enabled** — Isključite glavnu opciju **Enable** u pfBlockerNG-u ili uklonite paket, a zatim ponovo sačuvajte General postavke Sinkholea. Mjesto koje je Sinkhole već posjedovao vraća se pri sljedećem zakazanom ažuriranju, na **Update Now** ili pri sinhronizaciji paketa.
 - **Python script slot is owned** — Onemogućite sukobljenu DNSBL/Python integraciju ili ostavite Sinkhole onemogućenim; Sinkhole je neće zamijeniti.
 - **Python mode or position changed** — Ponovo spremite postavke Sinkhole General kako bi Sync mogao vratiti Python način i `pre_validator` dok Sinkhole posjeduje mjesto.
 - **Runtime files unavailable** — Pokrenite Sync paketa spremanjem postavki General ili ponovo pokrenite sistem i dopustite Syncu paketa pfSensea da vrati datoteke RAM diska.
@@ -54,6 +55,15 @@ Kada postavljanje doda nazive ili proširi podstablo, Sinkhole ponovo učitava U
 Upit čiji je CNAME cilj na listi blokira se čak i kada izvorni naziv nije na listi. Ako navedeni cilj nema zapis tražene vrste, poput AAAA, odgovor može zadržati CNAME bez adrese.
 
 Dopušteni naziv upita ostaje dopušten. Time se sprečava da manje određen CNAME cilj nadjača izričitu odluku dopuštene domene za upitani naziv.
+
+## SafeSearch se ne primjenjuje \{#safesearch-does-not-apply}
+
+1. Potvrdite da je mrežni ili uređajski opseg klijenta omogućen na kartici **Scopes** i da je pretraživač označen na kartici **SafeSearch** za taj opseg ili za Global.
+2. Na **Status → SafeSearch** provjerite adrese sigurnog hosta i posljednju grešku. Host bez adresa drži svoj pretraživač blokiranim za opseg dok razrješavanje ne uspije.
+3. Potvrdite da su **Compile Needed** i **Deployment Needed** nakon spremanja postavljeni na `No`.
+4. Potvrdite da klijent ne koristi šifrirani DNS ili drugi resolver; [zaštita od zaobilaženja](/docs/configure/bypass-protection) zadržava odabrane interfejse na Sinkholeovoj DNS putanji.
+
+Preglednik može nekoliko minuta držati uobičajenu adresu pretraživača u predmemoriji, pa testirajte iz novog privatnog prozora ili nakon što se DNS predmemorija preglednika očisti.
 
 ## Uređaj dobija pogrešna pravila \{#a-device-gets-the-wrong-policy}
 

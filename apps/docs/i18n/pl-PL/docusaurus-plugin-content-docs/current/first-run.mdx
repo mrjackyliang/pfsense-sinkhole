@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Skonfiguruj jedną zaufaną listę i sprawdź jej stan zapisany, skompilowany, wdrożony i załadowany, zanim rozszerzysz zasady.
 
 ## Sprawdzanie Resolver \{#check-the-resolver}
 
 1. Otwórz **Services → DNS Resolver** i sprawdź, czy Resolver jest włączony.
-2. Jeśli pfBlockerNG DNSBL jest włączony, wybierz pakiet, który będzie zarządzać filtrowaniem DNS, ponieważ oba pakiety nie mogą jednocześnie korzystać z miejsca na moduł Python w Unbound.
+2. Jeśli pfBlockerNG jest zainstalowany i włączony, wybierz pakiet, który będzie filtrować DNS, ponieważ oba pakiety nie mogą działać razem.
 3. Otwórz **Firewall → Sinkhole → General** i pozostaw **Enable** wyłączone podczas przygotowywania pierwszych zasad.
 
-Sinkhole odmawia zapisania **Enable**, gdy miejsce zajmuje inny skrypt Python. Późniejsze wyłączenie Sinkhole przywraca poprzednie ustawienia Python Resolver, jeśli Sinkhole nadal jest ich właścicielem.
+Sinkhole odmawia zapisania **Enable**, gdy pfBlockerNG jest zainstalowany i włączony albo gdy miejsce zajmuje inny skrypt Python. Późniejsze wyłączenie Sinkhole przywraca poprzednie ustawienia Python Resolver, jeśli Sinkhole nadal jest ich właścicielem.
 
 ## Dodawanie listy \{#add-a-list}
 
@@ -33,6 +35,8 @@ Sinkhole odmawia zapisania **Enable**, gdy miejsce zajmuje inny skrypt Python. P
 4. Dodaj globalne **Allowed Domains**, po jednej domenie w wierszu, jeśli znany wynik fałszywie dodatni ma być przepuszczany.
 
 Sinkhole nie poleca żadnego źródła. [Listy i zapisane kopie](/docs/configure/lists) objaśnia obsługiwane formaty oraz sposób przekształcania wyników katalogu w zwykłe wiersze list.
+
+<img src={listsTab} alt="Karta Lists pokazująca pięć demonstracyjnych list blokowania z kolumnami Global i Used By oraz dwie globalnie dozwolone domeny" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Dodawanie opcjonalnych zakresów \{#add-optional-scopes}
 

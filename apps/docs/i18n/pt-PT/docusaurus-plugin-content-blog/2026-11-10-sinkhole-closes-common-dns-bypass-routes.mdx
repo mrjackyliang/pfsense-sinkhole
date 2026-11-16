@@ -1,0 +1,60 @@
+---
+title: "O Sinkhole fecha os caminhos comuns para contornar o bloqueio DNS"
+description: O separador Bypass do Sinkhole 1.0 impede que os dispositivos nas interfaces escolhidas contornem o DNS da firewall, com todas as proteções desativadas até as ativar.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - proteção contra evasão
+  - redirecionamento de dns
+  - dns encriptado
+  - bloqueio de vpn
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+O Sinkhole for pfSense 1.0, lançado a 10 de novembro de 2026, inclui um separador Bypass que impede os dispositivos nas interfaces que escolher de contornar o DNS da firewall, a falha que permite aos dispositivos escapar à maior parte do bloqueio DNS.
+
+{/* truncate */}
+
+## Porque é importante \{#why-it-matters}
+
+O bloqueio DNS só funciona enquanto os dispositivos consultam a firewall. Um dispositivo com um resolvedor fixo no código, DNS over HTTPS, Tor ou uma VPN pode ignorar por completo as listas de bloqueio.
+
+Fechar esses caminhos exigia regras de redirecionamento NAT e regras de firewall criadas à mão para cada interface. O separador Bypass transforma cada proteção numa única definição, aplicada às interfaces que selecionar.
+
+## O que está no separador Bypass \{#whats-on-the-bypass-tab}
+
+Todas as proteções ficam desativadas por predefinição, e nenhuma interface fica selecionada até escolher uma.
+
+### DNS comum \{#plain-dns}
+
+- **Redirect** — Envia o DNS comum na porta 53 para a firewall, mantendo o endereço de origem de cada dispositivo, pelo que as listas de rede e de dispositivo continuam a aplicar-se.
+
+### DNS encriptado \{#encrypted-dns}
+
+- **TLS and QUIC** — Bloqueia a porta 853 para todos os destinos exceto a firewall.
+- **Providers** — Bloqueia os nomes e endereços das listas de fornecedores de DNS encriptado que adicionar.
+- **Firefox** — Desativa a seleção automática de DNS over HTTPS do Firefox.
+- **Private Relay** — Indica aos dispositivos Apple compatíveis que o iCloud Private Relay não está disponível nesta rede.
+- **Discovery** — Responde às consultas de descoberta de DNS encriptado ou anuncia o DNS over TLS da própria firewall.
+
+### Túneis \{#tunnels}
+
+- **Tor** — Bloqueia os relays Tor listados.
+- **VPN** — Bloqueia os fornecedores de VPN listados e as portas VPN padrão: TCP e UDP 1194, UDP 51820, UDP 500 e 4500, e ESP.
+
+As Bypass Lists são adicionadas por URL ou a partir do catálogo Bypass, são atualizadas segundo o horário das listas e mantêm a última cópia válida quando uma transferência falha.
+
+## O que não promete \{#what-it-doesnt-promise}
+
+Estes controlos fecham os caminhos comuns, não todos os caminhos. Um túnel encriptado personalizado ainda pode contornar a política baseada em DNS, e a documentação di-lo claramente.
+
+## Começar \{#get-started}
+
+Abra **Firewall → Sinkhole → Bypass**, selecione as interfaces de cliente e ative as proteções que pretende. [Proteção contra evasão](/docs/configure/bypass-protection) descreve cada definição.
+
+O Sinkhole for pfSense traz ao pfSense o bloqueio de DNS, IP e países por âmbito, com todas as listas guardadas na firewall.

@@ -48,6 +48,7 @@ De laatste rij **Sinkhole** in Summary is de snelste controle van de Resolver-in
 | `Active`                                 | Sinkhole is ingeschakeld, bezit de Python-positie, gebruikt Python-modus en `pre_validator` en heeft runtimegegevens. |
 | `Inactive: Sinkhole is disabled.`        | General **Enable** is uitgeschakeld.                                                                                  |
 | `Inactive: DNS Resolver is disabled.`    | De DNS Resolver van pfSense is uitgeschakeld.                                                                         |
+| `Inactive: pfBlockerNG is installed ...` | pfBlockerNG is geïnstalleerd met de hoofdoptie **Enable** ingeschakeld, in beide DNSBL-modi.                          |
 | `Inactive: ... slot is owned by ...`     | Een ander Python-script, zoals pfBlockerNG DNSBL, bezit de enige positie.                                             |
 | `Inactive: Sinkhole does not own ...`    | Het geconfigureerde script is niet Sinkhole, hoewel geen andere eigenaar is gemeld.                                   |
 | `Inactive: ... Python mode is disabled.` | De Python-modus van de Resolver is niet meer ingeschakeld.                                                            |
@@ -78,6 +79,10 @@ De pagina toont een waarschuwingsvak wanneer compilatie of uitrol wacht, inclusi
 De samenvatting Scopes meldt de status van het opnieuw opbouwen van de clienttoewijzing. De afzonderlijke panelen **Networks** en **Devices** melden de huidige CIDR's van elke interface en de huidige adressen van elk apparaat. Een conflict noemt een adres dat door meerdere apparaten wordt geclaimd; het eerste apparaat in de tabelvolgorde bezit dat adres voor het beleid.
 
 Het paneel **Alerts** beschrijft alleen de meest recente taak per minuut. **Notifications held back** omvat onderdrukking door een limiet of ongelezen melding, terwijl **Events dropped by module** aangeeft dat de begrensde gebeurteniswachtrij in het geheugen of op schijf vol is geraakt.
+
+## SafeSearch-status \{#safesearch-state}
+
+Het paneel **SafeSearch** telt de zoekmachines die zijn gekozen voor Global en voor elke netwerk- en apparaatscope. Onder de tellingen toont elke gebruikte veilige host de laatste geldige IPv4- en IPv6-adressen, wanneer deze voor het laatst is gecontroleerd en de laatste lookupfout. Een host zonder adressen houdt de bijbehorende zoekmachine voor die scopes geblokkeerd totdat een lookup slaagt.
 
 ## Bypass-status \{#bypass-state}
 

@@ -14,44 +14,42 @@ tags:
   - glossary
 ---
 
-Diese Begriffe haben in der Sinkhole-WebGUI und der Dokumentation dieselbe Bedeutung.
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-## DNS-Sinkhole \{#dns-sinkhole}
+Diese Begriffe haben in der Sinkhole-WebGUI und der Dokumentation dieselbe Bedeutung. Tabellen nennen zuerst den Begriff, dann andere Bezeichnungen und zuletzt die Definition.
 
-Beantwortet einen blockierten Namen mit einer Adresse, die ins Leere führt, sodass die Anfrage endet.
+:::tip[Glossarbegriffe]
+In der gesamten Dokumentation siehst du <Terminology title="Eine kurze Erinnerung, genau dort, wo du liest" to="/docs/reference/terminology">hervorgehobene Begriffe</Terminology> mit gepunkteter Unterstreichung. Fahre mit der Maus darüber, um kurz nachzulesen, was sie bedeuten, oder klicke, um zur vollständigen Definition zu springen.
+:::
 
-## DNS Resolver \{#dns-resolver}
+## DNS-Grundlagen \{#dns-basics}
 
-Der Unbound-basierte DNS-Dienst von pfSense.
+| Begriff          | Auch bekannt als | Definition                                                                                            |
+|------------------|------------------|-------------------------------------------------------------------------------------------------------|
+| **DNS-Sinkhole** | —                | Beantwortet einen blockierten Namen mit einer Adresse, die ins Leere führt, sodass die Anfrage endet. |
+| **DNS Resolver** | Unbound          | Der Unbound-basierte DNS-Dienst von pfSense.                                                          |
 
-## Blockliste \{#block-list}
+## Listen und Scopes \{#lists-and-scopes}
 
-Eine Liste zu blockierender Namen oder Adressen, die per URL oder über die Suche hinzugefügt wird.
+| Begriff                         | Auch bekannt als                     | Definition                                                                                                                                                   |
+|---------------------------------|--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Blockliste**                  | —                                    | Eine Liste zu blockierender Namen oder Adressen, die per URL oder über die Suche hinzugefügt wird.                                                           |
+| **Suche nach populären Listen** | —                                    | Die WebGUI-Suche nach weit verbreiteten Blocklisten, ähnlich der Auswahl von AdGuard Home.                                                                   |
+| **gespeicherte Liste**          | —                                    | Die letzte gültige Kopie einer Blockliste, die auf der Firewall aufbewahrt wird.                                                                             |
+| **Scope**                       | —                                    | Der Geltungsbereich einer Blockliste: das gesamte Netzwerk, ein VLAN oder ein einzelnes Gerät.                                                               |
+| **globale Listen**              | —                                    | Blocklisten, die für jeden Client im Netzwerk gelten.                                                                                                        |
+| **SafeSearch**                  | Sichere Suche, eingeschränkter Modus | Der sichere Modus einer Suchmaschine, für jedes Gerät in einem Scope erzwungen, indem die Namen der Suchmaschine mit ihrem sicheren Host beantwortet werden. |
+| **Rebind-Ausnahme**             | private-domain                       | Eine Domain, die trotz DNS-Rebinding-Schutz mit einer privaten Adresse antworten darf.                                                                       |
 
-## Gespeicherte Liste \{#saved-list}
+## Alarme \{#alerts}
 
-Die letzte gültige Kopie einer Blockliste, die auf der Firewall aufbewahrt wird.
-
-## Scope \{#scope}
-
-Der Geltungsbereich einer Blockliste: das gesamte Netzwerk, ein VLAN oder ein einzelnes Gerät.
-
-## Globale Listen \{#global-lists}
-
-Blocklisten, die für jeden Client im Netzwerk gelten.
-
-## Alarmregel \{#alert-rule}
-
-Eine Liste und ein Scope, deren Blockierungen eine pfSense-Benachrichtigung senden.
+| Begriff        | Auch bekannt als | Definition                                                                          |
+|----------------|------------------|-------------------------------------------------------------------------------------|
+| **Alarmregel** | —                | Eine Liste und ein Scope, deren Blockierungen eine pfSense-Benachrichtigung senden. |
 
 ## Bypass-Schutz \{#bypass-protection}
 
-Optionale, schnittstellenbezogene Kontrollen, die Clients auf DNS-Pfaden halten, die Sinkhole prüfen kann, indem sie Klartext-DNS umleiten oder verbreitete Alternativen für verschlüsseltes DNS und Tunnel blockieren.
-
-## Klartext-DNS-Umleitung \{#plain-dns-redirect}
-
-Die optionale Bypass-Einstellung, die gewöhnliche TCP- und UDP-Port-53-Abfragen von Geräten an die Firewall sendet.
-
-## Suche nach populären Listen \{#popular-list-search}
-
-Die WebGUI-Suche nach weit verbreiteten Blocklisten, ähnlich der Auswahl von AdGuard Home.
+| Begriff                    | Auch bekannt als | Definition                                                                                                                                                                                                              |
+|----------------------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Bypass-Schutz**          | Bypass           | Optionale, schnittstellenbezogene Kontrollen, die Clients auf DNS-Pfaden halten, die Sinkhole prüfen kann, indem sie Klartext-DNS umleiten oder verbreitete Alternativen für verschlüsseltes DNS und Tunnel blockieren. |
+| **Klartext-DNS-Umleitung** | —                | Die optionale Bypass-Einstellung, die gewöhnliche TCP- und UDP-Port-53-Abfragen von Geräten an die Firewall sendet.                                                                                                     |

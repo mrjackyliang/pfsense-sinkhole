@@ -3,34 +3,60 @@ import { NovaIdentity } from '@cbnventures/nova/toolkit';
 import type { DocusaurusNovaConfig } from '@cbnventures/docusaurus-preset-nova/types/config';
 
 /**
- * Docusaurus - Identity.
- *
- * Reads the documentation identity from the generated Nova configuration.
- * Fallbacks keep the site runnable when project metadata is unavailable.
+ * Identity.
  *
  * @since 0.0.0
  */
 const identity = new NovaIdentity().forDocs();
 
 /**
- * Docusaurus - Config.
- *
- * Configures Sinkhole's documentation site with Nova's selected preset.
+ * Docusaurus Configuration.
  *
  * @since 0.0.0
  */
 const config: DocusaurusNovaConfig = {
+  // Site Metadata.
   title: identity['title'] ?? '',
-  tagline: identity['tagline'] ?? 'Scoped DNS, IP, and country blocking for pfSense.',
-  url: identity['url'] ?? 'https://www.example.com',
-  baseUrl: identity['baseUrl'] ?? '/',
+  titleDelimiter: '-',
+  tagline: identity['tagline'],
   favicon: './favicon.ico',
-  organizationName: identity['organizationName'] ?? 'your-org',
-  projectName: identity['projectName'] ?? 'pfsense-sinkhole',
-  trailingSlash: true,
-  onBrokenLinks: 'throw',
 
+  // Deployment.
+  url: identity['url'] ?? '',
+  baseUrl: identity['baseUrl'] ?? '/',
+  organizationName: identity['organizationName'],
+  projectName: identity['projectName'],
+  deploymentBranch: undefined,
+  githubHost: undefined,
+  githubPort: undefined,
+  trailingSlash: true,
+  noIndex: false,
+
+  // Error Handling.
+  onBrokenLinks: 'throw',
+  onBrokenAnchors: 'throw',
+  onDuplicateRoutes: 'throw',
+
+  // Static Assets.
+  staticDirectories: ['static'],
+  baseUrlIssueBanner: true,
+  scripts: [],
+  stylesheets: [],
+  clientModules: [],
+  themes: [],
+
+  // Custom Fields.
+  customFields: {},
+
+  // Head Tags.
   headTags: [
+    {
+      tagName: 'meta',
+      attributes: {
+        property: 'og:type',
+        content: 'website',
+      },
+    },
     {
       tagName: 'link',
       attributes: {
@@ -65,12 +91,7 @@ const config: DocusaurusNovaConfig = {
     },
   ],
 
-  markdown: {
-    hooks: {
-      onBrokenMarkdownLinks: 'warn',
-    },
-  },
-
+  // Internationalization.
   i18n: {
     defaultLocale: 'en-US',
     locales: [
@@ -93,110 +114,270 @@ const config: DocusaurusNovaConfig = {
       'es-ES',
       'es-AR',
     ],
+    path: 'i18n',
     localeConfigs: {
       'bs': {
         label: 'Bosnian',
+        direction: 'ltr',
         htmlLang: 'bs',
+        calendar: 'gregory',
+        path: 'bs',
       },
       'zh-CN': {
         label: 'Chinese',
+        direction: 'ltr',
         htmlLang: 'zh-CN',
+        calendar: 'gregory',
+        path: 'zh-CN',
       },
       'zh-Hans-CN': {
         label: 'Chinese (Simplified, China)',
+        direction: 'ltr',
         htmlLang: 'zh-Hans-CN',
+        calendar: 'gregory',
+        path: 'zh-Hans-CN',
       },
       'zh-Hans-HK': {
         label: 'Chinese (Simplified, Hong Kong SAR China)',
+        direction: 'ltr',
         htmlLang: 'zh-Hans-HK',
+        calendar: 'gregory',
+        path: 'zh-Hans-HK',
       },
       'zh-Hant-TW': {
         label: 'Chinese (Traditional, Taiwan)',
+        direction: 'ltr',
         htmlLang: 'zh-Hant-TW',
+        calendar: 'gregory',
+        path: 'zh-Hant-TW',
       },
       'nl-NL': {
         label: 'Dutch',
+        direction: 'ltr',
         htmlLang: 'nl-NL',
+        calendar: 'gregory',
+        path: 'nl-NL',
       },
       'en-US': {
         label: 'English',
+        direction: 'ltr',
         htmlLang: 'en-US',
+        calendar: 'gregory',
+        path: 'en-US',
       },
       'fr-FR': {
         label: 'French',
+        direction: 'ltr',
         htmlLang: 'fr-FR',
+        calendar: 'gregory',
+        path: 'fr-FR',
       },
       'de-DE': {
         label: 'German (Germany)',
+        direction: 'ltr',
         htmlLang: 'de-DE',
+        calendar: 'gregory',
+        path: 'de-DE',
       },
       'it-IT': {
         label: 'Italian',
+        direction: 'ltr',
         htmlLang: 'it-IT',
+        calendar: 'gregory',
+        path: 'it-IT',
       },
       'ko-KR': {
         label: 'Korean',
+        direction: 'ltr',
         htmlLang: 'ko-KR',
+        calendar: 'gregory',
+        path: 'ko-KR',
       },
       'nb-NO': {
         label: 'Norwegian Bokmål',
+        direction: 'ltr',
         htmlLang: 'nb-NO',
+        calendar: 'gregory',
+        path: 'nb-NO',
       },
       'pl-PL': {
         label: 'Polish',
+        direction: 'ltr',
         htmlLang: 'pl-PL',
+        calendar: 'gregory',
+        path: 'pl-PL',
       },
       'pt-PT': {
         label: 'Portuguese',
+        direction: 'ltr',
         htmlLang: 'pt-PT',
+        calendar: 'gregory',
+        path: 'pt-PT',
       },
       'pt-BR': {
         label: 'Portuguese (Brazil)',
+        direction: 'ltr',
         htmlLang: 'pt-BR',
+        calendar: 'gregory',
+        path: 'pt-BR',
       },
       'ru-RU': {
         label: 'Russian',
+        direction: 'ltr',
         htmlLang: 'ru-RU',
+        calendar: 'gregory',
+        path: 'ru-RU',
       },
       'es-ES': {
         label: 'Spanish',
+        direction: 'ltr',
         htmlLang: 'es-ES',
+        calendar: 'gregory',
+        path: 'es-ES',
       },
       'es-AR': {
         label: 'Spanish (Argentina)',
+        direction: 'ltr',
         htmlLang: 'es-AR',
+        calendar: 'gregory',
+        path: 'es-AR',
       },
     },
   },
 
+  // Markdown.
+  markdown: {
+    format: 'mdx',
+    mermaid: true,
+    emoji: true,
+    mdx1Compat: {
+      comments: true,
+      admonitions: true,
+      headingIds: true,
+    },
+    anchors: {
+      maintainCase: false,
+    },
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+      onBrokenMarkdownImages: 'throw',
+    },
+  },
+
+  // Presets (Nova).
   presets: [[
     '@cbnventures/docusaurus-preset-nova',
     {
+      // Preset Identity.
       preset: 'sentinel',
+
+      // Preset Overrides (undefined = use preset default).
       overrides: {
         colors: {
           primary: {
-            light: '#0f766e',
-            dark: '#2dd4bf',
+            light: '#0F766E',
+            dark: '#2DD4BF',
           },
           secondary: {
-            light: '#b45309',
-            dark: '#fbbf24',
+            light: '#B45309',
+            dark: '#FBBF24',
+          },
+          text: undefined,
+          border: undefined,
+          warning: undefined,
+          danger: undefined,
+        },
+        fonts: {
+          display: undefined,
+          body: undefined,
+          code: undefined,
+        },
+        navbar: undefined,
+        footer: undefined,
+      },
+
+      // Plugins.
+      plugins: {
+        docs: {
+          routeBasePath: 'docs',
+          sidebarPath: './sidebars.ts',
+          editUrl: 'https://github.com/mrjackyliang/pfsense-sinkhole/tree/main/apps/docs/',
+          showLastUpdateTime: true,
+          showLastUpdateAuthor: true,
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: 'Current',
+              badge: false,
+              banner: 'none',
+            },
           },
         },
-      },
-      plugins: {
-        blog: false,
-        docs: {
-          sidebarPath: './sidebars.ts',
-          routeBasePath: 'docs',
+        blog: {
+          showReadingTime: true,
+          blogTitle: 'Blog',
+          blogDescription: 'Releases and milestones from Sinkhole, scoped DNS, IP, and country blocking that runs inside pfSense.',
+          postsPerPage: 10,
+          blogSidebarTitle: 'Recent Posts',
+          blogSidebarCount: 15,
+          feedOptions: {
+            type: [
+              'rss',
+              'atom',
+            ],
+            copyright: identity['copyright'],
+            limit: 20,
+            title: 'Sinkhole for pfSense Blog',
+            description: 'Releases and milestones from Sinkhole, scoped DNS, IP, and country blocking that runs inside pfSense.',
+          },
+        },
+        pages: {
+          editUrl: 'https://github.com/mrjackyliang/pfsense-sinkhole/tree/main/apps/docs/',
+          showLastUpdateTime: true,
+          showLastUpdateAuthor: true,
+        },
+        sitemap: {
+          lastmod: 'date',
+          changefreq: 'weekly',
+          priority: 0.5,
+          ignorePatterns: ['**/docs/tags/**'],
+          filename: 'sitemap.xml',
         },
       },
-      search: {},
+
+      // Analytics.
+      analytics: {
+        gtm: {
+          containerId: 'GTM-NJN3C25S',
+        },
+      },
+
+      // Search.
+      search: {
+        indexDocs: true,
+        indexBlog: true,
+        indexPages: true,
+        docsRouteBasePath: 'docs',
+        hashed: true,
+        language: ['en'],
+        highlightSearchTermsOnTargetPage: true,
+        searchBarShortcutKeymap: 'mod+k',
+        searchResultLimits: 8,
+        fuzzyMatchingDistance: 1,
+        ignorePatterns: [],
+      },
+
+      // Progress Bar.
+      progressBar: true,
     },
   ]],
 
+  // Plugins.
+  plugins: ['./src/plugins/locale-docs-assets.ts'],
+
+  // Theme Config.
   themeConfig: {
+    // Site.
     site: {
       logo: {
         alt: 'Sinkhole for pfSense',
@@ -205,6 +386,13 @@ const config: DocusaurusNovaConfig = {
           dark: undefined,
         },
         href: '/',
+        target: undefined,
+        rel: undefined,
+        ariaLabel: undefined,
+        wordmark: {
+          light: undefined,
+          dark: undefined,
+        },
       },
       image: '/thumbnails/brand.png',
       metadata: [
@@ -218,36 +406,148 @@ const config: DocusaurusNovaConfig = {
         },
       ],
     },
+
+    // Color Mode.
+    colorMode: {
+      defaultMode: 'system',
+      disableSwitch: false,
+    },
+
+    // Navbar.
     navbar: {
-      title: 'Sinkhole',
+      hideOnScroll: false,
       items: [
         {
-          label: 'Home',
+          label: 'Docs',
           position: 'left',
-          to: '/',
-          icon: 'lucide:house',
-        },
-        {
-          label: 'Guides',
-          position: 'left',
-          type: 'docSidebar',
-          sidebarId: 'docs',
+          type: 'dropdown',
           icon: 'lucide:book-open',
+          items: [
+            {
+              label: 'Overview',
+              to: '/docs/intro/',
+              icon: 'lucide:rocket',
+              activeBaseRegex: '^(/[A-Za-z-]+)?/docs/(intro|installation|first-run|compatibility|tags)/',
+            },
+            {
+              label: 'Configure',
+              to: '/docs/configure/lists/',
+              icon: 'lucide:settings',
+              activeBaseRegex: '^(/[A-Za-z-]+)?/docs/configure/',
+            },
+            {
+              label: 'Operate',
+              to: '/docs/operate/status/',
+              icon: 'lucide:activity',
+              activeBaseRegex: '^(/[A-Za-z-]+)?/docs/operate/',
+            },
+            {
+              label: 'Reference',
+              to: '/docs/reference/terminology/',
+              icon: 'lucide:library',
+              activeBaseRegex: '^(/[A-Za-z-]+)?/docs/reference/',
+            },
+            {
+              label: 'Safety',
+              to: '/docs/safety/how-updates-work/',
+              icon: 'lucide:shield-check',
+              activeBaseRegex: '^(/[A-Za-z-]+)?/docs/safety/',
+            },
+            {
+              label: 'Contributing',
+              to: '/docs/contributing/build-and-release/',
+              icon: 'lucide:git-pull-request',
+              activeBaseRegex: '^(/[A-Za-z-]+)?/docs/contributing/',
+            },
+          ],
         },
         {
-          label: 'Status',
+          label: 'Quick Start',
           position: 'left',
-          to: '/docs/operate/status',
-          icon: 'lucide:activity',
+          type: undefined,
+          to: '/docs/installation/',
+          icon: 'lucide:play',
         },
         {
-          label: 'Troubleshooting',
+          label: 'Blog',
           position: 'left',
-          to: '/docs/operate/troubleshooting',
+          type: undefined,
+          to: '/blog/',
+          icon: 'lucide:pen-line',
+        },
+        {
+          label: 'Resources',
+          position: 'left',
+          type: 'dropdown',
           icon: 'lucide:life-buoy',
+          items: [
+            {
+              label: 'Troubleshooting',
+              to: '/docs/operate/troubleshooting/',
+              icon: 'lucide:wrench',
+            },
+            {
+              label: 'Changelog',
+              href: 'https://github.com/mrjackyliang/pfsense-sinkhole/releases',
+              icon: 'lucide:history',
+            },
+            {
+              label: 'Report an Issue',
+              href: 'https://github.com/mrjackyliang/pfsense-sinkhole/issues',
+              icon: 'lucide:bug',
+            },
+          ],
+        },
+        {
+          type: 'localeDropdown',
+          position: 'right',
         },
       ],
     },
+
+    // Docs.
+    docs: {
+      versionPersistence: 'localStorage',
+      sidebar: {
+        hideable: false,
+        autoCollapseCategories: false,
+      },
+    },
+
+    // Blog.
+    blog: {
+      sidebar: {
+        groupByYear: true,
+      },
+      layout: {
+        heading: 'Blog',
+        description: 'Releases and milestones',
+      },
+      share: {
+        platforms: [
+          'linkedin',
+          'reddit',
+          'facebook',
+          'x',
+          'copy',
+        ],
+      },
+    },
+
+    // Table of Contents.
+    tableOfContents: {
+      minHeadingLevel: 2,
+      maxHeadingLevel: 3,
+    },
+
+    // Announcement Bar.
+    announcementBar: undefined,
+
+    // Back to Top Button.
+    backToTopButton: true,
+
+    // Error Pages - overrides Nova's randomized defaults with consumer copy.
+    // Any unset field falls through to the Nova-flavored randomized pool.
     errorPages: {
       notFound: {
         title: 'This page was not found.',
@@ -263,62 +563,143 @@ const config: DocusaurusNovaConfig = {
         retryLabel: 'Try again',
       },
     },
+
+    // Footer.
     footer: {
-      socialLinks: [],
       sections: {
-        learn: [
+        docs: [
           {
-            label: 'Install Sinkhole',
-            href: '/docs/installation',
+            label: 'Overview',
+            href: '/docs/intro/',
           },
           {
-            label: 'Lists and saved copies',
-            href: '/docs/configure/lists',
+            label: 'Configure',
+            href: '/docs/configure/lists/',
           },
           {
-            label: 'Scopes and allowed domains',
-            href: '/docs/configure/scopes',
+            label: 'Operate',
+            href: '/docs/operate/status/',
           },
           {
-            label: 'Status',
-            href: '/docs/operate/status',
+            label: 'Reference',
+            href: '/docs/reference/terminology/',
           },
           {
-            label: 'Troubleshooting',
-            href: '/docs/operate/troubleshooting',
+            label: 'Safety',
+            href: '/docs/safety/how-updates-work/',
+          },
+          {
+            label: 'Contributing',
+            href: '/docs/contributing/build-and-release/',
           },
         ],
         resources: [
           {
-            label: 'How updates work',
-            href: '/docs/safety/how-updates-work',
+            label: 'Blog',
+            href: '/blog/',
           },
           {
-            label: 'Testing and verification',
-            href: '/docs/safety/testing-and-verification',
+            label: 'Troubleshooting',
+            href: '/docs/operate/troubleshooting/',
           },
           {
-            label: 'pfSense documentation',
-            href: 'https://docs.netgate.com/pfsense/en/latest/',
+            label: 'Changelog',
+            href: 'https://github.com/mrjackyliang/pfsense-sinkhole/releases',
           },
           {
-            label: 'Source code',
+            label: 'Report an Issue',
+            href: 'https://github.com/mrjackyliang/pfsense-sinkhole/issues',
+          },
+          {
+            label: 'Source Code',
             href: 'https://github.com/mrjackyliang/pfsense-sinkhole',
           },
         ],
+        project: [
+          {
+            label: 'Sponsor',
+            href: 'https://github.com/sponsors/mrjackyliang',
+          },
+          {
+            label: 'pfSense Documentation',
+            href: 'https://docs.netgate.com/pfsense/en/latest/',
+          },
+          {
+            label: 'Other Projects',
+            href: 'https://www.mrjackyliang.com/work/',
+          },
+        ],
+        legal: [{
+          label: 'License',
+          href: 'https://github.com/mrjackyliang/pfsense-sinkhole/blob/HEAD/LICENSE',
+        }],
       },
       layout: {
-        learn: {
-          title: 'Guides',
-          section: 'learn',
+        docs: {
+          title: 'Docs',
+          section: 'docs',
         },
         resources: {
           title: 'Resources',
           section: 'resources',
         },
+        project: {
+          title: 'Project',
+          section: 'project',
+        },
+        legal: {
+          title: 'Legal',
+          section: 'legal',
+        },
       },
+      socialLinks: [
+        {
+          icon: 'ri:facebook-fill',
+          href: 'https://www.facebook.com/jackyliangofficial',
+          label: 'Facebook',
+        },
+        {
+          icon: 'ri:twitter-x-fill',
+          href: 'https://x.com/mrjackyliang',
+          label: 'X',
+        },
+        {
+          icon: 'ri:youtube-fill',
+          href: 'https://www.youtube.com/@mrjackyliang',
+          label: 'YouTube',
+        },
+        {
+          icon: 'ri:instagram-fill',
+          href: 'https://www.instagram.com/mrjackyliang/',
+          label: 'Instagram',
+        },
+        {
+          icon: 'ri:github-fill',
+          href: 'https://github.com/mrjackyliang',
+          label: 'GitHub',
+        },
+        {
+          icon: 'ri:linkedin-fill',
+          href: 'https://www.linkedin.com/in/mrjackyliang/',
+          label: 'LinkedIn',
+        },
+        {
+          icon: 'ri:reddit-fill',
+          href: 'https://www.reddit.com/user/mrjackyliang/',
+          label: 'Reddit',
+        },
+        {
+          icon: 'ri:heart-fill',
+          href: 'https://github.com/sponsors/mrjackyliang',
+          label: 'GitHub Sponsors',
+        },
+      ],
       copyright: identity['copyright'],
       credit: true,
+      cta: {
+        label: 'Ready to choose what your network reaches?',
+        href: '/docs/installation/',
+      },
     },
   },
 };

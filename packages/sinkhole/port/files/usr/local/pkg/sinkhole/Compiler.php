@@ -8,6 +8,8 @@ use JsonException;
 use PfSense\Sinkhole\Domain\BypassConfiguration;
 use PfSense\Sinkhole\Domain\DomainParser;
 use PfSense\Sinkhole\Domain\ListConfiguration;
+use PfSense\Sinkhole\Domain\SafeSearchConfiguration;
+use PfSense\Sinkhole\Domain\SafeSearchEngines;
 use PfSense\Sinkhole\Domain\ServiceConfiguration;
 use PfSense\Sinkhole\Domain\ServiceRegistry;
 use RuntimeException;
@@ -21,6 +23,9 @@ require_once(__DIR__ . '/FileLock.php');
 require_once(__DIR__ . '/FileSystem.php');
 require_once(__DIR__ . '/ListConfiguration.php');
 require_once(__DIR__ . '/PackagePaths.php');
+require_once(__DIR__ . '/SafeSearchConfiguration.php');
+require_once(__DIR__ . '/SafeSearchEngines.php');
+require_once(__DIR__ . '/SafeSearchTargets.php');
 require_once(__DIR__ . '/SavedListStore.php');
 require_once(__DIR__ . '/ServiceConfiguration.php');
 require_once(__DIR__ . '/ServiceRegistry.php');
@@ -201,7 +206,7 @@ final class Compiler
      * @param mixed $allowedDomains  - Untrusted allowed-domain elements.
      * @param bool  $mirrorRuntime   - Whether RAM-disk boot data is required.
      * @param bool|callable(): bool $deployRuntime - Active state or locked check.
-     * @param null|callable(): array{lists: mixed, allowed_domains: mixed, networks?: mixed, devices?: mixed, alerts?: mixed, services?: mixed, bypass?: mixed} $inputProvider
+     * @param null|callable(): array{lists: mixed, allowed_domains: mixed, networks?: mixed, devices?: mixed, alerts?: mixed, services?: mixed, bypass?: mixed, safesearch?: mixed} $inputProvider
      *     - Locked current-input provider.
      * @param bool $runtimeLockHeld - Whether the caller already owns the runtime lock.
      * @param null|callable(): void $pendingSyncHandler - Locked pending-Sync handler.
@@ -211,6 +216,7 @@ final class Compiler
      * @param mixed $configuredServices - Per-scope blocked-service selections.
      * @param array|null $serviceRegistry - Parsed test registry or cached production registry.
      * @param mixed $configuredBypass - Partitioned Bypass Protection settings.
+     * @param mixed $configuredSafeSearch - Per-scope SafeSearch choices.
      *
      * @return array{
      *     generation: string,
@@ -241,6 +247,7 @@ final class Compiler
         mixed $configuredServices = [],
         ?array $serviceRegistry = null,
         mixed $configuredBypass = [],
+        mixed $configuredSafeSearch = [],
     ): array {
         $lock = new FileLock($this->paths->runtimeLockFile);
         $acquiredRuntimeLock = false;
@@ -281,6 +288,7 @@ final class Compiler
                 $configuredAlerts = $inputs['alerts'] ?? [];
                 $configuredServices = $inputs['services'] ?? [];
                 $configuredBypass = $inputs['bypass'] ?? [];
+                $configuredSafeSearch = $inputs['safesearch'] ?? [];
             }
 
             $serviceRegistry ??= ServiceRegistryCache::cachedRegistry($this->paths);
@@ -296,6 +304,7 @@ final class Compiler
                 $configuredServices,
                 $serviceRegistry,
                 $configuredBypass,
+                $configuredSafeSearch,
             );
 
             $this->stateStore->recordCompileSuccess(
@@ -384,6 +393,7 @@ final class Compiler
      * @param mixed $configuredServices - Per-scope blocked-service selections.
      * @param array $serviceRegistry - Parsed cached registry.
      * @param mixed $configuredBypass - Partitioned Bypass Protection settings.
+     * @param mixed $configuredSafeSearch - Per-scope SafeSearch choices.
      *
      * @return array{
      *     generation: string,
@@ -411,6 +421,7 @@ final class Compiler
         mixed $configuredServices,
         array $serviceRegistry,
         mixed $configuredBypass,
+        mixed $configuredSafeSearch = [],
     ): array {
         $lists = ListConfiguration::normalizeLists($configuredLists);
         $allowResult = DomainParser::normalizeAllowedDomainValues($allowedDomains);
@@ -434,6 +445,7 @@ final class Compiler
             $lists,
         );
         $bypass = $this->normalizeBypassConfiguration($configuredBypass);
+        $safeSearch = $this->safeSearchManifest($configuredSafeSearch, $scopeData['scopes']);
 
         FileSystem::ensureDirectory($this->paths->persistentDirectory, 0700);
         FileSystem::sweepStaleEntries(
@@ -568,6 +580,7 @@ final class Compiler
                 'scopes' => $scopeData['scopes'],
                 'alerts' => (object) $manifestAlerts,
                 'bypass' => $bypass['manifest'],
+                'safesearch' => $safeSearch,
             ];
             $contentDigest = $this->contentDigest($buildDirectory, $digestManifest);
             $manifest = [
@@ -584,6 +597,7 @@ final class Compiler
                 'scopes' => $digestManifest['scopes'],
                 'alerts' => $digestManifest['alerts'],
                 'bypass' => $digestManifest['bypass'],
+                'safesearch' => $digestManifest['safesearch'],
             ];
 
             try {
@@ -629,6 +643,77 @@ final class Compiler
                 FileSystem::removeDirectory($buildDirectory);
             }
         }
+    }
+
+    /**
+     * Compiler - SafeSearch Manifest.
+     *
+     * Keeps only choices selected by Global or an enabled scope, the exact names
+     * of their engines, and each safe host's last good addresses. A choice with no
+     * known addresses yet is compiled without addresses, which the module answers
+     * as a block until a lookup succeeds.
+     *
+     * @param mixed $configuredSafeSearch - Per-scope SafeSearch choices.
+     * @param array $scopes - Compiled ordinary scope map.
+     *
+     * @return array{choices: object, engines: object, scopes: array{global: list<string>, networks: object, devices: object}}
+     *
+     * @since 1.1.0
+     * @private
+     */
+    private function safeSearchManifest(mixed $configuredSafeSearch, array $scopes): array
+    {
+        $configuration = SafeSearchConfiguration::partition($configuredSafeSearch);
+        $networkIdentifiers = array_keys((array) ($scopes['networks'] ?? []));
+        $deviceIdentifiers = array_keys((array) ($scopes['devices'] ?? []));
+        $scopeSelections = [
+            'global' => $configuration['global'],
+            'networks' => [],
+            'devices' => [],
+        ];
+
+        foreach (['networks' => $networkIdentifiers, 'devices' => $deviceIdentifiers] as $kind => $identifiers) {
+            foreach ($identifiers as $identifier) {
+                $selection = $configuration[$kind][$identifier] ?? [];
+
+                if ($selection !== []) {
+                    $scopeSelections[$kind][$identifier] = $selection;
+                }
+            }
+
+            ksort($scopeSelections[$kind], SORT_STRING);
+        }
+
+        $inUse = SafeSearchConfiguration::choicesInUse(
+            $configuration,
+            $networkIdentifiers,
+            $deviceIdentifiers,
+        );
+        $targets = (new SafeSearchTargets($this->paths->safeSearchTargetsFile))->read();
+        $choices = [];
+        $engines = [];
+
+        foreach ($inUse as $identifier) {
+            $target = SafeSearchEngines::target($identifier);
+            $engine = SafeSearchEngines::engine($identifier);
+            $choices[$identifier] = [
+                'engine' => $engine,
+                'target' => $target,
+                'ipv4' => ($target === '') ? [] : ($targets[$target]['ipv4'] ?? []),
+                'ipv6' => ($target === '') ? [] : ($targets[$target]['ipv6'] ?? []),
+            ];
+            $engines[$engine] ??= SafeSearchEngines::names($engine);
+        }
+
+        return [
+            'choices' => (object) $choices,
+            'engines' => (object) $engines,
+            'scopes' => [
+                'global' => $scopeSelections['global'],
+                'networks' => (object) $scopeSelections['networks'],
+                'devices' => (object) $scopeSelections['devices'],
+            ],
+        ];
     }
 
     /**

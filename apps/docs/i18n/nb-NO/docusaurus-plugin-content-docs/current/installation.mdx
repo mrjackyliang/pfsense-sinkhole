@@ -23,6 +23,7 @@ Installer eller oppdater Sinkhole fra den stabile pakken i GitHub-utgivelsen, og
 - **HTTPS access to GitHub** — Brannmuren må kunne laste ned pakken og kontrollsummen fra GitHub Releases.
 - **DNS Resolver** — DNS Resolver i pfSense må være aktivert før DNS-integrasjonen til Sinkhole kan aktiveres.
 - **Available Python slot** — pfBlockerNG DNSBL eller et annet Python-skript kan ikke eie den eneste modulplassen i Resolver.
+- **No active pfBlockerNG** — pfBlockerNG må fjernes eller ha hovedinnstillingen **Enable** slått av, uansett DNSBL-modus.
 - **Current backup** — Det anbefales å laste ned `config.xml` fra **Diagnostics → Backup & Restore** før du installerer en uoffisiell pakke.
 
 :::warning

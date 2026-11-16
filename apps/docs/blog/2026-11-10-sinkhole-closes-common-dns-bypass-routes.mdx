@@ -1,0 +1,60 @@
+---
+title: "Sinkhole Closes the Common Routes Around DNS Blocking"
+description: The Bypass tab in Sinkhole 1.0 keeps devices on chosen interfaces from going around the firewall's DNS, with every protection off until you turn it on.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - bypass protection
+  - dns redirect
+  - encrypted dns
+  - vpn blocking
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+Sinkhole for pfSense 1.0, released on November 10, 2026, includes a Bypass tab that keeps devices on the interfaces you choose from going around the firewall's DNS, the gap that lets devices sidestep most DNS blocking.
+
+{/* truncate */}
+
+## Why It Matters
+
+DNS blocking only works while devices ask the firewall. A device with a hardcoded resolver, DNS over HTTPS, Tor, or a VPN can skip the block lists entirely.
+
+Closing those paths used to mean hand-made NAT redirect rules and firewall rules per interface. The Bypass tab turns each protection into one setting, applied to the interfaces you select.
+
+## What's on the Bypass Tab
+
+Every protection is off by default, and no interface is selected until you choose one.
+
+### Plain DNS
+
+- **Redirect** — Sends ordinary DNS on port 53 to the firewall while keeping each device's source address, so network and device lists still apply.
+
+### Encrypted DNS
+
+- **TLS and QUIC** — Blocks port 853 to every destination except the firewall.
+- **Providers** — Blocks the names and addresses on encrypted-DNS provider lists you add.
+- **Firefox** — Turns off Firefox's automatic DNS over HTTPS selection.
+- **Private Relay** — Tells compatible Apple devices that iCloud Private Relay isn't available on this network.
+- **Discovery** — Answers encrypted-DNS discovery queries, or advertises the firewall's own DNS over TLS.
+
+### Tunnels
+
+- **Tor** — Blocks listed Tor relays.
+- **VPN** — Blocks listed VPN providers and the standard VPN ports: TCP and UDP 1194, UDP 51820, UDP 500 and 4500, and ESP.
+
+Bypass Lists are added by URL or from the Bypass catalog, update on the list schedule, and keep their last good copy when a download fails.
+
+## What It Doesn't Promise
+
+These controls close the common routes, not every route. A custom encrypted tunnel can still get past DNS-based policy, and the docs say so plainly.
+
+## Get Started
+
+Open **Firewall → Sinkhole → Bypass**, select the client interfaces, and turn on the protections you want. [Bypass Protection](/docs/configure/bypass-protection) covers each setting.
+
+Sinkhole for pfSense brings scoped DNS, IP, and country blocking to pfSense, with every list saved on the firewall.

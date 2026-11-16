@@ -14,6 +14,8 @@ tags:
   - dns
 ---
 
+import servicesTab from './_assets_/blocked-services-1.png';
+
 Use **Firewall → Sinkhole → Services** when you want to block a whole brand without choosing and maintaining a separate list URL.
 
 ## Choose a Scope \{#choose-a-scope}
@@ -23,6 +25,8 @@ Select **Global**, a configured network, or a configured device. Search for a se
 Services covered by a dedicated Bypass protection don't appear in the grid, group counts, or search. Private Relay is configured only on the Bypass tab.
 
 The selection compiles at that scope's existing level. Device allowed domains still win over device service rules, network allowed domains still win over network service rules, and global allowed domains still win over global service rules.
+
+<img src={servicesTab} alt="Services tab filtered to the Gaming group for a demo device scope, with four services selected" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Registry and Repair \{#registry-and-repair}
 

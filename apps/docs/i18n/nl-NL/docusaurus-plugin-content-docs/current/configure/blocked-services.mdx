@@ -14,6 +14,8 @@ tags:
   - dns
 ---
 
+import servicesTab from './_assets_/blocked-services-1.png';
+
 Gebruik **Firewall → Sinkhole → Services** wanneer u een volledig merk wilt blokkeren zonder een afzonderlijke lijst-URL te kiezen en te onderhouden.
 
 ## Een scope kiezen \{#choose-a-scope}
@@ -23,6 +25,8 @@ Selecteer **Global**, een geconfigureerd netwerk of een geconfigureerd apparaat.
 De selectie wordt op het bestaande niveau van die scope gecompileerd. Toegestane domeinen van apparaten hebben nog steeds voorrang op serviceregels van apparaten, toegestane domeinen van netwerken hebben nog steeds voorrang op serviceregels van netwerken en globale toegestane domeinen hebben nog steeds voorrang op globale serviceregels.
 
 Diensten die onder een specifieke Bypass-beveiliging vallen, verschijnen niet in het raster, de groepstellingen of de zoekresultaten. Private Relay wordt alleen op het tabblad Bypass geconfigureerd.
+
+<img src={servicesTab} alt="Tabblad Services gefilterd op de groep Gaming voor een demoapparaatscope, met vier geselecteerde diensten" width={1024} height={1288} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Register en herstel \{#registry-and-repair}
 

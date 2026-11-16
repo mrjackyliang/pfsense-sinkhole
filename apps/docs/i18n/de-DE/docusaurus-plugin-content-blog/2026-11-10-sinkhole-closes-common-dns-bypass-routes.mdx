@@ -1,0 +1,60 @@
+---
+title: "Sinkhole schließt die üblichen Wege um die DNS-Blockierung"
+description: Der Tab Bypass in Sinkhole 1.0 hindert Geräte an ausgewählten Schnittstellen daran, das DNS der Firewall zu umgehen, und jeder Schutz bleibt aus, bis du ihn einschaltest.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - bypass-schutz
+  - dns-umleitung
+  - verschlüsseltes dns
+  - vpn-blockierung
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+Sinkhole for pfSense 1.0, veröffentlicht am 10. November 2026, enthält einen Tab Bypass, der Geräte an den von dir gewählten Schnittstellen daran hindert, das DNS der Firewall zu umgehen – die Lücke, durch die Geräte den Großteil der DNS-Blockierung umgehen.
+
+{/* truncate */}
+
+## Warum das wichtig ist \{#why-it-matters}
+
+DNS-Blockierung wirkt nur, solange Geräte die Firewall fragen. Ein Gerät mit fest eingetragenem Resolver, DNS over HTTPS, Tor oder einem VPN kann die Blocklisten vollständig umgehen.
+
+Diese Wege zu schließen bedeutete früher, NAT-Umleitungsregeln und Firewallregeln pro Schnittstelle von Hand anzulegen. Der Tab Bypass macht aus jedem Schutz eine einzige Einstellung, die auf die von dir ausgewählten Schnittstellen angewendet wird.
+
+## Was der Tab Bypass bietet \{#whats-on-the-bypass-tab}
+
+Jeder Schutz ist standardmäßig aus, und keine Schnittstelle ist ausgewählt, bis du eine wählst.
+
+### Gewöhnliches DNS \{#plain-dns}
+
+- **Redirect** — Leitet gewöhnliches DNS auf Port 53 an die Firewall und behält dabei die Quelladresse jedes Geräts bei, sodass Netzwerk- und Gerätelisten weiterhin gelten.
+
+### Verschlüsseltes DNS \{#encrypted-dns}
+
+- **TLS and QUIC** — Blockiert Port 853 zu jedem Ziel außer der Firewall.
+- **Providers** — Blockiert die Namen und Adressen aus Anbieterlisten für verschlüsseltes DNS, die du hinzufügst.
+- **Firefox** — Schaltet die automatische Auswahl von DNS over HTTPS in Firefox ab.
+- **Private Relay** — Teilt kompatiblen Apple-Geräten mit, dass iCloud Private Relay in diesem Netzwerk nicht verfügbar ist.
+- **Discovery** — Beantwortet Discovery-Anfragen für verschlüsseltes DNS oder kündigt das eigene DNS over TLS der Firewall an.
+
+### Tunnel \{#tunnels}
+
+- **Tor** — Blockiert gelistete Tor-Relays.
+- **VPN** — Blockiert gelistete VPN-Anbieter und die Standard-VPN-Ports: TCP und UDP 1194, UDP 51820, UDP 500 und 4500 sowie ESP.
+
+Bypass Lists werden per URL oder aus dem Bypass-Katalog hinzugefügt, nach dem Listenzeitplan aktualisiert und behalten ihre letzte gültige Kopie, wenn ein Download fehlschlägt.
+
+## Was es nicht verspricht \{#what-it-doesnt-promise}
+
+Diese Kontrollen schließen die üblichen Wege, nicht jeden Weg. Ein eigener verschlüsselter Tunnel kann DNS-basierte Richtlinien weiterhin umgehen, und die Dokumentation sagt das offen.
+
+## Erste Schritte \{#get-started}
+
+Öffne **Firewall → Sinkhole → Bypass**, wähle die Client-Schnittstellen aus und schalte die gewünschten Schutzfunktionen ein. [Bypass-Schutz](/docs/configure/bypass-protection) beschreibt jede Einstellung.
+
+Sinkhole for pfSense bringt DNS-, IP- und Länderblockierung mit Scopes nach pfSense, mit jeder Liste auf der Firewall gespeichert.

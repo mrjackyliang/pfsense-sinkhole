@@ -1,0 +1,72 @@
+---
+id: safesearch
+title: SafeSearch
+description: Erzwinge den sicheren Modus von Suchmaschinen für das gesamte Netzwerk, ein VLAN oder ein Gerät, indem die Namen jeder Suchmaschine mit ihrem veröffentlichten sicheren Host beantwortet werden.
+keywords:
+  - sinkhole for pfsense
+  - safesearch
+  - sichere suche
+  - youtube eingeschränkter modus
+  - netzwerk-scope
+tags:
+  - configure
+  - safesearch
+  - dns
+---
+
+import safesearchTab from './_assets_/safesearch-1.png';
+
+Verwende **Firewall → Sinkhole → SafeSearch**, um Suchmaschinen für ein Netzwerk oder Gerät im sicheren Modus zu halten, ohne eine Browser- oder Geräteeinstellung zu ändern.
+
+## Warum SafeSearch verwenden? \{#why-use-safesearch}
+
+1. Erzwingt den sicheren Modus im Netzwerk, sodass auch ein abgemeldeter Browser, ein neues Gerät oder ein privates Fenster gefilterte Ergebnisse erhält.
+2. Deckt jede länderspezifische Google-Domain ab, nicht nur `google.com`, sodass ein Wechsel zu `google.co.uk` die Sperre nicht umgeht.
+3. Folgt denselben Scopes wie Blocklisten, sodass ein Kinder-VLAN SafeSearch erhalten kann, während der Rest des Netzwerks davon unberührt bleibt.
+
+## Scope und Suchmaschinen auswählen \{#choose-a-scope-and-engines}
+
+1. Wähle unter **Scope** die Option **Global**, ein konfiguriertes Netzwerk oder ein konfiguriertes Gerät.
+2. Markiere jede Suchmaschine, die fixiert werden soll, und wähle für YouTube **Moderate** oder **Strict**.
+3. Wähle **Save**.
+
+Ein Netzwerk oder Gerät muss unter **Scopes** angelegt sein, bevor es hier erscheint. Beim Speichern wird jeder sichere Host sofort aufgelöst, und die Änderung wird im Hintergrund angewendet.
+
+<img src={safesearchTab} alt="Tab SafeSearch für einen Demo-Tablet-Scope mit fixiertem SafeSearch für Google, Bing, DuckDuckGo und Brave Search, YouTube auf Strict und den verwendeten sicheren Adressen" width={1024} height={1271} style={{maxWidth: '100%', height: 'auto'}} />
+
+| Suchmaschine | Beantwortete Namen                                                                                        | Sicherer Host                                                                  |
+|--------------|-----------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| Google       | `google.<domain>` und `www.google.<domain>` für alle 194 Google-Suchdomains                               | `forcesafesearch.google.com`                                                   |
+| YouTube      | `youtube.com`, `www.youtube.com`, `m.youtube.com`, die Namen der YouTube-API und der eingebetteten Videos | `restrictmoderate.youtube.com` (Moderate) oder `restrict.youtube.com` (Strict) |
+| Bing         | `bing.com`, `www.bing.com`, `edgeservices.bing.com`                                                       | `strict.bing.com`                                                              |
+| DuckDuckGo   | `duckduckgo.com`, `www.duckduckgo.com`, `start.duckduckgo.com`                                            | `safe.duckduckgo.com`                                                          |
+| Brave Search | `search.brave.com`                                                                                        | `forcesafe.search.brave.com`                                                   |
+| Startpage    | `startpage.com`, `www.startpage.com`                                                                      | `safe.startpage.com`                                                           |
+| Ecosia       | `ecosia.org`, `www.ecosia.org`                                                                            | `strict-safe-search.ecosia.org`                                                |
+| Yandex       | Yandex-Suchdomains und `ya.ru`                                                                            | `familysearch.yandex.ru`                                                       |
+| Pixabay      | `pixabay.com`, `www.pixabay.com`                                                                          | `safesearch.pixabay.com`                                                       |
+| Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                                           | Keiner; Qwant wird blockiert                                                   |
+
+Qwant veröffentlicht keinen SafeSearch-Host, daher blockiert die Auswahl von Qwant die Suchmaschine für diesen Scope.
+
+## Wie Scopes zusammenwirken \{#how-scopes-combine}
+
+Ein Client erhält alle Suchmaschinen, die für **Global**, für sein Netzwerk und für sein Gerät ausgewählt sind, zusammengeführt. Erscheint YouTube mit beiden Stufen, gewinnt **Strict**.
+
+SafeSearch greift nach der Blockierung. Ein Name, den eine Liste oder ein blockierter Dienst für den Client blockiert, bleibt blockiert, und erlaubte Domains schalten SafeSearch nicht ab. Wie jeder Client ohne Scope erhalten die eigenen Abfragen der Firewall die Suchmaschinen, die für **Global** ausgewählt sind.
+
+## Wie die Antwort funktioniert \{#how-the-answer-works}
+
+Für eine ausgewählte Suchmaschine beantwortet Sinkhole deren Namen mit einem CNAME auf den sicheren Host sowie dessen Adressen, also dieselbe Antwort, die eine handgeschriebene Unbound-View liefert. Andere Datensatztypen, etwa HTTPS-Datensätze, erhalten nur den CNAME, sodass ein Browser keine Hinweise nutzen kann, die am sicheren Host vorbeiführen.
+
+Sinkhole löst die Adressen jedes sicheren Hosts beim Speichern und bei jeder Listenaktualisierung auf und behält die letzten gültigen Adressen, wenn eine Auflösung fehlschlägt. Eine Suchmaschine, deren sicherer Host noch nie eine Adresse geliefert hat, wird für ihre Scopes blockiert, bis eine Auflösung gelingt.
+
+SafeSearch-Antworten werden nie im Cache des Resolvers gespeichert, sodass die Antwort für einen Client nie einen Client außerhalb des Scopes erreicht.
+
+## SafeSearch prüfen \{#verify-safesearch}
+
+1. Öffne **Status** und prüfe, ob das Panel **SafeSearch** jeden sicheren Host mit Adressen und ohne Fehler anzeigt.
+2. Löse von einem Client im Scope einen Suchmaschinennamen auf, etwa mit `nslookup www.google.com`, und prüfe, ob die Antwort den sicheren Host nennt.
+3. Prüfe von einem Client außerhalb des Scopes, ob dieselbe Abfrage die normale Antwort der Suchmaschine liefert.
+
+Verschlüsseltes DNS, das ein Client an einen anderen Server sendet, umgeht jede DNS-Richtlinie, auch SafeSearch. [Bypass-Schutz](/docs/configure/bypass-protection) hält ausgewählte Schnittstellen auf dem DNS-Pfad von Sinkhole.

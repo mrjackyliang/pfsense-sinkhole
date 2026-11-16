@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Wydania i kamienie milowe Sinkhole, blokowania DNS, IP i krajów według zakresu, które działa wewnątrz pfSense."
+  },
+  "sidebar.title": {
+    "message": "Najnowsze wpisy"
+  }
+}

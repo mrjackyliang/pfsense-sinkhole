@@ -14,6 +14,7 @@ declare(strict_types=1);
 ##|*MATCH=sinkhole-status.php*
 ##|-PRIV
 
+use PfSense\Sinkhole\Domain\SafeSearchConfiguration;
 use PfSense\Sinkhole\Domain\Settings;
 use PfSense\Sinkhole\Domain\ServiceConfiguration;
 use PfSense\Sinkhole\Runtime\CatalogCache;
@@ -82,6 +83,9 @@ $removing = false;
 $scopeNetworks = [];
 $scopeDevices = [];
 $blockedServiceCounts = ['global' => 0, 'networks' => [], 'devices' => []];
+$safeSearchCounts = ['global' => 0, 'networks' => [], 'devices' => []];
+$safeSearchHosts = [];
+$safeSearchTargets = [];
 $clientNetworkCidrs = [];
 $clientDeviceAddresses = [];
 $clientConflicts = [];
@@ -159,6 +163,11 @@ try {
     $blockedServiceCounts = ServiceConfiguration::counts(
         pfsensePackageSinkholeGetBlockedServices(),
     );
+    $safeSearchCounts = SafeSearchConfiguration::counts(
+        pfsensePackageSinkholeGetSafeSearch(),
+    );
+    $safeSearchHosts = pfsensePackageSinkholeAdapter()->safeSearchHostsInUse();
+    $safeSearchTargets = pfsensePackageSinkholeAdapter()->safeSearchTargets();
     $interfaceLabels = pfsensePackageSinkholeAdapter()->getConfiguredInterfaces();
     $redirectConfiguration = pfsensePackageSinkholeGetRedirectConfiguration();
     $redirectEnabled = $redirectConfiguration['enabled'];
@@ -690,6 +699,63 @@ print($servicesForm);
 				<tr>
 					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslate('service_device_scope', [$device['name']]))?></td>
 					<td><?=htmlspecialchars((string) ($blockedServiceCounts['devices'][$identifier] ?? 0))?></td>
+				</tr>
+<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
+</div>
+<div class="panel panel-default">
+	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch'))?></h2></div>
+	<div class="panel-body table-responsive">
+		<table class="table table-striped table-hover table-condensed">
+			<thead>
+				<tr>
+					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('scope'))?></th>
+					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch_engines'))?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslate('global'))?></td>
+					<td><?=htmlspecialchars((string) $safeSearchCounts['global'])?></td>
+				</tr>
+<?php foreach ($scopeNetworks as $identifier => $network): ?>
+				<tr>
+					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslate('service_network_scope', [$interfaceLabels[$network['interface']] ?? $network['interface']]))?></td>
+					<td><?=htmlspecialchars((string) ($safeSearchCounts['networks'][$identifier] ?? 0))?></td>
+				</tr>
+<?php endforeach; ?>
+<?php foreach ($scopeDevices as $identifier => $device): ?>
+				<tr>
+					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslate('service_device_scope', [$device['name']]))?></td>
+					<td><?=htmlspecialchars((string) ($safeSearchCounts['devices'][$identifier] ?? 0))?></td>
+				</tr>
+<?php endforeach; ?>
+			</tbody>
+		</table>
+		<table class="table table-striped table-hover table-condensed">
+			<thead>
+				<tr>
+					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch_safe_host'))?></th>
+					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('ipv4'))?></th>
+					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('ipv6'))?></th>
+					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('last_checked'))?></th>
+					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('last_error'))?></th>
+				</tr>
+			</thead>
+			<tbody>
+<?php if ($safeSearchHosts === []): ?>
+				<tr><td colspan="5"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch_not_in_use'))?></td></tr>
+<?php endif; ?>
+<?php foreach ($safeSearchHosts as $safeSearchHost): ?>
+<?php $safeSearchRecord = $safeSearchTargets[$safeSearchHost] ?? null; ?>
+				<tr>
+					<td><?=htmlspecialchars($safeSearchHost)?></td>
+					<td><?=htmlspecialchars(($safeSearchRecord['ipv4'] ?? []) === [] ? pfsensePackageSinkholeTranslate('none') : implode(', ', $safeSearchRecord['ipv4']))?></td>
+					<td><?=htmlspecialchars(($safeSearchRecord['ipv6'] ?? []) === [] ? pfsensePackageSinkholeTranslate('none') : implode(', ', $safeSearchRecord['ipv6']))?></td>
+					<td><?=htmlspecialchars(is_int($safeSearchRecord['checked_at'] ?? null) ? gmdate('Y-m-d H:i:s \U\T\C', $safeSearchRecord['checked_at']) : pfsensePackageSinkholeTranslate('safesearch_not_looked_up'))?></td>
+					<td><?=htmlspecialchars(($safeSearchRecord['last_error'] ?? '') === '' ? pfsensePackageSinkholeTranslate('none') : $safeSearchRecord['last_error'])?></td>
 				</tr>
 <?php endforeach; ?>
 			</tbody>

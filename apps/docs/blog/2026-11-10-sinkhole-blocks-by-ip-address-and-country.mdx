@@ -1,0 +1,47 @@
+---
+title: "Sinkhole Blocks by IP Address and Country, Not Only by Name"
+description: Sinkhole 1.0 adds IP lists and MaxMind GeoLite2 country blocking in its own firewall anchor, for traffic that never asks DNS for a name.
+slug: sinkhole-blocks-by-ip-address-and-country
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - ip blocking
+  - country blocking
+  - geolite2
+  - pf anchor
+tags:
+  - release
+  - ip-blocking
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0, released on November 10, 2026, blocks traffic by IP address and by country as well as by name, in the same package and the same WebGUI as its DNS block lists.
+
+{/* truncate */}
+
+## Why It Matters
+
+DNS blocking stops a lookup. Traffic that goes straight to an address, such as scanners hitting a WAN or an app with hardcoded servers, never asks DNS and never meets a block list.
+
+Sinkhole puts IP and country blocking on its own IP tab, separate from DNS policy, so one package covers names, addresses, and countries.
+
+## What's Included
+
+- **IP lists** — Add lists by URL, or find them in the IP sections of pfBlockerNG's feed catalog. Each list can hold IPv4, IPv6, or both.
+- **Country blocking** — Pick countries by two-letter code from MaxMind GeoLite2 data, under your own MaxMind account and license key. Sinkhole never ships a key.
+- **Interfaces and directions** — Block listed sources arriving on a WAN, listed destinations from client networks, or both, per interface.
+- **An allowlist** — Addresses, networks, and aliases on the IP Allowlist are cut out of the blocked set before it loads.
+- **Protected addresses** — The firewall's own addresses, gateways, DNS servers, and the subnets of selected interfaces are removed automatically, so a list can't lock you out.
+
+The rules live in a Sinkhole firewall anchor, `sinkhole/ip`, that stays in place across pfSense filter reloads. List updates replace only its tables, and a failed download keeps the last good copy.
+
+## Off Until You Turn It On
+
+IP and country blocking is off by default and works on its own, without the DNS switch. The Status tab shows table sizes, the last update, the GeoLite2 update time, and whether the anchor is loaded and current.
+
+## Get Started
+
+Open **Firewall → Sinkhole → IP**, choose interfaces and directions, then add lists or countries. [IP and Country Blocking](/docs/configure/ip-and-country-blocking) covers each setting.
+
+Sinkhole for pfSense brings scoped DNS, IP, and country blocking to pfSense, with every list saved on the firewall.

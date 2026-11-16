@@ -14,6 +14,8 @@ tags:
   - webgui
 ---
 
+import generalTab from './_assets_/settings-1.png';
+
 Pronađite namjenu i zadano ponašanje svakog područja konfiguracije Sinkholea pod **Firewall → Sinkhole**.
 
 ## General \{#general}
@@ -25,6 +27,18 @@ Pronađite namjenu i zadano ponašanje svakog područja konfiguracije Sinkholea 
 | Keep Settings    | On     | Čuva konfiguraciju i trajne sačuvane podatke kada se paket ukloni.                                   |
 
 Zakazana vremena koriste stabilne nasumične komponente. Hourly se pokreće u jednoj stabilnoj minuti, Every 6 hours koristi istu minutu svakog šestog sata, Daily se pokreće u `00:<minute>`, a Weekly nedjeljom u `00:<minute>`.
+
+<img src={generalTab} alt="Kartica General s uključenim Sinkholeom, dnevnim ažuriranjima lista, uključenim Keep Settings, izuzetkom ponovnog vezivanja za plex.direct, vrijednostima za istekle odgovore uz uključen Serve Expired i sedmičnim provjerama ažuriranja paketa" width={1024} height={1049} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Resolver \{#resolver}
+
+| Polje                   | Zadano | Opis                                                                                                      |
+|-------------------------|--------|-----------------------------------------------------------------------------------------------------------|
+| Rebind Exceptions       | Empty  | Domene kojima je dopušteno odgovarati privatnim adresama uprkos zaštiti od DNS rebindinga, jedna po redu. |
+| Expired Answer Lifetime | Empty  | Sekunde tokom kojih se istekli odgovor iz predmemorije još smije posluživati; `0` znači bez ograničenja.  |
+| Expired Answer Wait     | Empty  | Milisekunde čekanja na svjež odgovor prije posluživanja isteklog; `0` odgovara odmah.                     |
+
+Prazno polje ništa ne upisuje i zadržava zadanu vrijednost Resolvera. [Postavke Resolvera](/docs/configure/resolver-settings) objašnjavaju kada se vrijednosti primjenjuju.
 
 ## Package Updates \{#package-updates}
 
@@ -52,6 +66,10 @@ Izvori za zaobilaženje isključeni su iz ovog kataloga.
 ## Usluge \{#services}
 
 Odabiri usluga su prema zadanim postavkama prazni za svaki opseg. Usluga registra obuhvaćena posebnom Bypass zaštitom skrivena je iz Usluga i uklanja se iz spremljenih odabira; Private Relay se konfigurira samo na kartici Bypass.
+
+## SafeSearch \{#safesearch}
+
+SafeSearch odabiri su prema zadanim postavkama prazni za svaki opseg. Svaki opseg može zaključati Google, YouTube (Moderate ili Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex i Pixabay, ili blokirati Qwant. [SafeSearch](/docs/configure/safesearch) navodi nazive i sigurne hostove.
 
 ## Network Scopes \{#network-scopes}
 

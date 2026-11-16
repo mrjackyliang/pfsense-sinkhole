@@ -1,0 +1,47 @@
+---
+title: "Sinkhole blokkerer etter IP-adresse og land, ikke bare etter navn"
+description: Sinkhole 1.0 legger til IP-lister og landblokkering med MaxMind GeoLite2 i sitt eget brannmuranker, for trafikk som aldri spør DNS om et navn.
+slug: sinkhole-blocks-by-ip-address-and-country
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - ip-blokkering
+  - landblokkering
+  - geolite2
+  - pf-anker
+tags:
+  - release
+  - ip-blocking
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0, utgitt 10. november 2026, blokkerer trafikk etter IP-adresse og land i tillegg til navn, i den samme pakken og det samme WebGUI som DNS-blokkeringslistene.
+
+{/* truncate */}
+
+## Hvorfor det betyr noe \{#why-it-matters}
+
+DNS-blokkering stopper et oppslag. Trafikk som går rett til en adresse, for eksempel skannere som treffer et WAN eller en app med faste servere, spør aldri DNS og møter aldri en blokkeringsliste.
+
+Sinkhole legger IP- og landblokkering i sin egen fane IP, atskilt fra DNS-policyen, slik at én pakke dekker navn, adresser og land.
+
+## Hva som er inkludert \{#whats-included}
+
+- **IP-lister** — Legg til lister via URL, eller finn dem i IP-delene av feedkatalogen til pfBlockerNG. Hver liste kan inneholde IPv4, IPv6 eller begge.
+- **Landblokkering** — Velg land etter tobokstavskode fra MaxMind GeoLite2-data, med din egen MaxMind-konto og lisensnøkkel. Sinkhole leverer aldri med en nøkkel.
+- **Grensesnitt og retninger** — Blokker oppførte kilder som kommer inn på et WAN, oppførte mål fra klientnettverk, eller begge, per grensesnitt.
+- **En tillatelsesliste** — Adresser, nettverk og aliaser på IP Allowlist fjernes fra det blokkerte settet før det lastes inn.
+- **Beskyttede adresser** — Brannmurens egne adresser, gatewayer, DNS-servere og subnettene til valgte grensesnitt fjernes automatisk, slik at en liste ikke kan stenge deg ute.
+
+Reglene ligger i et Sinkhole-brannmuranker, `sinkhole/ip`, som blir værende når pfSense-filteret lastes inn på nytt. Listeoppdateringer erstatter bare tabellene i det, og en mislykket nedlasting beholder den siste gyldige kopien.
+
+## Av til du slår det på \{#off-until-you-turn-it-on}
+
+IP- og landblokkering er av som standard og virker på egen hånd, uten DNS-bryteren. Fanen Status viser tabellstørrelser, siste oppdatering, tidspunktet for GeoLite2-oppdateringen og om ankeret er lastet inn og oppdatert.
+
+## Kom i gang \{#get-started}
+
+Åpne **Firewall → Sinkhole → IP**, velg grensesnitt og retninger, og legg deretter til lister eller land. [IP- og landblokkering](/docs/configure/ip-and-country-blocking) dekker hver innstilling.
+
+Sinkhole for pfSense gir pfSense avgrenset DNS-, IP- og landblokkering, med hver liste lagret på brannmuren.

@@ -1,0 +1,60 @@
+---
+title: "Sinkhole 封堵繞過 DNS 封鎖的常見途徑"
+description: Sinkhole 1.0 的 Bypass 分頁可防止所選介面上的設備繞過防火牆的 DNS，且每項保護在您開啟之前都保持關閉。
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - 防止繞過
+  - dns 重定向
+  - 加密 dns
+  - vpn 封鎖
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+Sinkhole for pfSense 1.0 於 2026 年 11 月 10 日發行，其中包含 Bypass 分頁，可防止您所選介面上的設備繞過防火牆的 DNS。正是這個缺口讓設備能夠避開大多數 DNS 封鎖。
+
+{/* truncate */}
+
+## 為什麼重要 \{#why-it-matters}
+
+DNS 封鎖只有在設備向防火牆查詢時才有效。使用寫死解析器、DNS over HTTPS、Tor 或 VPN 的設備可以完全略過封鎖清單。
+
+過去要封堵這些路徑，需要為每個介面手動建立 NAT 重定向規則和防火牆規則。Bypass 分頁將每項保護變成一個設定，並套用到您選擇的介面。
+
+## Bypass 分頁中的內容 \{#whats-on-the-bypass-tab}
+
+每項保護預設為關閉，在您選擇介面之前也不會選取任何介面。
+
+### 普通 DNS \{#plain-dns}
+
+- **Redirect** — 將端口 53 上的普通 DNS 傳送到防火牆，同時保留每台設備的來源地址，因此網路清單和設備清單仍然適用。
+
+### 加密 DNS \{#encrypted-dns}
+
+- **TLS and QUIC** — 封鎖傳送到防火牆以外任何目標的端口 853。
+- **Providers** — 封鎖您新增的加密 DNS 供應商清單中的名稱和地址。
+- **Firefox** — 關閉 Firefox 自動選擇 DNS over HTTPS 的功能。
+- **Private Relay** — 告知相容的 Apple 設備此網路不提供 iCloud Private Relay。
+- **Discovery** — 回應加密 DNS 探索查詢，或公告防火牆自身的 DNS over TLS。
+
+### 隧道 \{#tunnels}
+
+- **Tor** — 封鎖清單中的 Tor 中繼。
+- **VPN** — 封鎖清單中的 VPN 供應商以及標準 VPN 端口：TCP 和 UDP 1194、UDP 51820、UDP 500 和 4500，以及 ESP。
+
+Bypass Lists 可透過 URL 或 Bypass 目錄新增，依清單排程更新，下載失敗時保留最後一份有效副本。
+
+## 不承諾的內容 \{#what-it-doesnt-promise}
+
+這些控制封堵的是常見途徑，而不是所有途徑。自訂的加密隧道仍可能繞過以 DNS 為基礎的策略，文件對此有明確說明。
+
+## 開始使用 \{#get-started}
+
+打開 **Firewall → Sinkhole → Bypass**，選擇用戶端介面，然後開啟您需要的保護。[防止繞過](/docs/configure/bypass-protection)說明了每項設定。
+
+Sinkhole for pfSense 為 pfSense 帶來依作用域進行的 DNS、IP 和國家/地區封鎖，並將每份清單儲存在防火牆上。

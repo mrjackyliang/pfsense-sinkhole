@@ -30,6 +30,7 @@ Bruk årsaken etter **Summary → Sinkhole**:
 
 - **Sinkhole is disabled** — Velg **General → Enable** etter at Resolver og Python-plassen er klare.
 - **DNS Resolver is disabled** — Aktiver og bruk Resolver før du lagrer Sinkhole.
+- **pfBlockerNG is installed and enabled** — Slå av hovedinnstillingen **Enable** i pfBlockerNG eller fjern pakken, og lagre deretter General-innstillingene i Sinkhole på nytt. Sinkhole gir fra seg en plass den allerede eide ved neste planlagte oppdatering, ved **Update Now** eller ved neste pakkesynkronisering.
 - **Python script slot is owned** — Deaktiver den motstridende DNSBL-/Python-integrasjonen, eller la Sinkhole være deaktivert. Sinkhole erstatter den ikke.
 - **Python mode or position changed** — Lagre General-innstillingene i Sinkhole på nytt, slik at Sync kan gjenopprette Python-modus og `pre_validator` mens Sinkhole eier plassen.
 - **Runtime files unavailable** — Kjør pakke-Sync ved å lagre General-innstillingene, eller start på nytt og la pakke-Sync i pfSense gjenopprette RAM-diskfilene.
@@ -54,6 +55,15 @@ Når en distribusjon legger til navn eller utvider et deltre, laster Sinkhole Un
 En spørring der CNAME-målet står på listen, blokkeres selv om det opprinnelige navnet ikke står på listen. Hvis målet på listen ikke har en oppføring av den forespurte typen, for eksempel AAAA, kan svaret beholde CNAME uten å inneholde en adresse.
 
 Et tillatt spørringsnavn forblir tillatt. Dette hindrer et mindre spesifikt CNAME-mål i å overstyre en eksplisitt avgjørelse om tillatt domene for navnet som ble spurt om.
+
+## SafeSearch gjelder ikke \{#safesearch-does-not-apply}
+
+1. Bekreft at nettverks- eller enhetsomfanget til klienten er aktivert under **Scopes**, og at søkemotoren er krysset av for det omfanget eller for Global under **SafeSearch**.
+2. Sjekk **Status → SafeSearch** for adressene til den sikre verten og den siste feilen. En vert uten adresser holder søkemotoren blokkert for omfanget til et oppslag lykkes.
+3. Bekreft at **Compile Needed** og **Deployment Needed** er `No` etter lagring.
+4. Bekreft at klienten ikke bruker kryptert DNS eller en annen resolver; [Beskyttelse mot omgåelse](/docs/configure/bypass-protection) holder valgte grensesnitt på Sinkholes DNS-bane.
+
+En nettleser kan beholde den vanlige adressen til en søkemotor i hurtigbufferen i noen minutter, så test fra et nytt privat vindu eller etter at nettleserens DNS-buffer er tømt.
 
 ## En enhet får feil policy \{#a-device-gets-the-wrong-policy}
 

@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 Assegna liste e domini consentiti a livello globale, di rete e di dispositivo, così ogni client riceve i criteri previsti per la sua posizione corrente.
 
 ## Perché usare gli ambiti? \{#why-use-scopes}
@@ -35,6 +38,8 @@ Apri **Firewall → Sinkhole → Scopes**, quindi seleziona **Add** sotto la tab
 
 Ogni riga di rete seleziona liste aggiuntive, domini consentiti e lo stato di abilitazione dell’ambito. Il salvataggio riporta a Scopes; seleziona la matita o fai doppio clic su una riga per modificarla. Un dispositivo che passa da una rete all’altra riceve i criteri della rete corrispondente al suo indirizzo corrente.
 
+<img src={scopesTab} alt="Scheda Scopes con un ambito di rete LAN e tre dispositivi dimostrativi identificati tramite indirizzo IP o MAC con i loro indirizzi correnti" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## Ambiti dei dispositivi \{#device-scopes}
 
 Seleziona **Add** sotto la tabella Devices, specifica un nome e scegli un metodo di identificazione. L’editor mostra solo il campo identificatore relativo al metodo selezionato:
@@ -46,6 +51,8 @@ Seleziona **Add** sotto la tabella Devices, specifica un nome e scegli un metodo
 | MAC address         | Gli indirizzi correnti ARP, NDP e dei lease DHCP per quel MAC.                     |
 
 La riga del dispositivo seleziona liste, domini consentiti e stato di abilitazione. Il salvataggio riporta a Scopes; seleziona la matita o fai doppio clic su una riga per modificarla. Un’attività in background aggiorna ogni minuto le sottoreti e gli indirizzi dei dispositivi quando il blocco DNS ha un ambito di rete o dispositivo abilitato, oppure quando la protezione DNS di Bypass richiede l’identificazione dei client. Sync del pacchetto avvia lo stesso aggiornamento solo in tale condizione.
+
+<img src={deviceEditor} alt="Pagina Edit Device di un tablet dimostrativo identificato tramite indirizzo IP, con una lista selezionata e un dominio consentito" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Ordine decisionale \{#decision-order}
 

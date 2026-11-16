@@ -48,6 +48,7 @@ La riga finale **Sinkhole** in Summary è il controllo più rapido dell’integr
 | `Active`                                 | Sinkhole è abilitato, possiede lo slot Python, usa la modalità Python e `pre_validator` e dispone dei dati runtime. |
 | `Inactive: Sinkhole is disabled.`        | **Enable** in General è disattivato.                                                                                |
 | `Inactive: DNS Resolver is disabled.`    | Il DNS Resolver di pfSense è disattivato.                                                                           |
+| `Inactive: pfBlockerNG is installed ...` | pfBlockerNG è installato con l’opzione principale **Enable** attivata, in entrambe le modalità DNSBL.               |
 | `Inactive: ... slot is owned by ...`     | Un altro script Python, ad esempio pfBlockerNG DNSBL, possiede l’unico slot.                                        |
 | `Inactive: Sinkhole does not own ...`    | Lo script configurato non è Sinkhole anche se non è stato segnalato un altro proprietario.                          |
 | `Inactive: ... Python mode is disabled.` | La modalità Python del Resolver non è più abilitata.                                                                |
@@ -78,6 +79,10 @@ La pagina mostra un riquadro di avviso quando compilazione o distribuzione sono 
 Il riepilogo Scopes riporta lo stato di ricostruzione della mappa dei client. I pannelli separati **Networks** e **Devices** riportano i CIDR correnti di ogni interfaccia e gli indirizzi correnti di ogni dispositivo. Un conflitto indica un indirizzo rivendicato da più dispositivi; il primo nell’ordine della tabella possiede quell’indirizzo per i criteri.
 
 Il pannello **Alerts** descrive solo l’ultima attività eseguita ogni minuto. **Notifications held back** include la soppressione dovuta ai limiti o agli avvisi non letti, mentre **Events dropped by module** indica che la coda limitata degli eventi in memoria o su disco era piena.
+
+## Stato di SafeSearch \{#safesearch-state}
+
+Il pannello **SafeSearch** conta i motori scelti per Global e per ogni ambito di rete e di dispositivo. Sotto i conteggi, ogni host sicuro in uso mostra gli ultimi indirizzi IPv4 e IPv6 validi, quando è stato controllato l’ultima volta e l’ultimo errore di risoluzione. Un host senza indirizzi mantiene il suo motore bloccato per quegli ambiti finché una risoluzione non riesce.
 
 ## Stato Bypass \{#bypass-state}
 

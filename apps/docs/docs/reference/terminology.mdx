@@ -14,44 +14,42 @@ tags:
   - glossary
 ---
 
-These terms carry the same meaning throughout the Sinkhole WebGUI and documentation.
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-## DNS Sinkhole \{#dns-sinkhole}
+These terms carry the same meaning throughout the Sinkhole WebGUI and documentation. Tables list the term first, also known as, then the definition.
 
-Answering a blocked name with an address that leads nowhere, so the request stops.
+:::tip[Glossary Terms]
+Throughout the docs, you will see <Terminology title="A quick reminder, right where you read it" to="/docs/reference/terminology">highlighted terms</Terminology> with a dotted underline. Hover over any of them for a quick reminder of what they mean, or click to jump to the full definition.
+:::
 
-## DNS Resolver \{#dns-resolver}
+## DNS Basics \{#dns-basics}
 
-pfSense's Unbound-based DNS service.
+| Term             | Also known as | Definition                                                                         |
+|------------------|---------------|------------------------------------------------------------------------------------|
+| **DNS sinkhole** | —             | Answering a blocked name with an address that leads nowhere, so the request stops. |
+| **DNS Resolver** | Unbound       | pfSense's Unbound-based DNS service.                                               |
 
-## Block List \{#block-list}
+## Lists and Scopes \{#lists-and-scopes}
 
-A list of names or addresses to block, added by URL or from the search.
+| Term                    | Also known as                | Definition                                                                                                          |
+|-------------------------|------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| **block list**          | —                            | A list of names or addresses to block, added by URL or from the search.                                             |
+| **popular-list search** | —                            | The WebGUI search of widely used block lists, like AdGuard Home's picker.                                           |
+| **saved list**          | —                            | The last good copy of a block list, kept on the firewall.                                                           |
+| **scope**               | —                            | Where a block list applies: the whole network, a VLAN, or a single device.                                          |
+| **global lists**        | —                            | Block lists that apply to every client on the network.                                                              |
+| **SafeSearch**          | Safe search, restricted mode | A search engine's safe mode, forced for every device in a scope by answering the engine's names with its safe host. |
+| **rebind exception**    | private-domain               | A domain allowed to answer with a private address despite DNS rebinding protection.                                 |
 
-## Saved List \{#saved-list}
+## Alerts \{#alerts}
 
-The last good copy of a block list, kept on the firewall.
-
-## Scope \{#scope}
-
-Where a block list applies: the whole network, a VLAN, or a single device.
-
-## Global Lists \{#global-lists}
-
-Block lists that apply to every client on the network.
-
-## Alert Rule \{#alert-rule}
-
-A list and scope whose blocks send a pfSense notification.
+| Term           | Also known as | Definition                                                 |
+|----------------|---------------|------------------------------------------------------------|
+| **alert rule** | —             | A list and scope whose blocks send a pfSense notification. |
 
 ## Bypass Protection \{#bypass-protection}
 
-Optional, interface-scoped controls that keep clients on DNS paths Sinkhole can inspect by redirecting plain DNS or blocking common encrypted-DNS and tunnel alternatives.
-
-## Plain-DNS Redirect \{#plain-dns-redirect}
-
-The optional Bypass setting that sends devices' ordinary TCP and UDP port 53 queries to the firewall.
-
-## Popular-List Search \{#popular-list-search}
-
-The WebGUI search of widely used block lists, like AdGuard Home's picker.
+| Term                   | Also known as | Definition                                                                                                                                                                 |
+|------------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **bypass protection**  | Bypass        | Optional, interface-scoped controls that keep clients on DNS paths Sinkhole can inspect by redirecting plain DNS or blocking common encrypted-DNS and tunnel alternatives. |
+| **plain-DNS redirect** | —             | The optional Bypass setting that sends devices' ordinary TCP and UDP port 53 queries to the firewall.                                                                      |

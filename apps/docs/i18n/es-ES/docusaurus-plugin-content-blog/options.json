@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Lanzamientos e hitos de Sinkhole, el bloqueo de DNS, IP y países por ámbito que se ejecuta dentro de pfSense."
+  },
+  "sidebar.title": {
+    "message": "Entradas recientes"
+  }
+}

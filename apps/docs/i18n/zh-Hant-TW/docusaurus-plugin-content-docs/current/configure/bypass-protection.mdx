@@ -24,7 +24,7 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 網路和設備比對與普通 Sinkhole 作用域一樣，使用這些介面的目前子網路。所選子網路以外的用戶端不會收到 Bypass DNS 回應。
 
-<img src={bypassProtection} alt="Bypass 分頁，其中已選取 LAN、已關閉普通 DNS 重定向、已啟用加密 DNS 和隧道保護、Discovery 設為 Answer with no records，並顯示三個示範 Bypass Lists" width={1024} height={1266} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass 分頁，其中已選取 LAN、已關閉普通 DNS 重定向、已啟用加密 DNS 和隧道保護、Discovery 設為 Answer with no records，並顯示三個示範 Bypass Lists" width={1024} height={1410} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 重定向普通 DNS \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-關閉 Discovery 或移除 Sinkhole 會刪除該區塊。Sinkhole 不會變更 **Custom options** 中的任何其他列。所選介面以外的用戶端（包括防火牆本身）仍會收到 `_dns.resolver.arpa` 的 `NXDOMAIN`。
+關閉 Discovery 或移除 Sinkhole 會刪除該 zone 列。同一個區塊也承載所有 [Resolver 設定](/docs/configure/resolver-settings)，而 Sinkhole 不會變更 **Custom options** 中的任何其他列。所選介面以外的用戶端（包括防火牆本身）仍會收到 `_dns.resolver.arpa` 的 `NXDOMAIN`。
 
 ## 防範隧道 \{#protect-against-tunnels}
 

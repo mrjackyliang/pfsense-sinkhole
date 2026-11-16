@@ -5,19 +5,182 @@ declare(strict_types=1);
 use PfSense\Sinkhole\Domain\AlertConfiguration;
 use PfSense\Sinkhole\Domain\DomainParser;
 use PfSense\Sinkhole\Domain\ListConfiguration;
+use PfSense\Sinkhole\Domain\SafeSearchConfiguration;
+use PfSense\Sinkhole\Domain\SafeSearchEngines;
 use PfSense\Sinkhole\Domain\ScopeConfiguration;
 use PfSense\Sinkhole\Domain\Settings;
+use PfSense\Sinkhole\Domain\UnboundCustomOptions;
+use PfSense\Sinkhole\Domain\ValidationException;
 use PfSense\Sinkhole\Runtime\Translator;
 
 require_once(__DIR__ . '/TestSupport.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/DomainParser.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/AlertConfiguration.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/ListConfiguration.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/SafeSearchConfiguration.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/SafeSearchEngines.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/ScopeConfiguration.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Settings.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Translator.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/UnboundCustomOptions.php');
 
 sinkholeTestRun([
+    'SafeSearch engines cover every Google domain and keep YouTube exclusive' => static function (): void {
+        $googleNames = SafeSearchEngines::names('google');
+
+        sinkholeTestAssertSame(388, count($googleNames), 'Each of 194 Google domains needs its bare and www name.');
+        sinkholeTestAssertSame(count($googleNames), count(array_unique($googleNames)), 'Google names must be unique.');
+        sinkholeTestAssertTrue(in_array('www.google.co.uk', $googleNames, true), 'Country domains must be covered.');
+        sinkholeTestAssertTrue(in_array('google.com', $googleNames, true), 'The bare name must be covered.');
+        sinkholeTestAssertSame(
+            ['google', 'youtube_strict', 'qwant'],
+            SafeSearchEngines::normalizeSelection(['qwant', 'youtube_moderate', 'google', 'youtube_strict', 'nope', 7]),
+            'Selections keep display order, drop unknown values and keep only Strict for YouTube.',
+        );
+        sinkholeTestAssertSame('', SafeSearchEngines::target('qwant'), 'Qwant can only be blocked.');
+        sinkholeTestAssertSame(['search.brave.com'], SafeSearchEngines::names('brave'), 'Brave rewrites only its search host.');
+
+        foreach (SafeSearchEngines::identifiers() as $identifier) {
+            $names = SafeSearchEngines::names(SafeSearchEngines::engine($identifier));
+
+            sinkholeTestAssertTrue($names !== [], 'Every choice must rewrite at least one name: ' . $identifier);
+
+            foreach ($names as $name) {
+                sinkholeTestAssertSame($name, DomainParser::normalizeDomain($name), 'Engine names must be normalized: ' . $name);
+            }
+        }
+    },
+    'SafeSearch configuration round-trips scope selections' => static function (): void {
+        $network = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        $device = 'dddddddddddddddddddddddddddddddd';
+        $configuration = SafeSearchConfiguration::replaceScopeSelection([], 'global', ['bing']);
+        $configuration = SafeSearchConfiguration::replaceScopeSelection(
+            $configuration,
+            'network:' . $network,
+            ['google', 'youtube_moderate', 'qwant'],
+        );
+        $configuration = SafeSearchConfiguration::replaceScopeSelection(
+            $configuration,
+            'device:' . $device,
+            ['youtube_strict'],
+        );
+        $stored = SafeSearchConfiguration::storage($configuration);
+
+        sinkholeTestAssertSame($configuration, SafeSearchConfiguration::partition($stored), 'Storage must round-trip.');
+        sinkholeTestAssertSame(
+            ['google', 'youtube_moderate', 'qwant'],
+            SafeSearchConfiguration::scopeSelection($configuration, 'network:' . $network),
+            'A network keeps its own choices.',
+        );
+        sinkholeTestAssertSame(
+            ['google', 'youtube_moderate', 'youtube_strict', 'bing', 'qwant'],
+            SafeSearchConfiguration::choicesInUse($configuration, [$network], [$device]),
+            'Choices in use combine every listed scope in display order.',
+        );
+        sinkholeTestAssertSame(
+            ['bing'],
+            SafeSearchConfiguration::choicesInUse($configuration, [], []),
+            'Scopes that are not enabled contribute nothing.',
+        );
+
+        $cleared = SafeSearchConfiguration::replaceScopeSelection($configuration, 'device:' . $device, []);
+
+        sinkholeTestAssertSame([], $cleared['devices'], 'Clearing a scope removes its row.');
+
+        try {
+            SafeSearchConfiguration::replaceScopeSelection($configuration, 'network:zz', ['google']);
+            throw new RuntimeException('An invalid scope must be rejected.');
+        } catch (InvalidArgumentException) {
+        }
+    },
+    'Resolver settings validate and become ordered directives' => static function (): void {
+        $resolver = Settings::resolverFromStorage([
+            'rebind_exceptions' => "Plex.Direct\n\n nas.example.com \nplex.direct",
+            'serve_expired_ttl' => '86400',
+            'serve_expired_client_timeout' => '0',
+        ]);
+
+        sinkholeTestAssertSame(
+            [
+                'rebind_exceptions' => ['nas.example.com', 'plex.direct'],
+                'serve_expired_ttl' => 86400,
+                'serve_expired_client_timeout' => 0,
+            ],
+            $resolver,
+            'Valid values must normalize.',
+        );
+        sinkholeTestAssertSame(
+            [
+                'private-domain: "nas.example.com"',
+                'private-domain: "plex.direct"',
+                'serve-expired-ttl: 86400',
+                'serve-expired-client-timeout: 0',
+            ],
+            Settings::resolverDirectives($resolver),
+            'Directives keep a fixed order.',
+        );
+        sinkholeTestAssertSame(
+            [],
+            Settings::resolverDirectives(Settings::resolverFromStorage([])),
+            'Empty settings write nothing.',
+        );
+
+        foreach (
+            [
+                ['rebind_exceptions' => "plex.direct\nnot a domain"],
+                ['serve_expired_ttl' => '-1'],
+                ['serve_expired_ttl' => '31536001'],
+                ['serve_expired_client_timeout' => '1.5'],
+                ['serve_expired_client_timeout' => '60001'],
+            ] as $invalid
+        ) {
+            try {
+                Settings::resolverFromStorage($invalid);
+                throw new RuntimeException('Invalid Resolver settings must be rejected: ' . json_encode($invalid));
+            } catch (ValidationException) {
+            }
+        }
+    },
+    'managed custom options block keeps administrator lines' => static function (): void {
+        $admin = "server:\n  prefetch: yes\n";
+        $directives = [
+            UnboundCustomOptions::DISCOVERY_ZONE_LINE,
+            'private-domain: "plex.direct"',
+            'serve-expired-ttl: 86400',
+        ];
+        $added = UnboundCustomOptions::reconcileManagedBlock($admin, $directives);
+
+        sinkholeTestAssertSame(
+            $admin . "\n" . implode("\n", [
+                UnboundCustomOptions::BEGIN_MARKER,
+                'server:',
+                ...$directives,
+                UnboundCustomOptions::END_MARKER,
+            ]),
+            $added,
+            'The block must follow the administrator text.',
+        );
+        sinkholeTestAssertSame(
+            $added,
+            UnboundCustomOptions::reconcileManagedBlock($added, $directives),
+            'Reconciling again must be stable.',
+        );
+        sinkholeTestAssertSame(
+            $admin,
+            UnboundCustomOptions::reconcileManagedBlock($added, []),
+            'An empty directive list removes the block.',
+        );
+
+        $damaged = UnboundCustomOptions::BEGIN_MARKER . "\nserver:\n"
+            . "private-domain: \"plex.direct\"\nserve-expired-client-timeout: 0\n"
+            . "local-zone: \"admin.example\" static\n";
+
+        sinkholeTestAssertSame(
+            "local-zone: \"admin.example\" static\n",
+            UnboundCustomOptions::reconcileManagedBlock($damaged, []),
+            'Repair removes only Sinkhole-shaped lines after a lost end marker.',
+        );
+    },
     'supported list formats' => static function (): void {
         $parser = new DomainParser();
         $cases = [
@@ -544,6 +707,7 @@ sinkholeTestRun([
                 'de_DE',
                 'it_IT',
                 'ko_FR',
+                'ko_KR',
                 'nb_NO',
                 'pl_PL',
                 'pt_PT',
@@ -559,6 +723,11 @@ sinkholeTestRun([
             'Lists',
             Translator::translateForLocale('en_US', 'lists'),
             'English must render from its source catalog.',
+        );
+        sinkholeTestAssertSame(
+            Translator::translateForLocale('ko_FR', 'lists'),
+            Translator::translateForLocale('ko_KR', 'lists'),
+            'The pfSense Plus ko_KR identifier must resolve to the Korean catalog.',
         );
         sinkholeTestAssertSame(
             'Lists',
@@ -673,6 +842,7 @@ sinkholeTestRun([
             'de_DE',
             'it_IT',
             'ko_FR',
+            'ko_KR',
             'nb_NO',
             'pl_PL',
             'pt_PT',

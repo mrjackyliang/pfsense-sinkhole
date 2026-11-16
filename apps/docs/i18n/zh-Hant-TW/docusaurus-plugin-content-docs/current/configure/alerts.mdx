@@ -14,6 +14,8 @@ tags:
   - notifications
 ---
 
+import alertRuleEditor from './_assets_/alerts-1.png';
+
 僅針對清單和用戶端與已啓用警報規則匹配的被封鎖回應發送通知。
 
 ## 為什麼使用警報規則？ \{#why-use-alert-rules}
@@ -43,6 +45,8 @@ tags:
 選擇 **Any block list** 時會隱藏所選清單欄位，選擇 **Everyone** 時會隱藏網路和設備欄位。儲存後會返回 Alerts；選擇鉛筆圖示或雙擊某行即可編輯。
 
 只有當封鎖名稱的清單之一被該規則選中，而且用戶端也被同一規則選中時，封鎖才匹配。預設重復窗口為 60 分鐘，可接受範圍為 1 到 1,440 分鐘。
+
+<img src={alertRuleEditor} alt="Edit Alert Rule 頁面為一個所選演示設備比對一個所選清單，重複間隔為 60 分鐘，兩種發送通道皆已開啟" width={1024} height={994} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 發送通道 \{#delivery-channels}
 

@@ -23,6 +23,7 @@ sidebar_position: 2
 - **HTTPS access to GitHub** — Межсетевому экрану требуется загрузить пакет и контрольную сумму из GitHub Releases.
 - **DNS Resolver** — Компонент DNS Resolver в pfSense должен быть включён до включения интеграции Sinkhole с DNS.
 - **Available Python slot** — pfBlockerNG DNSBL или другой сценарий Python не должен занимать единственное место для модуля в Resolver.
+- **No active pfBlockerNG** — pfBlockerNG должен быть удалён, или его основной параметр **Enable** должен быть выключен, в любом режиме DNSBL.
 - **Current backup** — Перед установкой неофициального пакета рекомендуется загрузить `config.xml` из **Diagnostics → Backup & Restore**.
 
 :::warning

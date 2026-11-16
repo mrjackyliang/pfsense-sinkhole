@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Izdanja i prekretnice Sinkholea, blokiranja DNS-a, IP adresa i država po opsezima koje radi unutar pfSensea."
+  },
+  "sidebar.title": {
+    "message": "Najnovije objave"
+  }
+}

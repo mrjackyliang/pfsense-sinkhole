@@ -1,14 +1,41 @@
 {
-  "item.label.Home": {
-    "message": "首頁"
-  },
-  "item.label.Guides": {
+  "item.label.Docs": {
     "message": "文檔"
   },
-  "item.label.Status": {
-    "message": "狀態"
+  "item.label.Overview": {
+    "message": "概述"
+  },
+  "item.label.Quick Start": {
+    "message": "快速入門"
+  },
+  "item.label.Blog": {
+    "message": "網誌"
+  },
+  "item.label.Configure": {
+    "message": "配置"
+  },
+  "item.label.Operate": {
+    "message": "日常運維"
+  },
+  "item.label.Reference": {
+    "message": "參考"
+  },
+  "item.label.Safety": {
+    "message": "安全機制"
+  },
+  "item.label.Contributing": {
+    "message": "參與貢獻"
+  },
+  "item.label.Resources": {
+    "message": "資源"
   },
   "item.label.Troubleshooting": {
     "message": "故障排除"
+  },
+  "item.label.Changelog": {
+    "message": "更新日誌"
+  },
+  "item.label.Report an Issue": {
+    "message": "回報問題"
   }
 }

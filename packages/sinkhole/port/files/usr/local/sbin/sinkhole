@@ -387,6 +387,12 @@ function sinkholeMain(array $arguments): int
             return ($refreshResult['status'] === 'error') ? 1 : 0;
         }
 
+        // pfBlockerNG enabled after Sinkhole took the slot: the run's pending
+        // Sync gives the slot back even when no list needs compiling.
+        if ($adapter->pfBlockerNgActive() && $adapter->pythonScriptOwner() === 'sinkhole') {
+            $stateStore->markSyncPending();
+        }
+
         $store = new SavedListStore($paths);
         $downloadClient = new CurlDownloadClient();
         $bypassStore = new BypassListStore($paths);

@@ -42,9 +42,10 @@ The **About** tab marks the matching release as **This firewall**. It adds a **N
 
 - pfSense's Unbound-based DNS Resolver needs to be enabled.
 - The Resolver's one Python script slot needs to be empty or already owned by Sinkhole.
+- pfBlockerNG needs to be removed, or its main **Enable** turned off.
 - Sinkhole uses the `pre_validator` module position and reports an inactive state if Python mode, the slot owner, position, or runtime files don't match.
 
-pfBlockerNG DNSBL uses the same Python script slot as Sinkhole. Sinkhole refuses to take that slot while `pfb_unbound` or any other script owns it.
+pfBlockerNG DNSBL uses the same Python script slot as Sinkhole in Python mode. Sinkhole refuses to take that slot while `pfb_unbound` or any other script owns it. In Unbound mode, DNSBL leaves the slot empty, so Sinkhole also stays inactive whenever pfBlockerNG is installed with **Enable** on. Settings that pfBlockerNG keeps after its removal don't count.
 
 ## Network Requirements \{#network-requirements}
 
@@ -67,6 +68,6 @@ Country blocking requires the administrator's own MaxMind account ID and GeoLite
 
 ## Languages \{#languages}
 
-The package selects its WebGUI, command-line, validation, Status, and notification wording from pfSense's language setting. English is the source catalog, and missing translations currently fall back to English.
+The package selects its WebGUI, command-line, validation, Status, and notification wording from pfSense's language setting. English is the source catalog, and the package ships complete catalogs for the other 17 pfSense locales.
 
-Additional package translations are in progress, while the documentation is available in all 18 pfSense locales. Brand and product names such as Sinkhole, pfSense, FreeBSD, and MaxMind stay unchanged.
+The WebGUI and the documentation are both available in all 18 pfSense locales. Brand and product names such as Sinkhole, pfSense, FreeBSD, and MaxMind stay unchanged.

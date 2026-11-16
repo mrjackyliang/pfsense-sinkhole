@@ -42,9 +42,10 @@ La pestaña **About** marca la versión coincidente como **This firewall**. Aña
 
 - El DNS Resolver de pfSense basado en Unbound debe estar activado.
 - El único espacio para scripts Python del Resolver debe estar libre o pertenecer ya a Sinkhole.
+- pfBlockerNG debe estar eliminado o tener desactivada su opción principal **Enable**.
 - Sinkhole usa la posición de módulo `pre_validator` e informa de un estado inactivo si no coinciden el modo Python, el propietario del espacio, la posición o los archivos de ejecución.
 
-pfBlockerNG DNSBL usa el mismo espacio para scripts Python que Sinkhole. Sinkhole se niega a ocuparlo mientras `pfb_unbound` u otro script sea su propietario.
+En modo Python, pfBlockerNG DNSBL usa el mismo espacio para scripts Python que Sinkhole. Sinkhole se niega a ocuparlo mientras `pfb_unbound` u otro script sea su propietario. En modo Unbound, DNSBL deja el espacio libre, por lo que Sinkhole también permanece inactivo siempre que pfBlockerNG esté instalado con **Enable** activado. La configuración que pfBlockerNG conserva tras eliminarlo no cuenta.
 
 ## Requisitos de red \{#network-requirements}
 
@@ -67,6 +68,6 @@ El bloqueo por país requiere el ID de cuenta de MaxMind y la clave de licencia 
 
 ## Idiomas \{#languages}
 
-El paquete selecciona los textos de la WebGUI, la línea de comandos, la validación, Status y las notificaciones según la configuración de idioma de pfSense. El inglés es el catálogo fuente y las traducciones ausentes recurren actualmente al inglés.
+El paquete selecciona los textos de la WebGUI, la línea de comandos, la validación, Status y las notificaciones según la configuración de idioma de pfSense. El inglés es el catálogo fuente y el paquete incluye catálogos completos para las otras 17 configuraciones regionales de pfSense.
 
-Las traducciones adicionales del paquete están en curso, mientras que la documentación está disponible en las 18 configuraciones regionales de pfSense. Los nombres de marcas y productos como Sinkhole, pfSense, FreeBSD y MaxMind no cambian.
+La WebGUI y la documentación están disponibles en las 18 configuraciones regionales de pfSense. Los nombres de marcas y productos como Sinkhole, pfSense, FreeBSD y MaxMind no cambian.

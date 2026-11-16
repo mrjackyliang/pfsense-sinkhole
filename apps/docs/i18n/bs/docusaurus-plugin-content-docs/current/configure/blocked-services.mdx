@@ -14,6 +14,8 @@ tags:
   - dns
 ---
 
+import servicesTab from './_assets_/blocked-services-1.png';
+
 Koristite **Firewall → Sinkhole → Services** kada želite blokirati cijeli brend bez odabiranja i održavanja zasebnog URL-a liste.
 
 ## Odaberite opseg \{#choose-a-scope}
@@ -23,6 +25,8 @@ Odaberite **Global**, konfiguriranu mrežu ili konfigurirani uređaj. Potražite
 Odabir se kompajlira na postojećem nivou tog opsega. Dopuštene domene uređaja i dalje imaju prednost nad pravilima usluga uređaja, dopuštene domene mreže nad pravilima usluga mreže, a globalne dopuštene domene nad globalnim pravilima usluga.
 
 Usluge obuhvaćene posebnom Bypass zaštitom ne prikazuju se u mreži, brojevima grupa ni pretrazi. Private Relay se konfigurira samo na kartici Bypass.
+
+<img src={servicesTab} alt="Kartica Services filtrirana na grupu Gaming za opseg demonstracijskog uređaja, s četiri odabrane usluge" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Registar i popravak \{#registry-and-repair}
 

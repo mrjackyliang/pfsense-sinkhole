@@ -1,36 +1,63 @@
 {
-  "layout.learn.title": {
-    "message": "指南"
+  "layout.docs.title": {
+    "message": "文档"
   },
   "layout.resources.title": {
     "message": "资源"
   },
-  "sections.learn.0.label": {
-    "message": "安装 Sinkhole"
+  "layout.project.title": {
+    "message": "项目"
   },
-  "sections.learn.1.label": {
-    "message": "列表和已保存副本"
+  "layout.legal.title": {
+    "message": "法律信息"
   },
-  "sections.learn.2.label": {
-    "message": "作用域和允许域名"
+  "sections.docs.0.label": {
+    "message": "概述"
   },
-  "sections.learn.3.label": {
-    "message": "状态"
+  "sections.docs.1.label": {
+    "message": "配置"
   },
-  "sections.learn.4.label": {
-    "message": "故障排除"
+  "sections.docs.2.label": {
+    "message": "日常运维"
+  },
+  "sections.docs.3.label": {
+    "message": "参考"
+  },
+  "sections.docs.4.label": {
+    "message": "安全机制"
+  },
+  "sections.docs.5.label": {
+    "message": "参与贡献"
   },
   "sections.resources.0.label": {
-    "message": "更新的工作方式"
+    "message": "博客"
   },
   "sections.resources.1.label": {
-    "message": "测试和验证"
+    "message": "故障排除"
   },
   "sections.resources.2.label": {
-    "message": "pfSense 文档"
+    "message": "更新日志"
   },
   "sections.resources.3.label": {
+    "message": "报告问题"
+  },
+  "sections.resources.4.label": {
     "message": "源代码"
+  },
+  "sections.project.0.label": {
+    "message": "赞助"
+  },
+  "sections.project.1.label": {
+    "message": "pfSense 文档"
+  },
+  "sections.project.2.label": {
+    "message": "其他项目"
+  },
+  "sections.legal.0.label": {
+    "message": "许可证"
+  },
+  "cta.label": {
+    "message": "准备好决定你的网络访问什么了吗？"
   },
   "copyright": {
     "message": "版权所有 © 2026 Jacky Liang。采用 MIT 许可证发布。"

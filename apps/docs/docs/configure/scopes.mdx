@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 Assign lists and allowed domains at global, network, and device levels so each client receives the policy intended for its current location.
 
 ## Why Use Scopes? \{#why-use-scopes}
@@ -35,6 +38,8 @@ Open **Firewall → Sinkhole → Scopes**, then select **Add** below the Network
 
 Each network row selects additional lists, allowed domains, and whether the scope is enabled. Saving returns to Scopes; select the pencil or double-click a row to edit it. A device that moves between networks receives the policy for the network its current address matches.
 
+<img src={scopesTab} alt="Scopes tab showing a LAN network scope and three demo devices identified by IP or MAC address with their current addresses" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## Device Scopes \{#device-scopes}
 
 Select **Add** below the Devices table, provide a name, and choose one identification method. The editor shows only the identifier field that applies to the selected method:
@@ -46,6 +51,8 @@ Select **Add** below the Devices table, provide a name, and choose one identific
 | MAC address         | Current ARP, NDP, and DHCP lease addresses for that MAC.                      |
 
 The device row selects its lists, allowed domains, and enabled state. Saving returns to Scopes; select the pencil or double-click a row to edit it. A background job refreshes current subnets and device addresses every minute while DNS blocking has an enabled network or device scope, or while Bypass DNS protection needs client matching. Package Sync starts the same refresh only under that condition.
+
+<img src={deviceEditor} alt="Edit Device page for a demo tablet identified by IP address, with one selected list and one allowed domain" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Decision Order \{#decision-order}
 

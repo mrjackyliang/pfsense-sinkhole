@@ -48,6 +48,7 @@ Den siste raden **Sinkhole** i Summary er den raskeste kontrollen av Resolver-in
 | `Active`                                 | Sinkhole er aktivert, eier Python-plassen, bruker Python-modus og `pre_validator` og har kjøretidsdata. |
 | `Inactive: Sinkhole is disabled.`        | General **Enable** er avslått.                                                                          |
 | `Inactive: DNS Resolver is disabled.`    | DNS Resolver i pfSense er avslått.                                                                      |
+| `Inactive: pfBlockerNG is installed ...` | pfBlockerNG er installert med hovedinnstillingen **Enable** slått på, uansett DNSBL-modus.              |
 | `Inactive: ... slot is owned by ...`     | Et annet Python-skript, for eksempel pfBlockerNG DNSBL, eier den eneste plassen.                        |
 | `Inactive: Sinkhole does not own ...`    | Det konfigurerte skriptet er ikke Sinkhole, selv om ingen annen eier ble rapportert.                    |
 | `Inactive: ... Python mode is disabled.` | Resolver har ikke lenger Python-modus aktivert.                                                         |
@@ -78,6 +79,10 @@ Siden viser en varslingsboks når kompilering eller distribusjon venter, inklude
 Sammendraget Scopes rapporterer tilstanden for gjenoppbygging av klientkartet. De separate panelene **Networks** og **Devices** rapporterer gjeldende CIDR-er for hvert grensesnitt og gjeldende adresser for hver enhet. En konflikt navngir en adresse som flere enheter krever. Den første enheten i tabellrekkefølgen eier adressen for policyen.
 
 Panelet **Alerts** beskriver bare den siste minuttjobben. **Notifications held back** omfatter undertrykking på grunn av en grense eller et ulest varsel, mens **Events dropped by module** angir at den avgrensede hendelseskøen i minnet eller på disken ble full.
+
+## SafeSearch-tilstand \{#safesearch-state}
+
+Panelet **SafeSearch** teller søkemotorene som er valgt for Global og for hvert nettverks- og enhetsomfang. Under tellingene viser hver sikker vert som er i bruk, sine siste gyldige IPv4- og IPv6-adresser, når den sist ble kontrollert, og den siste oppslagsfeilen. En vert uten adresser holder søkemotoren blokkert for disse omfangene til et oppslag lykkes.
 
 ## Bypass-tilstand \{#bypass-state}
 

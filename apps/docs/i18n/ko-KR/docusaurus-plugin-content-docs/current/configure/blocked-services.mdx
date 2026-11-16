@@ -14,6 +14,8 @@ tags:
   - dns
 ---
 
+import servicesTab from './_assets_/blocked-services-1.png';
+
 별도 목록 URL을 선택하고 유지하지 않고 브랜드 전체를 차단하려면 **Firewall → Sinkhole → Services**를 사용합니다.
 
 ## 범위 선택 \{#choose-a-scope}
@@ -23,6 +25,8 @@ tags:
 선택 항목은 해당 범위의 기존 수준에서 컴파일됩니다. 장치 허용 도메인은 장치 서비스 규칙보다, 네트워크 허용 도메인은 네트워크 서비스 규칙보다, 전역 허용 도메인은 전역 서비스 규칙보다 계속 우선합니다.
 
 전용 Bypass 보호가 담당하는 서비스는 그리드, 그룹 수 또는 검색에 표시되지 않습니다. Private Relay는 Bypass 탭에서만 구성합니다.
+
+<img src={servicesTab} alt="데모 장치 범위에 대해 Gaming 그룹으로 필터링되고 서비스 4개가 선택된 Services 탭" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 레지스트리 및 복구 \{#registry-and-repair}
 

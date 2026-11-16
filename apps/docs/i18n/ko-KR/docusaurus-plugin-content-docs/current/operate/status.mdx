@@ -48,6 +48,7 @@ Summary의 마지막 **Sinkhole** 행에서 Resolver 통합 상태를 가장 빠
 | `Active`                                 | Sinkhole이 활성화되어 Python 슬롯을 소유하고 Python 모드와 `pre_validator`를 사용하며 런타임 데이터가 있습니다. |
 | `Inactive: Sinkhole is disabled.`        | General의 **Enable**이 꺼져 있습니다.                                                   |
 | `Inactive: DNS Resolver is disabled.`    | pfSense DNS Resolver가 꺼져 있습니다.                                                  |
+| `Inactive: pfBlockerNG is installed ...` | DNSBL 모드와 관계없이 pfBlockerNG가 기본 **Enable**이 켜진 상태로 설치되어 있습니다.                    |
 | `Inactive: ... slot is owned by ...`     | pfBlockerNG DNSBL과 같은 다른 Python 스크립트가 단일 슬롯을 소유합니다.                             |
 | `Inactive: Sinkhole does not own ...`    | 다른 소유자가 보고되지 않았지만 구성된 스크립트가 Sinkhole이 아닙니다.                                     |
 | `Inactive: ... Python mode is disabled.` | Resolver에서 Python 모드가 더 이상 활성화되어 있지 않습니다.                                       |
@@ -78,6 +79,10 @@ Sinkhole을 의도적으로 비활성화하면 **Deployment Needed**는 `No`, **
 Scopes 요약은 클라이언트 맵 재구성 상태를 표시합니다. 별도의 **Networks** 및 **Devices** 패널에는 각 인터페이스의 현재 CIDR과 각 장치의 현재 주소가 표시됩니다. 여러 장치가 같은 주소를 요청하면 충돌로 표시되며, 표에서 첫 번째 장치가 정책상 해당 주소를 소유합니다.
 
 **Alerts** 패널은 가장 최근의 분 단위 작업만 설명합니다. **Notifications held back**에는 한도 또는 미확인 알림 억제가 포함되며, **Events dropped by module**은 제한된 메모리 내 또는 디스크 이벤트 큐가 가득 찼음을 의미합니다.
+
+## SafeSearch 상태 \{#safesearch-state}
+
+**SafeSearch** 패널은 Global과 각 네트워크 및 장치 범위에 선택된 엔진 수를 표시합니다. 그 아래에는 사용 중인 각 안전 호스트의 마지막 정상 IPv4 및 IPv6 주소, 마지막 확인 시각, 마지막 조회 오류가 표시됩니다. 주소가 없는 호스트는 조회가 성공할 때까지 해당 범위에서 엔진을 차단된 상태로 유지합니다.
 
 ## Bypass 상태 \{#bypass-state}
 

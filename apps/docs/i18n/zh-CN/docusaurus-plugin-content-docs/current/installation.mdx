@@ -23,6 +23,7 @@ sidebar_position: 2
 - **HTTPS access to GitHub** — 防火墙需要从 GitHub Releases 下载软件包和校验和。
 - **DNS Resolver** — 启用 Sinkhole 的 DNS 集成前，需要先启用 pfSense DNS Resolver。
 - **Available Python slot** — pfBlockerNG DNSBL 或其他 Python 脚本不能占用 Resolver 的唯一模块槽位。
+- **No active pfBlockerNG** — 无论 DNSBL 处于哪种模式，都需要移除 pfBlockerNG 或关闭其主 **Enable** 选项。
 - **Current backup** — 建议在安装非官方软件包前，从 **Diagnostics → Backup & Restore** 下载 `config.xml`。
 
 :::warning

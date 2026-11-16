@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Postavite jednu pouzdanu listu i provjerite njeno sačuvano, kompajlirano, postavljeno i učitano stanje prije proširivanja pravila.
 
 ## Provjerite Resolver \{#check-the-resolver}
 
 1. Otvorite **Services → DNS Resolver** i potvrdite da je Resolver omogućen.
-2. Ako je pfBlockerNG DNSBL omogućen, odaberite koji će paket upravljati DNS filtriranjem jer oba paketa ne mogu istovremeno koristiti Python mjesto u Unboundu.
+2. Ako je pfBlockerNG instaliran i omogućen, odaberite koji će paket filtrirati DNS jer ta dva paketa ne mogu raditi zajedno.
 3. Otvorite **Firewall → Sinkhole → General** i ostavite **Enable** isključenim dok pripremate prva pravila.
 
-Sinkhole odbija sačuvati **Enable** dok druga Python skripta zauzima mjesto. Ako kasnije onemogućite Sinkhole, vraćaju se ranije Python postavke Resolvera kada su još uvijek u vlasništvu Sinkholea.
+Sinkhole odbija sačuvati **Enable** dok je pfBlockerNG instaliran i omogućen ili dok druga Python skripta zauzima mjesto. Ako kasnije onemogućite Sinkhole, vraćaju se ranije Python postavke Resolvera kada su još uvijek u vlasništvu Sinkholea.
 
 ## Dodajte listu \{#add-a-list}
 
@@ -33,6 +35,8 @@ Sinkhole odbija sačuvati **Enable** dok druga Python skripta zauzima mjesto. Ak
 4. Dodajte sve globalne **Allowed Domains**, jednu domenu po redu, kada treba propustiti poznati lažno pozitivni rezultat.
 
 Sinkhole ne preporučuje nijedan izvor. [Liste i sačuvane kopije](/docs/configure/lists) objašnjavaju prihvaćene formate i način na koji rezultati kataloga postaju obični redovi liste.
+
+<img src={listsTab} alt="Kartica Lists prikazuje pet demonstracijskih lista blokiranja s kolonama Global i Used By te dvije globalno dozvoljene domene" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Dodajte opcionalne opsege \{#add-optional-scopes}
 

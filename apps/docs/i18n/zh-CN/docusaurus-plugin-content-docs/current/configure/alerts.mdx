@@ -14,6 +14,8 @@ tags:
   - notifications
 ---
 
+import alertRuleEditor from './_assets_/alerts-1.png';
+
 仅针对列表和客户端与已启用警报规则匹配的被阻止应答发送通知。
 
 ## 为什么使用警报规则？ \{#why-use-alert-rules}
@@ -43,6 +45,8 @@ tags:
 选择 **Any block list** 时会隐藏所选列表字段，选择 **Everyone** 时会隐藏网络和设备字段。保存后会返回 Alerts；选择铅笔图标或双击某行即可编辑。
 
 只有当阻止名称的列表之一被该规则选中，而且客户端也被同一规则选中时，阻止才匹配。默认重复窗口为 60 分钟，可接受范围为 1 到 1,440 分钟。
+
+<img src={alertRuleEditor} alt="Edit Alert Rule 页面为一个所选演示设备匹配一个所选列表，重复间隔为 60 分钟，两种发送通道均已开启" width={1024} height={994} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 发送通道 \{#delivery-channels}
 

@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Configurez une liste fiable et vérifiez ses états enregistré, compilé, déployé et chargé avant d’étendre la politique.
 
 ## Vérifier le Resolver \{#check-the-resolver}
 
 1. Ouvrez **Services → DNS Resolver** et vérifiez que le Resolver est activé.
-2. Si pfBlockerNG DNSBL est activé, choisissez quel paquet assurera le filtrage DNS, car les deux ne peuvent pas utiliser simultanément l’emplacement Python d’Unbound.
+2. Si pfBlockerNG est installé et activé, choisissez quel paquet filtrera le DNS, car les deux paquets ne peuvent pas fonctionner ensemble.
 3. Ouvrez **Firewall → Sinkhole → General** et laissez **Enable** désactivé pendant la préparation de la première politique.
 
-Sinkhole refuse d’enregistrer **Enable** lorsqu’un autre script Python occupe l’emplacement. Si vous désactivez Sinkhole par la suite, il restaure les anciens paramètres Python du Resolver tant qu’il les détient encore.
+Sinkhole refuse d’enregistrer **Enable** lorsque pfBlockerNG est installé et activé, ou lorsqu’un autre script Python occupe l’emplacement. Si vous désactivez Sinkhole par la suite, il restaure les anciens paramètres Python du Resolver tant qu’il les détient encore.
 
 ## Ajouter une liste \{#add-a-list}
 
@@ -33,6 +35,8 @@ Sinkhole refuse d’enregistrer **Enable** lorsqu’un autre script Python occup
 4. Ajoutez, si nécessaire, des **Allowed Domains** globaux, un domaine par ligne, lorsqu’un faux positif connu doit être autorisé.
 
 Sinkhole ne recommande aucune source. [Listes et copies enregistrées](/docs/configure/lists) décrit les formats acceptés et la manière dont les résultats du catalogue deviennent des lignes de liste ordinaires.
+
+<img src={listsTab} alt="Onglet Lists affichant cinq listes de blocage de démonstration avec leurs colonnes Global et Used By, ainsi que deux domaines autorisés globaux" width={1024} height={996} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Ajouter des portées facultatives \{#add-optional-scopes}
 

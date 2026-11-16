@@ -30,6 +30,7 @@ Gebruik de reden na **Summary → Sinkhole**:
 
 - **Sinkhole is disabled** — Selecteer **General → Enable** nadat de Resolver en Python-positie gereed zijn.
 - **DNS Resolver is disabled** — Schakel de Resolver in en pas de instelling toe voordat u Sinkhole opslaat.
+- **pfBlockerNG is installed and enabled** — Schakel de hoofdoptie **Enable** van pfBlockerNG uit of verwijder het pakket en sla daarna de General-instellingen van Sinkhole opnieuw op. Sinkhole geeft een positie die het al bezat terug bij de volgende geplande update, bij **Update Now** of bij de volgende pakketsynchronisatie.
 - **Python script slot is owned** — Schakel de conflicterende DNSBL-/Python-integratie uit of laat Sinkhole uitgeschakeld; Sinkhole vervangt deze niet.
 - **Python mode or position changed** — Sla de Sinkhole-instellingen in General opnieuw op, zodat Sync de Python-modus en `pre_validator` kan herstellen zolang Sinkhole de positie bezit.
 - **Runtime files unavailable** — Voer pakket-Sync uit door de General-instellingen op te slaan, of start opnieuw op en laat pakket-Sync van pfSense de RAM-schijfbestanden herstellen.
@@ -54,6 +55,15 @@ Wanneer een uitrol namen toevoegt of een subboom uitbreidt, herlaadt Sinkhole Un
 Een query waarvan het CNAME-doel in een lijst staat, wordt geblokkeerd, zelfs wanneer de oorspronkelijke naam niet in de lijst staat. Als het doel in de lijst geen record van het gevraagde type heeft, zoals AAAA, kan het antwoord de CNAME behouden zonder een adres te bevatten.
 
 Een toegestane querynaam blijft toegestaan. Dit voorkomt dat een minder specifiek CNAME-doel een expliciete beslissing voor een toegestaan domein van de opgevraagde naam opheft.
+
+## SafeSearch wordt niet toegepast \{#safesearch-does-not-apply}
+
+1. Controleer of de netwerk- of apparaatscope van de client is ingeschakeld op **Scopes** en of de zoekmachine op **SafeSearch** is aangevinkt voor die scope of voor Global.
+2. Bekijk in **Status → SafeSearch** de adressen en de laatste fout van de veilige host. Een host zonder adressen houdt de bijbehorende zoekmachine voor de scope geblokkeerd totdat een lookup slaagt.
+3. Controleer of **Compile Needed** en **Deployment Needed** na het opslaan `No` zijn.
+4. Controleer of de client geen versleutelde DNS of een andere resolver gebruikt; [Beveiliging tegen omzeiling](/docs/configure/bypass-protection) houdt geselecteerde interfaces op het DNS-pad van Sinkhole.
+
+Een browser kan het normale adres van een zoekmachine enkele minuten in de cache houden, dus test vanuit een nieuw privévenster of nadat de DNS-cache van de browser is geleegd.
 
 ## Een apparaat krijgt het verkeerde beleid \{#a-device-gets-the-wrong-policy}
 

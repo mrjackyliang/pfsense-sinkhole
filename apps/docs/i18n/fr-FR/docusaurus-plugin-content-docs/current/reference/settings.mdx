@@ -14,6 +14,8 @@ tags:
   - webgui
 ---
 
+import generalTab from './_assets_/settings-1.png';
+
 Consultez le rôle et le comportement par défaut de chaque zone de configuration de Sinkhole sous **Firewall → Sinkhole**.
 
 ## General \{#general}
@@ -25,6 +27,18 @@ Consultez le rôle et le comportement par défaut de chaque zone de configuratio
 | Keep Settings    | On                | Conserve la configuration et les données durables enregistrées lorsque le paquet est supprimé.          |
 
 Les horaires planifiés utilisent des composants aléatoires stables. Hourly s’exécute à une minute stable, Every 6 hours utilise cette même minute toutes les six heures, Daily s’exécute à `00:<minute>` et Weekly le dimanche à `00:<minute>`.
+
+<img src={generalTab} alt="Onglet General avec Sinkhole activé, des mises à jour quotidiennes des listes, Keep Settings activé, une exception de reliaison pour plex.direct, des valeurs de réponses expirées avec Serve Expired activé et des vérifications hebdomadaires des mises à jour du paquet" width={1024} height={1103} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Resolver \{#resolver}
+
+| Champ                   | Valeur par défaut | Description                                                                                                              |
+|-------------------------|-------------------|--------------------------------------------------------------------------------------------------------------------------|
+| Rebind Exceptions       | Empty             | Domaines autorisés à répondre avec des adresses privées malgré la protection contre le DNS rebinding, un par ligne.      |
+| Expired Answer Lifetime | Empty             | Nombre de secondes pendant lesquelles une réponse expirée en cache peut encore être servie ; `0` signifie aucune limite. |
+| Expired Answer Wait     | Empty             | Nombre de millisecondes d’attente d’une réponse récente avant de servir une réponse expirée ; `0` répond immédiatement.  |
+
+Un champ vide n’écrit rien et conserve la valeur par défaut du Resolver. [Réglages du Resolver](/docs/configure/resolver-settings) explique quand les valeurs s’appliquent.
 
 ## Package Updates \{#package-updates}
 
@@ -52,6 +66,10 @@ Les flux de contournement sont exclus de ce catalogue.
 ## Services \{#services}
 
 Les sélections de services sont vides par défaut pour chaque portée. Un service du registre couvert par une protection Bypass dédiée est masqué dans Services et supprimé des sélections enregistrées ; Private Relay se configure uniquement dans l'onglet Bypass.
+
+## SafeSearch \{#safesearch}
+
+Les sélections SafeSearch sont vides par défaut pour chaque portée. Chaque portée peut verrouiller Google, YouTube (Moderate ou Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex et Pixabay, ou bloquer Qwant. [SafeSearch](/docs/configure/safesearch) liste les noms et les hôtes sécurisés.
 
 ## Network Scopes \{#network-scopes}
 

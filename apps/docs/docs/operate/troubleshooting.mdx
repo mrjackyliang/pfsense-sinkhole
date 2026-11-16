@@ -30,6 +30,7 @@ Use the reason after **Summary → Sinkhole**:
 
 - **Sinkhole is disabled** — Select **General → Enable** after the Resolver and Python slot are ready.
 - **DNS Resolver is disabled** — Enable and apply the Resolver before saving Sinkhole.
+- **pfBlockerNG is installed and enabled** — Turn off pfBlockerNG's main **Enable** or remove the package, then save Sinkhole General settings again. A slot Sinkhole already owned is given back on the next scheduled update, **Update Now**, or package Sync.
 - **Python script slot is owned** — Disable the conflicting DNSBL/Python integration or leave Sinkhole disabled; Sinkhole won't replace it.
 - **Python mode or position changed** — Save Sinkhole General settings again so Sync can restore Python mode and `pre_validator` while Sinkhole owns the slot.
 - **Runtime files unavailable** — Run package Sync by saving General settings, or reboot and let pfSense's package Sync restore RAM-disk files.
@@ -54,6 +55,15 @@ When a deploy adds names or broadens a subtree, Sinkhole reloads Unbound after t
 A query whose CNAME target is listed is blocked even when the original name isn't listed. If the listed target has no record of the requested type, such as AAAA, the answer can retain the CNAME while containing no address.
 
 An allowed query name remains allowed. This prevents a less-specific CNAME target from overriding an explicit allowed-domain decision for the queried name.
+
+## SafeSearch Does Not Apply \{#safesearch-does-not-apply}
+
+1. Confirm the client's network or device scope is enabled on **Scopes** and the engine is ticked for that scope or for Global on **SafeSearch**.
+2. Check **Status → SafeSearch** for the safe host's addresses and last error. A host with no addresses keeps its engine blocked for the scope until a lookup succeeds.
+3. Confirm **Compile Needed** and **Deployment Needed** are `No` after saving.
+4. Confirm the client isn't using encrypted DNS or another resolver; [Bypass Protection](/docs/configure/bypass-protection) keeps selected interfaces on Sinkhole's DNS path.
+
+A browser can keep an engine's normal address cached for a few minutes, so test from a fresh private window or after the browser's DNS cache clears.
 
 ## A Device Gets the Wrong Policy \{#a-device-gets-the-wrong-policy}
 

@@ -14,45 +14,42 @@ tags:
   - glossary
 ---
 
-Disse termene har samme betydning i hele WebGUI og dokumentasjonen for Sinkhole.
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-## DNS Sinkhole \{#dns-sinkhole}
+Disse termene har samme betydning i hele WebGUI og dokumentasjonen for Sinkhole. Tabellene viser først termen, deretter andre navn og til slutt definisjonen.
 
-Å svare på et blokkert navn med en adresse som ikke fører noe sted, slik at forespørselen stopper.
+:::tip[Ordlistetermer]
+Gjennom dokumentasjonen ser du <Terminology title="En rask påminnelse, akkurat der du leser" to="/docs/reference/terminology">uthevede termer</Terminology> med prikket understreking. Hold pekeren over dem for en rask påminnelse om hva de betyr, eller klikk for å gå til hele definisjonen.
+:::
 
-## DNS Resolver \{#dns-resolver}
+## Grunnleggende om DNS \{#dns-basics}
 
-Den Unbound-baserte DNS-tjenesten i pfSense.
+| Term             | Også kjent som | Definisjon                                                                                         |
+|------------------|----------------|----------------------------------------------------------------------------------------------------|
+| **DNS sinkhole** | —              | Å svare på et blokkert navn med en adresse som ikke fører noe sted, slik at forespørselen stopper. |
+| **DNS Resolver** | Unbound        | Den Unbound-baserte DNS-tjenesten i pfSense.                                                       |
 
-## Blokkeringsliste \{#block-list}
+## Lister og omfang \{#lists-and-scopes}
 
-En liste med navn eller adresser som skal blokkeres, lagt til via URL eller fra søket.
+| Term                          | Også kjent som             | Definisjon                                                                                                         |
+|-------------------------------|----------------------------|--------------------------------------------------------------------------------------------------------------------|
+| **blokkeringsliste**          | —                          | En liste med navn eller adresser som skal blokkeres, lagt til via URL eller fra søket.                             |
+| **søk etter populære lister** | —                          | WebGUI-søket etter mye brukte blokkeringslister, for eksempel velgeren fra AdGuard Home.                           |
+| **lagret liste**              | —                          | Den siste gyldige kopien av en blokkeringsliste, beholdt på brannmuren.                                            |
+| **omfang**                    | —                          | Der en blokkeringsliste gjelder: hele nettverket, et VLAN eller én enhet.                                          |
+| **globale lister**            | —                          | Blokkeringslister som gjelder for alle klienter i nettverket.                                                      |
+| **SafeSearch**                | Trygt søk, begrenset modus | En søkemotors sikre modus, tvunget for alle enheter i et omfang ved å svare på motorens navn med den sikre verten. |
+| **rebind-unntak**             | private-domain             | Et domene som får svare med en privat adresse til tross for beskyttelsen mot DNS rebinding.                        |
 
-## Lagret liste \{#saved-list}
+## Varsler \{#alerts}
 
-Den siste gyldige kopien av en blokkeringsliste, beholdt på brannmuren.
-
-## Omfang \{#scope}
-
-Der en blokkeringsliste gjelder: hele nettverket, et VLAN eller én enhet.
-
-## Globale lister \{#global-lists}
-
-Blokkeringslister som gjelder for alle klienter i nettverket.
-
-## Varslingsregel \{#alert-rule}
-
-En liste og et omfang der blokkeringer sender et pfSense-varsel.
+| Term               | Også kjent som | Definisjon                                                       |
+|--------------------|----------------|------------------------------------------------------------------|
+| **varslingsregel** | —              | En liste og et omfang der blokkeringer sender et pfSense-varsel. |
 
 ## Beskyttelse mot omgåelse \{#bypass-protection}
 
-Valgfrie kontroller per grensesnitt som holder klienter på DNS-baner Sinkhole kan inspisere, ved å omdirigere vanlig DNS eller blokkere vanlige alternativer for kryptert DNS og tunneler.
-
-## Omdirigering av vanlig DNS \{#plain-dns-redirect}
-
-Den valgfrie Bypass-innstillingen som sender vanlige TCP- og UDP-spørringer på port 53 fra enheter til brannmuren.
-
-## Søk etter populære lister \{#popular-list-search}
-
-WebGUI-søket etter mye brukte blokkeringslister, for eksempel velgeren fra AdGuard Home.
-
+| Term                           | Også kjent som | Definisjon                                                                                                                                                                                 |
+|--------------------------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **beskyttelse mot omgåelse**   | Bypass         | Valgfrie kontroller per grensesnitt som holder klienter på DNS-baner Sinkhole kan inspisere, ved å omdirigere vanlig DNS eller blokkere vanlige alternativer for kryptert DNS og tunneler. |
+| **omdirigering av vanlig DNS** | —              | Den valgfrie Bypass-innstillingen som sender vanlige TCP- og UDP-spørringer på port 53 fra enheter til brannmuren.                                                                         |

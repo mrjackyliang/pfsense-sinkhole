@@ -42,9 +42,10 @@ sidebar_position: 4
 
 - 需要啓用 pfSense 基於 Unbound 的 DNS Resolver。
 - Resolver 的唯一 Python 腳本槽位需要為空或已經由 Sinkhole 佔用。
+- 需要移除 pfBlockerNG，或關閉其主 **Enable** 選項。
 - Sinkhole 使用 `pre_validator` 模塊位置；如果 Python 模式、槽位所有者、位置或執行時檔案不匹配，它會報告非活動狀態。
 
-pfBlockerNG DNSBL 與 Sinkhole 使用同一個 Python 腳本槽位。當 `pfb_unbound` 或任何其他腳本佔用該槽位時，Sinkhole 拒絕接管。
+在 Python 模式下，pfBlockerNG DNSBL 與 Sinkhole 使用同一個 Python 腳本槽位。當 `pfb_unbound` 或任何其他腳本佔用該槽位時，Sinkhole 拒絕接管。在 Unbound 模式下，DNSBL 會讓槽位保持為空，因此只要 pfBlockerNG 已安裝且 **Enable** 處於開啓狀態，Sinkhole 同樣會保持非活動狀態。pfBlockerNG 移除後保留的設定不計在內。
 
 ## 網路要求 \{#network-requirements}
 
@@ -67,6 +68,6 @@ pfBlockerNG DNSBL 與 Sinkhole 使用同一個 Python 腳本槽位。當 `pfb_un
 
 ## 語言 \{#languages}
 
-套件根據 pfSense 語言設定選擇 WebGUI、命令行、驗證、Status 和通知文本。英語是源目錄，缺少翻譯時目前會回退到英語。
+套件根據 pfSense 語言設定選擇 WebGUI、命令行、驗證、Status 和通知文本。英語是源目錄，套件還包含 pfSense 其他 17 個區域設定的完整目錄。
 
-其他套件翻譯仍在進行中，而文檔已提供 pfSense 的全部 18 個區域設定。Sinkhole、pfSense、FreeBSD 和 MaxMind 等品牌和產品名稱保持不變。
+WebGUI 和文檔均已提供 pfSense 的全部 18 個區域設定。Sinkhole、pfSense、FreeBSD 和 MaxMind 等品牌和產品名稱保持不變。

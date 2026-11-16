@@ -1,0 +1,72 @@
+---
+id: safesearch
+title: SafeSearch
+description: Verrouillez les moteurs de recherche en mode sécurisé pour tout le réseau, un VLAN ou un appareil en répondant aux noms de chaque moteur par son hôte sécurisé publié.
+keywords:
+  - sinkhole for pfsense
+  - safesearch
+  - recherche sécurisée
+  - mode restreint youtube
+  - portée réseau
+tags:
+  - configure
+  - safesearch
+  - dns
+---
+
+import safesearchTab from './_assets_/safesearch-1.png';
+
+Utilisez **Firewall → Sinkhole → SafeSearch** pour maintenir les moteurs de recherche en mode sécurisé sur un réseau ou un appareil, sans modifier aucun réglage de navigateur ou d’appareil.
+
+## Pourquoi utiliser SafeSearch ? \{#why-use-safesearch}
+
+1. Verrouille le mode sécurisé au niveau du réseau : un navigateur déconnecté, un nouvel appareil ou une fenêtre de navigation privée reçoit toujours des résultats filtrés.
+2. Couvre tous les domaines nationaux de Google, pas seulement `google.com`, de sorte que passer à `google.co.uk` ne permet pas de le contourner.
+3. Suit les mêmes portées que les listes de blocage : un VLAN pour les enfants peut recevoir SafeSearch sans que le reste du réseau soit concerné.
+
+## Choisir une portée et des moteurs \{#choose-a-scope-and-engines}
+
+1. Sélectionnez **Global**, un réseau configuré ou un appareil configuré dans **Scope**.
+2. Cochez chaque moteur à verrouiller et choisissez **Moderate** ou **Strict** pour YouTube.
+3. Sélectionnez **Save**.
+
+Un réseau ou un appareil doit exister dans **Scopes** avant d’apparaître ici. L’enregistrement résout immédiatement chaque hôte sécurisé et applique la modification en arrière-plan.
+
+<img src={safesearchTab} alt="Onglet SafeSearch pour une portée de tablette de démonstration avec SafeSearch verrouillé pour Google, Bing, DuckDuckGo et Brave Search, YouTube réglé sur Strict et les adresses sécurisées utilisées" width={1024} height={1271} style={{maxWidth: '100%', height: 'auto'}} />
+
+| Moteur       | Noms concernés                                                                                | Hôte sécurisé                                                                |
+|--------------|-----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| Google       | `google.<domain>` et `www.google.<domain>` pour les 194 domaines de recherche Google          | `forcesafesearch.google.com`                                                 |
+| YouTube      | `youtube.com`, `www.youtube.com`, `m.youtube.com`, les noms de l’API et d’intégration YouTube | `restrictmoderate.youtube.com` (Moderate) ou `restrict.youtube.com` (Strict) |
+| Bing         | `bing.com`, `www.bing.com`, `edgeservices.bing.com`                                           | `strict.bing.com`                                                            |
+| DuckDuckGo   | `duckduckgo.com`, `www.duckduckgo.com`, `start.duckduckgo.com`                                | `safe.duckduckgo.com`                                                        |
+| Brave Search | `search.brave.com`                                                                            | `forcesafe.search.brave.com`                                                 |
+| Startpage    | `startpage.com`, `www.startpage.com`                                                          | `safe.startpage.com`                                                         |
+| Ecosia       | `ecosia.org`, `www.ecosia.org`                                                                | `strict-safe-search.ecosia.org`                                              |
+| Yandex       | Domaines de recherche Yandex et `ya.ru`                                                       | `familysearch.yandex.ru`                                                     |
+| Pixabay      | `pixabay.com`, `www.pixabay.com`                                                              | `safesearch.pixabay.com`                                                     |
+| Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                               | Aucun ; Qwant est bloqué                                                     |
+
+Qwant ne publie aucun hôte SafeSearch : le choisir bloque donc Qwant pour cette portée.
+
+## Combinaison des portées \{#how-scopes-combine}
+
+Un client reçoit l’ensemble des moteurs choisis pour **Global**, pour son réseau et pour son appareil, combinés. Lorsque YouTube apparaît avec les deux niveaux, **Strict** l’emporte.
+
+SafeSearch s’applique après le blocage. Un nom bloqué pour le client par une liste ou un service bloqué reste bloqué, et les domaines autorisés ne désactivent pas SafeSearch. Comme tout client sans portée, les requêtes propres au pare-feu reçoivent les moteurs choisis pour **Global**.
+
+## Fonctionnement de la réponse \{#how-the-answer-works}
+
+Pour un moteur choisi, Sinkhole répond au nom du moteur par un CNAME vers l’hôte sécurisé, accompagné des adresses de cet hôte : la même réponse qu’une vue Unbound écrite à la main. Les autres types d’enregistrement, comme les enregistrements HTTPS, ne reçoivent que le CNAME, afin qu’un navigateur ne puisse pas utiliser d’indications qui contourneraient l’hôte sécurisé.
+
+Sinkhole résout les adresses de chaque hôte sécurisé à l’enregistrement et à chaque mise à jour des listes, et conserve les dernières adresses valides en cas d’échec d’une résolution. Un moteur dont l’hôte sécurisé n’a encore jamais renvoyé d’adresse est bloqué pour ses portées jusqu’à ce qu’une résolution réussisse.
+
+Les réponses SafeSearch ne sont jamais stockées dans le cache du Resolver : la réponse destinée à un client n’atteint donc jamais un client hors de la portée.
+
+## Vérifier SafeSearch \{#verify-safesearch}
+
+1. Ouvrez **Status** et vérifiez que le panneau **SafeSearch** liste chaque hôte sécurisé avec ses adresses et sans erreur.
+2. Depuis un client de la portée, résolvez un nom de moteur, par exemple `nslookup www.google.com`, et vérifiez que la réponse désigne l’hôte sécurisé.
+3. Depuis un client hors de la portée, vérifiez que la même requête renvoie la réponse habituelle du moteur.
+
+Le DNS chiffré qu’un client envoie ailleurs échappe à toute politique DNS, y compris SafeSearch. La [protection contre le contournement](/docs/configure/bypass-protection) maintient les interfaces sélectionnées sur le chemin DNS de Sinkhole.

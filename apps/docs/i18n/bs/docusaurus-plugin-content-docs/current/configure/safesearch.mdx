@@ -1,0 +1,72 @@
+---
+id: safesearch
+title: SafeSearch
+description: Zaključajte sigurne načine rada pretraživača za cijelu mrežu, jedan VLAN ili jedan uređaj tako što se nazivi svakog pretraživača odgovaraju njegovim objavljenim sigurnim hostom.
+keywords:
+  - sinkhole for pfsense
+  - safesearch
+  - sigurna pretraga
+  - youtube ograničeni način rada
+  - mrežni opseg
+tags:
+  - configure
+  - safesearch
+  - dns
+---
+
+import safesearchTab from './_assets_/safesearch-1.png';
+
+Koristite **Firewall → Sinkhole → SafeSearch** da pretraživače zadržite u sigurnom načinu rada za mrežu ili uređaj, bez mijenjanja bilo koje postavke preglednika ili uređaja.
+
+## Zašto koristiti SafeSearch? \{#why-use-safesearch}
+
+1. Zaključava sigurni način rada na nivou mreže, pa i odjavljeni preglednik, novi uređaj ili privatni prozor i dalje dobijaju filtrirane rezultate.
+2. Obuhvata svaku Googleovu domenu za pojedinačne države, a ne samo `google.com`, pa prelazak na `google.co.uk` ne zaobilazi zaštitu.
+3. Prati iste opsege kao liste za blokiranje, pa dječiji VLAN može dobiti SafeSearch dok ostatak mreže ne dobija.
+
+## Odaberite opseg i pretraživače \{#choose-a-scope-and-engines}
+
+1. U polju **Scope** odaberite **Global**, konfiguriranu mrežu ili konfigurirani uređaj.
+2. Označite svaki pretraživač koji želite zaključati i za YouTube odaberite **Moderate** ili **Strict**.
+3. Odaberite **Save**.
+
+Mreža ili uređaj mora postojati na kartici **Scopes** prije nego što se pojavi ovdje. Spremanje odmah razrješava svaki sigurni host i primjenjuje promjenu u pozadini.
+
+<img src={safesearchTab} alt="Kartica SafeSearch za opseg demonstracijskog tableta sa zaključanim SafeSearchom za Google, Bing, DuckDuckGo i Brave Search, YouTubeom postavljenim na Strict i sigurnim adresama u upotrebi" width={1024} height={1271} style={{maxWidth: '100%', height: 'auto'}} />
+
+| Pretraživač  | Nazivi na koje se odgovara                                                                 | Sigurni host                                                                  |
+|--------------|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| Google       | `google.<domain>` i `www.google.<domain>` za sve 194 Googleove domene za pretragu          | `forcesafesearch.google.com`                                                  |
+| YouTube      | `youtube.com`, `www.youtube.com`, `m.youtube.com`, nazivi YouTube API-ja i ugrađenih videa | `restrictmoderate.youtube.com` (Moderate) ili `restrict.youtube.com` (Strict) |
+| Bing         | `bing.com`, `www.bing.com`, `edgeservices.bing.com`                                        | `strict.bing.com`                                                             |
+| DuckDuckGo   | `duckduckgo.com`, `www.duckduckgo.com`, `start.duckduckgo.com`                             | `safe.duckduckgo.com`                                                         |
+| Brave Search | `search.brave.com`                                                                         | `forcesafe.search.brave.com`                                                  |
+| Startpage    | `startpage.com`, `www.startpage.com`                                                       | `safe.startpage.com`                                                          |
+| Ecosia       | `ecosia.org`, `www.ecosia.org`                                                             | `strict-safe-search.ecosia.org`                                               |
+| Yandex       | Yandexove domene za pretragu i `ya.ru`                                                     | `familysearch.yandex.ru`                                                      |
+| Pixabay      | `pixabay.com`, `www.pixabay.com`                                                           | `safesearch.pixabay.com`                                                      |
+| Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                            | Nema; Qwant se blokira                                                        |
+
+Qwant ne objavljuje SafeSearch host, pa njegov odabir blokira Qwant za taj opseg.
+
+## Kako se opsezi kombinuju \{#how-scopes-combine}
+
+Klijent dobija kombinaciju svih pretraživača odabranih za **Global**, za mrežu na kojoj se nalazi i za svoj uređaj. Kada se YouTube pojavi s oba nivoa, prednost ima **Strict**.
+
+SafeSearch se primjenjuje nakon blokiranja. Naziv koji lista ili blokirana usluga blokira za klijenta ostaje blokiran, a dopuštene domene ne isključuju SafeSearch. Kao i svaki klijent bez opsega, vlastiti upiti zaštitnog zida dobijaju pretraživače odabrane za **Global**.
+
+## Kako funkcioniše odgovor \{#how-the-answer-works}
+
+Za odabrani pretraživač Sinkhole na njegov naziv odgovara CNAME zapisom prema sigurnom hostu i adresama tog hosta, istim odgovorom koji daje ručno napisan Unbound view. Ostale vrste zapisa, poput HTTPS zapisa, dobijaju samo CNAME, pa preglednik ne može koristiti nagovještaje koji vode mimo sigurnog hosta.
+
+Sinkhole razrješava adrese svakog sigurnog hosta pri spremanju i pri svakom ažuriranju lista, a kada razrješavanje ne uspije, zadržava posljednje ispravne adrese. Pretraživač čiji sigurni host nikada nije vratio adresu blokiran je za svoje opsege dok razrješavanje ne uspije.
+
+SafeSearch odgovori nikada se ne čuvaju u predmemoriji Resolvera, pa odgovor jednog klijenta nikada ne stiže do klijenta izvan opsega.
+
+## Provjerite SafeSearch \{#verify-safesearch}
+
+1. Otvorite **Status** i potvrdite da panel **SafeSearch** prikazuje svaki sigurni host s adresama i bez greške.
+2. S klijenta u opsegu potražite naziv pretraživača, npr. `nslookup www.google.com`, i potvrdite da odgovor navodi sigurni host.
+3. S klijenta izvan opsega potvrdite da isti upit vraća uobičajeni odgovor pretraživača.
+
+Šifrirani DNS koji klijent šalje drugdje zaobilazi svako DNS pravilo, uključujući SafeSearch. [Zaštita od zaobilaženja](/docs/configure/bypass-protection) zadržava odabrane interfejse na Sinkholeovoj DNS putanji.

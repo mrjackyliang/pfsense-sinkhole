@@ -1,74 +1,161 @@
 {
-  "homepage.hero.eyebrow": {
-    "message": "pfSense 네이티브 패키지"
-  },
-  "homepage.hero.heading": {
-    "message": "각 네트워크와 장치가 접근할 수 있는 대상을 선택하세요."
-  },
-  "homepage.hero.tagline": {
+  "home.meta.description": {
     "message": "저장된 DNS 목록을 전체 네트워크, VLAN 또는 장치에 적용하고 의도적인 알림을 사용하며 두 번째 서버는 필요하지 않습니다."
   },
-  "homepage.hero.ctaLabel": {
-    "message": "Sinkhole 설치"
+  "home.meta.title": {
+    "message": "Sinkhole for pfSense - 범위별 DNS, IP 및 국가 차단"
   },
-  "homepage.hero.secondaryCtaLabel": {
-    "message": "scopes 계획"
+  "home.hero.eyebrow": {
+    "message": "pfSense 네이티브 패키지"
   },
-  "homepage.stats.heading": {
-    "message": "하나의 방화벽, 모든 유용한 수준의 정책"
+  "home.hero.heading": {
+    "message": "각 네트워크와 장치가 접근할 수 있는 대상을 선택하세요."
   },
-  "homepage.stats.description": {
-    "message": "Sinkhole은 정책을 로컬에 유지하고 작동 경계를 명확히 합니다."
+  "home.hero.tagline": {
+    "message": "저장된 DNS 목록을 전체 네트워크, VLAN 또는 장치에 적용하고 의도적인 알림을 사용하며 두 번째 서버는 필요하지 않습니다."
   },
-  "homepage.stats.policyScopes": {
-    "message": "정책 scopes"
+  "home.hero.primaryAction": {
+    "message": "시작하기"
   },
-  "homepage.stats.dnsListFormats": {
-    "message": "DNS 목록 형식"
+  "home.hero.secondaryAction": {
+    "message": "자세히 알아보기"
   },
-  "homepage.stats.catalogCache": {
-    "message": "카탈로그 캐시"
+  "home.preview.ariaLabel": {
+    "message": "VLAN에 있는 장치의 DNS 판단 예시"
   },
-  "homepage.stats.unboundSlot": {
-    "message": "Unbound 모듈 슬롯"
+  "home.preview.title": {
+    "message": "DNS 판단"
   },
-  "homepage.features.heading": {
-    "message": "방화벽에 남는 제어"
+  "home.preview.blocked": {
+    "message": "차단됨"
   },
-  "homepage.features.scopes.title": {
+  "home.preview.query": {
+    "message": "쿼리"
+  },
+  "home.preview.client": {
+    "message": "클라이언트"
+  },
+  "home.preview.network": {
+    "message": "네트워크"
+  },
+  "home.preview.deviceLists": {
+    "message": "장치 목록"
+  },
+  "home.preview.noMatch": {
+    "message": "일치 없음"
+  },
+  "home.preview.networkLists": {
+    "message": "네트워크 목록"
+  },
+  "home.preview.globalLists": {
+    "message": "전역 목록"
+  },
+  "home.preview.notReached": {
+    "message": "확인하지 않음"
+  },
+  "home.preview.result": {
+    "message": "저장된 목록에서 응답함"
+  },
+  "home.features.scopes.title": {
     "message": "모든 결정의 범위 지정"
   },
-  "homepage.features.scopes.description": {
+  "home.features.scopes.description": {
     "message": "목록과 허용 도메인을 전역, 인터페이스 또는 VLAN, 장치별로 적용하세요."
   },
-  "homepage.features.savedLists.title": {
+  "home.features.savedLists.title": {
     "message": "마지막 유효 사본 유지"
   },
-  "homepage.features.savedLists.description": {
+  "home.features.savedLists.description": {
     "message": "재시작, 다시 로드 및 다운로드 실패 중에도 로컬 목록에서 DNS에 응답하세요."
   },
-  "homepage.features.alerts.title": {
+  "home.features.alerts.title": {
     "message": "의도적으로 알림"
   },
-  "homepage.features.alerts.description": {
+  "home.features.alerts.description": {
     "message": "각 규칙에서 선택한 목록, 네트워크 및 장치에 대해서만 알리세요."
   },
-  "homepage.features.redirect.title": {
+  "home.features.redirect.title": {
     "message": "DNS 경로 보호"
   },
-  "homepage.features.redirect.description": {
+  "home.features.redirect.description": {
     "message": "선택한 인터페이스에서 일반 DNS를 선택적으로 리디렉션하거나 일반적인 암호화 DNS 및 터널 우회를 차단합니다."
   },
-  "homepage.features.catalogs.title": {
+  "home.features.catalogs.title": {
     "message": "검색한 뒤 결정"
   },
-  "homepage.features.catalogs.description": {
+  "home.features.catalogs.description": {
     "message": "목록을 포함하거나 추천하지 않고 필요할 때 지원되는 카탈로그를 검색하세요."
   },
-  "homepage.features.ipCountry.title": {
+  "home.features.ipCountry.title": {
     "message": "주소와 국가 차단"
   },
-  "homepage.features.ipCountry.description": {
+  "home.features.ipCountry.description": {
     "message": "격리된 `sinkhole/ip` 앵커를 통해 IP 목록과 GeoLite2 국가 정책을 적용하세요."
+  },
+  "home.blogPreview.heading": {
+    "message": "블로그 소식"
+  },
+  "home.blogPreview.description": {
+    "message": "Sinkhole for pfSense의 출시 소식, 주요 이정표, 새로운 기능을 소개합니다."
+  },
+  "home.showcase.heading": {
+    "message": "pfSense WebGUI 둘러보기"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Sinkhole 페이지"
+  },
+  "home.showcase.scopes.label": {
+    "message": "범위"
+  },
+  "home.showcase.scopes.heading": {
+    "message": "네트워크와 장치마다 다른 규칙"
+  },
+  "home.showcase.scopes.description": {
+    "message": "네트워크나 단일 장치에 고유한 목록과 허용 도메인을 지정하세요. 모든 DNS 쿼리는 일치하는 가장 구체적인 범위를 따릅니다."
+  },
+  "home.showcase.scopes.link": {
+    "message": "범위 설정하기"
+  },
+  "home.showcase.scopes.alt": {
+    "message": "LAN 네트워크 범위와 장치 범위 세 개가 있는 Sinkhole 범위 페이지"
+  },
+  "home.showcase.services.label": {
+    "message": "서비스"
+  },
+  "home.showcase.services.heading": {
+    "message": "클릭 한 번으로 서비스 전체 차단"
+  },
+  "home.showcase.services.description": {
+    "message": "캐시된 서비스 레지스트리에서 게임, 소셜 미디어, 스트리밍 및 기타 서비스를 골라 모두에게 또는 하나의 네트워크나 장치에 적용하세요. 허용 도메인이 여전히 우선합니다."
+  },
+  "home.showcase.services.link": {
+    "message": "서비스 차단하기"
+  },
+  "home.showcase.services.alt": {
+    "message": "장치 범위의 게임 서비스를 보여 주는 Sinkhole 차단된 서비스 페이지"
+  },
+  "home.showcase.status.label": {
+    "message": "상태"
+  },
+  "home.showcase.status.heading": {
+    "message": "무엇이 로드되었고 무엇이 오래되었는지 확인"
+  },
+  "home.showcase.status.description": {
+    "message": "상태 페이지는 모든 목록의 항목 수와 마지막 업데이트, 그리고 Sinkhole이 지금 적용하고 있는 범위, 네트워크, 장치를 보여 줍니다."
+  },
+  "home.showcase.status.link": {
+    "message": "상태 페이지 알아보기"
+  },
+  "home.showcase.status.alt": {
+    "message": "목록, 범위, 네트워크, 장치 패널이 있는 Sinkhole 상태 페이지"
+  },
+  "home.showcase.scopes.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: 범위"
+  },
+  "home.showcase.services.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: 서비스"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: 상태"
   }
 }

@@ -1,0 +1,55 @@
+---
+id: resolver-settings
+title: Resolver 設定
+description: 在 Sinkhole 的 General 分頁中為 DNS Resolver 設定重新綁定例外和過期回應時間，無需手寫自訂選項。
+keywords:
+  - sinkhole for pfsense
+  - dns 重新綁定
+  - private-domain
+  - 過期回應
+  - 自訂選項
+tags:
+  - configure
+  - resolver
+  - dns
+---
+
+使用 **Firewall → Sinkhole → General** 上的 **Resolver** 區段，設定 pfSense 本身頁面未提供的 DNS Resolver 選項。
+
+## 為什麼使用 Resolver 設定？ \{#why-use-resolver-settings}
+
+1. 讓 Plex 等服務在 pfSense 的 DNS 重新綁定保護下正常運作，無需手寫自訂選項。
+2. 在上游伺服器緩慢或停擺時，利用快取的回應維持 DNS 快速回應。
+3. 將這些設定列放在 Sinkhole 已經管理的同一個受管理區塊中，因此 DNS Resolver 的 **Custom options** 方塊可以保持空白。
+
+## 重新綁定例外 \{#rebind-exceptions}
+
+pfSense 的 DNS 重新綁定保護會捨棄指向私人地址的公開回應。Plex（`plex.direct`）等服務會刻意以私人地址回應，因此需要為其名稱設定例外。
+
+每行輸入一個網域。每個項目都涵蓋該網域及其所有子網域。除非停用了 **System → Advanced → Admin Access → DNS Rebind Check**，否則此保護處於開啟狀態；停用該檢查後，這些例外不會產生任何作用。
+
+## 過期回應 \{#expired-answers}
+
+pfSense 的 **Serve Expired** 設定位於 **Services → DNS Resolver → Advanced Settings**，它允許 Resolver 在重新整理過期快取項目的同時以這些項目回應。另有兩個相關設定只能在這裡設定：
+
+| 字段                      | Unbound 設定                     | 說明                        |
+|-------------------------|--------------------------------|---------------------------|
+| Expired Answer Lifetime | `serve-expired-ttl`            | 過期回應仍可提供的秒數。`0` 表示不限制。    |
+| Expired Answer Wait     | `serve-expired-client-timeout` | 先等待新回應的毫秒數。`0` 表示立即從快取回應。 |
+
+兩者僅在 **Serve Expired** 開啟時生效，General 分頁會顯示它是否已開啟。欄位留空則保留 Resolver 的預設值。同一個 Advanced Settings 頁面還提供 **Prefetch Support** 和 **Prefetch DNS Key Support**。
+
+## 設定何時生效 \{#when-the-settings-apply}
+
+這些設定在 Sinkhole 已啟用且其 DNS Resolver 整合處於作用中狀態時生效。Sinkhole 會將它們寫入 DNS Resolver **Custom options** 結尾的受管理區塊：
+
+```text
+# Sinkhole: begin (managed by the Sinkhole package)
+server:
+private-domain: "plex.direct"
+serve-expired-ttl: 86400
+serve-expired-client-timeout: 0
+# Sinkhole: end
+```
+
+停用 Sinkhole 或移除該套件會刪除該區塊及其中的每一列。Sinkhole 絕不會變更管理員在 **Custom options** 中自行撰寫的列。

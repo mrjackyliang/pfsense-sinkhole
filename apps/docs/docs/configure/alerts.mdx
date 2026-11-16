@@ -14,6 +14,8 @@ tags:
   - notifications
 ---
 
+import alertRuleEditor from './_assets_/alerts-1.png';
+
 Send notifications only for blocked answers whose list and client match an enabled alert rule.
 
 ## Why Use Alert Rules? \{#why-use-alert-rules}
@@ -41,6 +43,8 @@ Open **Firewall → Sinkhole → Alerts**, select **Add** below the alert-rule t
 | Enabled              | Lets blocked answers match this rule.                                    |
 
 The chosen-list field is hidden while **Any block list** is selected, and the network and device fields are hidden while **Everyone** is selected. Saving returns to Alerts; select the pencil or double-click a row to edit it.
+
+<img src={alertRuleEditor} alt="Edit Alert Rule page matching one chosen list for one chosen demo device, with a 60-minute repeat window and both delivery channels on" width={1024} height={1011} style={{maxWidth: '100%', height: 'auto'}} />
 
 A block matches only when one of the lists that blocked the name is selected by the rule and the client is selected by the same rule. The default repeat window is 60 minutes, and the accepted range is 1 through 1,440 minutes.
 

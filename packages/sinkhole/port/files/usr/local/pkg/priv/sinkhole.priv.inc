@@ -28,6 +28,14 @@ $priv_list['page-firewall-sinkhole-lists-edit'] = [
     ],
 ];
 
+$priv_list['page-firewall-sinkhole-safesearch'] = [
+    'name' => gettext('WebCfg - Firewall: Sinkhole: SafeSearch'),
+    'descr' => gettext('Allow access to Sinkhole SafeSearch configuration.'),
+    'match' => [
+        'sinkhole-safesearch.php*',
+    ],
+];
+
 $priv_list['page-firewall-sinkhole-services'] = [
     'name' => gettext('WebCfg - Firewall: Sinkhole: Services'),
     'descr' => gettext('Allow access to Sinkhole blocked-service configuration.'),

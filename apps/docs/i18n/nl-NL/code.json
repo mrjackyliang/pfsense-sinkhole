@@ -1,74 +1,143 @@
 {
-  "homepage.hero.eyebrow": {
-    "message": "Native pfSense-pakket"
-  },
-  "homepage.hero.heading": {
-    "message": "Bepaal wat elk netwerk en apparaat kan bereiken."
-  },
-  "homepage.hero.tagline": {
+  "home.meta.description": {
     "message": "Pas opgeslagen DNS-lijsten toe op het hele netwerk, één VLAN of één apparaat, met gerichte waarschuwingen en zonder tweede server."
   },
-  "homepage.hero.ctaLabel": {
-    "message": "Sinkhole installeren"
+  "home.meta.title": {
+    "message": "Sinkhole for pfSense - Afgebakende DNS-, IP- en landblokkering"
   },
-  "homepage.hero.secondaryCtaLabel": {
-    "message": "Scopes plannen"
+  "home.hero.eyebrow": {
+    "message": "Native pfSense-pakket"
   },
-  "homepage.stats.heading": {
-    "message": "Eén firewall, beleid op elk bruikbaar niveau"
+  "home.hero.heading": {
+    "message": "Bepaal wat elk netwerk en apparaat kan bereiken."
   },
-  "homepage.stats.description": {
-    "message": "Sinkhole houdt beleid lokaal en maakt de operationele grenzen duidelijk."
+  "home.hero.tagline": {
+    "message": "Pas opgeslagen DNS-lijsten toe op het hele netwerk, één VLAN of één apparaat, met gerichte waarschuwingen en zonder tweede server."
   },
-  "homepage.stats.policyScopes": {
-    "message": "Beleidsscopes"
+  "home.hero.primaryAction": {
+    "message": "Aan de slag"
   },
-  "homepage.stats.dnsListFormats": {
-    "message": "DNS-lijstformaten"
+  "home.hero.secondaryAction": {
+    "message": "Meer informatie"
   },
-  "homepage.stats.catalogCache": {
-    "message": "Cataloguscache"
+  "home.preview.ariaLabel": {
+    "message": "Voorbeeld van een DNS-beslissing voor een apparaat op een VLAN"
   },
-  "homepage.stats.unboundSlot": {
-    "message": "Unbound-modulepositie"
+  "home.preview.title": {
+    "message": "DNS-beslissing"
   },
-  "homepage.features.heading": {
-    "message": "Beheer dat op de firewall blijft"
+  "home.preview.blocked": {
+    "message": "Geblokkeerd"
   },
-  "homepage.features.scopes.title": {
+  "home.preview.network": {
+    "message": "Netwerk"
+  },
+  "home.preview.deviceLists": {
+    "message": "Apparaatlijsten"
+  },
+  "home.preview.noMatch": {
+    "message": "Geen overeenkomst"
+  },
+  "home.preview.networkLists": {
+    "message": "Netwerklijsten"
+  },
+  "home.preview.globalLists": {
+    "message": "Globale lijsten"
+  },
+  "home.preview.notReached": {
+    "message": "Niet bereikt"
+  },
+  "home.preview.result": {
+    "message": "beantwoord vanuit opgeslagen lijsten"
+  },
+  "home.features.scopes.title": {
     "message": "Elke beslissing afbakenen"
   },
-  "homepage.features.scopes.description": {
+  "home.features.scopes.description": {
     "message": "Pas lijsten en toegestane domeinen globaal, per interface of VLAN en per apparaat toe."
   },
-  "homepage.features.savedLists.title": {
+  "home.features.savedLists.title": {
     "message": "Laatste geldige kopieën bewaren"
   },
-  "homepage.features.savedLists.description": {
+  "home.features.savedLists.description": {
     "message": "Beantwoord DNS vanuit lokale lijsten ondanks herstarts, herladingen en mislukte downloads."
   },
-  "homepage.features.alerts.title": {
+  "home.features.alerts.title": {
     "message": "Doelgericht waarschuwen"
   },
-  "homepage.features.alerts.description": {
+  "home.features.alerts.description": {
     "message": "Meld alleen voor de lijsten, netwerken en apparaten die in elke regel zijn gekozen."
   },
-  "homepage.features.redirect.title": {
+  "home.features.redirect.title": {
     "message": "DNS-paden beveiligen"
   },
-  "homepage.features.redirect.description": {
+  "home.features.redirect.description": {
     "message": "Leid desgewenst gewone DNS om of blokkeer veelgebruikte omzeilingen via versleutelde DNS en tunnels op geselecteerde interfaces."
   },
-  "homepage.features.catalogs.title": {
+  "home.features.catalogs.title": {
     "message": "Zoeken en dan beslissen"
   },
-  "homepage.features.catalogs.description": {
+  "home.features.catalogs.description": {
     "message": "Doorzoek ondersteunde catalogi op aanvraag zonder een lijst mee te leveren of aan te bevelen."
   },
-  "homepage.features.ipCountry.title": {
+  "home.features.ipCountry.title": {
     "message": "Adressen en landen blokkeren"
   },
-  "homepage.features.ipCountry.description": {
-    "message": "Pas IP-lijsten en GeoLite2-landbeleid toe via het geïsoleerde anker `sinkhole/ip`."
+  "home.features.ipCountry.description": {
+    "message": "Pas IP-lijsten en GeoLite2-landbeleid toe via het geïsoleerde anker sinkhole/ip."
+  },
+  "home.blogPreview.heading": {
+    "message": "Uit de blog"
+  },
+  "home.blogPreview.description": {
+    "message": "Lanceringen, mijlpalen en nieuws over Sinkhole for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Een kijkje in de pfSense WebGUI"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Sinkhole-pagina's"
+  },
+  "home.showcase.scopes.heading": {
+    "message": "Andere regels voor elk netwerk en apparaat"
+  },
+  "home.showcase.scopes.description": {
+    "message": "Geef een netwerk of één apparaat eigen lijsten en toegestane domeinen. Elke DNS-query volgt de meest specifieke scope die erop van toepassing is."
+  },
+  "home.showcase.scopes.link": {
+    "message": "Scopes instellen"
+  },
+  "home.showcase.scopes.alt": {
+    "message": "Sinkhole-pagina Scopes met een netwerkscope voor LAN en drie apparaatscopes"
+  },
+  "home.showcase.services.label": {
+    "message": "Diensten"
+  },
+  "home.showcase.services.heading": {
+    "message": "Blokkeer een hele dienst met één klik"
+  },
+  "home.showcase.services.description": {
+    "message": "Kies games, sociale media, streaming en andere diensten uit een gecachet dienstenregister, voor iedereen of voor één netwerk of apparaat. Toegestane domeinen gaan nog steeds voor."
+  },
+  "home.showcase.services.link": {
+    "message": "Diensten blokkeren"
+  },
+  "home.showcase.services.alt": {
+    "message": "Sinkhole-pagina Geblokkeerde diensten met gamingdiensten voor een apparaatscope"
+  },
+  "home.showcase.status.heading": {
+    "message": "Weet wat er geladen is en wat verouderd is"
+  },
+  "home.showcase.status.description": {
+    "message": "Status toont elke lijst met het aantal items en de laatste update, plus de scopes, netwerken en apparaten die Sinkhole nu toepast."
+  },
+  "home.showcase.status.link": {
+    "message": "Over de pagina Status"
+  },
+  "home.showcase.status.alt": {
+    "message": "Sinkhole-pagina Status met de panelen voor lijsten, scopes, netwerken en apparaten"
+  },
+  "home.showcase.services.title": {
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: Diensten"
   }
 }

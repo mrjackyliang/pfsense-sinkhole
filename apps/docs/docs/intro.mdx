@@ -21,35 +21,37 @@ Block unwanted websites with separate policies for the whole network, one VLAN, 
 
 ## What Sinkhole Does \{#what-sinkhole-does}
 
-Sinkhole for pfSense gives parents and employers control over which <Terminology title="names or addresses selected for blocking" to="/docs/reference/terminology#block-list">block lists</Terminology> apply to each part of a network. It keeps the last good copies on the firewall, so DNS can answer immediately after a restart or reload while newer copies download in the background.
+Sinkhole for pfSense gives parents and employers control over which <Terminology title="Names or addresses to block, pulled from a URL you add" to="/docs/reference/terminology#lists-and-scopes">block lists</Terminology> apply to each part of a network. It keeps the last good copies on the firewall, so DNS can answer immediately after a restart or reload while newer copies download in the background.
 
 Blocked names answer with `0.0.0.0` or `::`. A CNAME chain that reaches a blocked name is blocked too, while a name allowed at the deciding level stays allowed.
 
 ## Why Use Sinkhole? \{#why-use-sinkhole}
 
-1. Applies policies at global, network, and device <Terminology title="where a block list applies" to="/docs/reference/terminology#scope">scopes</Terminology> so kids, guests, employees, and individual devices can receive different lists.
-2. Uses <Terminology title="last good block-list copy kept on the firewall" to="/docs/reference/terminology#saved-list">saved lists</Terminology> so DNS never waits for a download or loses a working list after a failed update.
-3. Sends an <Terminology title="list and client match that sends a notification" to="/docs/reference/terminology#alert-rule">alert rule</Terminology> only for the lists and clients you choose, through pfSense's own notification system.
-4. Provides optional <Terminology title="controls that keep selected clients on inspected DNS paths" to="/docs/reference/terminology#bypass-protection">bypass protection</Terminology> for plain DNS, encrypted-DNS discovery and providers, Tor relays, and VPN providers or ports.
+1. Applies policies at global, network, and device <Terminology title="Who a list applies to: whole network, a VLAN, or one device" to="/docs/reference/terminology#lists-and-scopes">scopes</Terminology> so kids, guests, employees, and individual devices can receive different lists.
+2. Uses <Terminology title="The last good copy, so DNS never waits on a download" to="/docs/reference/terminology#lists-and-scopes">saved lists</Terminology> so DNS never waits for a download or loses a working list after a failed update.
+3. Sends an <Terminology title="Get notified when chosen lists block chosen clients" to="/docs/reference/terminology#alerts">alert rule</Terminology> only for the lists and clients you choose, through pfSense's own notification system.
+4. Provides optional <Terminology title="Stops devices from dodging Sinkhole with their own DNS" to="/docs/reference/terminology#bypass-protection">bypass protection</Terminology> for plain DNS, encrypted-DNS discovery and providers, Tor relays, and VPN providers or ports.
 5. Adds separate IP and country blocking when DNS filtering isn't enough, without requiring a second host or cloud service.
+6. Locks search engines into <Terminology title="An engine's safe mode, forced for every device in a scope" to="/docs/reference/terminology#lists-and-scopes">SafeSearch</Terminology> for the scopes you choose, so filtered results don't depend on each device's settings.
 
 ## How DNS Integration Works \{#how-dns-integration-works}
 
-Sinkhole runs as a Python module inside pfSense's Unbound-based <Terminology title="pfSense Unbound DNS service" to="/docs/reference/terminology#dns-resolver">DNS Resolver</Terminology>. The module loads only local, compiled files when Unbound starts and watches for newer local generations without making a DNS query wait.
+Sinkhole runs as a Python module inside pfSense's Unbound-based <Terminology title="pfSense's built-in Unbound DNS, where Sinkhole runs" to="/docs/reference/terminology#dns-basics">DNS Resolver</Terminology>. The module loads only local, compiled files when Unbound starts and watches for newer local generations without making a DNS query wait.
 
 The DNS Resolver provides one Python script slot. Sinkhole takes it only when the slot is empty or already belongs to Sinkhole, and it refuses to replace another owner such as pfBlockerNG's DNSBL module.
 
 :::warning
 
-Sinkhole and pfBlockerNG DNSBL can't filter DNS at the same time because both need the Resolver's single Python script slot.
+Sinkhole and pfBlockerNG can't filter DNS at the same time. Sinkhole stays inactive while pfBlockerNG is installed and enabled, even when its DNSBL runs in Unbound mode without the Python slot.
 
 :::
 
 ## What Stays Under Your Control \{#what-stays-under-your-control}
 
-- **Lists** — Add sources you trust by URL or find them with the neutral <Terminology title="on-demand catalog search in the WebGUI" to="/docs/reference/terminology#popular-list-search">popular-list search</Terminology>. Sinkhole publishes and recommends no list.
+- **Lists** — Add sources you trust by URL or find them with the neutral <Terminology title="Find well-known block lists without hunting for URLs" to="/docs/reference/terminology#lists-and-scopes">popular-list search</Terminology>. Sinkhole publishes and recommends no list.
 - **Scopes** — Choose global lists, lists for one pfSense interface or VLAN, and lists for a device identified by IP address, DHCP static mapping, or MAC address.
 - **Allowed domains** — Let a domain and its subdomains through at the global, network, or device level without dropping a complete list.
+- **SafeSearch** — Choose which search engines are locked into their safe modes for each scope, and whether YouTube is Moderate or Strict.
 - **Alerts** — Choose the list and client combinations that create local WebGUI notices or use pfSense's configured remote notification services.
 - **Bypass** — Keep every control off or select client-facing interfaces and explicitly enable plain-DNS redirect, encrypted-DNS signals, provider lists, or tunnel protections.
 - **IP blocking** — Keep it off or select IP lists, countries, interfaces, directions, and allowlisted addresses.
@@ -62,7 +64,7 @@ Block events and notices reveal what clients tried to reach. That information st
 
 ## Languages \{#languages}
 
-The WebGUI follows the language selected in pfSense and falls back to English where a translation is not yet available. Additional WebGUI translations are in progress and remain on that fallback until each catalog is reviewed.
+The WebGUI follows the language selected in pfSense and ships in English and the other 17 pfSense locales.
 
 The documentation site provides English and the other 17 pfSense locales. Translated pages preserve the English anchors so links reach the same section in every language.
 

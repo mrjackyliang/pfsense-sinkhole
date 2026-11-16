@@ -24,7 +24,7 @@ Ouvrez **Firewall → Sinkhole → Bypass** et sélectionnez les interfaces dans
 
 La correspondance réseau et appareil utilise les sous-réseaux actuels de ces interfaces, comme les portées Sinkhole ordinaires. Un client hors des sous-réseaux sélectionnés ne reçoit aucune réponse DNS Bypass.
 
-<img src={bypassProtection} alt="Onglet Bypass avec le LAN sélectionné, la redirection du DNS en clair désactivée, les protections du DNS chiffré et des tunnels activées, Discovery réglé sur Answer with no records et trois Bypass Lists de démonstration" width={1024} height={1326} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Onglet Bypass avec le LAN sélectionné, la redirection du DNS en clair désactivée, les protections du DNS chiffré et des tunnels activées, Discovery réglé sur Answer with no records et trois Bypass Lists de démonstration" width={1024} height={1490} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Rediriger le DNS en clair \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-La désactivation de Discovery ou la suppression de Sinkhole retire le bloc. Sinkhole laisse inchangée toute autre ligne des **Custom options**. Les clients hors des interfaces sélectionnées, y compris le pare-feu lui-même, continuent de recevoir `NXDOMAIN` pour `_dns.resolver.arpa`.
+La désactivation de Discovery ou la suppression de Sinkhole retire la ligne de zone. Le même bloc contient aussi les éventuels [réglages du Resolver](/docs/configure/resolver-settings), et Sinkhole laisse inchangée toute autre ligne des **Custom options**. Les clients hors des interfaces sélectionnées, y compris le pare-feu lui-même, continuent de recevoir `NXDOMAIN` pour `_dns.resolver.arpa`.
 
 ## Se protéger contre les tunnels \{#protect-against-tunnels}
 

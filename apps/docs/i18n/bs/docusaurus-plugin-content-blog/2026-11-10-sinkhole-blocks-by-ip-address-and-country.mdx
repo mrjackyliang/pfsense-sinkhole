@@ -1,0 +1,47 @@
+---
+title: "Sinkhole blokira po IP adresi i državi, ne samo po nazivu"
+description: Sinkhole 1.0 dodaje IP liste i blokiranje država pomoću MaxMind GeoLite2 podataka u vlastitom sidru zaštitnog zida, za saobraćaj koji nikada ne traži naziv od DNS-a.
+slug: sinkhole-blocks-by-ip-address-and-country
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - blokiranje ip adresa
+  - blokiranje država
+  - geolite2
+  - pf sidro
+tags:
+  - release
+  - ip-blocking
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0, objavljen 10. novembra 2026, blokira saobraćaj po IP adresi i po državi, a ne samo po nazivu, u istom paketu i istom WebGUI-ju kao i njegove DNS liste za blokiranje.
+
+{/* truncate */}
+
+## Zašto je to važno \{#why-it-matters}
+
+DNS blokiranje zaustavlja upit. Saobraćaj koji ide direktno na adresu, poput skenera koji gađaju WAN ili aplikacije s fiksno upisanim serverima, nikada ne pita DNS i nikada ne nailazi na listu za blokiranje.
+
+Sinkhole blokiranje IP adresa i država smješta na vlastitu karticu IP, odvojeno od DNS pravila, pa jedan paket pokriva nazive, adrese i države.
+
+## Šta je uključeno \{#whats-included}
+
+- **IP liste** — dodajte liste putem URL-a ili ih pronađite u IP odjeljcima kataloga feedova pfBlockerNG-a. Svaka lista može sadržavati IPv4, IPv6 ili oboje.
+- **Blokiranje država** — odaberite države po dvoslovnom kodu iz MaxMind GeoLite2 podataka, pod vlastitim MaxMind računom i licencnim ključem. Sinkhole nikada ne isporučuje ključ.
+- **Interfejsi i smjerovi** — blokirajte izvore s liste koji stižu na WAN, odredišta s liste iz klijentskih mreža ili oboje, po interfejsu.
+- **Lista dozvoljenih** — adrese, mreže i aliasi na listi IP Allowlist uklanjaju se iz blokiranog skupa prije njegovog učitavanja.
+- **Zaštićene adrese** — vlastite adrese zaštitnog zida, pristupnici, DNS serveri i podmreže odabranih interfejsa automatski se uklanjaju, pa vas lista ne može zaključati vani.
+
+Pravila se nalaze u sidru zaštitnog zida Sinkholea, `sinkhole/ip`, koje ostaje na mjestu kroz ponovna učitavanja pfSense filtera. Ažuriranja lista zamjenjuju samo njegove tabele, a neuspjelo preuzimanje zadržava posljednju ispravnu kopiju.
+
+## Isključeno dok ga ne uključite \{#off-until-you-turn-it-on}
+
+Blokiranje IP adresa i država podrazumijevano je isključeno i radi samostalno, bez DNS prekidača. Kartica Status prikazuje veličine tabela, posljednje ažuriranje, vrijeme ažuriranja GeoLite2 podataka te da li je sidro učitano i ažurno.
+
+## Započnite \{#get-started}
+
+Otvorite **Firewall → Sinkhole → IP**, odaberite interfejse i smjerove, a zatim dodajte liste ili države. Uputstvo [Blokiranje IP adresa i država](/docs/configure/ip-and-country-blocking) opisuje svaku postavku.
+
+Sinkhole for pfSense donosi DNS, IP i blokiranje država po opsezima u pfSense, sa svakom listom sačuvanom na zaštitnom zidu.

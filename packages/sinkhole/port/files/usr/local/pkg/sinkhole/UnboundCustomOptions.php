@@ -43,9 +43,33 @@ final class UnboundCustomOptions
         string $customOptions,
         bool $wanted,
     ): string {
+        return self::reconcileManagedBlock(
+            $customOptions,
+            $wanted ? [self::DISCOVERY_ZONE_LINE] : [],
+        );
+    }
+
+    /**
+     * Unbound Custom Options - Reconcile Managed Block.
+     *
+     * Removes every complete or repairable managed block, then appends one
+     * canonical ``server:`` block holding the given directives, or none when the
+     * list is empty.
+     *
+     * @param string $customOptions - Decoded DNS Resolver custom options.
+     * @param list<string> $directives - Managed ``server:`` directives in order.
+     *
+     * @return string
+     *
+     * @since 1.1.0
+     */
+    public static function reconcileManagedBlock(
+        string $customOptions,
+        array $directives,
+    ): string {
         $customOptions = self::removeManagedBlocks($customOptions);
 
-        if ($wanted === false) {
+        if ($directives === []) {
             return $customOptions;
         }
 
@@ -53,7 +77,7 @@ final class UnboundCustomOptions
         $block = implode($lineEnding, [
             self::BEGIN_MARKER,
             self::SERVER_LINE,
-            self::DISCOVERY_ZONE_LINE,
+            ...$directives,
             self::END_MARKER,
         ]);
 
@@ -133,7 +157,7 @@ final class UnboundCustomOptions
                 for ($index = $beginIndex + 1; $index < count($lines); $index++) {
                     if (
                         $lines[$index]['content'] !== self::SERVER_LINE
-                        && $lines[$index]['content'] !== self::DISCOVERY_ZONE_LINE
+                        && self::isManagedDirective($lines[$index]['content']) === false
                     ) {
                         break;
                     }
@@ -165,6 +189,26 @@ final class UnboundCustomOptions
             $customOptions = substr($customOptions, 0, $start)
                 . substr($customOptions, $end);
         }
+    }
+
+    /**
+     * Unbound Custom Options - Is Managed Directive.
+     *
+     * Recognizes only the exact directive shapes Sinkhole writes, so repair of a
+     * block without its end marker never removes an administrator's own lines.
+     *
+     * @param string $line - One line without its ending.
+     *
+     * @return bool
+     *
+     * @since 1.1.0
+     * @private
+     */
+    private static function isManagedDirective(string $line): bool
+    {
+        return $line === self::DISCOVERY_ZONE_LINE
+            || preg_match('/^private-domain: "[a-z0-9._-]{1,253}"$/D', $line) === 1
+            || preg_match('/^serve-expired-(?:ttl|client-timeout): [0-9]{1,9}$/D', $line) === 1;
     }
 
     /**

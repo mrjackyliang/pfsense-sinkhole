@@ -14,6 +14,8 @@ tags:
   - notifications
 ---
 
+import alertRuleEditor from './_assets_/alerts-1.png';
+
 Sende Benachrichtigungen nur für blockierte Antworten, deren Liste und Client mit einer aktivierten Alarmregel übereinstimmen.
 
 ## Warum Alarmregeln verwenden? \{#why-use-alert-rules}
@@ -43,6 +45,8 @@ Sende Benachrichtigungen nur für blockierte Antworten, deren Liste und Client m
 Das Feld für ausgewählte Listen ist ausgeblendet, solange **Any block list** ausgewählt ist, und die Netzwerk- und Gerätefelder sind ausgeblendet, solange **Everyone** ausgewählt ist. Nach dem Speichern kehrst du zu Alerts zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile.
 
 Eine Blockierung stimmt nur überein, wenn eine der Listen, die den Namen blockiert haben, durch die Regel ausgewählt ist und derselbe Client von der Regel ausgewählt ist. Das standardmäßige Wiederholungsfenster beträgt 60 Minuten; zulässig sind 1 bis 1.440 Minuten.
+
+<img src={alertRuleEditor} alt="Seite Edit Alert Rule, die eine gewählte Liste für ein gewähltes Demo-Gerät abgleicht, mit 60-minütigem Wiederholungsfenster und beiden aktiven Zustellungskanälen" width={1024} height={994} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Zustellungskanäle \{#delivery-channels}
 

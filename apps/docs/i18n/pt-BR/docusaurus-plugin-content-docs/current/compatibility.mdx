@@ -42,9 +42,10 @@ A aba **About** marca a versão correspondente como **This firewall**. Ela adici
 
 - O DNS Resolver do pfSense, baseado no Unbound, precisa estar ativado.
 - O único espaço para script Python do Resolver precisa estar vazio ou já pertencer ao Sinkhole.
+- O pfBlockerNG precisa ser removido ou ter a opção principal **Enable** desativada.
 - O Sinkhole usa a posição de módulo `pre_validator` e informa um estado inativo se o modo Python, o proprietário do espaço, a posição ou os arquivos de execução não corresponderem.
 
-O DNSBL do pfBlockerNG usa o mesmo espaço para script Python que o Sinkhole. O Sinkhole se recusa a ocupá-lo enquanto `pfb_unbound` ou qualquer outro script for o proprietário.
+No modo Python, o DNSBL do pfBlockerNG usa o mesmo espaço para script Python que o Sinkhole. O Sinkhole se recusa a ocupá-lo enquanto `pfb_unbound` ou qualquer outro script for o proprietário. No modo Unbound, o DNSBL deixa o espaço vazio, por isso o Sinkhole também permanece inativo sempre que o pfBlockerNG estiver instalado com **Enable** ativado. As configurações que o pfBlockerNG mantém após ser removido não contam.
 
 ## Requisitos de rede \{#network-requirements}
 
@@ -67,7 +68,7 @@ O bloqueio por país exige o ID de conta MaxMind e a chave de licença GeoLite2 
 
 ## Idiomas \{#languages}
 
-O pacote seleciona os textos da WebGUI, da linha de comando, de validação, de Status e de notificações conforme o idioma do pfSense. O inglês é o catálogo de origem, e as traduções ausentes atualmente recorrem ao inglês.
+O pacote seleciona os textos da WebGUI, da linha de comando, de validação, de Status e de notificações conforme o idioma do pfSense. O inglês é o catálogo de origem, e o pacote inclui catálogos completos para os outros 17 idiomas do pfSense.
 
-Traduções adicionais do pacote estão em andamento, enquanto a documentação está disponível nos 18 idiomas do pfSense. Nomes de marcas e produtos como Sinkhole, pfSense, FreeBSD e MaxMind permanecem inalterados.
+A WebGUI e a documentação estão disponíveis nos 18 idiomas do pfSense. Nomes de marcas e produtos como Sinkhole, pfSense, FreeBSD e MaxMind permanecem inalterados.
 

@@ -14,6 +14,8 @@ tags:
   - webgui
 ---
 
+import generalTab from './_assets_/settings-1.png';
+
 Consulte la finalidad y el comportamiento predeterminado de cada área de configuración de Sinkhole en **Firewall → Sinkhole**.
 
 ## General \{#general}
@@ -25,6 +27,18 @@ Consulte la finalidad y el comportamiento predeterminado de cada área de config
 | Keep Settings    | On             | Conserva la configuración y los datos duraderos guardados al eliminar el paquete.                  |
 
 Las horas programadas usan componentes aleatorios estables. Hourly se ejecuta en un minuto estable, Every 6 hours usa el mismo minuto cada seis horas, Daily se ejecuta a las `00:<minute>` y Weekly los domingos a las `00:<minute>`.
+
+<img src={generalTab} alt="Pestaña General con Sinkhole activado, actualizaciones diarias de listas, Keep Settings activado, una excepción de revinculación para plex.direct, valores de respuestas caducadas con Serve Expired activado y comprobaciones semanales de actualizaciones del paquete" width={1024} height={1106} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Resolver \{#resolver}
+
+| Campo                   | Predeterminado | Descripción                                                                                                      |
+|-------------------------|----------------|------------------------------------------------------------------------------------------------------------------|
+| Rebind Exceptions       | Empty          | Dominios que pueden responder con direcciones privadas pese a la protección contra DNS rebinding, uno por línea. |
+| Expired Answer Lifetime | Empty          | Segundos durante los que aún puede servirse una respuesta en caché caducada; `0` significa sin límite.           |
+| Expired Answer Wait     | Empty          | Milisegundos de espera para obtener una respuesta nueva antes de servir una caducada; `0` responde de inmediato. |
+
+Un campo vacío no escribe nada y conserva el valor predeterminado del Resolver. [Ajustes del Resolver](/docs/configure/resolver-settings) explica cuándo se aplican los valores.
 
 ## Package Updates \{#package-updates}
 
@@ -52,6 +66,10 @@ Las fuentes de bypass se excluyen de este catálogo.
 ## Servicios \{#services}
 
 Las selecciones de servicios están vacías de forma predeterminada para cada ámbito. Un servicio del registro cubierto por una protección de Bypass específica se oculta de Servicios y se elimina de las selecciones guardadas; Private Relay se configura solo en la pestaña Bypass.
+
+## SafeSearch \{#safesearch}
+
+Las selecciones de SafeSearch están vacías de forma predeterminada para cada ámbito. Cada ámbito puede fijar Google, YouTube (Moderate o Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex y Pixabay, o bloquear Qwant. [SafeSearch](/docs/configure/safesearch) enumera los nombres y los hosts seguros.
 
 ## Network Scopes \{#network-scopes}
 

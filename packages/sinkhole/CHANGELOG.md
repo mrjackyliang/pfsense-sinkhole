@@ -1,5 +1,17 @@
 # pfsense-pkg-sinkhole
 
+## 1.1.0 - 2026-11-16
+
+### UPDATED
+- Sinkhole stays inactive while pfBlockerNG is installed and enabled, including when its DNSBL runs in Unbound mode.
+
+### FIXED
+- Korean on pfSense Plus (ko_KR) now shows Sinkhole's pages in Korean instead of English.
+
+### ADDED
+- A Resolver section on the General tab sets rebind exceptions (such as plex.direct) and the expired-answer lifetime and wait, written into Sinkhole's managed Custom options block.
+- A SafeSearch tab locks Google (every country domain), YouTube (Moderate or Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex and Pixabay into their safe modes per scope, and can block Qwant.
+
 ## 1.0.2 - 2026-11-11
 
 ### FIXED

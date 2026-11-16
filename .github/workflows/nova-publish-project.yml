@@ -64,7 +64,7 @@ jobs:
       - name: "Check project"
         timeout-minutes: 15
         run: |
-          npm run check -- --workspace pfsense-sinkhole-docs --workspace pfsense-pkg-sinkhole
+          npm run check -- --workspace pfsense-sinkhole-docs --workspace pfsense-pkg-sinkhole --exclude-workspace ./
         working-directory: "${{ env.ROOT_DIR }}"
 
       - name: "Build project"

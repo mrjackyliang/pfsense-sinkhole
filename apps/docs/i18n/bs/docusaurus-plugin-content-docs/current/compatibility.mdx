@@ -42,9 +42,10 @@ Kartica **About** označava odgovarajuće izdanje kao **This firewall**. Za zaš
 
 - DNS Resolver u pfSenseu, zasnovan na Unboundu, mora biti omogućen.
 - Jedino mjesto za Python skriptu u Resolveru mora biti prazno ili već pripadati Sinkholeu.
+- pfBlockerNG mora biti uklonjen ili mu glavna opcija **Enable** mora biti isključena.
 - Sinkhole koristi položaj modula `pre_validator` i prijavljuje neaktivno stanje ako Python način rada, vlasnik mjesta, položaj ili izvršne datoteke ne odgovaraju.
 
-pfBlockerNG DNSBL koristi isto mjesto za Python skriptu kao Sinkhole. Sinkhole odbija zauzeti to mjesto dok ga posjeduje `pfb_unbound` ili bilo koja druga skripta.
+pfBlockerNG DNSBL u Python načinu rada koristi isto mjesto za Python skriptu kao Sinkhole. Sinkhole odbija zauzeti to mjesto dok ga posjeduje `pfb_unbound` ili bilo koja druga skripta. U Unbound načinu rada DNSBL ostavlja mjesto prazno, pa Sinkhole također ostaje neaktivan kad god je pfBlockerNG instaliran s uključenom opcijom **Enable**. Postavke koje pfBlockerNG zadrži nakon uklanjanja se ne računaju.
 
 ## Mrežni zahtjevi \{#network-requirements}
 
@@ -67,6 +68,6 @@ Blokiranje država zahtijeva vlastiti ID MaxMind računa i GeoLite2 licencni klj
 
 ## Jezici \{#languages}
 
-Paket bira tekst WebGUI-ja, komandne linije, provjere valjanosti, Statusa i obavijesti prema jezičkoj postavci pfSensea. Engleski je izvorni katalog, a prijevodi koji nedostaju trenutno se zamjenjuju engleskim.
+Paket bira tekst WebGUI-ja, komandne linije, provjere valjanosti, Statusa i obavijesti prema jezičkoj postavci pfSensea. Engleski je izvorni katalog, a paket uključuje potpune kataloge za ostalih 17 lokaliteta pfSensea.
 
-Dodatni prijevodi paketa su u izradi, dok je dokumentacija dostupna u svih 18 lokaliteta pfSensea. Nazivi brendova i proizvoda, kao što su Sinkhole, pfSense, FreeBSD i MaxMind, ostaju nepromijenjeni.
+WebGUI i dokumentacija dostupni su u svih 18 lokaliteta pfSensea. Nazivi brendova i proizvoda, kao što su Sinkhole, pfSense, FreeBSD i MaxMind, ostaju nepromijenjeni.

@@ -103,6 +103,28 @@ interface PlatformAdapter
     public function getBlockedServices(): array;
 
     /**
+     * Platform Adapter - SafeSearch.
+     *
+     * Returns normalized per-scope SafeSearch choices for compilation.
+     *
+     * @return array
+     *
+     * @since 1.1.0
+     */
+    public function getSafeSearch(): array;
+
+    /**
+     * Platform Adapter - Refresh SafeSearch Targets.
+     *
+     * Looks up the safe hosts of every choice in use and keeps last good addresses.
+     *
+     * @return bool Whether any compiled address changed.
+     *
+     * @since 1.1.0
+     */
+    public function refreshSafeSearchTargets(): bool;
+
+    /**
      * Platform Adapter - Bypass Configuration.
      *
      * Returns partitioned Bypass Protection settings and the current DDR endpoint.

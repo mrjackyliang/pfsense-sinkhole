@@ -1,0 +1,60 @@
+---
+title: "Sinkhole, DNS 차단을 우회하는 일반적인 경로를 막다"
+description: Sinkhole 1.0의 Bypass 탭은 선택한 인터페이스의 장치가 방화벽의 DNS를 우회하지 못하게 하며, 모든 보호 기능은 직접 켜기 전까지 꺼져 있습니다.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - 우회 방지
+  - dns 리디렉션
+  - 암호화 dns
+  - vpn 차단
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+2026년 11월 10일에 출시된 Sinkhole for pfSense 1.0에는 선택한 인터페이스의 장치가 방화벽의 DNS를 우회하지 못하게 하는 Bypass 탭이 포함되어 있습니다. 이 우회 경로 때문에 장치가 대부분의 DNS 차단을 피해 갈 수 있었습니다.
+
+{/* truncate */}
+
+## 중요한 이유 \{#why-it-matters}
+
+DNS 차단은 장치가 방화벽에 질의할 때만 효과가 있습니다. 하드코딩된 리졸버, DNS over HTTPS, Tor 또는 VPN을 사용하는 장치는 차단 목록을 완전히 건너뛸 수 있습니다.
+
+이전에는 이런 경로를 막으려면 인터페이스마다 NAT 리디렉션 규칙과 방화벽 규칙을 직접 만들어야 했습니다. Bypass 탭은 각 보호 기능을 하나의 설정으로 만들어 선택한 인터페이스에 적용합니다.
+
+## Bypass 탭의 기능 \{#whats-on-the-bypass-tab}
+
+모든 보호 기능은 기본적으로 꺼져 있으며, 직접 선택하기 전까지 어떤 인터페이스도 선택되어 있지 않습니다.
+
+### 일반 DNS \{#plain-dns}
+
+- **Redirect** — 포트 53의 일반 DNS를 방화벽으로 보내면서 각 장치의 원본 주소를 유지하므로 네트워크 목록과 장치 목록이 계속 적용됩니다.
+
+### 암호화 DNS \{#encrypted-dns}
+
+- **TLS and QUIC** — 방화벽을 제외한 모든 대상으로 향하는 포트 853을 차단합니다.
+- **Providers** — 추가한 암호화 DNS 공급자 목록의 이름과 주소를 차단합니다.
+- **Firefox** — Firefox의 자동 DNS over HTTPS 선택을 끕니다.
+- **Private Relay** — 호환되는 Apple 장치에 이 네트워크에서 iCloud Private Relay를 사용할 수 없음을 알립니다.
+- **Discovery** — 암호화 DNS 검색 쿼리에 응답하거나 방화벽 자체의 DNS over TLS를 알립니다.
+
+### 터널 \{#tunnels}
+
+- **Tor** — 목록에 있는 Tor 릴레이를 차단합니다.
+- **VPN** — 목록에 있는 VPN 공급자와 표준 VPN 포트(TCP 및 UDP 1194, UDP 51820, UDP 500 및 4500, ESP)를 차단합니다.
+
+Bypass Lists는 URL이나 Bypass 카탈로그에서 추가하며, 목록 일정에 따라 업데이트되고 다운로드에 실패하면 마지막 정상 사본을 유지합니다.
+
+## 약속하지 않는 것 \{#what-it-doesnt-promise}
+
+이 제어는 모든 경로가 아니라 일반적인 경로를 막습니다. 사용자 지정 암호화 터널은 여전히 DNS 기반 정책을 우회할 수 있으며, 문서에도 이를 분명히 적어 두었습니다.
+
+## 시작하기 \{#get-started}
+
+**Firewall → Sinkhole → Bypass**를 열고 클라이언트 인터페이스를 선택한 뒤 원하는 보호 기능을 켭니다. 각 설정은 [우회 방지](/docs/configure/bypass-protection)에서 다룹니다.
+
+Sinkhole for pfSense는 범위별 DNS, IP 및 국가 차단을 pfSense에 제공하며, 모든 목록을 방화벽에 저장합니다.

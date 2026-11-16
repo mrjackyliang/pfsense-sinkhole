@@ -1,14 +1,54 @@
 {
-  "item.label.Home": {
-    "message": "Hjem",
-    "description": "Navbar item with label \"Home\""
+  "item.label.Docs": {
+    "message": "Dokumentasjon",
+    "description": "Navbar item with label \"Docs\""
   },
-  "item.label.Guides": {
-    "message": "Veiledninger",
-    "description": "Navbar item with label \"Guides\""
+  "item.label.Overview": {
+    "message": "Oversikt",
+    "description": "Navbar item with label \"Overview\""
+  },
+  "item.label.Quick Start": {
+    "message": "Hurtigstart",
+    "description": "Navbar item with label \"Quick Start\""
+  },
+  "item.label.Blog": {
+    "message": "Blogg",
+    "description": "Navbar item with label \"Blog\""
+  },
+  "item.label.Configure": {
+    "message": "Konfigurasjon",
+    "description": "Navbar item with label \"Configure\""
+  },
+  "item.label.Operate": {
+    "message": "Drift",
+    "description": "Navbar item with label \"Operate\""
+  },
+  "item.label.Reference": {
+    "message": "Referanse",
+    "description": "Navbar item with label \"Reference\""
+  },
+  "item.label.Safety": {
+    "message": "Sikkerhet",
+    "description": "Navbar item with label \"Safety\""
+  },
+  "item.label.Contributing": {
+    "message": "Bidra",
+    "description": "Navbar item with label \"Contributing\""
+  },
+  "item.label.Resources": {
+    "message": "Ressurser",
+    "description": "Navbar item with label \"Resources\""
   },
   "item.label.Troubleshooting": {
     "message": "Feilsøking",
     "description": "Navbar item with label \"Troubleshooting\""
+  },
+  "item.label.Changelog": {
+    "message": "Endringslogg",
+    "description": "Navbar item with label \"Changelog\""
+  },
+  "item.label.Report an Issue": {
+    "message": "Rapporter et problem",
+    "description": "Navbar item with label \"Report an Issue\""
   }
 }

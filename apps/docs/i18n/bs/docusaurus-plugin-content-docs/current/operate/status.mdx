@@ -48,6 +48,7 @@ Posljednji red **Sinkhole** u panelu Summary najbrža je provjera integracije Re
 | `Active`                                 | Sinkhole je omogućen, vlasnik je Python mjesta, koristi Python način i `pre_validator` te ima izvršne podatke. |
 | `Inactive: Sinkhole is disabled.`        | **Enable** u Generalu je isključen.                                                                            |
 | `Inactive: DNS Resolver is disabled.`    | DNS Resolver u pfSenseu je isključen.                                                                          |
+| `Inactive: pfBlockerNG is installed ...` | pfBlockerNG je instaliran s uključenom glavnom opcijom **Enable**, u bilo kojem DNSBL načinu rada.             |
 | `Inactive: ... slot is owned by ...`     | Druga Python skripta, poput pfBlockerNG DNSBL-a, posjeduje jedino mjesto.                                      |
 | `Inactive: Sinkhole does not own ...`    | Konfigurirana skripta nije Sinkhole iako nije prijavljen drugi vlasnik.                                        |
 | `Inactive: ... Python mode is disabled.` | Python način više nije omogućen u Resolveru.                                                                   |
@@ -78,6 +79,10 @@ Stranica prikazuje okvir upozorenja kada kompajliranje ili postavljanje čeka, u
 Sažetak Scopes prikazuje stanje ponovne izgradnje mape klijenata. Zasebni paneli **Networks** i **Devices** prikazuju trenutne CIDR-ove svakog interfejsa i trenutne adrese svakog uređaja. Sukob navodi adresu na koju polaže pravo više uređaja; prvi uređaj po redoslijedu u tabeli posjeduje tu adresu za pravila.
 
 Panel **Alerts** opisuje samo posljednji minutni posao. **Notifications held back** obuhvata potiskivanje zbog ograničenja ili nepročitanih obavijesti, dok **Events dropped by module** znači da se napunio ograničeni red događaja u memoriji ili na disku.
+
+## Stanje SafeSearcha \{#safesearch-state}
+
+Panel **SafeSearch** broji pretraživače odabrane za Global i za svaki mrežni i uređajski opseg. Ispod brojeva, svaki sigurni host u upotrebi prikazuje svoje posljednje ispravne IPv4 i IPv6 adrese, vrijeme posljednje provjere i posljednju grešku razrješavanja. Host bez adresa drži svoj pretraživač blokiranim za te opsege dok razrješavanje ne uspije.
 
 ## Stanje Bypass zaštite \{#bypass-state}
 

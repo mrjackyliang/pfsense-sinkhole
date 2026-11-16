@@ -1,0 +1,11 @@
+{
+  "title": {
+    "message": "Блог"
+  },
+  "description": {
+    "message": "Выпуски и важные этапы Sinkhole — блокировки DNS, IP-адресов и стран по областям, которая работает внутри pfSense."
+  },
+  "sidebar.title": {
+    "message": "Последние записи"
+  }
+}

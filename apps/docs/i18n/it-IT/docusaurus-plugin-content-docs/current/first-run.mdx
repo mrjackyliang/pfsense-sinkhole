@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Configura una lista attendibile e verificane lo stato salvato, compilato, distribuito e caricato prima di estendere i criteri.
 
 ## Controllare il Resolver \{#check-the-resolver}
 
 1. Apri **Services → DNS Resolver** e verifica che il Resolver sia abilitato.
-2. Se pfBlockerNG DNSBL è abilitato, scegli quale pacchetto sarà responsabile del filtraggio DNS, perché i due pacchetti non possono usare contemporaneamente lo slot Python di Unbound.
+2. Se pfBlockerNG è installato e abilitato, scegli quale pacchetto filtrerà il DNS, perché i due pacchetti non possono funzionare insieme.
 3. Apri **Firewall → Sinkhole → General** e lascia **Enable** disattivato mentre prepari i primi criteri.
 
-Sinkhole rifiuta di salvare **Enable** mentre un altro script Python possiede lo slot. Se in seguito disabiliti Sinkhole, ripristina le precedenti impostazioni Python del Resolver finché ne è ancora proprietario.
+Sinkhole rifiuta di salvare **Enable** mentre pfBlockerNG è installato e abilitato, o mentre un altro script Python possiede lo slot. Se in seguito disabiliti Sinkhole, ripristina le precedenti impostazioni Python del Resolver finché ne è ancora proprietario.
 
 ## Aggiungere una lista \{#add-a-list}
 
@@ -33,6 +35,8 @@ Sinkhole rifiuta di salvare **Enable** mentre un altro script Python possiede lo
 4. Aggiungi eventuali **Allowed Domains** globali, un dominio per riga, quando occorre consentire un falso positivo noto.
 
 Sinkhole non consiglia alcuna fonte. [Liste e copie salvate](/docs/configure/lists) descrive i formati accettati e come i risultati del catalogo diventano normali righe di lista.
+
+<img src={listsTab} alt="Scheda Lists con cinque liste di blocco dimostrative, le colonne Global e Used By e due domini consentiti globali" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Aggiungere ambiti facoltativi \{#add-optional-scopes}
 

@@ -12,7 +12,9 @@ use PfSense\Sinkhole\Runtime\DownloadClient;
 use PfSense\Sinkhole\Runtime\FileLock;
 use PfSense\Sinkhole\Runtime\PackagePaths;
 use PfSense\Sinkhole\Runtime\PlatformAdapter;
+use PfSense\Sinkhole\Runtime\SafeSearchTargets;
 use PfSense\Sinkhole\Runtime\SavedListStore;
+use PfSense\Sinkhole\Domain\SafeSearchConfiguration;
 use PfSense\Sinkhole\Runtime\StateStore;
 use PfSense\Sinkhole\Runtime\UpdateLockRunner;
 use PfSense\Sinkhole\Runtime\Updater;
@@ -28,6 +30,7 @@ require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/DownloadClient.php
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/FileSystem.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/PackagePaths.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/PlatformAdapter.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/SafeSearchTargets.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/SavedListStore.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/StateStore.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Updater.php');
@@ -222,6 +225,26 @@ final class SinkholeRuntimeTestPlatformAdapter implements PlatformAdapter
     public function getBlockedServices(): array
     {
         return $this->services;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 1.1.0
+     */
+    public function getSafeSearch(): array
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 1.1.0
+     */
+    public function refreshSafeSearchTargets(): bool
+    {
+        return false;
     }
 
     /**
@@ -638,6 +661,144 @@ function sinkholeRuntimeTestIsBlocked(string $name, array $rows, array $allowed)
 }
 
 sinkholeTestRun([
+    'SafeSearch targets keep last good addresses' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $answers = [
+                'forcesafesearch.google.com' => [
+                    'A' => ['216.239.38.120', 'not-an-address'],
+                    'AAAA' => ['2001:4860:4802:32::78'],
+                ],
+            ];
+            $resolver = static function (string $host, string $type) use (&$answers): array {
+                if (!isset($answers[$host])) {
+                    throw new RuntimeException('lookup failed for ' . $host);
+                }
+
+                return $answers[$host][$type];
+            };
+            $targets = new SafeSearchTargets($directory . '/targets.json', $resolver);
+
+            sinkholeTestAssertSame(
+                true,
+                $targets->refresh(['forcesafesearch.google.com', 'strict.bing.com'], 100),
+                'New addresses must count as a change.',
+            );
+            $read = $targets->read();
+            sinkholeTestAssertSame(['216.239.38.120'], $read['forcesafesearch.google.com']['ipv4'], 'Invalid addresses are dropped.');
+            sinkholeTestAssertSame([], $read['strict.bing.com']['ipv4'], 'A failed first lookup has no addresses.');
+            sinkholeTestAssertContains('lookup failed', $read['strict.bing.com']['last_error'], 'The error is recorded.');
+
+            $answers = [];
+            sinkholeTestAssertSame(
+                false,
+                $targets->refresh(['forcesafesearch.google.com'], 200),
+                'A failed lookup keeps the last good addresses unchanged.',
+            );
+            $read = $targets->read();
+            sinkholeTestAssertSame(['216.239.38.120'], $read['forcesafesearch.google.com']['ipv4'], 'Last good addresses stay.');
+            sinkholeTestAssertSame(200, $read['forcesafesearch.google.com']['checked_at'], 'The check time still moves.');
+            sinkholeTestAssertSame(false, isset($read['strict.bing.com']), 'Hosts no longer in use are dropped.');
+
+            $answers = ['forcesafesearch.google.com' => ['A' => ['216.239.38.121'], 'AAAA' => []]];
+            sinkholeTestAssertSame(true, $targets->refresh(['forcesafesearch.google.com'], 300), 'Moved addresses count as a change.');
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'compile writes the SafeSearch section for enabled scopes' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $paths = sinkholeRuntimeTestPaths($directory);
+            $store = new SavedListStore($paths);
+            $listIdentifier = '11111111111111111111111111111111';
+            $networkIdentifier = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+            $disabledNetworkIdentifier = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+            sinkholeRuntimeTestSaveList($store, $listIdentifier, "E\texact.example.test\n");
+            (new SafeSearchTargets(
+                $paths->safeSearchTargetsFile,
+                static fn(string $host, string $type): array => ($type === 'A') ? ['192.0.2.1'] : [],
+            ))->refresh(['forcesafesearch.google.com', 'restrict.youtube.com'], 100);
+            $lists = [
+                $listIdentifier => [
+                    'id' => $listIdentifier,
+                    'descr' => 'Example',
+                    'url' => 'https://lists.example.invalid/example.test',
+                    'enabled' => 'on',
+                ],
+            ];
+            $networks = [
+                $networkIdentifier => [
+                    'id' => $networkIdentifier,
+                    'interface' => 'lan',
+                    'lists' => [],
+                    'allowed_domains' => [],
+                    'enabled' => true,
+                ],
+                $disabledNetworkIdentifier => [
+                    'id' => $disabledNetworkIdentifier,
+                    'interface' => 'opt1',
+                    'lists' => [],
+                    'allowed_domains' => [],
+                    'enabled' => false,
+                ],
+            ];
+            $safeSearch = SafeSearchConfiguration::replaceScopeSelection([], 'global', ['bing']);
+            $safeSearch = SafeSearchConfiguration::replaceScopeSelection(
+                $safeSearch,
+                'network:' . $networkIdentifier,
+                ['google', 'youtube_strict', 'qwant'],
+            );
+            $safeSearch = SafeSearchConfiguration::replaceScopeSelection(
+                $safeSearch,
+                'network:' . $disabledNetworkIdentifier,
+                ['pixabay'],
+            );
+            (new Compiler($paths, $store))->compile(
+                $lists,
+                [],
+                false,
+                true,
+                null,
+                false,
+                null,
+                $networks,
+                [],
+                [],
+                [],
+                null,
+                [],
+                $safeSearch,
+            );
+            $manifest = json_decode(
+                (string) file_get_contents($paths->runtimeDataDirectory . '/manifest.json'),
+                true,
+                32,
+                JSON_THROW_ON_ERROR,
+            );
+            $section = $manifest['safesearch'];
+
+            sinkholeTestAssertSame(
+                ['google', 'youtube_strict', 'bing', 'qwant'],
+                array_keys($section['choices']),
+                'Only choices of enabled scopes compile, in display order.',
+            );
+            sinkholeTestAssertSame(['192.0.2.1'], $section['choices']['google']['ipv4'], 'Looked-up addresses compile.');
+            sinkholeTestAssertSame([], $section['choices']['bing']['ipv4'], 'An unresolved host compiles without addresses.');
+            sinkholeTestAssertSame('', $section['choices']['qwant']['target'], 'Qwant compiles as a block.');
+            sinkholeTestAssertSame(388, count($section['engines']['google']), 'Every Google name compiles.');
+            sinkholeTestAssertSame(['bing'], $section['scopes']['global'], 'Global keeps its choices.');
+            sinkholeTestAssertSame(
+                [$networkIdentifier => ['google', 'youtube_strict', 'qwant']],
+                $section['scopes']['networks'],
+                'A disabled network contributes nothing.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
     'atomic file replacement' => static function (): void {
         $directory = sinkholeTestTemporaryDirectory();
 

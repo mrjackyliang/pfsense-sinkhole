@@ -1,74 +1,161 @@
 {
-  "homepage.hero.eyebrow": {
-    "message": "Нативный пакет pfSense"
-  },
-  "homepage.hero.heading": {
-    "message": "Выберите, к чему может обращаться каждая сеть и каждое устройство."
-  },
-  "homepage.hero.tagline": {
+  "home.meta.description": {
     "message": "Применяйте сохранённые DNS-списки ко всей сети, VLAN или устройству с целевыми оповещениями и без второго сервера."
   },
-  "homepage.hero.ctaLabel": {
-    "message": "Установить Sinkhole"
+  "home.meta.title": {
+    "message": "Sinkhole for pfSense - Блокировка DNS, IP и стран по областям"
   },
-  "homepage.hero.secondaryCtaLabel": {
-    "message": "Спланировать scopes"
+  "home.hero.eyebrow": {
+    "message": "Нативный пакет pfSense"
   },
-  "homepage.stats.heading": {
-    "message": "Один межсетевой экран, политика на каждом полезном уровне"
+  "home.hero.heading": {
+    "message": "Выберите, к чему может обращаться каждая сеть и каждое устройство."
   },
-  "homepage.stats.description": {
-    "message": "Sinkhole хранит политику локально и явно показывает границы работы."
+  "home.hero.tagline": {
+    "message": "Применяйте сохранённые DNS-списки ко всей сети, VLAN или устройству с целевыми оповещениями и без второго сервера."
   },
-  "homepage.stats.policyScopes": {
-    "message": "Области политики"
+  "home.hero.primaryAction": {
+    "message": "Начать"
   },
-  "homepage.stats.dnsListFormats": {
-    "message": "Форматы DNS-списков"
+  "home.hero.secondaryAction": {
+    "message": "Подробнее"
   },
-  "homepage.stats.catalogCache": {
-    "message": "Кэш каталогов"
+  "home.preview.ariaLabel": {
+    "message": "Пример решения DNS для устройства в VLAN"
   },
-  "homepage.stats.unboundSlot": {
-    "message": "Слот модуля Unbound"
+  "home.preview.title": {
+    "message": "Решение DNS"
   },
-  "homepage.features.heading": {
-    "message": "Управление, остающееся на межсетевом экране"
+  "home.preview.blocked": {
+    "message": "Заблокировано"
   },
-  "homepage.features.scopes.title": {
+  "home.preview.query": {
+    "message": "Запрос"
+  },
+  "home.preview.client": {
+    "message": "Клиент"
+  },
+  "home.preview.network": {
+    "message": "Сеть"
+  },
+  "home.preview.deviceLists": {
+    "message": "Списки устройства"
+  },
+  "home.preview.noMatch": {
+    "message": "Нет совпадений"
+  },
+  "home.preview.networkLists": {
+    "message": "Списки сети"
+  },
+  "home.preview.globalLists": {
+    "message": "Глобальные списки"
+  },
+  "home.preview.notReached": {
+    "message": "Не проверялось"
+  },
+  "home.preview.result": {
+    "message": "ответ из сохранённых списков"
+  },
+  "home.features.scopes.title": {
     "message": "Определяйте область каждого решения"
   },
-  "homepage.features.scopes.description": {
+  "home.features.scopes.description": {
     "message": "Применяйте списки и разрешённые домены глобально, по интерфейсу или VLAN и по устройству."
   },
-  "homepage.features.savedLists.title": {
+  "home.features.savedLists.title": {
     "message": "Храните последние корректные копии"
   },
-  "homepage.features.savedLists.description": {
+  "home.features.savedLists.description": {
     "message": "Отвечайте на DNS из локальных списков при перезапусках, перезагрузках и ошибках загрузки."
   },
-  "homepage.features.alerts.title": {
+  "home.features.alerts.title": {
     "message": "Оповещайте осознанно"
   },
-  "homepage.features.alerts.description": {
+  "home.features.alerts.description": {
     "message": "Отправляйте уведомления только для списков, сетей и устройств, выбранных в правиле."
   },
-  "homepage.features.redirect.title": {
+  "home.features.redirect.title": {
     "message": "Защищайте пути DNS"
   },
-  "homepage.features.redirect.description": {
+  "home.features.redirect.description": {
     "message": "При необходимости перенаправляйте обычный DNS или блокируйте распространённые обходы через шифрованный DNS и туннели на выбранных интерфейсах."
   },
-  "homepage.features.catalogs.title": {
+  "home.features.catalogs.title": {
     "message": "Найдите и решите"
   },
-  "homepage.features.catalogs.description": {
+  "home.features.catalogs.description": {
     "message": "Ищите в поддерживаемых каталогах по запросу, не включая и не рекомендуя списки."
   },
-  "homepage.features.ipCountry.title": {
+  "home.features.ipCountry.title": {
     "message": "Блокируйте адреса и страны"
   },
-  "homepage.features.ipCountry.description": {
-    "message": "Применяйте IP-списки и правила GeoLite2 через изолированный якорь `sinkhole/ip`."
+  "home.features.ipCountry.description": {
+    "message": "Применяйте IP-списки и правила GeoLite2 через изолированный якорь sinkhole/ip."
+  },
+  "home.blogPreview.heading": {
+    "message": "Из блога"
+  },
+  "home.blogPreview.description": {
+    "message": "Выпуски, важные этапы и новое в Sinkhole for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Внутри WebGUI pfSense"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Страницы Sinkhole"
+  },
+  "home.showcase.scopes.label": {
+    "message": "Области действия"
+  },
+  "home.showcase.scopes.heading": {
+    "message": "Свои правила для каждой сети и устройства"
+  },
+  "home.showcase.scopes.description": {
+    "message": "Назначьте сети или отдельному устройству собственные списки и разрешённые домены. Каждый DNS-запрос следует самой конкретной подходящей области действия."
+  },
+  "home.showcase.scopes.link": {
+    "message": "Настроить области действия"
+  },
+  "home.showcase.scopes.alt": {
+    "message": "Страница «Области действия» Sinkhole с областью действия сети LAN и тремя областями действия устройств"
+  },
+  "home.showcase.services.label": {
+    "message": "Сервисы"
+  },
+  "home.showcase.services.heading": {
+    "message": "Блокируйте целый сервис одним щелчком"
+  },
+  "home.showcase.services.description": {
+    "message": "Выбирайте игры, соцсети, стриминг и другие сервисы из кэшированного реестра сервисов — для всех или для одной сети или устройства. Разрешённые домены по-прежнему имеют приоритет."
+  },
+  "home.showcase.services.link": {
+    "message": "Заблокировать сервисы"
+  },
+  "home.showcase.services.alt": {
+    "message": "Страница «Заблокированные сервисы» Sinkhole с игровыми сервисами для области действия устройства"
+  },
+  "home.showcase.status.label": {
+    "message": "Состояние"
+  },
+  "home.showcase.status.heading": {
+    "message": "Что загружено, а что устарело"
+  },
+  "home.showcase.status.description": {
+    "message": "«Состояние» показывает каждый список с числом записей и временем последнего обновления, а также области действия, сети и устройства, которые Sinkhole применяет прямо сейчас."
+  },
+  "home.showcase.status.link": {
+    "message": "О странице «Состояние»"
+  },
+  "home.showcase.status.alt": {
+    "message": "Страница «Состояние» Sinkhole с панелями списков, областей действия, сетей и устройств"
+  },
+  "home.showcase.scopes.title": {
+    "message": "pfSense.home.arpa - Межсетевой экран: Sinkhole: Области действия"
+  },
+  "home.showcase.services.title": {
+    "message": "pfSense.home.arpa - Межсетевой экран: Sinkhole: Сервисы"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Межсетевой экран: Sinkhole: Состояние"
   }
 }

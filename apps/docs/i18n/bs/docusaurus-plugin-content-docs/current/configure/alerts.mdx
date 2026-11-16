@@ -14,6 +14,8 @@ tags:
   - notifications
 ---
 
+import alertRuleEditor from './_assets_/alerts-1.png';
+
 Šaljite obavijesti samo za blokirane odgovore čija lista i klijent odgovaraju omogućenom pravilu upozorenja.
 
 ## Zašto koristiti pravila upozorenja? \{#why-use-alert-rules}
@@ -43,6 +45,8 @@ Otvorite **Firewall → Sinkhole → Alerts**, odaberite **Add** ispod tabele pr
 Polje odabranih lista skriveno je dok je odabrano **Any block list**, a polja mreža i uređaja skrivena su dok je odabrano **Everyone**. Spremanje vraća na Alerts; odaberite olovku ili dvaput kliknite red da biste ga uredili.
 
 Blokiranje se podudara samo kada je jedna od lista koja je blokirala naziv odabrana u pravilu i kada je isti klijent odabran u tom pravilu. Zadani period ponavljanja je 60 minuta, a prihvaćeni raspon je od 1 do 1.440 minuta.
+
+<img src={alertRuleEditor} alt="Stranica Edit Alert Rule koja poredi jednu odabranu listu za jedan odabrani demonstracijski uređaj, s prozorom ponavljanja od 60 minuta i uključena oba kanala isporuke" width={1024} height={994} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Kanali isporuke \{#delivery-channels}
 

@@ -23,6 +23,7 @@ Installez ou mettez à jour Sinkhole depuis son paquet stable publié sur GitHub
 - **Accès HTTPS à GitHub** — Le pare-feu doit pouvoir télécharger le paquet et sa somme de contrôle depuis GitHub Releases.
 - **DNS Resolver** — Le DNS Resolver de pfSense doit être activé avant l’intégration DNS de Sinkhole.
 - **Emplacement Python disponible** — pfBlockerNG DNSBL ou un autre script Python ne doit pas occuper l’unique emplacement de module du Resolver.
+- **Aucun pfBlockerNG actif** — pfBlockerNG doit être supprimé ou avoir son option principale **Enable** désactivée, quel que soit le mode du DNSBL.
 - **Sauvegarde récente** — Il est recommandé de télécharger `config.xml` depuis **Diagnostics → Backup & Restore** avant d’installer un paquet non officiel.
 
 :::warning

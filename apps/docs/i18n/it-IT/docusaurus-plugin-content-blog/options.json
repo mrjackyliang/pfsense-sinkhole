@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Release e traguardi di Sinkhole, il blocco DNS, IP e per paese per ambito che funziona all’interno di pfSense."
+  },
+  "sidebar.title": {
+    "message": "Articoli recenti"
+  }
+}

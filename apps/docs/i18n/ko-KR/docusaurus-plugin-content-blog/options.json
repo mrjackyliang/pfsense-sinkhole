@@ -1,0 +1,11 @@
+{
+  "title": {
+    "message": "블로그"
+  },
+  "description": {
+    "message": "pfSense 안에서 실행되는 범위별 DNS, IP 및 국가 차단 도구인 Sinkhole의 릴리스와 주요 이정표를 소개합니다."
+  },
+  "sidebar.title": {
+    "message": "최근 게시물"
+  }
+}

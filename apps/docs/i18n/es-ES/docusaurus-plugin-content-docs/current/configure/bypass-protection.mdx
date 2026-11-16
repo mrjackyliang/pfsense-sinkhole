@@ -24,7 +24,7 @@ Abra **Firewall → Sinkhole → Bypass** y seleccione interfaces en **Apply to*
 
 La coincidencia de redes y dispositivos usa las subredes actuales de esas interfaces, igual que los ámbitos normales de Sinkhole. Un cliente fuera de las subredes seleccionadas no recibe ninguna respuesta DNS de Bypass.
 
-<img src={bypassProtection} alt="Pestaña Bypass con LAN seleccionada, redirección de DNS simple desactivada, protecciones de DNS cifrado y túneles activadas, Discovery configurado como Answer with no records y tres Bypass Lists de demostración" width={1024} height={1346} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Pestaña Bypass con LAN seleccionada, redirección de DNS simple desactivada, protecciones de DNS cifrado y túneles activadas, Discovery configurado como Answer with no records y tres Bypass Lists de demostración" width={1024} height={1490} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Redirigir el DNS simple \{#redirect-plain-dns}
 
@@ -76,7 +76,7 @@ local-zone: "_dns.resolver.arpa." transparent
 # Sinkhole: end
 ```
 
-Al desactivar Discovery o eliminar Sinkhole se quita el bloque. Sinkhole deja sin cambios todas las demás líneas de **Custom options**. Los clientes fuera de las interfaces seleccionadas, incluido el propio firewall, siguen recibiendo `NXDOMAIN` para `_dns.resolver.arpa`.
+Al desactivar Discovery o eliminar Sinkhole se quita la línea de zona. El mismo bloque también contiene los [Ajustes del Resolver](/docs/configure/resolver-settings) que haya, y Sinkhole deja sin cambios todas las demás líneas de **Custom options**. Los clientes fuera de las interfaces seleccionadas, incluido el propio firewall, siguen recibiendo `NXDOMAIN` para `_dns.resolver.arpa`.
 
 ## Proteger contra túneles \{#protect-against-tunnels}
 

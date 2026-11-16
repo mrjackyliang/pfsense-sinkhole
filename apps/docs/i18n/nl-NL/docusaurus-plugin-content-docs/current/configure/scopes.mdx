@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 Wijs lijsten en toegestane domeinen toe op globaal, netwerk- en apparaatniveau, zodat elke client het beleid voor de huidige locatie krijgt.
 
 ## Waarom scopes gebruiken? \{#why-use-scopes}
@@ -35,6 +38,8 @@ Open **Firewall → Sinkhole → Scopes** en selecteer vervolgens **Add** onder 
 
 Elke netwerkrij selecteert aanvullende lijsten, toegestane domeinen en of de scope is ingeschakeld. Na opslaan keert u terug naar Scopes; selecteer het potlood of dubbelklik op een rij om deze te bewerken. Een apparaat dat van netwerk wisselt, krijgt het beleid voor het netwerk dat met het huidige adres overeenkomt.
 
+<img src={scopesTab} alt="Tabblad Scopes met een LAN-netwerkscope en drie demoapparaten die op IP- of MAC-adres worden herkend, met hun huidige adressen" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## Apparaatscopes \{#device-scopes}
 
 Selecteer **Add** onder de tabel Devices, voer een naam in en kies één identificatiemethode. De editor toont alleen het identificatieveld dat bij de geselecteerde methode hoort:
@@ -46,6 +51,8 @@ Selecteer **Add** onder de tabel Devices, voer een naam in en kies één identif
 | MAC address         | Huidige ARP-, NDP- en DHCP-leaseadressen voor dat MAC-adres.                                               |
 
 De apparaatrij selecteert de lijsten, toegestane domeinen en inschakelstatus. Na opslaan keert u terug naar Scopes; selecteer het potlood of dubbelklik op een rij om deze te bewerken. Een achtergrondtaak vernieuwt huidige subnetten en apparaatadressen elke minuut wanneer DNS-blokkering een ingeschakelde netwerk- of apparaatscope heeft, of wanneer Bypass-DNS-beveiliging clientherkenning nodig heeft. Pakket-Sync start dezelfde vernieuwing alleen onder die voorwaarde.
+
+<img src={deviceEditor} alt="Pagina Edit Device voor een demotablet die op IP-adres wordt herkend, met één geselecteerde lijst en één toegestaan domein" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Beslisvolgorde \{#decision-order}
 

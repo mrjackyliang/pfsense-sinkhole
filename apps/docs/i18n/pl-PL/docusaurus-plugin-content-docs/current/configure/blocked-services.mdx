@@ -14,6 +14,8 @@ tags:
   - dns
 ---
 
+import servicesTab from './_assets_/blocked-services-1.png';
+
 Użyj **Firewall → Sinkhole → Services**, gdy chcesz zablokować całą markę bez wybierania i utrzymywania oddzielnego adresu URL listy.
 
 ## Wybieranie zakresu \{#choose-a-scope}
@@ -23,6 +25,8 @@ Wybierz **Global**, skonfigurowaną sieć lub skonfigurowane urządzenie. Wyszuk
 Wybór jest kompilowany na istniejącym poziomie zakresu. Dozwolone domeny urządzenia nadal mają pierwszeństwo przed regułami usług urządzenia, dozwolone domeny sieci nadal mają pierwszeństwo przed regułami usług sieci, a globalne dozwolone domeny nadal mają pierwszeństwo przed globalnymi regułami usług.
 
 Usługi objęte dedykowaną ochroną Bypass nie są wyświetlane w siatce, licznikach grup ani wynikach wyszukiwania. Private Relay konfiguruje się tylko na karcie Bypass.
+
+<img src={servicesTab} alt="Karta Services przefiltrowana do grupy Gaming dla zakresu urządzenia demonstracyjnego, z czterema wybranymi usługami" width={1024} height={1288} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Rejestr i naprawa \{#registry-and-repair}
 

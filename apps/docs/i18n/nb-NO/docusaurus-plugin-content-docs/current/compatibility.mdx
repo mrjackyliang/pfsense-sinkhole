@@ -42,9 +42,10 @@ Fanen **About** merker den samsvarende utgivelsen som **This firewall**. Den leg
 
 - Den Unbound-baserte DNS Resolver i pfSense må være aktivert.
 - Den eneste plassen for Python-skript i Resolver må være tom eller allerede eid av Sinkhole.
+- pfBlockerNG må fjernes, eller hovedinnstillingen **Enable** må slås av.
 - Sinkhole bruker modulposisjonen `pre_validator` og rapporterer en inaktiv status hvis Python-modus, eieren av plassen, posisjonen eller kjøretidsfilene ikke samsvarer.
 
-pfBlockerNG DNSBL bruker den samme plassen for Python-skript som Sinkhole. Sinkhole nekter å ta plassen mens `pfb_unbound` eller et annet skript eier den.
+I Python-modus bruker pfBlockerNG DNSBL den samme plassen for Python-skript som Sinkhole. Sinkhole nekter å ta plassen mens `pfb_unbound` eller et annet skript eier den. I Unbound-modus lar DNSBL plassen stå tom, så Sinkhole forblir også inaktiv når pfBlockerNG er installert med **Enable** slått på. Innstillinger som pfBlockerNG beholder etter at pakken er fjernet, teller ikke.
 
 ## Nettverkskrav \{#network-requirements}
 
@@ -67,7 +68,7 @@ Landblokkering krever administratorens egen MaxMind-konto-ID og GeoLite2-lisensn
 
 ## Språk \{#languages}
 
-Pakken velger ordlyden for WebGUI, kommandolinjen, validering, Status og varsler fra språkinnstillingen i pfSense. Engelsk er kildekatalogen, og manglende oversettelser faller for tiden tilbake til engelsk.
+Pakken velger ordlyden for WebGUI, kommandolinjen, validering, Status og varsler fra språkinnstillingen i pfSense. Engelsk er kildekatalogen, og pakken inneholder komplette kataloger for de 17 andre pfSense-språkvariantene.
 
-Flere pakkeoversettelser er under arbeid, mens dokumentasjonen er tilgjengelig på alle de 18 pfSense-språkvariantene. Merke- og produktnavn som Sinkhole, pfSense, FreeBSD og MaxMind forblir uendret.
+WebGUI og dokumentasjonen er tilgjengelige på alle de 18 pfSense-språkvariantene. Merke- og produktnavn som Sinkhole, pfSense, FreeBSD og MaxMind forblir uendret.
 

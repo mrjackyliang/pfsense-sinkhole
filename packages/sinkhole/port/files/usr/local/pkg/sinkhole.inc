@@ -160,12 +160,20 @@ function pfsensePackageSinkholeLocalizePackageGui(array &$package): void
         'General',
         'Lists',
         'Services',
+        'SafeSearch',
         'Scopes',
         'Alerts',
         'Bypass',
         'IP',
         'Status',
         'About',
+        'Resolver',
+        'Rebind Exceptions',
+        'Domains allowed to answer with private addresses despite DNS rebinding protection, one per line, such as plex.direct.',
+        'Expired Answer Lifetime',
+        'Seconds an expired cached answer may still be served. 0 means no limit; empty keeps the DNS Resolver default.',
+        'Expired Answer Wait',
+        'Milliseconds to wait for a fresh answer before serving an expired one. 0 answers from cache right away; empty keeps the DNS Resolver default.',
         'Enable',
         'Enable scheduled list updates and DNS Resolver integration.',
         'Update Frequency',
@@ -219,6 +227,14 @@ function pfsensePackageSinkholeLocalizePackageGui(array &$package): void
                     'package_gui',
                     $field[$property],
                 );
+            }
+        }
+
+        if (($field['fieldname'] ?? null) === 'serve_expired_client_timeout') {
+            if (config_path_enabled('unbound', 'dnsrecordcache')) {
+                $field['description'] .= ' ' . pfsensePackageSinkholeTranslate('serve_expired_pfsense_on');
+            } else {
+                $field['description'] .= ' ' . pfsensePackageSinkholeTranslate('serve_expired_pfsense_off');
             }
         }
 
@@ -287,6 +303,7 @@ function pfsensePackageSinkholeTabs(string $active): array
         'general' => '/pkg_edit.php?xml=sinkhole.xml&id=0',
         'lists' => '/sinkhole-lists.php',
         'services' => '/sinkhole-services.php',
+        'safesearch' => '/sinkhole-safesearch.php',
         'scopes' => '/sinkhole-scopes.php',
         'alerts' => '/sinkhole-alerts.php',
         'bypass' => '/sinkhole-bypass.php',
@@ -485,6 +502,32 @@ function pfsensePackageSinkholeGetBlockedServices(): array
 function pfsensePackageSinkholeSaveBlockedServices(array $configuration): void
 {
     pfsensePackageSinkholeAdapter()->saveBlockedServices($configuration);
+}
+
+/**
+ * pfSense Package Sinkhole - Get SafeSearch.
+ *
+ * @return array
+ *
+ * @since 1.1.0
+ */
+function pfsensePackageSinkholeGetSafeSearch(): array
+{
+    return pfsensePackageSinkholeAdapter()->getSafeSearch();
+}
+
+/**
+ * pfSense Package Sinkhole - Save SafeSearch.
+ *
+ * @param array $configuration - Canonical per-scope choices.
+ *
+ * @return void
+ *
+ * @since 1.1.0
+ */
+function pfsensePackageSinkholeSaveSafeSearch(array $configuration): void
+{
+    pfsensePackageSinkholeAdapter()->saveSafeSearch($configuration);
 }
 
 /**
@@ -1081,6 +1124,9 @@ function pfsensePackageSinkholeCompile(): array
                     ? pfsensePackageSinkholeAdapter()->getBlockedServices()
                     : [],
                 'bypass' => pfsensePackageSinkholeAdapter()->getBypassConfiguration(),
+                'safesearch' => $dnsBlockingEnabled
+                    ? pfsensePackageSinkholeAdapter()->getSafeSearch()
+                    : [],
             ];
         },
         false,
@@ -2020,8 +2066,9 @@ function pfsensePackageSinkholeRemove(
 /**
  * pfSense Package Sinkhole - Validate.
  *
- * Gives immediate form errors for unsupported schedules and a Python slot owned by
- * another package; runtime code repeats the same validation before side effects.
+ * Gives immediate form errors for unsupported schedules, an installed and enabled
+ * pfBlockerNG, and a Python slot owned by another package; runtime code repeats
+ * the same validation before side effects.
  *
  * @param array    $post        - Submitted values.
  * @param string[] $inputErrors - Validation errors.
@@ -2048,12 +2095,24 @@ function pfsensePackageSinkholeValidate(array $post, array &$inputErrors): void
         );
     }
 
+    try {
+        Settings::resolverFromStorage($post);
+    } catch (Throwable $throwable) {
+        $inputErrors[] = pfsensePackageSinkholeThrowableMessage($throwable);
+    }
+
     if (($post['enabled'] ?? '') !== 'on') {
         return;
     }
 
     if (config_path_enabled('unbound') === false) {
         $inputErrors[] = pfsensePackageSinkholeTranslate('dns_resolver_disabled');
+
+        return;
+    }
+
+    if (pfsensePackageSinkholeAdapter()->pfBlockerNgActive()) {
+        $inputErrors[] = pfsensePackageSinkholeTranslate('pfblockerng_active');
 
         return;
     }

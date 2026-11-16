@@ -48,6 +48,7 @@ La dernière ligne **Sinkhole** de Summary est le contrôle le plus rapide de l�
 | `Active`                                 | Sinkhole est activé, détient l’emplacement Python, utilise le mode Python et `pre_validator` et possède les données d’exécution. |
 | `Inactive: Sinkhole is disabled.`        | **Enable** est désactivé dans General.                                                                                           |
 | `Inactive: DNS Resolver is disabled.`    | Le DNS Resolver de pfSense est désactivé.                                                                                        |
+| `Inactive: pfBlockerNG is installed ...` | pfBlockerNG est installé avec son option principale **Enable** activée, quel que soit le mode du DNSBL.                          |
 | `Inactive: ... slot is owned by ...`     | Un autre script Python, tel que pfBlockerNG DNSBL, détient l’unique emplacement.                                                 |
 | `Inactive: Sinkhole does not own ...`    | Le script configuré n’est pas Sinkhole, même si aucun propriétaire différent n’a été signalé.                                    |
 | `Inactive: ... Python mode is disabled.` | Le mode Python du Resolver n’est plus activé.                                                                                    |
@@ -78,6 +79,10 @@ La page affiche un encadré d’avertissement lorsque la compilation ou le dépl
 Le résumé Scopes indique l’état de reconstruction de la carte des clients. Les panneaux séparés **Networks** et **Devices** indiquent les CIDR actuels de chaque interface et les adresses actuelles de chaque appareil. Un conflit désigne une adresse revendiquée par plusieurs appareils ; le premier dans l’ordre de la table possède cette adresse pour la politique.
 
 Le panneau **Alerts** décrit uniquement la dernière tâche minute. **Notifications held back** inclut la suppression liée aux plafonds ou aux avis non lus, tandis que **Events dropped by module** indique que la file d’événements limitée en mémoire ou sur disque était pleine.
+
+## État de SafeSearch \{#safesearch-state}
+
+Le panneau **SafeSearch** compte les moteurs choisis pour Global et pour chaque portée réseau et appareil. Sous ces décomptes, chaque hôte sécurisé utilisé affiche ses dernières adresses IPv4 et IPv6 valides, la date de sa dernière vérification et la dernière erreur de résolution. Un hôte sans adresse maintient son moteur bloqué pour ces portées jusqu’à ce qu’une résolution réussisse.
 
 ## État de Bypass \{#bypass-state}
 

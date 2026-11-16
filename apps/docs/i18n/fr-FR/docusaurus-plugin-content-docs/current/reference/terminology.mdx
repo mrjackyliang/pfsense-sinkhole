@@ -14,44 +14,42 @@ tags:
   - glossary
 ---
 
-Ces termes ont la même signification dans tout le WebGUI Sinkhole et la documentation.
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-## DNS sinkhole \{#dns-sinkhole}
+Ces termes ont la même signification dans tout le WebGUI Sinkhole et la documentation. Les tableaux indiquent d’abord le terme, puis ses autres noms, puis la définition.
 
-Répondre à un nom bloqué par une adresse qui ne mène nulle part afin d’arrêter la requête.
+:::tip[Termes du glossaire]
+Tout au long de la documentation, vous verrez des <Terminology title="Un rappel rapide, là où vous lisez" to="/docs/reference/terminology">termes mis en évidence</Terminology> soulignés en pointillé. Survolez-les pour un bref rappel de leur sens, ou cliquez pour accéder à la définition complète.
+:::
 
-## DNS Resolver \{#dns-resolver}
+## Notions de base du DNS \{#dns-basics}
 
-Le service DNS de pfSense fondé sur Unbound.
+| Terme            | Aussi appelé | Définition                                                                                 |
+|------------------|--------------|--------------------------------------------------------------------------------------------|
+| **DNS sinkhole** | —            | Répondre à un nom bloqué par une adresse qui ne mène nulle part afin d’arrêter la requête. |
+| **DNS Resolver** | Unbound      | Le service DNS de pfSense fondé sur Unbound.                                               |
 
-## Liste de blocage \{#block-list}
+## Listes et portées \{#lists-and-scopes}
 
-Une liste de noms ou d’adresses à bloquer, ajoutée par URL ou depuis la recherche.
+| Terme                              | Aussi appelé                        | Définition                                                                                                                            |
+|------------------------------------|-------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| **liste de blocage**               | —                                   | Une liste de noms ou d’adresses à bloquer, ajoutée par URL ou depuis la recherche.                                                    |
+| **recherche de listes populaires** | —                                   | La recherche WebGUI de listes de blocage largement utilisées, semblable au sélecteur d’AdGuard Home.                                  |
+| **liste enregistrée**              | —                                   | La dernière copie valide d’une liste de blocage, conservée sur le pare-feu.                                                           |
+| **portée**                         | —                                   | Le niveau auquel une liste de blocage s’applique : tout le réseau, un VLAN ou un seul appareil.                                       |
+| **listes globales**                | —                                   | Les listes de blocage qui s’appliquent à tous les clients du réseau.                                                                  |
+| **SafeSearch**                     | Recherche sécurisée, mode restreint | Le mode sécurisé d’un moteur de recherche, imposé à tout appareil d’une portée en répondant aux noms du moteur par son hôte sécurisé. |
+| **exception de rebinding**         | private-domain                      | Un domaine autorisé à répondre avec une adresse privée malgré la protection contre le DNS rebinding.                                  |
 
-## Liste enregistrée \{#saved-list}
+## Alertes \{#alerts}
 
-La dernière copie valide d’une liste de blocage, conservée sur le pare-feu.
-
-## Portée \{#scope}
-
-Le niveau auquel une liste de blocage s’applique : tout le réseau, un VLAN ou un seul appareil.
-
-## Listes globales \{#global-lists}
-
-Les listes de blocage qui s’appliquent à tous les clients du réseau.
-
-## Règle d’alerte \{#alert-rule}
-
-Une liste et une portée dont les blocages envoient une notification pfSense.
+| Terme              | Aussi appelé | Définition                                                                   |
+|--------------------|--------------|------------------------------------------------------------------------------|
+| **règle d’alerte** | —            | Une liste et une portée dont les blocages envoient une notification pfSense. |
 
 ## Protection contre le contournement \{#bypass-protection}
 
-Des contrôles facultatifs par interface qui maintiennent les clients sur des chemins DNS que Sinkhole peut inspecter en redirigeant le DNS en clair ou en bloquant des alternatives courantes de DNS chiffré et de tunnel.
-
-## Redirection du DNS en clair \{#plain-dns-redirect}
-
-Le réglage Bypass facultatif qui envoie au pare-feu les requêtes ordinaires TCP et UDP sur le port 53 des appareils.
-
-## Recherche de listes populaires \{#popular-list-search}
-
-La recherche WebGUI de listes de blocage largement utilisées, semblable au sélecteur d’AdGuard Home.
+| Terme                                  | Aussi appelé | Définition                                                                                                                                                                                                                 |
+|----------------------------------------|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **protection contre le contournement** | Bypass       | Des contrôles facultatifs par interface qui maintiennent les clients sur des chemins DNS que Sinkhole peut inspecter en redirigeant le DNS en clair ou en bloquant des alternatives courantes de DNS chiffré et de tunnel. |
+| **redirection du DNS en clair**        | —            | Le réglage Bypass facultatif qui envoie au pare-feu les requêtes ordinaires TCP et UDP sur le port 53 des appareils.                                                                                                       |

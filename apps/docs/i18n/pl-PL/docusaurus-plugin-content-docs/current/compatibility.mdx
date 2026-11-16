@@ -42,9 +42,10 @@ Karta **About** oznacza pasujące wydanie jako **This firewall**. Dla zapory nie
 
 - Oparty na Unbound DNS Resolver w pfSense musi być włączony.
 - Jedyne miejsce na skrypt Python w Resolver musi być puste lub już należeć do Sinkhole.
+- pfBlockerNG musi zostać usunięty albo mieć wyłączoną główną opcję **Enable**.
 - Sinkhole używa pozycji modułu `pre_validator` i zgłasza stan nieaktywny, jeśli tryb Python, właściciel miejsca, pozycja lub pliki środowiska uruchomieniowego nie są zgodne.
 
-pfBlockerNG DNSBL używa tego samego miejsca na skrypt Python co Sinkhole. Sinkhole odmawia jego przejęcia, gdy właścicielem jest `pfb_unbound` lub inny skrypt.
+W trybie Python pfBlockerNG DNSBL używa tego samego miejsca na skrypt Python co Sinkhole. Sinkhole odmawia jego przejęcia, gdy właścicielem jest `pfb_unbound` lub inny skrypt. W trybie Unbound DNSBL pozostawia miejsce puste, dlatego Sinkhole pozostaje nieaktywny również wtedy, gdy pfBlockerNG jest zainstalowany z włączoną opcją **Enable**. Ustawienia, które pfBlockerNG zachowuje po usunięciu, nie mają znaczenia.
 
 ## Wymagania sieciowe \{#network-requirements}
 
@@ -67,7 +68,7 @@ Blokowanie krajów wymaga własnego identyfikatora konta MaxMind i klucza licenc
 
 ## Języki \{#languages}
 
-Pakiet wybiera sformułowania WebGUI, wiersza poleceń, walidacji, Status i powiadomień na podstawie ustawienia języka pfSense. Katalogiem źródłowym jest język angielski, a brakujące tłumaczenia korzystają obecnie z języka angielskiego.
+Pakiet wybiera sformułowania WebGUI, wiersza poleceń, walidacji, Status i powiadomień na podstawie ustawienia języka pfSense. Katalogiem źródłowym jest język angielski, a pakiet zawiera kompletne katalogi dla pozostałych 17 wersji językowych pfSense.
 
-Trwają prace nad dodatkowymi tłumaczeniami pakietu, natomiast dokumentacja jest dostępna we wszystkich 18 wersjach językowych pfSense. Nazwy marek i produktów, takie jak Sinkhole, pfSense, FreeBSD i MaxMind, pozostają niezmienione.
+WebGUI i dokumentacja są dostępne we wszystkich 18 wersjach językowych pfSense. Nazwy marek i produktów, takie jak Sinkhole, pfSense, FreeBSD i MaxMind, pozostają niezmienione.
 

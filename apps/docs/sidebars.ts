@@ -25,10 +25,12 @@ const sidebars: SidebarsConfig = {
       items: [
         'configure/lists',
         'configure/blocked-services',
+        'configure/safesearch',
         'configure/scopes',
         'configure/alerts',
         'configure/bypass-protection',
         'configure/ip-and-country-blocking',
+        'configure/resolver-settings',
       ],
     },
     {

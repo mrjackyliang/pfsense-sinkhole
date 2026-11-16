@@ -1,0 +1,60 @@
+---
+title: "Sinkhole stenger de vanlige veiene rundt DNS-blokkering"
+description: Fanen Bypass i Sinkhole 1.0 hindrer enheter på valgte grensesnitt i å gå utenom brannmurens DNS, og hver beskyttelse er av til du slår den på.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - beskyttelse mot omgåelse
+  - dns-omdirigering
+  - kryptert dns
+  - vpn-blokkering
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+Sinkhole for pfSense 1.0, utgitt 10. november 2026, har en fane Bypass som hindrer enheter på grensesnittene du velger i å gå utenom brannmurens DNS, hullet som lar enheter omgå det meste av DNS-blokkering.
+
+{/* truncate */}
+
+## Hvorfor det betyr noe \{#why-it-matters}
+
+DNS-blokkering virker bare så lenge enhetene spør brannmuren. En enhet med en fast innstilt resolver, DNS over HTTPS, Tor eller en VPN kan hoppe helt over blokkeringslistene.
+
+Å stenge disse veiene betydde tidligere egne NAT-omdirigeringsregler og brannmurregler per grensesnitt. Fanen Bypass gjør hver beskyttelse til én innstilling, brukt på grensesnittene du velger.
+
+## Hva som finnes i fanen Bypass \{#whats-on-the-bypass-tab}
+
+Hver beskyttelse er av som standard, og ingen grensesnitt er valgt før du velger ett.
+
+### Vanlig DNS \{#plain-dns}
+
+- **Redirect** — Sender vanlig DNS på port 53 til brannmuren og beholder samtidig kildeadressen til hver enhet, slik at nettverks- og enhetslister fortsatt gjelder.
+
+### Kryptert DNS \{#encrypted-dns}
+
+- **TLS and QUIC** — Blokkerer port 853 til alle mål unntatt brannmuren.
+- **Providers** — Blokkerer navnene og adressene på listene over leverandører av kryptert DNS som du legger til.
+- **Firefox** — Slår av Firefox sitt automatiske valg av DNS over HTTPS.
+- **Private Relay** — Forteller kompatible Apple-enheter at iCloud Private Relay ikke er tilgjengelig på dette nettverket.
+- **Discovery** — Svarer på oppdagelsesspørringer for kryptert DNS, eller annonserer brannmurens egen DNS over TLS.
+
+### Tunneler \{#tunnels}
+
+- **Tor** — Blokkerer Tor-reléer som står på listen.
+- **VPN** — Blokkerer VPN-leverandører som står på listen, og standard VPN-porter: TCP og UDP 1194, UDP 51820, UDP 500 og 4500, og ESP.
+
+Bypass Lists legges til via URL eller fra Bypass-katalogen, oppdateres etter listeplanen og beholder sin siste gyldige kopi når en nedlasting mislykkes.
+
+## Hva den ikke lover \{#what-it-doesnt-promise}
+
+Disse kontrollene stenger de vanlige veiene, ikke alle veier. En egendefinert kryptert tunnel kan fortsatt komme forbi DNS-basert policy, og dokumentasjonen sier det rett ut.
+
+## Kom i gang \{#get-started}
+
+Åpne **Firewall → Sinkhole → Bypass**, velg klientgrensesnittene og slå på beskyttelsene du vil ha. [Beskyttelse mot omgåelse](/docs/configure/bypass-protection) dekker hver innstilling.
+
+Sinkhole for pfSense gir pfSense avgrenset DNS-, IP- og landblokkering, med hver liste lagret på brannmuren.

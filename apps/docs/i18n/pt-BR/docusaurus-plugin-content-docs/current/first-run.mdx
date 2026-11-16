@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Configure uma lista confiável e verifique seus estados salvo, compilado, implantado e carregado antes de ampliar a política.
 
 ## Verifique o Resolver \{#check-the-resolver}
 
 1. Abra **Services → DNS Resolver** e confirme que o Resolver está ativado.
-2. Se o DNSBL do pfBlockerNG estiver ativado, escolha qual pacote será responsável pela filtragem DNS, pois os dois pacotes não podem usar juntos o espaço Python do Unbound.
+2. Se o pfBlockerNG estiver instalado e ativado, escolha qual pacote vai filtrar o DNS, pois os dois pacotes não podem funcionar juntos.
 3. Abra **Firewall → Sinkhole → General** e deixe **Enable** desativado enquanto prepara a primeira política.
 
-O Sinkhole se recusa a salvar **Enable** enquanto outro script Python ocupa o espaço. Se você desativar o Sinkhole depois, ele restaurará as configurações Python anteriores do Resolver quando ainda for o proprietário delas.
+O Sinkhole se recusa a salvar **Enable** enquanto o pfBlockerNG estiver instalado e ativado ou enquanto outro script Python ocupar o espaço. Se você desativar o Sinkhole depois, ele restaurará as configurações Python anteriores do Resolver quando ainda for o proprietário delas.
 
 ## Adicione uma lista \{#add-a-list}
 
@@ -33,6 +35,8 @@ O Sinkhole se recusa a salvar **Enable** enquanto outro script Python ocupa o es
 4. Adicione os **Allowed Domains** globais necessários, um domínio por linha, quando um falso positivo conhecido precisar ser permitido.
 
 O Sinkhole não recomenda nenhuma fonte. [Listas e cópias salvas](/docs/configure/lists) explica os formatos aceitos e como resultados do catálogo se tornam linhas de lista comuns.
+
+<img src={listsTab} alt="Aba Lists mostrando cinco listas de bloqueio de demonstração com as colunas Global e Used By, e dois domínios permitidos globais" width={1024} height={996} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Adicione escopos opcionais \{#add-optional-scopes}
 

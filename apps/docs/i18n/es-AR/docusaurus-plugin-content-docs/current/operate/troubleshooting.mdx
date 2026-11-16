@@ -30,6 +30,7 @@ Use el motivo que aparece después de **Summary → Sinkhole**:
 
 - **Sinkhole is disabled** — Seleccione **General → Enable** cuando el Resolver y el espacio Python estén preparados.
 - **DNS Resolver is disabled** — Active y aplique el Resolver antes de guardar Sinkhole.
+- **pfBlockerNG is installed and enabled** — Desactive la opción principal **Enable** de pfBlockerNG o elimine el paquete y, después, vuelva a guardar la configuración General de Sinkhole. Sinkhole devuelve un espacio que ya ocupaba en la próxima actualización programada, con **Update Now** o en la próxima sincronización del paquete.
 - **Python script slot is owned** — Desactive la integración DNSBL/Python en conflicto o mantenga Sinkhole desactivado; Sinkhole no la sustituirá.
 - **Python mode or position changed** — Vuelva a guardar la configuración General de Sinkhole para que Sync pueda restaurar el modo Python y `pre_validator` mientras Sinkhole sea propietario del espacio.
 - **Runtime files unavailable** — Ejecute Sync del paquete guardando la configuración General o reinicie y deje que Sync de paquetes de pfSense restaure los archivos del disco de memoria.
@@ -54,6 +55,15 @@ Cuando un despliegue añade nombres o amplía un subárbol, Sinkhole recarga Unb
 Una consulta cuyo destino CNAME esté incluido se bloquea aunque el nombre original no lo esté. Si el destino incluido no tiene ningún registro del tipo solicitado, como AAAA, la respuesta puede conservar el CNAME sin contener una dirección.
 
 Un nombre de consulta permitido permanece permitido. Esto impide que un destino CNAME menos específico anule una decisión explícita de dominio permitido para el nombre consultado.
+
+## SafeSearch no se aplica \{#safesearch-does-not-apply}
+
+1. Confirme que el ámbito de red o de dispositivo del cliente está activado en **Scopes** y que el buscador está marcado en **SafeSearch** para ese ámbito o para Global.
+2. Revise en **Status → SafeSearch** las direcciones del host seguro y el último error. Un host sin direcciones mantiene su buscador bloqueado para el ámbito hasta que una resolución tenga éxito.
+3. Confirme que **Compile Needed** y **Deployment Needed** muestran `No` después de guardar.
+4. Confirme que el cliente no usa DNS cifrado ni otro resolver; la [protección contra evasiones](/docs/configure/bypass-protection) mantiene las interfaces seleccionadas en la ruta DNS de Sinkhole.
+
+Un navegador puede conservar en caché la dirección normal de un buscador durante unos minutos, así que pruebe desde una ventana privada nueva o cuando se vacíe la caché DNS del navegador.
 
 ## Un dispositivo recibe la política incorrecta \{#a-device-gets-the-wrong-policy}
 

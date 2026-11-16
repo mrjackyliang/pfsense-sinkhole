@@ -1,0 +1,47 @@
+---
+title: "Sinkhole 按 IP 地址和国家/地区阻止，而不只是按名称"
+description: Sinkhole 1.0 在独立的防火墙锚点中加入 IP 列表和 MaxMind GeoLite2 国家/地区阻止，用于处理从不向 DNS 查询名称的流量。
+slug: sinkhole-blocks-by-ip-address-and-country
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - ip 阻止
+  - 国家/地区阻止
+  - geolite2
+  - pf 锚点
+tags:
+  - release
+  - ip-blocking
+  - pfsense
+---
+
+Sinkhole for pfSense 1.0 于 2026 年 11 月 10 日发布。除了按名称阻止，它还可以按 IP 地址和国家/地区阻止流量，与 DNS 阻止列表使用同一个软件包和同一个 WebGUI。
+
+{/* truncate */}
+
+## 为什么重要 \{#why-it-matters}
+
+DNS 阻止拦截的是查询。直接发往某个地址的流量，例如扫描 WAN 的扫描器或使用硬编码服务器的应用，从不查询 DNS，也就不会遇到阻止列表。
+
+Sinkhole 将 IP 和国家/地区阻止放在独立的 IP 选项卡中，与 DNS 策略分开，因此一个软件包即可覆盖名称、地址和国家/地区。
+
+## 包含的功能 \{#whats-included}
+
+- **IP 列表** — 通过 URL 添加列表，或在 pfBlockerNG 订阅源目录的 IP 部分中查找。每个列表可以包含 IPv4、IPv6 或两者。
+- **国家/地区阻止** — 使用 MaxMind GeoLite2 数据，按两字母代码选择国家/地区，并使用你自己的 MaxMind 账户和许可证密钥。Sinkhole 从不附带密钥。
+- **接口和方向** — 按接口阻止从 WAN 进入的列表中的源地址、从客户端网络发往列表中的目标地址，或两者都阻止。
+- **允许列表** — IP Allowlist 中的地址、网络和别名会在阻止集合加载之前被排除。
+- **受保护的地址** — 防火墙自身的地址、网关、DNS 服务器以及所选接口的子网会被自动移除，因此列表不会把你锁在外面。
+
+规则位于 Sinkhole 的防火墙锚点 `sinkhole/ip` 中，pfSense 重新加载过滤器时该锚点保持不变。列表更新只替换其中的表，下载失败时保留最后一份有效副本。
+
+## 开启前保持关闭 \{#off-until-you-turn-it-on}
+
+IP 和国家/地区阻止默认关闭，并且独立运行，不依赖 DNS 开关。Status 选项卡显示表的大小、上次更新、GeoLite2 更新时间，以及锚点是否已加载且为最新。
+
+## 开始使用 \{#get-started}
+
+打开 **Firewall → Sinkhole → IP**，选择接口和方向，然后添加列表或国家/地区。[IP 和国家/地区阻止](/docs/configure/ip-and-country-blocking)介绍了每项设置。
+
+Sinkhole for pfSense 为 pfSense 带来按作用域进行的 DNS、IP 和国家/地区阻止，并将每份列表保存在防火墙上。

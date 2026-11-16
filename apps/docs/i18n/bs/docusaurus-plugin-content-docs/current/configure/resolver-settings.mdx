@@ -1,0 +1,55 @@
+---
+id: resolver-settings
+title: Postavke Resolvera
+description: Postavite izuzetke od rebindinga i vrijeme isteklih odgovora za DNS Resolver na Sinkholeovoj kartici General, bez ručno napisanih Custom options.
+keywords:
+  - sinkhole for pfsense
+  - dns rebinding
+  - private-domain
+  - serve expired
+  - custom options
+tags:
+  - configure
+  - resolver
+  - dns
+---
+
+Koristite odjeljak **Resolver** na **Firewall → Sinkhole → General** za postavke DNS Resolvera koje vlastite stranice pfSensea ne nude.
+
+## Zašto koristiti postavke Resolvera? \{#why-use-resolver-settings}
+
+1. Održava rad usluga poput Plexa iza pfSenseove zaštite od DNS rebindinga bez ručno napisanih Custom options.
+2. Omogućava da odgovori iz predmemorije održe brz DNS dok je upstream server spor ili nedostupan.
+3. Drži ove redove u istom upravljanom bloku koji Sinkhole već posjeduje, pa polje **Custom options** DNS Resolvera može ostati prazno.
+
+## Rebind Exceptions \{#rebind-exceptions}
+
+pfSenseova zaštita od DNS rebindinga odbacuje javne odgovore koji upućuju na privatne adrese. Usluge poput Plexa (`plex.direct`) namjerno odgovaraju privatnom adresom, pa njihovim nazivima treba izuzetak.
+
+Unesite jednu domenu po redu. Svaki unos obuhvata domenu i svaku poddomenu. Zaštita je uključena osim ako je **System → Advanced → Admin Access → DNS Rebind Check** onemogućen; kada je provjera onemogućena, izuzeci ništa ne mijenjaju.
+
+## Istekli odgovori \{#expired-answers}
+
+pfSenseova postavka **Serve Expired**, pod **Services → DNS Resolver → Advanced Settings**, omogućava Resolveru da odgovara iz isteklih zapisa predmemorije dok ih osvježava. Dvije povezane postavke dostupne su samo ovdje:
+
+| Polje                   | Unbound postavka               | Opis                                                                                     |
+|-------------------------|--------------------------------|------------------------------------------------------------------------------------------|
+| Expired Answer Lifetime | `serve-expired-ttl`            | Sekunde tokom kojih se istekli odgovor još smije posluživati. `0` znači bez ograničenja. |
+| Expired Answer Wait     | `serve-expired-client-timeout` | Milisekunde čekanja na svjež odgovor prije svega. `0` odmah odgovara iz predmemorije.    |
+
+Obje se primjenjuju samo dok je **Serve Expired** uključen, a kartica General pokazuje da li jeste. Prazno polje zadržava zadanu vrijednost Resolvera. Ista stranica Advanced Settings ima i **Prefetch Support** i **Prefetch DNS Key Support**.
+
+## Kada se postavke primjenjuju \{#when-the-settings-apply}
+
+Postavke djeluju dok je Sinkhole omogućen i njegova integracija s DNS Resolverom aktivna. Sinkhole ih upisuje u svoj upravljani blok na kraju polja **Custom options** DNS Resolvera:
+
+```text
+# Sinkhole: begin (managed by the Sinkhole package)
+server:
+private-domain: "plex.direct"
+serve-expired-ttl: 86400
+serve-expired-client-timeout: 0
+# Sinkhole: end
+```
+
+Onemogućavanje Sinkholea ili uklanjanje paketa uklanja blok i svaki red u njemu. Sinkhole nikada ne mijenja administratorove vlastite redove u **Custom options**.

@@ -14,6 +14,8 @@ tags:
   - dns
 ---
 
+import servicesTab from './_assets_/blocked-services-1.png';
+
 Bruk **Firewall → Sinkhole → Services** når du vil blokkere et helt merke uten å velge og vedlikeholde en egen liste-URL.
 
 ## Velg et omfang \{#choose-a-scope}
@@ -23,6 +25,8 @@ Velg **Global**, et konfigurert nettverk eller en konfigurert enhet. Søk etter 
 Valget kompileres på det eksisterende nivået for omfanget. Tillatte domener for enheter har fortsatt prioritet over tjenesteregler for enheter, tillatte domener for nettverk har fortsatt prioritet over tjenesteregler for nettverk, og globale tillatte domener har fortsatt prioritet over globale tjenesteregler.
 
 Tjenester som dekkes av en egen Bypass-beskyttelse, vises ikke i rutenettet, gruppetellingene eller søket. Private Relay konfigureres bare på Bypass-fanen.
+
+<img src={servicesTab} alt="Fanen Services filtrert til gruppen Gaming for et demoenhetsomfang, med fire valgte tjenester" width={1024} height={1288} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Register og reparasjon \{#registry-and-repair}
 

@@ -1,74 +1,161 @@
 {
-  "homepage.hero.eyebrow": {
-    "message": "原生 pfSense 软件包"
-  },
-  "homepage.hero.heading": {
-    "message": "决定每个网络和设备可以访问的内容。"
-  },
-  "homepage.hero.tagline": {
+  "home.meta.description": {
     "message": "将已保存的 DNS 列表应用于整个网络、某个 VLAN 或单个设备，并提供有意设置的警报，无需第二台设备。"
   },
-  "homepage.hero.ctaLabel": {
-    "message": "安装 Sinkhole"
+  "home.meta.title": {
+    "message": "Sinkhole for pfSense - 按作用域进行 DNS、IP 和国家/地区阻止"
   },
-  "homepage.hero.secondaryCtaLabel": {
-    "message": "规划作用域"
+  "home.hero.eyebrow": {
+    "message": "原生 pfSense 软件包"
   },
-  "homepage.stats.heading": {
-    "message": "一台防火墙，覆盖每个实用层级的策略"
+  "home.hero.heading": {
+    "message": "决定每个网络和设备可以访问的内容。"
   },
-  "homepage.stats.description": {
-    "message": "Sinkhole 将策略保留在本地，并明确网络和设备边界。"
+  "home.hero.tagline": {
+    "message": "将已保存的 DNS 列表应用于整个网络、某个 VLAN 或单个设备，并提供有意设置的警报，无需第二台设备。"
   },
-  "homepage.stats.policyScopes": {
-    "message": "策略作用域"
+  "home.hero.primaryAction": {
+    "message": "开始使用"
   },
-  "homepage.stats.dnsListFormats": {
-    "message": "DNS 列表格式"
+  "home.hero.secondaryAction": {
+    "message": "了解更多"
   },
-  "homepage.stats.catalogCache": {
-    "message": "目录缓存"
+  "home.preview.ariaLabel": {
+    "message": "VLAN 上某台设备的 DNS 决定示例"
   },
-  "homepage.stats.unboundSlot": {
-    "message": "Unbound 模块插槽"
+  "home.preview.title": {
+    "message": "DNS 决定"
   },
-  "homepage.features.heading": {
-    "message": "由防火墙掌控"
+  "home.preview.blocked": {
+    "message": "已阻止"
   },
-  "homepage.features.scopes.title": {
+  "home.preview.query": {
+    "message": "查询"
+  },
+  "home.preview.client": {
+    "message": "客户端"
+  },
+  "home.preview.network": {
+    "message": "网络"
+  },
+  "home.preview.deviceLists": {
+    "message": "设备列表"
+  },
+  "home.preview.noMatch": {
+    "message": "无匹配"
+  },
+  "home.preview.networkLists": {
+    "message": "网络列表"
+  },
+  "home.preview.globalLists": {
+    "message": "全局列表"
+  },
+  "home.preview.notReached": {
+    "message": "未到达"
+  },
+  "home.preview.result": {
+    "message": "由已保存列表应答"
+  },
+  "home.features.scopes.title": {
     "message": "限定每项决定的作用域"
   },
-  "homepage.features.scopes.description": {
+  "home.features.scopes.description": {
     "message": "全局、按接口或 VLAN、按设备应用列表和允许域名。"
   },
-  "homepage.features.savedLists.title": {
+  "home.features.savedLists.title": {
     "message": "保留最后有效数据"
   },
-  "homepage.features.savedLists.description": {
+  "home.features.savedLists.description": {
     "message": "从本地已保存列表应答 DNS，因此可经受重启、超时和下载失败。"
   },
-  "homepage.features.alerts.title": {
+  "home.features.alerts.title": {
     "message": "有目的地发出警报"
   },
-  "homepage.features.alerts.description": {
+  "home.features.alerts.description": {
     "message": "只为每条规则中选择的列表、网络和设备发送通知。"
   },
-  "homepage.features.redirect.title": {
+  "home.features.redirect.title": {
     "message": "保护 DNS 路径"
   },
-  "homepage.features.redirect.description": {
+  "home.features.redirect.description": {
     "message": "可选择在所选接口上重定向普通 DNS，或拦截常见的加密 DNS 和隧道绕过路径。"
   },
-  "homepage.features.catalogs.title": {
+  "home.features.catalogs.title": {
     "message": "搜索后自行决定"
   },
-  "homepage.features.catalogs.description": {
+  "home.features.catalogs.description": {
     "message": "按需搜索受支持的目录，不捆绑或推荐任何列表。"
   },
-  "homepage.features.ipCountry.title": {
+  "home.features.ipCountry.title": {
     "message": "阻止地址和国家或地区"
   },
-  "homepage.features.ipCountry.description": {
+  "home.features.ipCountry.description": {
     "message": "通过独立的 sinkhole/ip 锚点应用 IP 列表和 GeoLite2 国家或地区策略。"
+  },
+  "home.blogPreview.heading": {
+    "message": "博客文章"
+  },
+  "home.blogPreview.description": {
+    "message": "Sinkhole for pfSense 的发布消息、里程碑和新功能。"
+  },
+  "home.showcase.heading": {
+    "message": "pfSense WebGUI 一览"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Sinkhole 页面"
+  },
+  "home.showcase.scopes.label": {
+    "message": "作用域"
+  },
+  "home.showcase.scopes.heading": {
+    "message": "每个网络和设备各有规则"
+  },
+  "home.showcase.scopes.description": {
+    "message": "为某个网络或单个设备分配专属的列表和允许的域名。每个 DNS 查询都遵循与其匹配的最具体的作用域。"
+  },
+  "home.showcase.scopes.link": {
+    "message": "设置作用域"
+  },
+  "home.showcase.scopes.alt": {
+    "message": "Sinkhole 作用域页面，包含一个 LAN 网络作用域和三个设备作用域"
+  },
+  "home.showcase.services.label": {
+    "message": "服务"
+  },
+  "home.showcase.services.heading": {
+    "message": "一键阻止整个服务"
+  },
+  "home.showcase.services.description": {
+    "message": "从缓存的服务注册表中选择游戏、社交媒体、流媒体等服务，应用于所有人，或单个网络或设备。允许的域名依然优先。"
+  },
+  "home.showcase.services.link": {
+    "message": "阻止服务"
+  },
+  "home.showcase.services.alt": {
+    "message": "Sinkhole 已阻止的服务页面，显示某个设备作用域的游戏服务"
+  },
+  "home.showcase.status.label": {
+    "message": "状态"
+  },
+  "home.showcase.status.heading": {
+    "message": "了解哪些已加载、哪些已过期"
+  },
+  "home.showcase.status.description": {
+    "message": "状态页面显示每个列表的条目数和上次更新时间，以及 Sinkhole 当前正在应用的作用域、网络和设备。"
+  },
+  "home.showcase.status.link": {
+    "message": "了解状态页面"
+  },
+  "home.showcase.status.alt": {
+    "message": "Sinkhole 状态页面，包含列表、作用域、网络和设备面板"
+  },
+  "home.showcase.scopes.title": {
+    "message": "pfSense.home.arpa - 防火墙: Sinkhole: 作用域"
+  },
+  "home.showcase.services.title": {
+    "message": "pfSense.home.arpa - 防火墙: Sinkhole: 服务"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - 防火墙: Sinkhole: 状态"
   }
 }

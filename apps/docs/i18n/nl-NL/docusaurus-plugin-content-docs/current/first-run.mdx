@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Stel één vertrouwde lijst in en controleer de opgeslagen, gecompileerde, uitgerolde en geladen status voordat u het beleid uitbreidt.
 
 ## De Resolver controleren \{#check-the-resolver}
 
 1. Open **Services → DNS Resolver** en controleer of de Resolver is ingeschakeld.
-2. Als pfBlockerNG DNSBL is ingeschakeld, kiest u welk pakket de DNS-filtering beheert, omdat beide pakketten niet tegelijk de Python-positie van Unbound kunnen gebruiken.
+2. Als pfBlockerNG is geïnstalleerd en ingeschakeld, kiest u welk pakket DNS filtert, omdat de twee pakketten niet samen kunnen draaien.
 3. Open **Firewall → Sinkhole → General** en laat **Enable** uitgeschakeld terwijl u het eerste beleid voorbereidt.
 
-Sinkhole weigert **Enable** op te slaan zolang een ander Python-script de positie bezit. Als u Sinkhole later uitschakelt, worden de eerdere Python-instellingen van de Resolver hersteld wanneer Sinkhole daar nog eigenaar van is.
+Sinkhole weigert **Enable** op te slaan zolang pfBlockerNG is geïnstalleerd en ingeschakeld, of zolang een ander Python-script de positie bezit. Als u Sinkhole later uitschakelt, worden de eerdere Python-instellingen van de Resolver hersteld wanneer Sinkhole daar nog eigenaar van is.
 
 ## Een lijst toevoegen \{#add-a-list}
 
@@ -33,6 +35,8 @@ Sinkhole weigert **Enable** op te slaan zolang een ander Python-script de positi
 4. Voeg eventuele globale **Allowed Domains** toe, één domein per regel, wanneer een bekende fout-positieve blokkering moet worden doorgelaten.
 
 Sinkhole beveelt geen enkele bron aan. [Lijsten en opgeslagen kopieën](/docs/configure/lists) beschrijft de geaccepteerde indelingen en hoe catalogusresultaten gewone lijstrijen worden.
+
+<img src={listsTab} alt="Tabblad Lists met vijf demoblokkeerlijsten, hun kolommen Global en Used By, en twee globaal toegestane domeinen" width={1024} height={996} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Optionele scopes toevoegen \{#add-optional-scopes}
 

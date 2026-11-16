@@ -14,6 +14,9 @@ tags:
   - dns
 ---
 
+import deviceEditor from './_assets_/scopes-2.png';
+import scopesTab from './_assets_/scopes-1.png';
+
 Weise Listen und erlaubte Domains auf globaler, Netzwerk- und Geräteebene zu, damit jeder Client die für seinen aktuellen Standort vorgesehene Richtlinie erhält.
 
 ## Warum Scopes verwenden? \{#why-use-scopes}
@@ -35,6 +38,8 @@ Ein Client, der mit keinem aktivierten Netzwerk- oder Geräte-Scope übereinstim
 
 Jeder Netzwerkeintrag wählt zusätzliche Listen, erlaubte Domains und den Aktivierungszustand des Scopes aus. Nach dem Speichern kehrst du zu Scopes zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile. Ein Gerät, das zwischen Netzwerken wechselt, erhält die Richtlinie des Netzwerks, zu dem seine aktuelle Adresse gehört.
 
+<img src={scopesTab} alt="Tab Scopes mit einem LAN-Netzwerk-Scope und drei Demo-Geräten, die per IP- oder MAC-Adresse identifiziert werden, samt ihren aktuellen Adressen" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
 ## Geräte-Scopes \{#device-scopes}
 
 Wähle unter der Tabelle Devices **Add**, gib einen Namen ein und wähle eine Identifikationsmethode. Der Editor zeigt nur das Identifikatorfeld für die ausgewählte Methode an:
@@ -46,6 +51,8 @@ Wähle unter der Tabelle Devices **Add**, gib einen Namen ein und wähle eine Id
 | MAC address         | Aktuelle ARP-, NDP- und DHCP-Lease-Adressen für diese MAC.                                          |
 
 Der Geräteeintrag wählt seine Listen, erlaubten Domains und seinen Aktivierungszustand aus. Nach dem Speichern kehrst du zu Scopes zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile. Ein Hintergrundauftrag aktualisiert aktuelle Subnetze und Geräteadressen jede Minute, solange die DNS-Blockierung einen aktivierten Netzwerk- oder Geräte-Scope hat oder der Bypass-DNS-Schutz eine Client-Zuordnung benötigt. Paket-Sync startet dieselbe Aktualisierung nur unter dieser Bedingung.
+
+<img src={deviceEditor} alt="Seite Edit Device für ein Demo-Tablet, das per IP-Adresse identifiziert wird, mit einer ausgewählten Liste und einer erlaubten Domain" width={1024} height={849} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Entscheidungsreihenfolge \{#decision-order}
 

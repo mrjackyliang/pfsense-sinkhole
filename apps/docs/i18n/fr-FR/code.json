@@ -1,74 +1,155 @@
 {
-  "homepage.hero.eyebrow": {
-    "message": "Paquet pfSense natif"
-  },
-  "homepage.hero.heading": {
-    "message": "Choisissez ce que chaque réseau et appareil peut atteindre."
-  },
-  "homepage.hero.tagline": {
+  "home.meta.description": {
     "message": "Appliquez des listes DNS enregistrées à tout le réseau, à un VLAN ou à un appareil, avec des alertes choisies et sans second serveur."
   },
-  "homepage.hero.ctaLabel": {
-    "message": "Installer Sinkhole"
+  "home.meta.title": {
+    "message": "Sinkhole for pfSense - Blocage DNS, IP et par pays avec portées"
   },
-  "homepage.hero.secondaryCtaLabel": {
-    "message": "Planifier les scopes"
+  "home.hero.eyebrow": {
+    "message": "Paquet pfSense natif"
   },
-  "homepage.stats.heading": {
-    "message": "Un pare-feu, une politique à chaque niveau utile"
+  "home.hero.heading": {
+    "message": "Choisissez ce que chaque réseau et appareil peut atteindre."
   },
-  "homepage.stats.description": {
-    "message": "Sinkhole conserve la politique localement et rend ses limites de fonctionnement explicites."
+  "home.hero.tagline": {
+    "message": "Appliquez des listes DNS enregistrées à tout le réseau, à un VLAN ou à un appareil, avec des alertes choisies et sans second serveur."
   },
-  "homepage.stats.policyScopes": {
-    "message": "Scopes de politique"
+  "home.hero.primaryAction": {
+    "message": "Commencer"
   },
-  "homepage.stats.dnsListFormats": {
-    "message": "Formats de listes DNS"
+  "home.hero.secondaryAction": {
+    "message": "En savoir plus"
   },
-  "homepage.stats.catalogCache": {
-    "message": "Cache des catalogues"
+  "home.preview.ariaLabel": {
+    "message": "Exemple de décision DNS pour un appareil sur un VLAN"
   },
-  "homepage.stats.unboundSlot": {
-    "message": "Emplacement du module Unbound"
+  "home.preview.title": {
+    "message": "Décision DNS"
   },
-  "homepage.features.heading": {
-    "message": "Un contrôle qui reste sur le pare-feu"
+  "home.preview.blocked": {
+    "message": "Bloqué"
   },
-  "homepage.features.scopes.title": {
+  "home.preview.query": {
+    "message": "Requête"
+  },
+  "home.preview.network": {
+    "message": "Réseau"
+  },
+  "home.preview.deviceLists": {
+    "message": "Listes de l’appareil"
+  },
+  "home.preview.noMatch": {
+    "message": "Aucune correspondance"
+  },
+  "home.preview.networkLists": {
+    "message": "Listes du réseau"
+  },
+  "home.preview.globalLists": {
+    "message": "Listes globales"
+  },
+  "home.preview.notReached": {
+    "message": "Non atteint"
+  },
+  "home.preview.result": {
+    "message": "répondu depuis les listes enregistrées"
+  },
+  "home.features.scopes.title": {
     "message": "Définir chaque décision"
   },
-  "homepage.features.scopes.description": {
+  "home.features.scopes.description": {
     "message": "Appliquez listes et domaines autorisés globalement, par interface ou VLAN et par appareil."
   },
-  "homepage.features.savedLists.title": {
+  "home.features.savedLists.title": {
     "message": "Conserver la dernière copie valide"
   },
-  "homepage.features.savedLists.description": {
+  "home.features.savedLists.description": {
     "message": "Répondez au DNS depuis les listes locales malgré redémarrages, rechargements et échecs de téléchargement."
   },
-  "homepage.features.alerts.title": {
+  "home.features.alerts.title": {
     "message": "Alerter volontairement"
   },
-  "homepage.features.alerts.description": {
+  "home.features.alerts.description": {
     "message": "Notifiez uniquement pour les listes, réseaux et appareils choisis dans chaque règle."
   },
-  "homepage.features.redirect.title": {
+  "home.features.redirect.title": {
     "message": "Protéger les chemins DNS"
   },
-  "homepage.features.redirect.description": {
+  "home.features.redirect.description": {
     "message": "Redirigez facultativement le DNS en clair ou bloquez les contournements courants par DNS chiffré et tunnel sur les interfaces sélectionnées."
   },
-  "homepage.features.catalogs.title": {
+  "home.features.catalogs.title": {
     "message": "Rechercher, puis décider"
   },
-  "homepage.features.catalogs.description": {
+  "home.features.catalogs.description": {
     "message": "Recherchez les catalogues pris en charge à la demande sans intégrer ni recommander de liste."
   },
-  "homepage.features.ipCountry.title": {
+  "home.features.ipCountry.title": {
     "message": "Bloquer adresses et pays"
   },
-  "homepage.features.ipCountry.description": {
+  "home.features.ipCountry.description": {
     "message": "Appliquez les listes IP et la politique GeoLite2 via l’ancre isolée `sinkhole/ip`."
+  },
+  "home.blogPreview.heading": {
+    "message": "Sur le blog"
+  },
+  "home.blogPreview.description": {
+    "message": "Lancements, étapes clés et nouveautés de Sinkhole for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Au cœur de la WebGUI de pfSense"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Pages de Sinkhole"
+  },
+  "home.showcase.scopes.label": {
+    "message": "Portées"
+  },
+  "home.showcase.scopes.heading": {
+    "message": "Des règles différentes pour chaque réseau et appareil"
+  },
+  "home.showcase.scopes.description": {
+    "message": "Donnez à un réseau ou à un seul appareil ses propres listes et domaines autorisés. Chaque requête DNS suit la portée la plus spécifique qui lui correspond."
+  },
+  "home.showcase.scopes.link": {
+    "message": "Configurer les portées"
+  },
+  "home.showcase.scopes.alt": {
+    "message": "Page Portées de Sinkhole avec une portée réseau LAN et trois portées d’appareil"
+  },
+  "home.showcase.services.heading": {
+    "message": "Bloquez un service entier en un clic"
+  },
+  "home.showcase.services.description": {
+    "message": "Choisissez jeux, réseaux sociaux, streaming et autres services dans un registre des services mis en cache, pour tout le monde ou pour un réseau ou un appareil. Les domaines autorisés restent prioritaires."
+  },
+  "home.showcase.services.link": {
+    "message": "Bloquer des services"
+  },
+  "home.showcase.services.alt": {
+    "message": "Page Services bloqués de Sinkhole affichant des services de jeu pour une portée d’appareil"
+  },
+  "home.showcase.status.label": {
+    "message": "État"
+  },
+  "home.showcase.status.heading": {
+    "message": "Sachez ce qui est chargé et ce qui est obsolète"
+  },
+  "home.showcase.status.description": {
+    "message": "État affiche chaque liste avec son nombre d’entrées et sa dernière mise à jour, ainsi que les portées, réseaux et appareils que Sinkhole applique en ce moment."
+  },
+  "home.showcase.status.link": {
+    "message": "Découvrir la page État"
+  },
+  "home.showcase.status.alt": {
+    "message": "Page État de Sinkhole avec les panneaux des listes, portées, réseaux et appareils"
+  },
+  "home.showcase.scopes.title": {
+    "message": "pfSense.home.arpa - Pare-feu: Sinkhole: Portées"
+  },
+  "home.showcase.services.title": {
+    "message": "pfSense.home.arpa - Pare-feu: Sinkhole: Services"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Pare-feu: Sinkhole: État"
   }
 }

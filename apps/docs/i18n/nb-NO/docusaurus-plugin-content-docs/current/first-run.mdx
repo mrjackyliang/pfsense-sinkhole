@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Konfigurer én pålitelig liste, og kontroller statusen som lagret, kompilert, distribuert og lastet før du utvider policyen.
 
 ## Kontroller Resolver \{#check-the-resolver}
 
 1. Åpne **Services → DNS Resolver**, og bekreft at Resolver er aktivert.
-2. Hvis pfBlockerNG DNSBL er aktivert, velger du hvilken pakke som skal eie DNS-filtreringen, fordi begge pakkene ikke kan bruke Python-plassen i Unbound samtidig.
+2. Hvis pfBlockerNG er installert og aktivert, velger du hvilken pakke som skal filtrere DNS, fordi de to pakkene ikke kan kjøre samtidig.
 3. Åpne **Firewall → Sinkhole → General**, og la **Enable** være avslått mens den første policyen klargjøres.
 
-Sinkhole nekter å lagre **Enable** mens et annet Python-skript eier plassen. Hvis du deaktiverer Sinkhole senere, gjenopprettes de tidligere Python-innstillingene i Resolver så lenge Sinkhole fortsatt eier dem.
+Sinkhole nekter å lagre **Enable** mens pfBlockerNG er installert og aktivert, eller mens et annet Python-skript eier plassen. Hvis du deaktiverer Sinkhole senere, gjenopprettes de tidligere Python-innstillingene i Resolver så lenge Sinkhole fortsatt eier dem.
 
 ## Legg til en liste \{#add-a-list}
 
@@ -33,6 +35,8 @@ Sinkhole nekter å lagre **Enable** mens et annet Python-skript eier plassen. Hv
 4. Legg til eventuelle globale **Allowed Domains**, ett domene per linje, når en kjent falsk positiv skal slippes gjennom.
 
 Sinkhole anbefaler ingen kilde. [Lister og lagrede kopier](/docs/configure/lists) forklarer de støttede formatene og hvordan katalogresultater blir vanlige listerader.
+
+<img src={listsTab} alt="Fanen Lists viser fem demoblokkeringslister med kolonnene Global og Used By, og to globalt tillatte domener" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Legg til valgfrie omfang \{#add-optional-scopes}
 

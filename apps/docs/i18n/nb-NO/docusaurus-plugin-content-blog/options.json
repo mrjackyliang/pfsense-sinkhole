@@ -1,0 +1,11 @@
+{
+  "title": {
+    "message": "Blogg"
+  },
+  "description": {
+    "message": "Utgivelser og milepæler fra Sinkhole, avgrenset DNS-, IP- og landblokkering som kjører i pfSense."
+  },
+  "sidebar.title": {
+    "message": "Siste innlegg"
+  }
+}

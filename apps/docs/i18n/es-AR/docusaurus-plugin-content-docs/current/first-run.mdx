@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Configure una lista fiable y verifique sus estados guardado, compilado, desplegado y cargado antes de ampliar la política.
 
 ## Comprobar el Resolver \{#check-the-resolver}
 
 1. Abra **Services → DNS Resolver** y confirme que el Resolver está activado.
-2. Si pfBlockerNG DNSBL está activado, elija qué paquete será responsable del filtrado DNS, ya que ambos no pueden usar a la vez el espacio Python de Unbound.
+2. Si pfBlockerNG está instalado y activado, elija qué paquete filtrará DNS, ya que ambos paquetes no pueden funcionar a la vez.
 3. Abra **Firewall → Sinkhole → General** y mantenga **Enable** desactivado mientras prepara la primera política.
 
-Sinkhole se niega a guardar **Enable** mientras otro script Python sea propietario del espacio. Si más adelante desactiva Sinkhole, este restaura la configuración Python anterior del Resolver siempre que Sinkhole todavía sea su propietario.
+Sinkhole se niega a guardar **Enable** mientras pfBlockerNG esté instalado y activado, o mientras otro script Python sea propietario del espacio. Si más adelante desactiva Sinkhole, este restaura la configuración Python anterior del Resolver siempre que Sinkhole todavía sea su propietario.
 
 ## Añadir una lista \{#add-a-list}
 
@@ -33,6 +35,8 @@ Sinkhole se niega a guardar **Enable** mientras otro script Python sea propietar
 4. Añada los **Allowed Domains** globales necesarios, uno por línea, cuando deba permitirse un falso positivo conocido.
 
 Sinkhole no recomienda ninguna fuente. [Listas y copias guardadas](/docs/configure/lists) explica los formatos aceptados y cómo los resultados del catálogo se convierten en filas de lista ordinarias.
+
+<img src={listsTab} alt="Pestaña Lists con cinco listas de bloqueo de demostración, sus columnas Global y Used By, y dos dominios permitidos globales" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Añadir ámbitos opcionales \{#add-optional-scopes}
 

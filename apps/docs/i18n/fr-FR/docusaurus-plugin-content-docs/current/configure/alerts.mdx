@@ -14,6 +14,8 @@ tags:
   - notifications
 ---
 
+import alertRuleEditor from './_assets_/alerts-1.png';
+
 Envoyez des notifications uniquement pour les réponses bloquées dont la liste et le client correspondent à une règle d’alerte activée.
 
 ## Pourquoi utiliser des règles d’alerte ? \{#why-use-alert-rules}
@@ -43,6 +45,8 @@ Ouvrez **Firewall → Sinkhole → Alerts**, sélectionnez **Add** sous la table
 Le champ des listes choisies est masqué lorsque **Any block list** est sélectionné, et les champs des réseaux et appareils le sont lorsque **Everyone** est sélectionné. L’enregistrement revient à Alerts ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier.
 
 Un blocage ne correspond que si l’une des listes qui ont bloqué le nom est sélectionnée par la règle et si le client est sélectionné par cette même règle. La fenêtre de répétition par défaut est de 60 minutes et la plage acceptée va de 1 à 1 440 minutes.
+
+<img src={alertRuleEditor} alt="Page Edit Alert Rule correspondant à une liste choisie pour un appareil de démonstration choisi, avec une fenêtre de répétition de 60 minutes et les deux canaux de distribution activés" width={1024} height={1011} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Canaux de distribution \{#delivery-channels}
 

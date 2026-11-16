@@ -14,6 +14,8 @@ tags:
   - firewall
 ---
 
+import ipTab from './_assets_/ip-and-country-blocking-1.png';
+
 Blockiere ausgewählte IP-Quellen oder -Ziele unabhängig von DNS-Richtlinien mit paketverwalteten Tabellen im pf-Anker `sinkhole/ip`.
 
 ## Warum IP-Blockierung verwenden? \{#why-use-ip-blocking}
@@ -34,6 +36,8 @@ Blockiere ausgewählte IP-Quellen oder -Ziele unabhängig von DNS-Richtlinien mi
 | Outbound    | Blockiert Pakete, die an eine aufgeführte Zieladresse gerichtet eintreffen, typischerweise in Clientnetzwerken. |
 
 Der Anker enthält `block drop in quick`-Regeln und keine Pass-Regeln. Sinkhole referenziert ihn über die frühe Paketregelposition von pfSense, damit die Blockierungen vor gewöhnlichen Pass-Quick-Regeln ausgeführt werden. Die Seite zeigt zuerst die Panels für IP-Listen und Katalog, gefolgt von den seitenweiten IP- und Ländereinstellungen mit **Save** unter dem Panel.
+
+<img src={ipTab} alt="Tab IP mit zwei Demo-IP-Listen, dem Katalog-Panel und auf LAN in beide Richtungen aktivierter IP- und Länderblockierung" width={1024} height={1574} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## IP-Listen hinzufügen \{#add-ip-lists}
 

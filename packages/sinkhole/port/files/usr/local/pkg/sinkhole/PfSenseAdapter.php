@@ -15,6 +15,8 @@ use PfSense\Sinkhole\Domain\IpConfiguration;
 use PfSense\Sinkhole\Domain\IpNetwork;
 use PfSense\Sinkhole\Domain\IpRuleConfiguration;
 use PfSense\Sinkhole\Domain\RedirectConfiguration;
+use PfSense\Sinkhole\Domain\SafeSearchConfiguration;
+use PfSense\Sinkhole\Domain\SafeSearchEngines;
 use PfSense\Sinkhole\Domain\ScopeConfiguration;
 use PfSense\Sinkhole\Domain\ServiceConfiguration;
 use PfSense\Sinkhole\Domain\Settings;
@@ -37,6 +39,9 @@ require_once(__DIR__ . '/FileSystem.php');
 require_once(__DIR__ . '/PackagePaths.php');
 require_once(__DIR__ . '/PlatformAdapter.php');
 require_once(__DIR__ . '/RedirectConfiguration.php');
+require_once(__DIR__ . '/SafeSearchConfiguration.php');
+require_once(__DIR__ . '/SafeSearchEngines.php');
+require_once(__DIR__ . '/SafeSearchTargets.php');
 require_once(__DIR__ . '/SavedListStore.php');
 require_once(__DIR__ . '/Settings.php');
 require_once(__DIR__ . '/ListConfiguration.php');
@@ -1350,6 +1355,88 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @since 1.1.0
+     */
+    public function getSafeSearch(): array
+    {
+        return SafeSearchConfiguration::partition(
+            config_get_path('installedpackages/sinkhole/safesearch', []),
+        );
+    }
+
+    /**
+     * pfSense Adapter - Save SafeSearch.
+     *
+     * @param array $configuration - Canonical per-scope choices.
+     *
+     * @return void
+     *
+     * @since 1.1.0
+     */
+    public function saveSafeSearch(array $configuration): void
+    {
+        config_set_path(
+            'installedpackages/sinkhole/safesearch',
+            SafeSearchConfiguration::storage($configuration),
+        );
+        write_config(Translator::translate('revision_saved_safesearch'));
+        $this->stateStore->markCompileNeeded();
+    }
+
+    /**
+     * pfSense Adapter - SafeSearch Hosts In Use.
+     *
+     * @return list<string> Safe hosts of choices selected by Global or an enabled scope.
+     *
+     * @since 1.1.0
+     */
+    public function safeSearchHostsInUse(): array
+    {
+        $scopes = $this->getScopePartitions();
+        $choices = SafeSearchConfiguration::choicesInUse(
+            $this->getSafeSearch(),
+            array_keys(array_filter(
+                $scopes['networks'],
+                static fn(array $row): bool => ($row['enabled'] ?? false) === true,
+            )),
+            array_keys(array_filter(
+                $scopes['devices'],
+                static fn(array $row): bool => ($row['enabled'] ?? false) === true,
+            )),
+        );
+
+        return array_values(array_unique(array_filter(array_map(
+            static fn(string $choice): string => SafeSearchEngines::target($choice),
+            $choices,
+        ))));
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 1.1.0
+     */
+    public function refreshSafeSearchTargets(): bool
+    {
+        return (new SafeSearchTargets($this->paths->safeSearchTargetsFile))
+            ->refresh($this->safeSearchHostsInUse());
+    }
+
+    /**
+     * pfSense Adapter - SafeSearch Targets.
+     *
+     * @return array<string, array{ipv4: list<string>, ipv6: list<string>, checked_at: int|null, last_error: string}>
+     *
+     * @since 1.1.0
+     */
+    public function safeSearchTargets(): array
+    {
+        return (new SafeSearchTargets($this->paths->safeSearchTargetsFile))->read();
+    }
+
+    /**
      * pfSense Adapter - Alert Partitions.
      *
      * @return array{alerts: array<string, array>, invalid_rows: list<array>}
@@ -1661,9 +1748,9 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
 
         config_set_path('installedpackages/sinkhole/redirect', $redirectStorage);
         config_set_path('installedpackages/sinkhole/bypass', $storage);
-        $discoveryZoneChanged = $this->setDiscoveryZoneCustomOptions(
-            $this->discoveryZoneWanted($configuration)
-                && $this->resolverIntegrationConfigured(),
+        $discoveryZoneChanged = $this->setManagedCustomOptions(
+            $this->resolverIntegrationConfigured() && $this->pfBlockerNgActive() === false,
+            $configuration,
         );
 
         if ($discoveryZoneChanged) {
@@ -1681,8 +1768,10 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     /**
      * pfSense Adapter - Enable DNS Resolver Integration.
      *
-     * Takes the single Python slot only when it is empty or already owned by Sinkhole,
-     * saves prior values once, installs local data, and reconfigures Unbound.
+     * Takes the single Python slot only when it is empty or already owned by Sinkhole
+     * and pfBlockerNG isn't installed and enabled, saves prior values once, installs
+     * local data, and reconfigures Unbound. An active pfBlockerNG makes Sinkhole give
+     * back a slot it already owns.
      *
      * @param bool $runtimeLockHeld - Whether the caller already owns the runtime lock.
      *
@@ -1707,7 +1796,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         }
 
         if (config_path_enabled('unbound') === false) {
-            if ($this->setDiscoveryZoneCustomOptions(false)) {
+            if ($this->setManagedCustomOptions(false)) {
                 $this->writeAndReconfigure(Translator::translate(
                     'revision_disabled_resolver_integration',
                 ));
@@ -1722,10 +1811,22 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             ];
         }
 
+        if ($this->pfBlockerNgActive()) {
+            if ($this->pythonScriptOwner() === 'sinkhole') {
+                $this->disableDnsResolverIntegration(true);
+            } elseif ($this->setManagedCustomOptions(false)) {
+                $this->writeAndReconfigure(Translator::translate(
+                    'revision_disabled_resolver_integration',
+                ));
+            }
+
+            return $this->pfBlockerNgInactiveResult();
+        }
+
         $owner = $this->pythonScriptOwner();
 
         if ($owner !== '' && $owner !== 'sinkhole') {
-            if ($this->setDiscoveryZoneCustomOptions(false)) {
+            if ($this->setManagedCustomOptions(false)) {
                 $this->writeAndReconfigure(Translator::translate(
                     'revision_disabled_resolver_integration',
                 ));
@@ -1769,9 +1870,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         $configurationChanged = $this->setConfigurationValue('unbound/python_script', 'sinkhole')
             || $configurationChanged;
         $configurationChanged = $this->syncEarlyShellCommand(true) || $configurationChanged;
-        $configurationChanged = $this->setDiscoveryZoneCustomOptions(
-            $this->discoveryZoneWanted(),
-        ) || $configurationChanged;
+        $configurationChanged = $this->setManagedCustomOptions(true) || $configurationChanged;
 
         if ($configurationChanged) {
             $this->writeAndReconfigure(Translator::translate(
@@ -1821,7 +1920,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
 
         $owner = $this->pythonScriptOwner();
         $configurationChanged = $this->syncEarlyShellCommand(false);
-        $configurationChanged = $this->setDiscoveryZoneCustomOptions(false)
+        $configurationChanged = $this->setManagedCustomOptions(false)
             || $configurationChanged;
         $restored = false;
 
@@ -2035,6 +2134,10 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             ];
         }
 
+        if ($this->pfBlockerNgActive()) {
+            return $this->pfBlockerNgInactiveResult();
+        }
+
         if ($owner !== '' && $owner !== 'sinkhole') {
             return [
                 'active' => false,
@@ -2111,6 +2214,63 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         $owner = config_get_path('unbound/python_script', '');
 
         return is_string($owner) ? trim($owner) : '';
+    }
+
+    /**
+     * pfSense Adapter - pfBlockerNG Active.
+     *
+     * pfBlockerNG's DNSBL can run in Unbound mode without taking the Python slot,
+     * so an installed package with its main Enable on blocks the Resolver
+     * integration as well. Settings kept after a removal don't count.
+     *
+     * @return bool
+     *
+     * @since 1.1.0
+     */
+    public function pfBlockerNgActive(): bool
+    {
+        $installedPackages = config_get_path('installedpackages/package', []);
+        $installed = false;
+
+        if (is_array($installedPackages)) {
+            foreach ($installedPackages as $installedPackage) {
+                $name = is_array($installedPackage) ? ($installedPackage['name'] ?? null) : null;
+
+                if (
+                    is_string($name)
+                    && in_array(strtolower(trim($name)), ['pfblockerng', 'pfblockerng-devel'], true)
+                ) {
+                    $installed = true;
+
+                    break;
+                }
+            }
+        }
+
+        if ($installed === false) {
+            return false;
+        }
+
+        return config_get_path('installedpackages/pfblockerng/config/0/enable_cb', '') === 'on';
+    }
+
+    /**
+     * pfSense Adapter - pfBlockerNG Inactive Result.
+     *
+     * @return array{active: bool, owner: string, reason: string, reason_key: string, reason_arguments: array<int, scalar|null>}
+     *
+     * @since 1.1.0
+     * @private
+     */
+    private function pfBlockerNgInactiveResult(): array
+    {
+        return [
+            'active' => false,
+            'owner' => $this->pythonScriptOwner(),
+            'reason' => 'pfBlockerNG is installed and enabled.',
+            'reason_key' => 'pfblockerng_active',
+            'reason_arguments' => [],
+        ];
     }
 
     /**
@@ -3396,6 +3556,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     {
         return $this->dnsIntegrationWanted()
             && $this->stateStore->removing() === false
+            && $this->pfBlockerNgActive() === false
             && $this->pythonScriptOwner() === 'sinkhole'
             && config_path_enabled('unbound', 'python')
             && config_path_enabled('unbound');
@@ -3569,6 +3730,9 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
                             ? $this->getBlockedServices()
                             : [],
                         'bypass' => $this->getBypassConfiguration(),
+                        'safesearch' => $dnsBlockingEnabled
+                            ? $this->getSafeSearch()
+                            : [],
                     ];
                 },
                 true,
@@ -4355,6 +4519,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
 
         return $this->dnsIntegrationWanted()
             && config_path_enabled('unbound')
+            && $this->pfBlockerNgActive() === false
             && ($owner === '' || $owner === 'sinkhole');
     }
 
@@ -4959,16 +5124,21 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     }
 
     /**
-     * pfSense Adapter - Set Discovery Zone Custom Options.
+     * pfSense Adapter - Set Managed Custom Options.
      *
-     * @param bool $wanted - Whether the managed zone block is wanted.
+     * The managed block holds the Discovery zone while Discovery is wanted, and the
+     * General page's Resolver directives while Sinkhole is enabled. An inactive
+     * integration removes the whole block.
+     *
+     * @param bool $active - Whether the Resolver integration is active.
+     * @param array|null $bypassConfiguration - Bypass settings being saved, if any.
      *
      * @return bool Whether config.xml changed.
      *
-     * @since 1.0.0
+     * @since 1.1.0
      * @private
      */
-    private function setDiscoveryZoneCustomOptions(bool $wanted): bool
+    private function setManagedCustomOptions(bool $active, ?array $bypassConfiguration = null): bool
     {
         $customOptions = $this->decodedCustomOptions();
 
@@ -4976,9 +5146,28 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             return false;
         }
 
-        $reconciled = UnboundCustomOptions::reconcileDiscoveryZone(
+        $directives = [];
+
+        if ($active && $this->discoveryZoneWanted($bypassConfiguration)) {
+            $directives[] = UnboundCustomOptions::DISCOVERY_ZONE_LINE;
+        }
+
+        if ($active && Settings::fromStorage($this->getSettings())['enabled']) {
+            try {
+                $directives = array_merge(
+                    $directives,
+                    Settings::resolverDirectives(
+                        Settings::resolverFromStorage($this->getSettings()),
+                    ),
+                );
+            } catch (ValidationException $exception) {
+                $this->log('Resolver settings were skipped: ' . $exception->getMessage());
+            }
+        }
+
+        $reconciled = UnboundCustomOptions::reconcileManagedBlock(
             $customOptions,
-            $wanted,
+            $directives,
         );
 
         if ($reconciled === $customOptions) {

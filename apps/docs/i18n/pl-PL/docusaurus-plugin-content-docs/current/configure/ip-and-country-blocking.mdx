@@ -14,6 +14,8 @@ tags:
   - firewall
 ---
 
+import ipTab from './_assets_/ip-and-country-blocking-1.png';
+
 Blokuj wybrane źródła lub cele IP niezależnie od zasad DNS przy użyciu tabel zarządzanych przez pakiet w kotwicy pf `sinkhole/ip`.
 
 ## Dlaczego warto używać blokowania IP? \{#why-use-ip-blocking}
@@ -34,6 +36,8 @@ Otwórz **Firewall → Sinkhole → IP** i zaznacz **Enable** dopiero po wybrani
 | Outbound   | Blokuje pakiety przychodzące w kierunku adresu docelowego na liście, zwykle w sieciach klientów. |
 
 Kotwica zawiera reguły `block drop in quick` i nie zawiera reguł przepuszczania. Sinkhole odwołuje się do niej przez wczesną pozycję reguł pakietu pfSense, dzięki czemu blokady działają przed zwykłymi regułami pass-quick. Strona najpierw pokazuje panele list IP i katalogu, a następnie ustawienia IP i krajów obejmujące całą stronę z **Save** pod panelem.
+
+<img src={ipTab} alt="Karta IP pokazująca dwie demonstracyjne listy IP, panel katalogu oraz blokowanie IP i krajów włączone na LAN w obu kierunkach" width={1024} height={1554} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Dodawanie list IP \{#add-ip-lists}
 

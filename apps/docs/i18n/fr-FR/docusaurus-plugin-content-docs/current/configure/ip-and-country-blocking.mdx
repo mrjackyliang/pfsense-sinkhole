@@ -14,6 +14,8 @@ tags:
   - firewall
 ---
 
+import ipTab from './_assets_/ip-and-country-blocking-1.png';
+
 Bloquez certaines sources ou destinations IP indépendamment de la politique DNS grâce à des tables gérées par le paquet dans l’ancre pf `sinkhole/ip`.
 
 ## Pourquoi utiliser le blocage IP ? \{#why-use-ip-blocking}
@@ -34,6 +36,8 @@ Ouvrez **Firewall → Sinkhole → IP** et sélectionnez **Enable** uniquement a
 | Outbound   | Bloque les paquets arrivant vers une adresse de destination répertoriée, généralement sur les réseaux clients. |
 
 L’ancre contient des règles `block drop in quick` et aucune règle pass. Sinkhole la référence depuis la position précoce des règles de paquet de pfSense afin que les blocages précèdent les règles pass-quick ordinaires. La page affiche d’abord les panneaux des listes IP et du catalogue, puis les réglages IP et pays communs à la page avec **Save** sous le panneau.
+
+<img src={ipTab} alt="Onglet IP affichant deux listes IP de démonstration, le panneau du catalogue et le blocage IP et par pays activé sur LAN dans les deux sens" width={1024} height={1554} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Ajouter des listes IP \{#add-ip-lists}
 

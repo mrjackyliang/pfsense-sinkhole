@@ -14,6 +14,8 @@ tags:
   - webgui
 ---
 
+import generalTab from './_assets_/settings-1.png';
+
 Slå opp formålet og standardvirkemåten for hvert konfigurasjonsområde i Sinkhole under **Firewall → Sinkhole**.
 
 ## General \{#general}
@@ -25,6 +27,18 @@ Slå opp formålet og standardvirkemåten for hvert konfigurasjonsområde i Sink
 | Keep Settings    | On       | Bevarer konfigurasjon og vedvarende lagrede data når pakken fjernes.                                 |
 
 Planlagte tider bruker stabile tilfeldige komponenter. Hourly kjører på ett stabilt minutt, Every 6 hours bruker samme minutt hver sjette time, Daily kjører `00:<minute>`, og Weekly kjører søndag `00:<minute>`.
+
+<img src={generalTab} alt="Fanen General med Sinkhole slått på, daglige listeoppdateringer, Keep Settings på, et rebind-unntak for plex.direct, verdier for utløpte svar med Serve Expired på og ukentlige kontroller av pakkeoppdateringer" width={1024} height={1049} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Resolver \{#resolver}
+
+| Felt                    | Standard | Beskrivelse                                                                                             |
+|-------------------------|----------|---------------------------------------------------------------------------------------------------------|
+| Rebind Exceptions       | Empty    | Domener som får svare med private adresser til tross for beskyttelsen mot DNS rebinding, ett per linje. |
+| Expired Answer Lifetime | Empty    | Antall sekunder et utløpt bufret svar fortsatt kan leveres; `0` betyr ingen grense.                     |
+| Expired Answer Wait     | Empty    | Antall millisekunder det ventes på et nytt svar før et utløpt svar leveres; `0` svarer med en gang.     |
+
+Et tomt felt skriver ingenting og beholder standardverdien til Resolver. [Resolver-innstillinger](/docs/configure/resolver-settings) forklarer når verdiene gjelder.
 
 ## Package Updates \{#package-updates}
 
@@ -52,6 +66,10 @@ Omgåelsesfeeder er utelatt fra denne katalogen.
 ## Tjenester \{#services}
 
 Tjenestevalgene er tomme som standard for hvert omfang. En registertjeneste som dekkes av en egen Bypass-beskyttelse, skjules fra Tjenester og fjernes fra lagrede valg; Private Relay konfigureres bare på Bypass-fanen.
+
+## SafeSearch \{#safesearch}
+
+SafeSearch-valgene er tomme som standard for hvert omfang. Hvert omfang kan låse Google, YouTube (Moderate eller Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex og Pixabay, eller blokkere Qwant. [SafeSearch](/docs/configure/safesearch) viser navnene og de sikre vertene.
 
 ## Network Scopes \{#network-scopes}
 

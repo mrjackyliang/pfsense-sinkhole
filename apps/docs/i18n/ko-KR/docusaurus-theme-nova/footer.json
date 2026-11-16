@@ -1,33 +1,63 @@
 {
-  "layout.learn.title": {
-    "message": "가이드"
+  "layout.docs.title": {
+    "message": "문서"
   },
   "layout.resources.title": {
     "message": "리소스"
   },
-  "sections.learn.0.label": {
-    "message": "Sinkhole 설치"
+  "layout.project.title": {
+    "message": "프로젝트"
   },
-  "sections.learn.1.label": {
-    "message": "목록과 저장된 사본"
+  "layout.legal.title": {
+    "message": "법적 고지"
   },
-  "sections.learn.2.label": {
-    "message": "DNS 정책 범위 지정"
+  "sections.docs.0.label": {
+    "message": "개요"
   },
-  "sections.learn.4.label": {
-    "message": "문제 해결"
+  "sections.docs.1.label": {
+    "message": "구성"
+  },
+  "sections.docs.2.label": {
+    "message": "운영"
+  },
+  "sections.docs.3.label": {
+    "message": "참조"
+  },
+  "sections.docs.4.label": {
+    "message": "안전"
+  },
+  "sections.docs.5.label": {
+    "message": "기여하기"
   },
   "sections.resources.0.label": {
-    "message": "업데이트 작동 방식"
+    "message": "블로그"
   },
   "sections.resources.1.label": {
-    "message": "테스트 및 검증"
+    "message": "문제 해결"
   },
   "sections.resources.2.label": {
-    "message": "pfSense 문서"
+    "message": "변경 로그"
   },
   "sections.resources.3.label": {
+    "message": "문제 신고"
+  },
+  "sections.resources.4.label": {
     "message": "소스 코드"
+  },
+  "sections.project.0.label": {
+    "message": "후원하기"
+  },
+  "sections.project.1.label": {
+    "message": "pfSense 문서"
+  },
+  "sections.project.2.label": {
+    "message": "다른 프로젝트"
+  },
+  "sections.legal.0.label": {
+    "message": "라이선스"
+  },
+  "cta.label": {
+    "message": "네트워크가 접근할 곳을 정할 준비가 되셨나요?"
   },
   "copyright": {
     "message": "Copyright © 2026 Jacky Liang. MIT.",

@@ -1,0 +1,60 @@
+---
+title: "Sinkhole sluit de gangbare routes rond DNS-blokkering af"
+description: Het tabblad Bypass in Sinkhole 1.0 voorkomt dat apparaten op gekozen interfaces de DNS van de firewall omzeilen, met elke beveiliging uit totdat je die inschakelt.
+slug: sinkhole-closes-common-dns-bypass-routes
+authors:
+  - mrjackyliang
+keywords:
+  - sinkhole for pfsense
+  - beveiliging tegen omzeiling
+  - dns-omleiding
+  - versleutelde dns
+  - vpn-blokkering
+tags:
+  - release
+  - dns
+  - bypass
+---
+
+Sinkhole for pfSense 1.0, uitgebracht op 10 november 2026, bevat een tabblad Bypass dat voorkomt dat apparaten op de interfaces die je kiest de DNS van de firewall omzeilen, het gat waardoor apparaten de meeste DNS-blokkering ontlopen.
+
+{/* truncate */}
+
+## Waarom het ertoe doet \{#why-it-matters}
+
+DNS-blokkering werkt alleen zolang apparaten de firewall vragen. Een apparaat met een vast ingestelde resolver, DNS over HTTPS, Tor of een VPN kan de blokkeerlijsten volledig overslaan.
+
+Die paden afsluiten betekende vroeger zelfgemaakte NAT-omleidingsregels en firewallregels per interface. Het tabblad Bypass maakt van elke beveiliging één instelling, toegepast op de interfaces die je selecteert.
+
+## Wat er op het tabblad Bypass staat \{#whats-on-the-bypass-tab}
+
+Elke beveiliging staat standaard uit, en er is geen interface geselecteerd totdat je er een kiest.
+
+### Gewone DNS \{#plain-dns}
+
+- **Redirect** — Stuurt gewone DNS op poort 53 naar de firewall en behoudt daarbij het bronadres van elk apparaat, zodat netwerk- en apparaatlijsten van toepassing blijven.
+
+### Versleutelde DNS \{#encrypted-dns}
+
+- **TLS and QUIC** — Blokkeert poort 853 naar elke bestemming behalve de firewall.
+- **Providers** — Blokkeert de namen en adressen op lijsten met aanbieders van versleutelde DNS die je toevoegt.
+- **Firefox** — Schakelt de automatische keuze voor DNS over HTTPS in Firefox uit.
+- **Private Relay** — Laat compatibele Apple-apparaten weten dat iCloud Private Relay op dit netwerk niet beschikbaar is.
+- **Discovery** — Beantwoordt detectiequery's voor versleutelde DNS, of maakt de eigen DNS over TLS van de firewall bekend.
+
+### Tunnels \{#tunnels}
+
+- **Tor** — Blokkeert Tor-relays op de lijst.
+- **VPN** — Blokkeert VPN-aanbieders op de lijst en de standaard-VPN-poorten: TCP en UDP 1194, UDP 51820, UDP 500 en 4500, en ESP.
+
+Bypass Lists worden toegevoegd via een URL of uit de Bypass-catalogus, worden bijgewerkt volgens het lijstschema en behouden hun laatste geldige kopie wanneer een download mislukt.
+
+## Wat het niet belooft \{#what-it-doesnt-promise}
+
+Deze instellingen sluiten de gangbare routes af, niet elke route. Een aangepaste versleutelde tunnel kan nog steeds langs DNS-gebaseerd beleid komen, en de documentatie zegt dat duidelijk.
+
+## Aan de slag \{#get-started}
+
+Open **Firewall → Sinkhole → Bypass**, selecteer de clientinterfaces en schakel de beveiligingen in die je wilt. [Beveiliging tegen omzeiling](/docs/configure/bypass-protection) behandelt elke instelling.
+
+Sinkhole for pfSense brengt afgebakende DNS-, IP- en landblokkering naar pfSense, met elke lijst opgeslagen op de firewall.

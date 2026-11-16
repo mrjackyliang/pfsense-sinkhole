@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Richte eine vertrauenswürdige Liste ein und prüfe ihren gespeicherten, kompilierten, bereitgestellten und geladenen Zustand, bevor du die Richtlinie erweiterst.
 
 ## Resolver prüfen \{#check-the-resolver}
 
 1. Öffne **Services → DNS Resolver** und bestätige, dass der Resolver aktiviert ist.
-2. Wenn pfBlockerNG DNSBL aktiviert ist, entscheide, welches Paket die DNS-Filterung übernehmen soll, da nicht beide Pakete gleichzeitig den Python-Platz von Unbound verwenden können.
+2. Wenn pfBlockerNG installiert und aktiviert ist, entscheide, welches Paket DNS filtern soll, da die beiden Pakete nicht gemeinsam laufen können.
 3. Öffne **Firewall → Sinkhole → General** und lasse **Enable** deaktiviert, während du die erste Richtlinie vorbereitest.
 
-Sinkhole verweigert das Speichern von **Enable**, solange ein anderes Python-Skript den Platz besitzt. Wenn du Sinkhole später deaktivierst, stellt es die vorherigen Python-Einstellungen des Resolvers wieder her, sofern Sinkhole sie noch besitzt.
+Sinkhole verweigert das Speichern von **Enable**, solange pfBlockerNG installiert und aktiviert ist oder ein anderes Python-Skript den Platz besitzt. Wenn du Sinkhole später deaktivierst, stellt es die vorherigen Python-Einstellungen des Resolvers wieder her, sofern Sinkhole sie noch besitzt.
 
 ## Liste hinzufügen \{#add-a-list}
 
@@ -33,6 +35,8 @@ Sinkhole verweigert das Speichern von **Enable**, solange ein anderes Python-Skr
 4. Füge bei Bedarf unter **Allowed Domains** globale Ausnahmen hinzu, eine Domain pro Zeile, damit ein bekannter Fehlalarm zugelassen wird.
 
 Sinkhole empfiehlt keine Quelle. [Listen und gespeicherte Kopien](/docs/configure/lists) beschreibt die akzeptierten Formate und wie Katalogergebnisse zu gewöhnlichen Listeneinträgen werden.
+
+<img src={listsTab} alt="Tab Lists mit fünf Demo-Blocklisten samt den Spalten Global und Used By sowie zwei global erlaubten Domains" width={1024} height={996} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Optionale Scopes hinzufügen \{#add-optional-scopes}
 

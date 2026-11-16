@@ -15,15 +15,17 @@ tags:
 sidebar_position: 3
 ---
 
+import listsTab from './_assets_/first-run-1.png';
+
 Set up one trusted list and verify its saved, compiled, deployed, and loaded state before expanding the policy.
 
 ## Check the Resolver \{#check-the-resolver}
 
 1. Open **Services → DNS Resolver** and confirm that the Resolver is enabled.
-2. If pfBlockerNG DNSBL is enabled, choose which package will own DNS filtering because both packages can't use Unbound's Python slot together.
+2. If pfBlockerNG is installed and enabled, choose which package will filter DNS because the two packages can't run together.
 3. Open **Firewall → Sinkhole → General** and leave **Enable** off while the first policy is prepared.
 
-Sinkhole refuses to save **Enable** while another Python script owns the slot. Disabling Sinkhole later restores the Resolver's earlier Python settings when Sinkhole still owns them.
+Sinkhole refuses to save **Enable** while pfBlockerNG is installed and enabled, or while another Python script owns the slot. Disabling Sinkhole later restores the Resolver's earlier Python settings when Sinkhole still owns them.
 
 ## Add a List \{#add-a-list}
 
@@ -31,6 +33,8 @@ Sinkhole refuses to save **Enable** while another Python script owns the slot. D
 2. Give the source a local name and leave **Enabled** selected so Sinkhole downloads it.
 3. Leave **Global** selected only when the list should apply after every device and network rule.
 4. Add any global **Allowed Domains**, one domain per line, when a known false positive needs to pass.
+
+<img src={listsTab} alt="Lists tab showing five demo block lists with their Global and Used By columns, and two global allowed domains" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
 
 Sinkhole recommends no source. [Lists and Saved Copies](/docs/configure/lists) explains the accepted formats and how catalog results become ordinary list rows.
 
