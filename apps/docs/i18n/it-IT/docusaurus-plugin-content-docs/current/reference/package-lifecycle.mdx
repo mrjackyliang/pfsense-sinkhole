@@ -42,7 +42,7 @@ Questa conservazione non dichiara la compatibilità con una release pfSense non 
 
 ## Keep Settings \{#keep-settings}
 
-**General → Keep Settings** è selezionato per impostazione predefinita. Quando è selezionato, la rimozione del pacchetto mantiene la configurazione pfSense di Sinkhole e i dati in `/cf/conf/sinkhole`, così liste e criteri salvati sono disponibili dopo la reinstallazione.
+**General → Keep Settings** è selezionato per impostazione predefinita. Quando è selezionato, la rimozione del pacchetto mantiene la configurazione pfSense di Sinkhole e i suoi dati in `/cf/conf/sinkhole`, comprese le liste DNS e IP salvate, le destinazioni SafeSearch e lo stato persistente, così i criteri sono disponibili dopo la reinstallazione. La rimozione elimina comunque le copie salvate delle Bypass Lists e il mirror Unbound persistente facoltativo; la reinstallazione li scarica o li rigenera.
 
 Questa impostazione predefinita protegge inoltre i dati durante un aggiornamento del gestore pacchetti che esegue una rimozione seguita da un’installazione. Deselezionala solo quando si desidera eliminare completamente configurazione e dati salvati.
 
@@ -56,7 +56,7 @@ pkg delete -f pfSense-pkg-Sinkhole
 
 La rimozione interrompe le attività pianificate, blocca nuovi aggiornamenti, ripristina le precedenti impostazioni Python del Resolver, rimuove il blocco Discovery gestito da Sinkhole dalle **Custom options** del DNS Resolver, rimuove il contenuto runtime in `/var/unbound`, elimina lock e stati temporanei, ritira le regole di reindirizzamento del DNS in chiaro, svuota gli anchor `sinkhole/bypass` e `sinkhole/ip` e rimuove le Bypass Lists memorizzate nella cache e i file delle tabelle. Il blocco Discovery gestito viene rimosso sia con **Keep Settings** attivo sia con l’opzione disattivata. La rimozione elimina inoltre i file del pacchetto installati in `/usr/local`.
 
-Quando **Keep Settings** è attivo, configurazione e liste salvate persistenti rimangono disponibili per la reinstallazione. Quando è disattivato, la rimozione elimina tutte le impostazioni e tutti i dati salvati di Sinkhole, inclusi `/cf/conf/sinkhole` e l’intero ramo Sinkhole nella configurazione dei pacchetti pfSense.
+Quando **Keep Settings** è attivo, configurazione e liste DNS e IP salvate rimangono disponibili per la reinstallazione, mentre le copie delle Bypass Lists e il mirror Unbound persistente vengono rimossi in ogni caso. Quando è disattivato, la rimozione elimina tutte le impostazioni e tutti i dati salvati di Sinkhole, inclusi `/cf/conf/sinkhole` e l’intero ramo Sinkhole nella configurazione dei pacchetti pfSense.
 
 ## Verificare la rimozione \{#verify-removal}
 

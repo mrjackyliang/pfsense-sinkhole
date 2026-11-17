@@ -26,7 +26,9 @@ Für jede aktivierte DNS-Liste führt Sinkhole Folgendes aus:
 4. Kompiliert globale, Netzwerk-, Geräte-, erlaubte Domain- und Alarmrichtlinien aus lokalen gespeicherten Daten.
 5. Stellt unter `/var/unbound` eine Generation bereit, die das bereits geladene Python-Modul erkennen kann.
 
-Ein Download-, Parse- oder Validierungsfehler zeichnet einen Fehler auf, ohne die letzte gültige Kopie zu ersetzen. DNS verwendet während des gesamten Versuchs weiterhin die bereitgestellte lokale Generation.
+Ein Download-, Parse- oder Validierungsfehler zeichnet einen Fehler auf, ohne die letzte gültige Kopie zu ersetzen, sofern die URL der Liste unverändert ist. DNS verwendet während des gesamten Versuchs weiterhin die bereitgestellte lokale Generation.
+
+Nachdem sich die URL einer Liste geändert hat, verwirft die nächste Aktualisierung, die sie herunterlädt, die Kopie von der vorherigen URL, bevor sie die neue abruft. Ein fehlgeschlagener erster Download lässt diese Liste daher ohne gespeicherte Kopie. Eine deaktivierte Liste oder eine Bypass List, deren Schutz ausgeschaltet ist, wird nicht heruntergeladen und behält daher die Angaben der vorherigen Kopie, bis sie wieder aktiviert wird.
 
 ## Bereitstellung und Resolver-Caches \{#deployment-and-resolver-caches}
 
@@ -50,7 +52,7 @@ Ein vorhandener `sinkhole/ip`-Anker kann nach einer erfolgreichen Aktualisierung
 
 Die standardmäßige Aktualisierungshäufigkeit für Listen ist Daily. Hourly, Every 6 hours, Daily und Weekly verwenden stabile zufällig bestimmte Minutenkomponenten, sodass die Firewall ihren Auftragszeitpunkt nicht bei jedem Speichern verschiebt.
 
-DNS-Listenaktualisierungen, IP-/Länderaktualisierungen, katalogbezogene Anwendevorgänge und die Paket-Selbstaktualisierung koordinieren sich über `/var/run/sinkhole-update.lock`. Eine Paketaktion Update wartet, bis eine aktive Listenaktualisierung abgeschlossen ist, statt das installierte Paket darunter zu ändern.
+DNS-, Bypass- und IP-/Länderaktualisierungen, das Anwenden von Einstellungen, Paketprüfungen und Selbstaktualisierungen sowie die Bereinigung bei der Entfernung koordinieren sich über `/var/run/sinkhole-update.lock`. Eine Paketprüfung oder die Aktion Update wartet nicht: Hält ein anderer Vorgang die Sperre, stoppt sie mit `Another package operation is already running.` und kann nach Ende dieses Vorgangs erneut versucht werden.
 
 ## Katalogaktualisierungen sind getrennt \{#catalog-refreshes-are-separate}
 

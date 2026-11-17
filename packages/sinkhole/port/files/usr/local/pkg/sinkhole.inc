@@ -21,6 +21,7 @@ use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Runtime\ServiceRegistryCache;
 use PfSense\Sinkhole\Runtime\StateStore;
 use PfSense\Sinkhole\Runtime\Translator;
+use PfSense\Sinkhole\Runtime\UpdateLog;
 use PfSense\Sinkhole\Runtime\UpdateManager;
 
 require_once('config.inc');
@@ -46,6 +47,7 @@ require_once(__DIR__ . '/sinkhole/SavedListStore.php');
 require_once(__DIR__ . '/sinkhole/Settings.php');
 require_once(__DIR__ . '/sinkhole/StateStore.php');
 require_once(__DIR__ . '/sinkhole/Translator.php');
+require_once(__DIR__ . '/sinkhole/UpdateLog.php');
 require_once(__DIR__ . '/sinkhole/UpdateManager.php');
 require_once(__DIR__ . '/sinkhole/ValidationException.php');
 
@@ -422,6 +424,181 @@ function pfsensePackageSinkholeStatusPresentation(
 }
 
 /**
+ * pfSense Package Sinkhole - Generation Summary.
+ *
+ * Gives the Update Log poller the same compile, deployment and loaded-generation
+ * text the Status page's Summary shows, so those cells change during a run.
+ *
+ * @param PackagePaths $paths - Package paths.
+ *
+ * @return array{
+ *     compile_needed: string,
+ *     compiled_generation: string,
+ *     deployment_needed: string,
+ *     deployed_generation: string,
+ *     loaded_generation: string
+ * }
+ *
+ * @since 1.2.0
+ */
+function pfsensePackageSinkholeGenerationSummary(PackagePaths $paths): array
+{
+    $deployedGeneration = '';
+    $deployedDigest = '';
+    $loadedGeneration = '';
+    $generationPath = FileSystem::resolveManagedGeneration(
+        $paths->runtimeDataDirectory,
+        $paths->runtimeStorageDirectory,
+    );
+    $manifestPath = ($generationPath === null) ? '' : $generationPath . '/manifest.json';
+
+    if ($manifestPath !== '' && FileSystem::isRegularFile($manifestPath)) {
+        try {
+            $manifestContents = file_get_contents($manifestPath);
+            $manifest = is_string($manifestContents)
+                ? json_decode($manifestContents, true, 16, JSON_THROW_ON_ERROR)
+                : null;
+
+            if (is_array($manifest) && is_string($manifest['generation'] ?? null)) {
+                $deployedGeneration = $manifest['generation'];
+            }
+
+            if (is_array($manifest) && is_string($manifest['content_digest'] ?? null)) {
+                $deployedDigest = $manifest['content_digest'];
+            }
+        } catch (Throwable) {
+            // An unreadable manifest reads as no deployed generation, as on the page.
+            $deployedGeneration = '';
+        }
+    }
+
+    $compileStatus = (new StateStore($paths->stateFile, $paths->statusFile))->compileStatus();
+    $compiledGeneration = is_string($compileStatus['generation']) ? $compileStatus['generation'] : '';
+    $compiledDigest = is_string($compileStatus['digest']) ? $compileStatus['digest'] : '';
+
+    if (FileSystem::isRegularFile($paths->loadedGenerationFile)) {
+        $loadedContents = file_get_contents($paths->loadedGenerationFile);
+        $loadedGeneration = is_string($loadedContents) ? trim($loadedContents) : '';
+    }
+
+    $deploymentNeeded = true;
+    $deploymentReason = '';
+
+    if ($generationPath === null) {
+        $deploymentReason = pfsensePackageSinkholeTranslate('runtime_generation_missing');
+    } elseif ($compiledDigest === '') {
+        $deploymentReason = pfsensePackageSinkholeTranslate('compiled_digest_missing');
+    } elseif ($deployedDigest === '') {
+        $deploymentReason = pfsensePackageSinkholeTranslate('runtime_digest_missing');
+    } elseif ($compiledDigest !== $deployedDigest) {
+        $deploymentReason = pfsensePackageSinkholeTranslate('deployed_digest_mismatch');
+    } else {
+        $deploymentNeeded = false;
+    }
+
+    $dnsIntegrationWanted = false;
+
+    try {
+        $dnsIntegrationWanted = pfsensePackageSinkholeAdapter()->dnsIntegrationWanted();
+        $resolverStatus = pfsensePackageSinkholeAdapter()->dnsResolverStatus($dnsIntegrationWanted);
+    } catch (Throwable $throwable) {
+        $resolverStatus = [
+            'active' => false,
+            'owner' => '',
+            'reason' => pfsensePackageSinkholeThrowableMessage($throwable),
+        ];
+    }
+
+    $statusPresentation = pfsensePackageSinkholeStatusPresentation(
+        $resolverStatus,
+        $dnsIntegrationWanted,
+        $deploymentNeeded,
+        $deploymentReason,
+        $loadedGeneration,
+    );
+    $noneText = pfsensePackageSinkholeTranslate('none');
+
+    return [
+        'compile_needed' => pfsensePackageSinkholeTranslateMapped(
+            'boolean',
+            ($compileStatus['needed']) ? 'true' : 'false',
+        ),
+        'compiled_generation' => ($compiledGeneration === '') ? $noneText : $compiledGeneration,
+        'deployment_needed' => pfsensePackageSinkholeTranslateMapped(
+            'boolean',
+            ($statusPresentation['deployment_needed']) ? 'true' : 'false',
+        ),
+        'deployed_generation' => ($deployedGeneration === '') ? $noneText : $deployedGeneration,
+        'loaded_generation' => $statusPresentation['loaded_generation'],
+    ];
+}
+
+/**
+ * pfSense Package Sinkhole - Update Log Response.
+ *
+ * Builds the Status page's read-only polling answer: new log text after an
+ * offset, whether an update holds the lock, and the live Summary cells.
+ *
+ * @param PackagePaths          $paths - Package paths.
+ * @param array<string, mixed>  $query - Untrusted query parameters.
+ *
+ * @return array{status: int, body: array<string, mixed>}
+ *
+ * @since 1.2.0
+ */
+function pfsensePackageSinkholeUpdateLogResponse(PackagePaths $paths, array $query): array
+{
+    $offsetValue = $query['offset'] ?? '0';
+    $runValue = $query['run'] ?? '';
+
+    if (!is_string($offsetValue) || preg_match('/^[0-9]{1,9}$/D', $offsetValue) !== 1) {
+        return [
+            'status' => 400,
+            'body' => ['error' => 'The offset must be a whole number of bytes.'],
+        ];
+    }
+
+    if (
+        !is_string($runValue)
+        || ($runValue !== '' && preg_match(UpdateLog::RUN_PATTERN, $runValue) !== 1)
+    ) {
+        return [
+            'status' => 400,
+            'body' => ['error' => 'The run identifier is invalid.'],
+        ];
+    }
+
+    // The lock is read before the log, so a finished run's closing line is always included.
+    $running = pfsensePackageSinkholeUpdateRunning($paths);
+    $log = UpdateLog::read($paths->updateLogFile, (int) $offsetValue, $runValue);
+    $summary = null;
+
+    try {
+        $summary = pfsensePackageSinkholeGenerationSummary($paths);
+        $summary['update_running'] = pfsensePackageSinkholeTranslateMapped(
+            'boolean',
+            ($running) ? 'true' : 'false',
+        );
+    } catch (Throwable) {
+        // The log still streams when a Summary value cannot be read; the cells keep their text.
+        $summary = null;
+    }
+
+    return [
+        'status' => 200,
+        'body' => [
+            'running' => $running,
+            'run' => $log['run'],
+            'offset' => $log['offset'],
+            'size' => $log['size'],
+            'text' => $log['text'],
+            'reset' => $log['reset'],
+            'summary' => $summary,
+        ],
+    ];
+}
+
+/**
  * pfSense Package Sinkhole - Get Settings.
  *
  * Returns the untrusted general settings record for form display and validation.
@@ -752,6 +929,7 @@ function pfsensePackageSinkholeGetBypassConfiguration(): array
  * @return array
  *
  * @since 1.0.0
+ * @since 1.2.0
  */
 function pfsensePackageSinkholeBypassStorage(
     array $configuration,
@@ -787,6 +965,14 @@ function pfsensePackageSinkholeBypassStorage(
     $storage['discovery'] = is_string($settings['discovery'] ?? null)
         ? $settings['discovery']
         : BypassConfiguration::DISCOVERY_OFF;
+
+    foreach (['exempt_sources', 'exempt_destinations'] as $field) {
+        $storage[$field] = [
+            'item' => is_array($settings[$field] ?? null)
+                ? array_values($settings[$field])
+                : [],
+        ];
+    }
 
     return $storage;
 }
@@ -2046,6 +2232,14 @@ function pfsensePackageSinkholeRemove(
     } catch (Throwable $throwable) {
         pfsensePackageSinkholeAdapter()->log(
             'Bypass removal cleanup failed: ' . $throwable->getMessage(),
+        );
+    }
+
+    try {
+        FileSystem::removeFixedFile($paths->updateLogFile);
+    } catch (Throwable $throwable) {
+        pfsensePackageSinkholeAdapter()->log(
+            'Unable to remove the Sinkhole update log: ' . $throwable->getMessage(),
         );
     }
 

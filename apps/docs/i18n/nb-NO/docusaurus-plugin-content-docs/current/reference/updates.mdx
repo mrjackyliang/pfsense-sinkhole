@@ -48,7 +48,7 @@ En tom installert klareringsliste betyr at ingen signatur er påkrevd, men verif
 
 ## Oppdateringslås \{#update-locking}
 
-Pakkekontroll og automatisk oppdatering deler `/var/run/sinkhole-update.lock` med oppdateringer av DNS-lister og IP/land. Hvis en listeoppdatering kjører, kan ikke handlingen **Update** i About starte før jobben er ferdig.
+Pakkekontroll og automatisk oppdatering deler `/var/run/sinkhole-update.lock` med DNS-, Bypass- og IP/land-oppdateringer, anvendelse av innstillinger og opprydding ved fjerning. De venter ikke på låsen: Hvis en annen operasjon holder den, stopper kontrollen eller handlingen **Update** med `Another package operation is already running.`
 
 Låsen hindrer at pakkefiler endres mens den gjeldende pakken laster ned, analyserer, kompilerer eller bruker policy. Prøv på nytt fra About når Status ikke lenger viser at en oppdatering kjører.
 

@@ -19,6 +19,7 @@ tags:
 ## Gdzie szukać \{#where-to-look}
 
 - **Firewall → Sinkhole → Status** pokazuje stan list, katalogów, mapy klientów, alertów, Bypass, IP, kompilacji, wdrożenia i Resolver.
+- **Status → Update Log** pokazuje każdy krok najnowszej aktualizacji list, w tym to, która lista zawiodła i dlaczego.
 - **Status → System Logs → System → General** pokazuje wiersze operacyjne zaczynające się od `Sinkhole:`.
 - `/usr/local/sbin/sinkhole --help` wyświetla obsługiwane tryby konserwacji.
 
@@ -78,14 +79,30 @@ Czasy dzierżaw ISC mogą być w GMT lub w czasie lokalnym zapory, zależnie od 
 
 Nieudane pobieranie, analiza lub walidacja DNS, Bypass albo IP zachowuje poprzednią zapisaną kopię i rejestruje błąd. DNS nadal korzysta z wdrożonej lokalnej generacji, zamiast czekać na źródło, które zawiodło.
 
+Kopia zapisana z poprzedniego adresu URL listy nigdy nie jest zachowywana. Po zmianie adresu URL listy następna aktualizacja odrzuca tę kopię i zapisuje w dzienniku `source changed; discarding the copy from the previous URL.`, więc lista niczego nie wnosi, a Status pokazuje jej błąd, dopóki pierwsze pobranie z nowego adresu URL się nie powiedzie.
+
+[Update Log](/docs/operate/status#update-log) podaje dla najnowszego przebiegu listę, która zawiodła, jej host i przyczynę. Po naprawieniu źródła zaleca się wybranie **Update Now** i obserwowanie tam ponownej próby.
+
 Katalogi są pobierane tylko po otwarciu lub odświeżeniu wyszukiwania, a nieudane pobranie zachowuje zbuforowany ostatni prawidłowy katalog. Przed wymuszeniem kolejnego odświeżenia sprawdź łączność HTTPS, adres URL źródła i błąd w Status.
+
+## Kompilacja przekracza limit nazw \{#compile-exceeds-the-name-limit}
+
+Kompilacja, która znajdzie więcej niż 10 000 000 unikatowych nazw, zatrzymuje się z błędem takim jak `The compile found 10,412,331 unique names; the limit is 10,000,000.` Indeks blokowania DNS (listy i zablokowane usługi) oraz indeks Bypass liczą się łącznie. Nazwa występująca na kilku listach jest liczona raz w obrębie indeksu, ale nazwa obecna w obu indeksach liczy się raz w każdym z nich.
+
+Poprzednia generacja pozostaje aktywna, a **Compile Needed** pozostaje `Yes`, dopóki kompilacja się nie powiedzie. **Summary → Compiled Names** pokazuje wdrożoną liczbę w odniesieniu do limitu.
+
+Aby zmniejszyć liczbę poniżej limitu:
+
+1. Wyłącz lub usuń największą niepotrzebną listę albo zastąp ją mniejszym wariantem od tego samego wydawcy.
+2. Usuń listy, które w większości zawierają się w innej włączonej liście.
+3. Wybierz **Update Now** i sprawdź, czy **Compile Needed** wraca do `No`.
 
 ## Przekierowanie zwykłego DNS jest wstrzymane lub go brakuje \{#plain-dns-redirect-is-paused-or-missing}
 
 - **Paused** — Popraw lub usuń każdy nieprawidłowy wyjątek pokazany w panelu Bypass.
 - **No family address** — Dodaj rodzinę do interfejsu lub zaakceptuj, że dla tej rodziny nie można wygenerować reguły.
 - **Resolver does not listen** — Zmień **DNS Resolver → Network Interfaces** lub usuń wybór przekierowania.
-- **Rules missing or out of date** — Poczekaj na dwie obserwacje minutowe, a następnie sprawdź **Last parse error** i dzienniki systemowe.
+- **Rules missing or out of date** — Poczekaj na dwie obserwacje minutowe, a następnie sprawdź **Last Parse Error** i dzienniki systemowe.
 - **Queries are refused** — Dodaj sieć klienta do konfiguracji kontroli dostępu Resolver.
 
 Kontrola minutowa nie przeładowuje filtru, gdy utrzymywana jest blokada pakietu pfSense ani gdy pfSense odrzucił już niezmieniony tekst reguły. Zmiana nieprawidłowej konfiguracji pozwala uzgodnić ją podczas następnych dwóch obserwacji.
@@ -112,9 +129,11 @@ Zdarzenia starsze niż 10 minut są nieaktualne, a wykonanie przestaje wysyłać
 
 ## Wysokie użycie pamięci \{#memory-use-is-high}
 
-W zmierzonych testach z 300 000 nazwami RSS Unbound wzrósł z 41 MiB do 103 MiB, a szczytowe zużycie pamięci zasad wynosiło około 157 bajtów na nazwę. Rzeczywiste użycie zależy od unikatowych znormalizowanych nazw, przypisań zakresów i działającego Resolver.
+Moduł Unbound nie przechowuje skompilowanych nazw w pamięci. Odczytuje z aktywnej generacji indeks mapowany w pamięci o rozmiarze około 18 bajtów na nazwę, więc jego własna pamięć pozostaje na poziomie kilku MiB przy dowolnym rozmiarze list aż do limitu 10 000 000 nazw.
 
-Zaleca się porównanie liczby wpisów w Status z pamięcią Unbound przed dodaniem dużego źródła i po nim. Wyłączenie nieużywanej listy usuwa ją z aktywnych zasad przy następnej kompilacji.
+Strony indeksu odczytywane przez zapytania wliczają się do pamięci rezydentnej Unbound jako pamięć podręczna plików, którą FreeBSD odzyskuje przy braku pamięci. Duże RSS Unbound wynika więc zwykle z własnych pamięci podręcznych komunikatów i RRset w Resolver; przed zmianą list porównaj je z rozmiarami pamięci podręcznej w **DNS Resolver → Advanced Settings**.
+
+Każda generacja potrzebuje też miejsca na dysku na skompilowane pliki, około 55 bajtów na nazwę, w `/var/unbound` oraz, w systemie z dyskiem RAM, w trwałej kopii lustrzanej. Wdrożenie, które się nie mieści, zatrzymuje się z błędem `Not enough deployment space` i zachowuje poprzednią generację.
 
 ## Zgłaszanie problemu \{#report-a-problem}
 

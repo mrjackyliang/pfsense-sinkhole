@@ -48,7 +48,7 @@ Een lege geïnstalleerde vertrouwenslijst betekent dat geen handtekening vereist
 
 ## Updatevergrendeling \{#update-locking}
 
-Pakketcontrole en automatisch bijwerken delen `/var/run/sinkhole-update.lock` met DNS-lijst- en IP-/landupdates. Als een lijstupdate actief is, kan de actie **Update** in About niet beginnen totdat die taak is voltooid.
+Pakketcontrole en automatisch bijwerken delen `/var/run/sinkhole-update.lock` met DNS-, Bypass- en IP-/landupdates, het toepassen van instellingen en het opruimen bij verwijdering. Ze wachten niet op de vergrendeling: als een andere bewerking deze bezit, stopt de controle of de actie **Update** met `Another package operation is already running.`
 
 De vergrendeling voorkomt dat pakketbestanden veranderen terwijl het huidige pakket beleid downloadt, analyseert, compileert of toepast. Probeer het opnieuw vanuit About nadat Status geen actieve update meer toont.
 

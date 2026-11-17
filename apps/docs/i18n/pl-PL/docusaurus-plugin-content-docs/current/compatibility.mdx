@@ -64,7 +64,7 @@ Blokowanie krajów wymaga własnego identyfikatora konta MaxMind i klucza licenc
 - Niestandardowe konfiguracje szyfrowanego DNS i tuneli nadal mogą omijać zasady oparte na DNS, dlatego Sinkhole nie gwarantuje pełnej ochrony.
 - Wbudowane strefy lokalne Unbound `test.`, `invalid.`, `onion.` i `localhost.` odpowiadają przed modułami Python i nie nadają się do testów filtrowania na żywo.
 - W razie konfliktu adresów urządzeń wygrywa pierwsze urządzenie w kolejności tabeli, a Status zgłasza konflikt.
-- W zmierzonych testach z 300 000 nazwami RSS Unbound wzrósł z 41 MiB do 103 MiB, a szczytowe zużycie pamięci zasad wynosiło około 157 bajtów na nazwę.
+- Jedna generacja mieści do 10 000 000 nazw, przy czym indeks blokowania DNS (listy i zablokowane usługi) oraz indeks Bypass liczą się łącznie. Duplikaty są scalane w obrębie każdego indeksu, ale nazwa obecna w obu liczy się raz w każdym z nich. Moduł Unbound odczytuje je z indeksu mapowanego w pamięci o rozmiarze około 18 bajtów na nazwę, zamiast przechowywać je w pamięci, więc jego własna pamięć pozostaje na poziomie kilku MiB niezależnie od tego, jak bardzo urosną listy.
 
 ## Języki \{#languages}
 

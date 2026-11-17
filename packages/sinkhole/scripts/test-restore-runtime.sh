@@ -204,9 +204,11 @@ mkdir -p "${mirror_generation}" "${mirror_clients}" "${runtime_root}"
 chmod 0711 "${runtime_root}"
 printf '%s\n' '# fixture module' >"${mirror_root}/sinkhole.py"
 chmod 0600 "${mirror_root}/sinkhole.py"
-printf '%s\n' '{"schema_version":3}' >"${mirror_generation}/manifest.json"
+printf '%s\n' '{"schema_version":4}' >"${mirror_generation}/manifest.json"
 printf '%s\n' 'example.test	0	' >"${mirror_generation}/domains.tsv"
+printf '%s' 'fixture-index-0000' >"${mirror_generation}/domains.index"
 printf '%s\n' 'bypass.example.test		encrypted_dns' >"${mirror_generation}/bypass.tsv"
+printf '%s' 'fixture-index-0001' >"${mirror_generation}/bypass.index"
 printf '%s\n' 'allowed.example.test' >"${mirror_generation}/allow.txt"
 printf '%s\n' 'network-allowed.example.test' >"${mirror_generation}/allow-network-11111111111111111111111111111111.txt"
 printf '%s\n' 'device-allowed.example.test' >"${mirror_generation}/allow-device-22222222222222222222222222222222.txt"
@@ -242,7 +244,7 @@ if [ "$(file_owner "${runtime_root}/sinkhole-clients")" != "${current_user}" ] \
 	exit 1
 fi
 
-for data_file in manifest.json domains.tsv bypass.tsv allow.txt generation; do
+for data_file in manifest.json domains.tsv domains.index bypass.tsv bypass.index allow.txt generation; do
 	if [ ! -r "${runtime_root}/sinkhole/${data_file}" ]; then
 		echo "FAIL: restored ${data_file} is not readable." >&2
 

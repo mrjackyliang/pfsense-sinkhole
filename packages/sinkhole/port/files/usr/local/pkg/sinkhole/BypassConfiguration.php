@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PfSense\Sinkhole\Domain;
 
 require_once(__DIR__ . '/ListConfiguration.php');
+require_once(__DIR__ . '/RedirectConfiguration.php');
 require_once(__DIR__ . '/ValidationException.php');
 
 /**
@@ -57,16 +58,32 @@ final class BypassConfiguration
     ];
 
     /**
+     * Each alias adds one nested pf anchor, so the limit keeps the rendered rules
+     * far below pf's anchor stack depth.
+     *
+     * @var int
+     *
+     * @since 1.2.0
+     */
+    public const MAXIMUM_EXEMPTION_ALIASES = 16;
+
+    /**
      * Bypass Configuration - Partition.
+     *
+     * Invalid block exemptions stay out of `invalid_values` so a renamed alias
+     * never turns the blocks off. They are reported in `invalid_exemptions`, and
+     * the rule renderer then applies no exemption at all.
      *
      * @param mixed $value - Persisted bypass settings.
      * @param list<string> $interfaces - Valid shared redirect interfaces.
+     * @param array<string, string> $aliases - Existing host and network aliases.
      *
      * @return array
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
-    public static function partition(mixed $value, array $interfaces = []): array
+    public static function partition(mixed $value, array $interfaces = [], array $aliases = []): array
     {
         $result = [
             'block_tls_quic' => false,
@@ -78,7 +95,12 @@ final class BypassConfiguration
             'block_vpn' => false,
             'block_vpn_ports' => false,
             'lists' => [],
+            'exempt_sources' => [],
+            'exempt_destinations' => [],
+            'stored_exempt_sources' => [],
+            'stored_exempt_destinations' => [],
             'invalid_values' => [],
+            'invalid_exemptions' => [],
             'invalid_lists' => [],
             'interfaces' => array_values($interfaces),
             'enabled' => false,
@@ -135,6 +157,27 @@ final class BypassConfiguration
         $listPartition = self::partitionLists($listValue);
         $result['lists'] = $listPartition['lists'];
         $result['invalid_lists'] = $listPartition['invalid_rows'];
+
+        $sourcePartition = self::partitionExemptions(
+            $value['exempt_sources'] ?? [],
+            $aliases,
+            'source',
+        );
+        $result['exempt_sources'] = $sourcePartition['values'];
+        $result['stored_exempt_sources'] = $sourcePartition['stored'];
+
+        $destinationPartition = self::partitionExemptions(
+            $value['exempt_destinations'] ?? [],
+            $aliases,
+            'destination',
+        );
+        $result['exempt_destinations'] = $destinationPartition['values'];
+        $result['stored_exempt_destinations'] = $destinationPartition['stored'];
+        $result['invalid_exemptions'] = array_merge(
+            $sourcePartition['invalid'],
+            $destinationPartition['invalid'],
+        );
+
         $result['dns_enabled'] = self::dnsEnabled($result);
         $result['firewall_enabled'] = self::firewallEnabled($result);
         $result['enabled'] = $result['dns_enabled'] || $result['firewall_enabled'];
@@ -314,6 +357,140 @@ final class BypassConfiguration
         };
     }
 
+    /**
+     * Bypass Configuration - Normalize Exemption Submission.
+     *
+     * Applies the saved-exemption contract to one WebGUI submission and rejects
+     * the write when any line needs repair.
+     *
+     * @param string $exemptSourcesText - Submitted exempt-source lines.
+     * @param string $exemptDestinationsText - Submitted exempt-destination lines.
+     * @param array<string, string> $aliases - Existing host and network aliases.
+     *
+     * @return array{exempt_sources: list<string>, exempt_destinations: list<string>}
+     *
+     * @throws ValidationException When a submitted exemption is invalid.
+     *
+     * @since 1.2.0
+     */
+    public static function normalizeExemptionSubmission(
+        string $exemptSourcesText,
+        string $exemptDestinationsText,
+        array $aliases,
+    ): array {
+        $sourceValues = RedirectConfiguration::nonEmptyLines(
+            $exemptSourcesText,
+            'exempt_sources_invalid',
+        );
+        $destinationValues = RedirectConfiguration::nonEmptyLines(
+            $exemptDestinationsText,
+            'exempt_destinations_invalid',
+        );
+
+        $partition = self::partition([
+            'exempt_sources' => [
+                'item' => $sourceValues,
+            ],
+            'exempt_destinations' => [
+                'item' => $destinationValues,
+            ],
+        ], [], $aliases);
+
+        if ($partition['invalid_exemptions'] !== []) {
+            $invalidExemption = $partition['invalid_exemptions'][0];
+
+            throw new ValidationException(
+                $invalidExemption['reason_key'],
+                $invalidExemption['reason_arguments'],
+            );
+        }
+
+        return [
+            'exempt_sources' => $partition['exempt_sources'],
+            'exempt_destinations' => $partition['exempt_destinations'],
+        ];
+    }
+
+    /**
+     * Bypass Configuration - Effective Exemptions.
+     *
+     * Any invalid saved exemption drops every exemption, so the blocks keep
+     * applying to all traffic until the saved values are repaired.
+     *
+     * @param array $configuration - Partitioned configuration.
+     *
+     * @return array{sources: list<string>, destinations: list<string>}
+     *
+     * @since 1.2.0
+     */
+    public static function effectiveExemptions(array $configuration): array
+    {
+        if (($configuration['invalid_exemptions'] ?? []) !== []) {
+            return [
+                'sources' => [],
+                'destinations' => [],
+            ];
+        }
+
+        $sources = is_array($configuration['exempt_sources'] ?? null)
+            ? $configuration['exempt_sources']
+            : [];
+        $destinations = is_array($configuration['exempt_destinations'] ?? null)
+            ? $configuration['exempt_destinations']
+            : [];
+
+        return [
+            'sources' => array_values(array_filter($sources, 'is_string')),
+            'destinations' => array_values(array_filter($destinations, 'is_string')),
+        ];
+    }
+
+    /**
+     * Bypass Configuration - Partition Exemptions.
+     *
+     * Reuses the redirect exemption rules and adds the alias limit that the
+     * nested block anchors need.
+     *
+     * @param mixed $value - Persisted exemption list.
+     * @param array<string, string> $aliases - Existing host and network aliases.
+     * @param string $kind - Exemption kind, either source or destination.
+     *
+     * @return array{values: list<string>, stored: list<string>, invalid: list<array>}
+     *
+     * @since 1.2.0
+     * @private
+     */
+    private static function partitionExemptions(
+        mixed $value,
+        array $aliases,
+        string $kind,
+    ): array {
+        $partition = RedirectConfiguration::partitionExemptions(
+            $value,
+            $aliases,
+            'block_exemptions',
+            'block_exemptions',
+            $kind,
+        );
+        $aliasValues = array_values(array_filter(
+            $partition['values'],
+            static fn (string $exemption): bool => isset($aliases[$exemption]),
+        ));
+
+        if (count($aliasValues) > self::MAXIMUM_EXEMPTION_ALIASES) {
+            $partition['invalid'][] = self::invalidValue(
+                'block_exemptions',
+                implode(' ', $aliasValues),
+                new ValidationException(
+                    'bypass_exemption_aliases_limit',
+                    [self::MAXIMUM_EXEMPTION_ALIASES],
+                ),
+            );
+        }
+
+        return $partition;
+    }
+
     /** @since 1.0.0 */
     private static function invalidValue(
         string $field,
@@ -331,6 +508,7 @@ final class BypassConfiguration
             'block_vpn' => 'vpn',
             'block_vpn_ports' => 'vpn',
             'interfaces' => 'interfaces',
+            'block_exemptions' => 'block_exemptions',
         ];
 
         return [

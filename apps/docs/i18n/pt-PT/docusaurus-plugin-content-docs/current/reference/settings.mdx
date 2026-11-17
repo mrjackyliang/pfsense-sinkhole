@@ -38,6 +38,8 @@ Os horários agendados usam componentes aleatórios estáveis. Hourly é executa
 | Expired Answer Lifetime | Empty        | Segundos durante os quais uma resposta expirada da cache ainda pode ser servida; `0` significa sem limite.     |
 | Expired Answer Wait     | Empty        | Milissegundos de espera por uma resposta nova antes de servir uma expirada; `0` responde de imediato.          |
 
+Rebind Exceptions aceita no máximo 100 domínios. Expired Answer Lifetime aceita segundos inteiros de `0` a `31536000`, e Expired Answer Wait aceita milissegundos inteiros de `0` a `60000`.
+
 Um campo vazio não escreve nada e mantém a predefinição do Resolver. [Definições do Resolver](/docs/configure/resolver-settings) explica quando os valores se aplicam.
 
 ## Package Updates \{#package-updates}
@@ -56,7 +58,7 @@ Cada nova versão cria um aviso local no pfSense. **About → Check Now** execut
 | Name            | Empty        | Etiqueta local usado por atribuições, alertas e Status.                                                  |
 | URL             | Empty        | Origem HTTP ou HTTPS sem credenciais incorporadas.                                                       |
 | Enabled         | On           | Inclui a origem nas atualizações e na política compilada quando atribuída.                               |
-| Global          | On           | Aplica a lista a todos os clientes após as decisões de dispositivos e redes.                             |
+| Global          | Off          | Aplica a lista a todos os clientes após as decisões de dispositivos e redes.                             |
 | Allowed Domains | Empty        | Um domínio global permitido por linha; cada entrada permite o domínio exato e todos os seus subdomínios. |
 
 **Add from Catalog** pesquisa sob demanda o registo de listas do AdGuard Home e o catálogo de feeds do pfBlockerNG. Adicionar um resultado cria a mesma linha comum que a inserção manual da URL.
@@ -73,26 +75,26 @@ As seleções de SafeSearch estão vazias por predefinição em cada âmbito. Ca
 
 ## Network Scopes \{#network-scopes}
 
-| Campo           | Predefinição | Descrição                                                                                                                                            |
-|-----------------|--------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | Empty        | Interface configurada no pfSense cujas sub-redes IPv4 e IPv6 atuais identificam a rede.                                                              |
-| Lists           | Empty        | Listas de DNS adicionais que bloqueiam clientes na rede.                                                                                             |
-| Allowed Domains | Empty        | Uma exceção de rede por linha; cada uma permite o domínio exato e todos os seus subdomínios antes das listas dessa rede e de toda a política global. |
-| Enabled         | On           | Inclui a linha na correspondência de clientes e na política compilada.                                                                               |
+| Campo           | Predefinição | Descrição                                                                                                                                                   |
+|-----------------|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface       | LAN          | Interface configurada no pfSense cujas sub-redes IPv4 e IPv6 atuais identificam a rede. Sem LAN, é selecionada a primeira interface livre que não seja WAN. |
+| Lists           | Empty        | Listas de DNS adicionais que bloqueiam clientes na rede.                                                                                                    |
+| Allowed Domains | Empty        | Uma exceção de rede por linha; cada uma permite o domínio exato e todos os seus subdomínios antes das listas dessa rede e de toda a política global.        |
+| Enabled         | On           | Inclui a linha na correspondência de clientes e na política compilada.                                                                                      |
 
 Cada interface pode aparecer apenas uma vez. Uma interface guardada que não esteja disponível continua visível para correção, em vez de ser descartada.
 
 ## Device Scopes \{#device-scopes}
 
-| Campo               | Predefinição | Descrição                                                                                                                                        |
-|---------------------|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Name                | Empty        | Etiqueta local apresentado na política e em Status.                                                                                              |
-| Identified By       | IP address   | Seleciona IP address, DHCP static mapping ou MAC address.                                                                                        |
-| IP or MAC Address   | Empty        | Identificador exato quando IP address ou MAC address está selecionado.                                                                           |
-| DHCP Static Mapping | Empty        | Mapeamento existente selecionado quando esse método de identificação é usado.                                                                    |
-| Lists               | Empty        | Listas de DNS adicionais que bloqueiam esse dispositivo.                                                                                         |
-| Allowed Domains     | Empty        | Uma exceção de dispositivo por linha; cada uma permite o domínio exato e todos os seus subdomínios antes de todas as decisões de rede e globais. |
-| Enabled             | On           | Inclui a linha na correspondência de clientes e na política compilada.                                                                           |
+| Campo                    | Predefinição | Descrição                                                                                                                                        |
+|--------------------------|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                     | Empty        | Etiqueta local apresentado na política e em Status.                                                                                              |
+| Identified By            | IP address   | Seleciona IP address, DHCP static mapping ou MAC address.                                                                                        |
+| IP Address / MAC Address | Empty        | Identificador exato quando IP address ou MAC address está selecionado. A etiqueta acompanha o método selecionado.                                |
+| DHCP Static Mapping      | Empty        | Mapeamento existente selecionado quando esse método de identificação é usado.                                                                    |
+| Lists                    | Empty        | Listas de DNS adicionais que bloqueiam esse dispositivo.                                                                                         |
+| Allowed Domains          | Empty        | Uma exceção de dispositivo por linha; cada uma permite o domínio exato e todos os seus subdomínios antes de todas as decisões de rede e globais. |
+| Enabled                  | On           | Inclui a linha na correspondência de clientes e na política compilada.                                                                           |
 
 Os mapeamentos estáticos usam o endereço configurado e os endereços atuais observados para o MAC do mapeamento. Uma linha de MAC usa dados atuais de ARP, NDP e concessões DHCP.
 
@@ -112,22 +114,26 @@ O processador por minuto envia no máximo 20 mensagens por execução e 60 mensa
 
 ## Proteção Bypass \{#bypass-protection}
 
-| Campo               | Predefinição | Descrição                                                                                                    |
-|---------------------|--------------|--------------------------------------------------------------------------------------------------------------|
-| Apply to            | Empty        | Interfaces de chegada voltadas para os clientes, partilhadas por todas as proteções Bypass.                  |
-| Redirect            | Off          | Envia à firewall o tráfego DNS comum das portas UDP e TCP 53 nas interfaces selecionadas.                    |
-| Exempt Sources      | Empty        | Um endereço IP, CIDR, alias ou entrada `This Firewall` por linha que ignora o redirecionamento de DNS comum. |
-| Exempt Destinations | Empty        | Um endereço IP de destino, CIDR ou alias por linha que ignora o redirecionamento de DNS comum.               |
-| TLS and QUIC        | Off          | Bloqueia as portas TCP e UDP 853 para destinos que não sejam a firewall.                                     |
-| Providers           | Off          | Bloqueia nomes e endereços das Bypass Lists **Encrypted DNS** ativadas.                                      |
-| Firefox             | Off          | Devolve `NXDOMAIN` para o nome canário de DNS-over-HTTPS automático do Firefox e respetivos subdomínios.     |
-| Private Relay       | Off          | Devolve `NXDOMAIN` para os dois nomes de disponibilidade do Private Relay da Apple.                          |
-| Discovery           | Off          | Mantém DDR inalterado, anuncia o DNS over TLS da firewall ou responde `NOERROR` sem registos.                |
-| Tor                 | Off          | Bloqueia nomes e endereços das Bypass Lists **Tor** ativadas.                                                |
-| VPN providers       | Off          | Bloqueia nomes e endereços das Bypass Lists **VPN** ativadas.                                                |
-| Standard VPN ports  | Off          | Bloqueia portas UDP de OpenVPN, WireGuard e IPsec e ESP para destinos que não sejam a firewall.              |
+| Campo                                  | Predefinição | Descrição                                                                                                                      |
+|----------------------------------------|--------------|--------------------------------------------------------------------------------------------------------------------------------|
+| Apply to                               | Empty        | Interfaces de chegada voltadas para os clientes, partilhadas por todas as proteções Bypass.                                    |
+| Redirect                               | Off          | Envia à firewall o tráfego DNS comum das portas UDP e TCP 53 nas interfaces selecionadas.                                      |
+| Exempt Sources                         | Empty        | Um endereço IPv4 ou IPv6, rede CIDR ou alias de anfitrião/rede existente por linha que ignora o redirecionamento de DNS comum. |
+| Exempt Destinations                    | Empty        | Um endereço IP de destino, CIDR ou alias por linha que ignora o redirecionamento de DNS comum.                                 |
+| TLS and QUIC                           | Off          | Bloqueia as portas TCP e UDP 853 para destinos que não sejam a firewall.                                                       |
+| Providers                              | Off          | Bloqueia nomes e endereços das Bypass Lists **Encrypted DNS** ativadas.                                                        |
+| Firefox                                | Off          | Devolve `NXDOMAIN` para o nome canário de DNS-over-HTTPS automático do Firefox e respetivos subdomínios.                       |
+| Private Relay                          | Off          | Devolve `NXDOMAIN` para os dois nomes de disponibilidade do Private Relay da Apple.                                            |
+| Discovery                              | Off          | Mantém DDR inalterado, anuncia o DNS over TLS da firewall ou responde `NOERROR` sem registos.                                  |
+| Tor                                    | Off          | Bloqueia nomes e endereços das Bypass Lists **Tor** ativadas.                                                                  |
+| VPN (Block listed VPN providers)       | Off          | Bloqueia nomes e endereços das Bypass Lists **VPN** ativadas.                                                                  |
+| VPN (Block standard VPN ports)         | Off          | Bloqueia portas UDP de OpenVPN, WireGuard e IPsec e ESP para destinos que não sejam a firewall.                                |
+| Block Exemptions → Exempt Sources      | Empty        | Um endereço IP, CIDR ou alias por linha cujo tráfego escapa a todos os bloqueios da firewall do Bypass.                        |
+| Block Exemptions → Exempt Destinations | Empty        | Um endereço IP de destino, CIDR ou alias por linha que nenhum bloqueio da firewall do Bypass impede.                           |
 
 Todas as exceções de redirecionamento guardadas precisam ser válidas antes que qualquer regra de redirecionamento seja usada. O IPv4 usa `127.0.0.1` como destino apenas quando o Resolver está escutando nesse endereço; caso contrário, usa o endereço da interface. O IPv6 sempre usa o endereço da interface. **Discovery → Advertise** exige o serviço SSL/TLS do DNS Resolver e o nome de anfitrião do certificado.
+
+As exceções de bloqueio não adicionam nenhuma regra pass, pelo que o tráfego isento continua a passar pelas suas próprias regras da firewall. Cada lista aceita no máximo 16 aliases. Uma exceção de bloqueio guardada inválida mantém todos os bloqueios da firewall do Bypass sem exceções até ser corrigida ou removida.
 
 ### Bypass Lists \{#bypass-lists}
 
@@ -144,16 +150,16 @@ A entrada de uma Bypass List usa uma entrada por linha e comentários com `#`. U
 
 ## IP and Country Blocking \{#ip-and-country-blocking}
 
-| Campo               | Predefinição | Descrição                                                                                                |
-|---------------------|--------------|----------------------------------------------------------------------------------------------------------|
-| Enable              | Off          | Ativa a âncora de firewall `sinkhole/ip`, carregada de forma independente.                               |
-| Interfaces          | Empty        | Interfaces de entrada nas quais as regras de bloqueio se aplicam.                                        |
-| Directions          | Empty        | Seleciona o bloqueio de origem de entrada, o bloqueio de destino de saída ou ambos.                      |
-| Countries           | Empty        | Um código de país de duas letras do GeoLite2 por linha.                                                  |
-| MaxMind Account ID  | Empty        | Conta usada para obter o ficheiro GeoLite2 Country.                                                      |
-| MaxMind License Key | Unset        | Chave apenas para gravação fornecida pelo administrador; deixá-la em branco preserva o valor armazenado. |
-| Clear License Key   | Off          | Elimina a chave MaxMind armazenada quando a configuração é guardada.                                     |
-| IP Allowlist        | Empty        | Um endereço IP ou CIDR por linha, subtraído das tabelas finais de bloqueio.                              |
+| Campo               | Predefinição | Descrição                                                                                                                     |
+|---------------------|--------------|-------------------------------------------------------------------------------------------------------------------------------|
+| Enable              | Off          | Ativa a âncora de firewall `sinkhole/ip`, carregada de forma independente.                                                    |
+| Interfaces          | Empty        | Interfaces de entrada nas quais as regras de bloqueio se aplicam.                                                             |
+| Directions          | Empty        | Seleciona o bloqueio de origem de entrada, o bloqueio de destino de saída ou ambos.                                           |
+| Countries           | Empty        | Um código de país de duas letras do GeoLite2 por linha.                                                                       |
+| MaxMind Account ID  | Empty        | Conta usada para obter o ficheiro GeoLite2 Country.                                                                           |
+| MaxMind License Key | Unset        | Chave apenas para gravação fornecida pelo administrador; deixá-la em branco preserva o valor armazenado.                      |
+| Clear License Key   | Off          | Elimina a chave MaxMind armazenada quando a configuração é guardada.                                                          |
+| IP Allowlist        | Empty        | Um endereço IPv4 ou IPv6, rede CIDR ou alias de anfitrião/rede existente por linha, subtraído das tabelas finais de bloqueio. |
 
 Cada linha de lista de IP tem nome, URL, seleção de família IPv4/IPv6/Both e opção Enabled. O Sinkhole também remove das tabelas finais os endereços das interfaces da firewall, dos gateways e de DNS, para que suas próprias regras não bloqueiem a infraestrutura protegida.
 

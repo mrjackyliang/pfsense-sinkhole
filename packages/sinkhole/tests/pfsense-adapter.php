@@ -1481,6 +1481,8 @@ sinkholeTestRun([
                 json_encode([
                     'schema_version' => Compiler::MANIFEST_SCHEMA_VERSION,
                     'bypass_file' => 'bypass.tsv',
+                    'domain_index' => ['file' => 'domains.index'],
+                    'bypass_index' => ['file' => 'bypass.index'],
                     'scopes' => [
                         'global' => [],
                         'networks' => [],
@@ -1501,6 +1503,8 @@ sinkholeTestRun([
                 ], JSON_THROW_ON_ERROR) . PHP_EOL,
             );
             file_put_contents($generationPath . '/bypass.tsv', '');
+            file_put_contents($generationPath . '/domains.index', '');
+            file_put_contents($generationPath . '/bypass.index', '');
             symlink('sinkhole.d/' . $generationName, $paths->runtimeDataDirectory);
             sinkholeTestAssertSame(
                 true,
@@ -2745,10 +2749,20 @@ sinkholeTestRun([
             pfsensePackageSinkholeAdapter($adapter);
             mkdir($paths->listDirectory, 0700, true);
 
+            $listUrls = [
+                'https://lists.example.invalid/scope-alpha.test',
+                'https://lists.example.invalid/scope-beta.test',
+                'https://lists.example.invalid/scope-gamma.test',
+            ];
+
             foreach ($listIdentifiers as $position => $listIdentifier) {
                 file_put_contents(
                     $paths->listFile($listIdentifier),
                     "E\tscope-" . ($position + 1) . ".example.test\n",
+                );
+                file_put_contents(
+                    $paths->metadataFile($listIdentifier),
+                    json_encode(['url' => $listUrls[$position]]) . PHP_EOL,
                 );
             }
 
@@ -3578,6 +3592,10 @@ sinkholeTestRun([
             file_put_contents(
                 $paths->listFile($identifier),
                 "E\treinstall.example.test\n",
+            );
+            file_put_contents(
+                $paths->metadataFile($identifier),
+                '{"url": "https://lists.example.invalid/reinstall.test"}' . PHP_EOL,
             );
             $sawPythonEnable = false;
             $sinkholeStubConfigSetObserver = static function (

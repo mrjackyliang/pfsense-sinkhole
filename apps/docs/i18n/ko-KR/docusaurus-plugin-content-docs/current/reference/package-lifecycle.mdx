@@ -42,7 +42,7 @@ pfSense는 부팅할 때와 WAN 주소가 변경될 때마다 패키지 Sync를 
 
 ## Keep Settings \{#keep-settings}
 
-**General → Keep Settings**는 기본적으로 선택되어 있습니다. 이 설정을 선택하면 패키지를 제거해도 Sinkhole의 pfSense 구성과 `/cf/conf/sinkhole` 데이터가 보존되므로 재설치 후 저장된 목록과 정책을 사용할 수 있습니다.
+**General → Keep Settings**는 기본적으로 선택되어 있습니다. 이 설정을 선택하면 패키지를 제거해도 Sinkhole의 pfSense 구성과 저장된 DNS 및 IP 목록, SafeSearch 대상, 영구 상태를 포함한 `/cf/conf/sinkhole` 데이터가 보존되므로 재설치 후 정책을 사용할 수 있습니다. 그래도 제거 시 저장된 Bypass List 사본과 선택적 영구 Unbound 미러는 삭제되며, 재설치하면 이를 다시 다운로드하거나 생성합니다.
 
 이 기본값은 제거 후 설치를 수행하는 패키지 관리자 업그레이드 중에도 데이터를 보호합니다. 구성과 저장 데이터를 완전히 삭제하려는 경우에만 선택을 해제합니다.
 
@@ -56,7 +56,7 @@ pkg delete -f pfSense-pkg-Sinkhole
 
 제거 작업은 예약 작업을 중지하고 새 업데이트 작업을 차단하며 Resolver의 이전 Python 설정을 복원하고 DNS Resolver의 **Custom options**에서 Sinkhole의 관리형 Discovery 블록을 삭제하며 `/var/unbound` 런타임 내용을 제거합니다. 또한 임시 잠금과 상태를 지우고 일반 DNS 리디렉션 규칙을 철회하며 `sinkhole/bypass` 및 `sinkhole/ip` 앵커를 비우고 캐시된 Bypass Lists와 테이블 파일을 제거합니다. 관리형 Discovery 블록은 **Keep Settings**의 활성화 여부와 관계없이 삭제됩니다. `/usr/local` 아래에 설치된 패키지 파일도 제거합니다.
 
-**Keep Settings**가 켜져 있으면 구성과 영구 저장 목록이 재설치를 위해 남습니다. 꺼져 있으면 모든 Sinkhole 설정과 저장된 데이터를 삭제하며, 여기에는 `/cf/conf/sinkhole`과 pfSense 패키지 구성의 전체 Sinkhole 분기가 포함됩니다.
+**Keep Settings**가 켜져 있으면 구성과 저장된 DNS 및 IP 목록이 재설치를 위해 남으며, Bypass List 사본과 영구 Unbound 미러는 어느 경우든 제거됩니다. 꺼져 있으면 모든 Sinkhole 설정과 저장된 데이터를 삭제하며, 여기에는 `/cf/conf/sinkhole`과 pfSense 패키지 구성의 전체 Sinkhole 분기가 포함됩니다.
 
 ## 제거 검증 \{#verify-removal}
 

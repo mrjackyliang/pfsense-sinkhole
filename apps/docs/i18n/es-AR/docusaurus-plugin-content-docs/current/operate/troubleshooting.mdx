@@ -19,6 +19,7 @@ Rastree un problema desde el panel Status y el registro del sistema hasta la lis
 ## Dónde buscar \{#where-to-look}
 
 - **Firewall → Sinkhole → Status** muestra el estado de listas, catálogos, mapa de clientes, alertas, Bypass, IP, compilación, despliegue y Resolver.
+- **Status → Update Log** muestra cada paso de la actualización de listas más reciente, incluida la lista que falló y el motivo.
 - **Status → System Logs → System → General** muestra líneas operativas que comienzan por `Sinkhole:`.
 - `/usr/local/sbin/sinkhole --help` muestra los modos de mantenimiento compatibles.
 
@@ -78,14 +79,30 @@ Las horas de finalización de las concesiones ISC pueden estar en GMT o en la ho
 
 Una descarga, análisis o validación fallida de DNS, Bypass o IP conserva la copia guardada anterior y registra el error. El DNS sigue usando la generación local desplegada en vez de esperar a la fuente fallida.
 
+Nunca se conserva una copia guardada desde la URL anterior de una lista. Después de cambiar la URL de una lista, la siguiente actualización descarta esa copia y registra `source changed; discarding the copy from the previous URL.`, por lo que la lista no aporta nada y Status muestra su error hasta que la primera descarga desde la nueva URL sea correcta.
+
+El [Update Log](/docs/operate/status#update-log) indica la lista que falló, su host y el motivo en la ejecución más reciente. Se recomienda seleccionar **Update Now** después de corregir la fuente y seguir allí el nuevo intento.
+
 Los catálogos solo se obtienen cuando se abre o actualiza la búsqueda, y un fallo conserva el último catálogo válido en caché. Confirme la conectividad HTTPS, la URL de la fuente y el error de Status antes de forzar otra actualización.
+
+## La compilación supera el límite de nombres \{#compile-exceeds-the-name-limit}
+
+Una compilación que encuentra más de 10 000 000 de nombres únicos se detiene con un error como `The compile found 10,412,331 unique names; the limit is 10,000,000.` El índice de bloqueo DNS (listas y Blocked Services) y el índice de Bypass se cuentan juntos. Un nombre que aparece en varias listas cuenta una sola vez dentro de un índice, pero un nombre que está en ambos índices cuenta una vez en cada uno.
+
+La generación anterior sigue activa, y **Compile Needed** sigue en `Yes` hasta que una compilación sea correcta. **Summary → Compiled Names** muestra el número desplegado frente al límite.
+
+Para dejar el número por debajo del límite:
+
+1. Desactive o elimine la lista más grande que no necesite, o reemplácela por una variante más pequeña del mismo editor.
+2. Elimine las listas que estén contenidas en su mayor parte en otra lista activada.
+3. Seleccione **Update Now** y confirme que **Compile Needed** vuelve a `No`.
 
 ## La redirección de DNS simple está pausada o ausente \{#plain-dns-redirect-is-paused-or-missing}
 
 - **Paused** — Corrija o elimine todas las excepciones no válidas mostradas en el panel Bypass.
 - **No family address** — Añada la familia a la interfaz o acepte que no pueda generarse una regla para ella.
 - **Resolver does not listen** — Cambie **DNS Resolver → Network Interfaces** o retire esa selección de redirección.
-- **Rules missing or out of date** — Espere dos observaciones por minuto y examine después **Last parse error** y los registros del sistema.
+- **Rules missing or out of date** — Espere dos observaciones por minuto y examine después **Last Parse Error** y los registros del sistema.
 - **Queries are refused** — Añada la red del cliente a la configuración de control de acceso del Resolver.
 
 La comprobación por minuto no recarga el filtro mientras se mantenga el bloqueo de paquetes de pfSense ni cuando pfSense ya haya rechazado el mismo texto de reglas. Cambiar la configuración no válida permite que las dos observaciones siguientes la concilien.
@@ -112,9 +129,11 @@ Los eventos con más de 10 minutos son obsoletos, y una ejecución deja de envia
 
 ## Uso de memoria elevado \{#memory-use-is-high}
 
-Las pruebas medidas con 300 000 nombres aumentaron el RSS de Unbound de 41 MiB a 103 MiB, con un máximo de memoria de políticas de unos 157 bytes por nombre. El uso real depende de los nombres normalizados únicos, las asignaciones de ámbitos y el Resolver en ejecución.
+El módulo de Unbound no mantiene los nombres compilados en memoria. Lee un índice mapeado en memoria de unos 18 bytes por nombre desde la generación activa, por lo que su propia memoria se queda en unos pocos MiB con cualquier tamaño de lista hasta el límite de 10 000 000 de nombres.
 
-Se recomienda comparar el número de entradas de Status con la memoria de Unbound antes y después de añadir una fuente grande. Desactivar una lista sin usar la mantiene fuera de la política activa en la siguiente compilación.
+Las páginas del índice que leen las consultas cuentan en la memoria residente de Unbound como caché de archivos, que FreeBSD recupera cuando hay presión de memoria. Por eso, un RSS grande de Unbound suele venir de las propias cachés de mensajes y RRset del Resolver; compárelo con los tamaños de caché de **DNS Resolver → Advanced Settings** antes de cambiar las listas.
+
+Cada generación también necesita espacio en disco para sus archivos compilados, unos 55 bytes por nombre, en `/var/unbound` y, en un sistema con disco RAM, en la copia persistente. Un despliegue que no cabe se detiene con un error `Not enough deployment space` y conserva la generación anterior.
 
 ## Informar de un problema \{#report-a-problem}
 

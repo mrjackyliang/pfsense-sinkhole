@@ -2,13 +2,16 @@
 
 The module loads only compiler-owned chroot files and never performs network I/O.
 
-Since: UNRELEASED
+Since:
+    1.0.0
 """
 
+import array
 import fcntl
 import hashlib
 import ipaddress
 import json
+import mmap
 import os
 import re
 import stat
@@ -20,8 +23,8 @@ from typing import Any, Final
 
 DATA_DIRECTORY: Final[str] = "sinkhole"
 MANIFEST_PATH = os.path.join(DATA_DIRECTORY, "manifest.json")
-DOMAINS_PATH = os.path.join(DATA_DIRECTORY, "domains.tsv")
-BYPASS_PATH = os.path.join(DATA_DIRECTORY, "bypass.tsv")
+DOMAINS_INDEX_PATH = os.path.join(DATA_DIRECTORY, "domains.index")
+BYPASS_INDEX_PATH = os.path.join(DATA_DIRECTORY, "bypass.index")
 ALLOW_PATH = os.path.join(DATA_DIRECTORY, "allow.txt")
 GENERATION_PATH = os.path.join(DATA_DIRECTORY, "generation")
 LOADED_GENERATION_PATH = os.path.join("sinkhole-state", "loaded")
@@ -30,14 +33,21 @@ EVENTS_DROPPED_PATH = os.path.join("sinkhole-state", "events-dropped")
 CLIENT_MAP_PATH = os.path.join("sinkhole-clients", "clients.json")
 WATCH_INTERVAL_SECONDS: Final[float] = 2.0
 BLOCK_TTL_SECONDS: Final[int] = 60
-MAXIMUM_UNIQUE_NAMES: Final[int] = 2_000_000
+MAXIMUM_UNIQUE_NAMES: Final[int] = 10_000_000
+INDEX_KEY_BYTES: Final[int] = 16
+INDEX_SAMPLE_COUNT: Final[int] = 4_096
+INDEX_INTERPOLATION_STEPS: Final[int] = 8
+INDEX_BUCKET_RECORDS: Final[int] = 32
+INDEX_SCAN_RECORDS: Final[int] = 512
+RETIRED_DATA_GRACE_SECONDS: Final[float] = 30.0
 MAXIMUM_CLIENT_MAP_BYTES: Final[int] = 4_194_304
 MAXIMUM_EVENT_FILE_BYTES: Final[int] = 1_048_576
 MAXIMUM_QUEUED_EVENTS: Final[int] = 10_000
 CLIENT_LOOKUP_CACHE_SIZE: Final[int] = 4_096
-MANIFEST_SCHEMA_VERSION: Final[int] = 3
+NAME_LOOKUP_CACHE_SIZE: Final[int] = 4_096
+MANIFEST_SCHEMA_VERSION: Final[int] = 4
 CLIENT_MAP_SCHEMA_VERSION: Final[int] = 2
-STASH_VERSION: Final[int] = 5
+STASH_VERSION: Final[int] = 6
 MAXIMUM_SAFESEARCH_NAMES: Final[int] = 5_000
 MAXIMUM_SAFESEARCH_CHOICES: Final[int] = 32
 MAXIMUM_SAFESEARCH_ADDRESSES: Final[int] = 16
@@ -62,6 +72,182 @@ _COMPILED_NAME_PATTERN = re.compile(
 
 class _LoadStopped(Exception):
     """Internal loader cancellation signal."""
+
+
+class NameIndex:
+    """Read-only memory-mapped compiled names with their exact and subtree masks.
+
+    Records are sorted by the leading bytes of each name's SHA-256 digest, so a
+    lookup hashes the name and searches the mapping without holding names in memory.
+    A small table of bucket boundaries narrows each lookup to a few dozen records.
+    """
+
+    __slots__ = (
+        "_index_map",
+        "_count",
+        "_record_size",
+        "_masks",
+        "_bucket_shift",
+        "_buckets",
+    )
+
+    def __init__(
+        self,
+        index_map: mmap.mmap | None,
+        count: int,
+        record_size: int,
+        masks: tuple[tuple[int, int], ...],
+    ) -> None:
+        """Wrap one validated mapping, or none for an empty index."""
+
+        self._index_map = index_map
+        self._count = count
+        self._record_size = record_size
+        self._masks = masks
+        self._bucket_shift = 16
+        self._buckets = array.array("I", (0, count))
+
+    def __len__(self) -> int:
+        """Return the number of compiled names."""
+
+        return self._count
+
+    def __contains__(self, name: object) -> bool:
+        """Return whether exactly ``name`` was compiled."""
+
+        return isinstance(name, str) and self.get(name) is not None
+
+    def build_buckets(self, stop_event: threading.Event | None) -> None:
+        """Record where each leading-key bucket starts, for direct bucket scans.
+
+        Buckets average at most ``INDEX_BUCKET_RECORDS`` records, so the table stays
+        at or below 65,537 entries (256 KiB) however many names compile.
+        """
+
+        bucket_bits = 0
+
+        while (
+            bucket_bits < 16
+            and self._count >> bucket_bits > INDEX_BUCKET_RECORDS
+        ):
+            bucket_bits += 1
+
+        bucket_count = 1 << bucket_bits
+        bucket_shift = 16 - bucket_bits
+        buckets = array.array("I", (0,)) * (bucket_count + 1)
+        position = 0
+
+        for bucket in range(1, bucket_count):
+            _check_stopped(stop_event, bucket)
+
+            target = (bucket << bucket_shift).to_bytes(2, "big")
+            position = self.lower_bound(target, position, self._count)
+            buckets[bucket] = position
+
+        buckets[bucket_count] = self._count
+        self._buckets = buckets
+        self._bucket_shift = bucket_shift
+
+    def get(self, name: str) -> tuple[int, int] | None:
+        """Return the exact and subtree masks compiled for exactly ``name``."""
+
+        if self._count == 0 or not name.isascii():
+            return None
+
+        key = hashlib.sha256(name.encode("ascii")).digest()[:INDEX_KEY_BYTES]
+        bucket = ((key[0] << 8) | key[1]) >> self._bucket_shift
+        start = self._buckets[bucket]
+        end = self._buckets[bucket + 1]
+
+        if end - start > INDEX_SCAN_RECORDS:
+            position = self.lower_bound(key, start, end)
+
+            if position >= end or self.key_at(position) != key:
+                return None
+
+            return self._masks[self.mask_index(position)]
+
+        record_size = self._record_size
+        block = self._index_map[start * record_size:end * record_size]
+        offset = block.find(key)
+
+        while offset >= 0 and offset % record_size != 0:
+            offset = block.find(key, offset + 1)
+
+        if offset < 0:
+            return None
+
+        mask_index = int.from_bytes(
+            block[offset + INDEX_KEY_BYTES:offset + record_size],
+            "big",
+        )
+
+        return self._masks[mask_index]
+
+    def lower_bound(self, target: bytes, low: int, high: int) -> int:
+        """Return the first position in ``[low, high)`` whose key is not below ``target``.
+
+        Keys are uniformly distributed digests, so interpolation reaches the spot in
+        a few probes; bisection takes over after a bounded number of steps.
+        """
+
+        index_map = self._index_map
+        record_size = self._record_size
+        target_number = int.from_bytes(target[:8].ljust(8, b"\x00"), "big")
+        low_number = 0
+        high_number = 1 << 64
+        steps = 0
+
+        while low < high:
+            if steps < INDEX_INTERPOLATION_STEPS and high_number > low_number:
+                position = low + (
+                    (target_number - low_number) * (high - low)
+                ) // (high_number - low_number)
+
+                if position < low:
+                    position = low
+                elif position >= high:
+                    position = high - 1
+            else:
+                position = (low + high) // 2
+
+            steps += 1
+            offset = position * record_size
+            candidate = index_map[offset:offset + INDEX_KEY_BYTES]
+
+            if candidate < target:
+                low = position + 1
+                low_number = int.from_bytes(candidate[:8], "big")
+            else:
+                high = position
+                high_number = int.from_bytes(candidate[:8], "big")
+
+        return low
+
+    def key_at(self, position: int) -> bytes:
+        """Return the sorted key stored at one record position."""
+
+        offset = position * self._record_size
+
+        return self._index_map[offset:offset + INDEX_KEY_BYTES]
+
+    def mask_index(self, position: int) -> int:
+        """Return the mask-table position stored at one record position."""
+
+        offset = position * self._record_size
+
+        return int.from_bytes(
+            self._index_map[offset + INDEX_KEY_BYTES:offset + self._record_size],
+            "big",
+        )
+
+    def close(self) -> None:
+        """Unmap the index once no query can still be reading it."""
+
+        index_map = self._index_map
+
+        if index_map is not None:
+            index_map.close()
 
 
 class SinkholeData:
@@ -93,19 +279,21 @@ class SinkholeData:
         "safesearch_global_mask",
         "safesearch_network_masks",
         "safesearch_device_masks",
+        "_listed_mask_cache",
+        "_bypass_mask_cache",
     )
 
     def __init__(
         self,
         generation: str,
-        domains: dict[str, tuple[int, int]],
+        domains: Any,
         allowed: frozenset[str],
         global_mask: int,
         network_allowed: dict[str, frozenset[str]],
         network_masks: dict[str, int],
         device_allowed: dict[str, frozenset[str]],
         device_masks: dict[str, int],
-        bypass_domains: dict[str, tuple[int, int]],
+        bypass_domains: Any,
         bypass_interfaces: frozenset[str],
         bypass_enabled_mask: int,
         disable_firefox_doh: bool,
@@ -162,6 +350,17 @@ class SinkholeData:
             self.safesearch_network_masks,
             self.safesearch_device_masks,
         ) = safesearch if safesearch is not None else ({}, (), (), 0, {}, {})
+        self._listed_mask_cache: dict[str, int] = {}
+        self._bypass_mask_cache: dict[str, int] = {}
+
+    def close(self) -> None:
+        """Unmap both name indexes after this generation has been retired."""
+
+        for index in (self.domains, self.bypass_domains):
+            close = getattr(index, "close", None)
+
+            if close is not None:
+                close()
 
     def is_safesearch_name(self, name: str) -> bool:
         """Return whether cache storage could skip a scoped SafeSearch answer."""
@@ -199,17 +398,7 @@ class SinkholeData:
     def match(self, name: str) -> tuple[bool, bool]:
         """Return whether ``name`` is listed and blocked in the global scope."""
 
-        listed_mask = 0
-        exact_masks = self.domains.get(name)
-
-        if exact_masks is not None:
-            listed_mask |= exact_masks[0]
-
-        for candidate in _parents(name):
-            masks = self.domains.get(candidate)
-
-            if masks is not None:
-                listed_mask |= masks[1]
+        listed_mask = self.listed_mask(name)
 
         return listed_mask != 0, (listed_mask & self.global_mask) != 0
 
@@ -221,19 +410,7 @@ class SinkholeData:
     def listed_mask(self, name: str) -> int:
         """Return all exact and subtree list memberships for one name."""
 
-        listed_mask = 0
-        exact_masks = self.domains.get(name)
-
-        if exact_masks is not None:
-            listed_mask |= exact_masks[0]
-
-        for candidate in _parents(name):
-            masks = self.domains.get(candidate)
-
-            if masks is not None:
-                listed_mask |= masks[1]
-
-        return listed_mask
+        return _cached_mask(self._listed_mask_cache, self.domains, name)
 
     def is_listed(self, name: str) -> bool:
         """Return whether a name appears in any compiled scope list."""
@@ -243,19 +420,7 @@ class SinkholeData:
     def bypass_mask(self, name: str) -> int:
         """Return exact and inherited Bypass List kind memberships."""
 
-        listed_mask = 0
-        exact_masks = self.bypass_domains.get(name)
-
-        if exact_masks is not None:
-            listed_mask |= exact_masks[0]
-
-        for candidate in _parents(name):
-            masks = self.bypass_domains.get(candidate)
-
-            if masks is not None:
-                listed_mask |= masks[1]
-
-        return listed_mask
+        return _cached_mask(self._bypass_mask_cache, self.bypass_domains, name)
 
     def is_bypass_listed(self, name: str) -> bool:
         """Return whether a name occurs in effective Bypass List data."""
@@ -456,6 +621,8 @@ _event_lock = threading.Lock()
 _event_queue: list[dict[str, Any]] = []
 _events_dropped = 0
 _persisted_events_dropped = 0
+_retired_data_lock = threading.Lock()
+_retired_data: list[tuple[float, Any]] = []
 
 
 def _parents(name: str) -> tuple[str, ...]:
@@ -464,6 +631,46 @@ def _parents(name: str) -> tuple[str, ...]:
     labels = name.split(".")
 
     return tuple(".".join(labels[index:]) for index in range(len(labels)))
+
+
+def _name_mask(index: Any, name: str) -> int:
+    """Combine a name's exact masks with the subtree masks of it and its parents."""
+
+    listed_mask = 0
+    exact_masks = index.get(name)
+
+    if exact_masks is not None:
+        listed_mask |= exact_masks[0]
+
+    for candidate in _parents(name):
+        masks = index.get(candidate)
+
+        if masks is not None:
+            listed_mask |= masks[1]
+
+    return listed_mask
+
+
+def _cached_mask(cache: dict[str, int], index: Any, name: str) -> int:
+    """Return one name's combined mask, remembering recent names for this generation.
+
+    One query asks for the same name several times, and popular names repeat, so a
+    bounded per-generation cache saves the hashing; it empties whenever it fills.
+    """
+
+    listed_mask = cache.get(name)
+
+    if listed_mask is not None:
+        return listed_mask
+
+    listed_mask = _name_mask(index, name)
+
+    if len(cache) >= NAME_LOOKUP_CACHE_SIZE:
+        cache.clear()
+
+    cache[name] = listed_mask
+
+    return listed_mask
 
 
 def _name_is_allowed(name: str, allowed: frozenset[str]) -> bool:
@@ -1002,6 +1209,123 @@ def _load_alerts(
     return tuple(rules)
 
 
+def _index_path(value: Any, expected_path: str, description: str) -> str:
+    """Validate a manifest index filename against its fixed compiler name."""
+
+    if not isinstance(value, dict) or value.get("file") != os.path.basename(expected_path):
+        raise ValueError(f"the manifest {description} index is invalid")
+
+    return expected_path
+
+
+def _load_name_index(
+    value: Any,
+    path: str,
+    expected_count: int,
+    parse_mask: Any,
+    description: str,
+    stop_event: threading.Event | None,
+) -> NameIndex:
+    """Map one compiler-owned name index after validating it against the manifest.
+
+    The digest proves the file is byte-for-byte what the compiler wrote after it
+    checked key order and mask positions; a sampled order check guards the search.
+    """
+
+    record_size = value.get("record_size")
+    expected_digest = value.get("sha256")
+    raw_masks = value.get("masks")
+
+    if (
+        record_size not in (INDEX_KEY_BYTES + 2, INDEX_KEY_BYTES + 4)
+        or isinstance(record_size, bool)
+        or not isinstance(expected_digest, str)
+        or re.fullmatch(r"[a-f0-9]{64}", expected_digest) is None
+        or not isinstance(raw_masks, list)
+        or len(raw_masks) > 1 << (8 * (record_size - INDEX_KEY_BYTES))
+    ):
+        raise ValueError(f"the manifest {description} index is invalid")
+
+    masks: list[tuple[int, int]] = []
+    seen_masks: set[tuple[int, int]] = set()
+
+    for raw_mask in raw_masks:
+        if (
+            not isinstance(raw_mask, list)
+            or len(raw_mask) != 2
+            or not isinstance(raw_mask[0], str)
+            or not isinstance(raw_mask[1], str)
+        ):
+            raise ValueError(f"the manifest {description} index masks are invalid")
+
+        mask = (parse_mask(raw_mask[0]), parse_mask(raw_mask[1]))
+
+        if mask == (0, 0) or mask in seen_masks:
+            raise ValueError(f"the manifest {description} index masks are invalid")
+
+        seen_masks.add(mask)
+        masks.append(mask)
+
+    if expected_count > 0 and len(masks) == 0:
+        raise ValueError(f"the manifest {description} index masks are invalid")
+
+    index_masks = tuple(masks)
+
+    with open(path, "rb") as index_file:
+        index_status = os.fstat(index_file.fileno())
+
+        if (
+            not stat.S_ISREG(index_status.st_mode)
+            or index_status.st_size % record_size != 0
+        ):
+            raise ValueError(f"the {description} index file is invalid")
+
+        if index_status.st_size // record_size != expected_count:
+            raise ValueError(
+                f"the manifest {description} count does not match the index file"
+            )
+
+        if expected_count == 0:
+            if hashlib.sha256(b"").hexdigest() != expected_digest:
+                raise ValueError(f"the {description} index digest does not match")
+
+            return NameIndex(None, 0, record_size, index_masks)
+
+        index_map = mmap.mmap(index_file.fileno(), 0, access=mmap.ACCESS_READ)
+
+    index = NameIndex(index_map, expected_count, record_size, index_masks)
+
+    try:
+        if hashlib.sha256(index_map).hexdigest() != expected_digest:
+            raise ValueError(f"the {description} index digest does not match")
+
+        if stop_event is not None and stop_event.is_set():
+            raise _LoadStopped()
+
+        sample_step = max(1, expected_count // INDEX_SAMPLE_COUNT)
+        sample_positions = list(range(0, expected_count - 1, sample_step))
+
+        if expected_count > 1:
+            sample_positions.append(expected_count - 2)
+
+        for position in sample_positions:
+            if not index.key_at(position) < index.key_at(position + 1):
+                raise ValueError(f"the {description} index is not sorted")
+
+            if index.mask_index(position) >= len(index_masks):
+                raise ValueError(f"the {description} index references an unknown mask")
+
+        if index.mask_index(expected_count - 1) >= len(index_masks):
+            raise ValueError(f"the {description} index references an unknown mask")
+
+        index.build_buckets(stop_event)
+    except BaseException:
+        index.close()
+        raise
+
+    return index
+
+
 def _load_data(stop_event: threading.Event | None = None) -> SinkholeData:
     """Parse and validate one complete compiler generation."""
 
@@ -1018,9 +1342,6 @@ def _load_data(stop_event: threading.Event | None = None) -> SinkholeData:
 
     if manifest.get("generation") != generation_before:
         raise ValueError("the manifest and generation stamp do not match")
-
-    if manifest.get("bypass_file") != os.path.basename(BYPASS_PATH):
-        raise ValueError("the manifest Bypass filename is invalid")
 
     manifest_domain_count = manifest.get("domain_count")
 
@@ -1120,94 +1441,62 @@ def _load_data(stop_event: threading.Event | None = None) -> SinkholeData:
             f"alert rules disabled: {_failure_message(exception)}"
         )
     mask_cache: dict[str, int] = {}
-    mask_tuples: dict[tuple[int, int], tuple[int, int]] = {}
-    domains: dict[str, tuple[int, int]] = {}
+    domain_index_manifest = manifest.get("domain_index")
+    bypass_index_manifest = manifest.get("bypass_index")
+    domains_index_path = _index_path(
+        domain_index_manifest,
+        DOMAINS_INDEX_PATH,
+        "domain",
+    )
+    bypass_index_path = _index_path(
+        bypass_index_manifest,
+        BYPASS_INDEX_PATH,
+        "Bypass domain",
+    )
+    domains = _load_name_index(
+        domain_index_manifest,
+        domains_index_path,
+        manifest_domain_count,
+        lambda value: _mask_for_bits(value, valid_bits, mask_cache),
+        "domain",
+        stop_event,
+    )
 
-    with open(DOMAINS_PATH, "r", encoding="ascii") as domains_file:
-        for line_number, line in enumerate(domains_file, start=1):
-            _check_stopped(stop_event, line_number)
-
-            if len(domains) >= MAXIMUM_UNIQUE_NAMES:
-                raise ValueError("the domains file exceeds the unique-name limit")
-
-            fields = line.rstrip("\r\n").split("\t")
-
-            if len(fields) != 3:
-                raise ValueError(f"domain row {line_number} is invalid")
-
-            domain = _normalize_compiled_name(fields[0])
-
-            if domain is None or domain in domains:
-                raise ValueError(f"domain row {line_number} is invalid")
-
-            exact_mask = _mask_for_bits(fields[1], valid_bits, mask_cache)
-            subtree_mask = _mask_for_bits(fields[2], valid_bits, mask_cache)
-
-            if exact_mask == 0 and subtree_mask == 0:
-                raise ValueError(f"domain row {line_number} has no list membership")
-
-            masks = (exact_mask, subtree_mask)
-            domains[domain] = mask_tuples.setdefault(masks, masks)
-
-    if stop_event is not None and stop_event.is_set():
-        raise _LoadStopped()
-
-    if len(domains) != manifest_domain_count:
-        raise ValueError("the manifest domain count does not match the domains file")
-
-    bypass_masks: dict[tuple[int, int], tuple[int, int]] = {}
-    bypass_domains: dict[str, tuple[int, int]] = {}
-
-    with open(BYPASS_PATH, "r", encoding="ascii") as bypass_file:
-        for line_number, line in enumerate(bypass_file, start=1):
-            _check_stopped(stop_event, line_number)
-
-            if len(domains) + len(bypass_domains) >= MAXIMUM_UNIQUE_NAMES:
-                raise ValueError("the Bypass file exceeds the unique-name limit")
-
-            fields = line.rstrip("\r\n").split("\t")
-
-            if len(fields) != 3:
-                raise ValueError(f"Bypass row {line_number} is invalid")
-
-            domain = _normalize_compiled_name(fields[0])
-
-            if domain is None or domain in bypass_domains:
-                raise ValueError(f"Bypass row {line_number} is invalid")
-
-            exact_mask = _mask_for_bypass_kinds(fields[1], bypass_enabled_mask)
-            subtree_mask = _mask_for_bypass_kinds(fields[2], bypass_enabled_mask)
-
-            if exact_mask == 0 and subtree_mask == 0:
-                raise ValueError(
-                    f"Bypass row {line_number} has no kind membership"
-                )
-
-            masks = (exact_mask, subtree_mask)
-            bypass_domains[domain] = bypass_masks.setdefault(masks, masks)
-
-    if len(bypass_domains) != manifest_bypass_domain_count:
-        raise ValueError(
-            "the manifest Bypass domain count does not match the Bypass file"
+    try:
+        bypass_domains = _load_name_index(
+            bypass_index_manifest,
+            bypass_index_path,
+            manifest_bypass_domain_count,
+            lambda value: _mask_for_bypass_kinds(value, bypass_enabled_mask),
+            "Bypass domain",
+            stop_event,
         )
+    except BaseException:
+        domains.close()
+        raise
 
-    allowed = _read_allowed(global_scope.get("allow"), stop_event)
-    network_allowed = {
-        identifier: _read_allowed(filename, stop_event)
-        for identifier, filename in network_allow_files.items()
-    }
-    device_allowed = {
-        identifier: _read_allowed(filename, stop_event)
-        for identifier, filename in device_allow_files.items()
-    }
+    try:
+        allowed = _read_allowed(global_scope.get("allow"), stop_event)
+        network_allowed = {
+            identifier: _read_allowed(filename, stop_event)
+            for identifier, filename in network_allow_files.items()
+        }
+        device_allowed = {
+            identifier: _read_allowed(filename, stop_event)
+            for identifier, filename in device_allow_files.items()
+        }
 
-    if stop_event is not None and stop_event.is_set():
-        raise _LoadStopped()
+        if stop_event is not None and stop_event.is_set():
+            raise _LoadStopped()
 
-    generation_after = _read_generation()
+        generation_after = _read_generation()
 
-    if generation_after != generation_before:
-        raise ValueError("the compiler generation changed during load")
+        if generation_after != generation_before:
+            raise ValueError("the compiler generation changed during load")
+    except BaseException:
+        domains.close()
+        bypass_domains.close()
+        raise
 
     return SinkholeData(
         generation=generation_before,
@@ -1890,14 +2179,74 @@ def _activate_loaded_data(data: Any, prefix: str) -> None:
     global _last_reload_error
     global _client_map_digest
 
+    previous_data = _active_data
     _active_data = data
     _generation_id = data.generation
     _failed_generation_id = None
     _last_reload_error = None
     _client_map_digest = None
     _clear_client_lookup_cache()
+
+    if previous_data is not None and previous_data is not data:
+        _retire_data(previous_data)
+
     _report_loaded_generation(data.generation)
     _log_loaded(prefix, data)
+
+
+def _discard_unpublished_data(data: Any) -> None:
+    """Unmap a generation that loaded but was never published to queries."""
+
+    close = getattr(data, "close", None)
+
+    if close is not None and data is not _active_data:
+        close()
+
+
+def _retire_data(data: Any) -> None:
+    """Queue a replaced generation so its mappings close after in-flight queries."""
+
+    with _retired_data_lock:
+        _retired_data.append((time.monotonic(), data))
+
+
+def _close_retired_data(force: bool) -> None:
+    """Unmap replaced generations once no query can still hold them.
+
+    Queries read ``_active_data`` once and finish within microseconds, so a grace
+    period well beyond any lookup is enough; ``deinit`` closes the rest after Unbound
+    has stopped calling the module.
+    """
+
+    deadline = time.monotonic() - RETIRED_DATA_GRACE_SECONDS
+
+    with _retired_data_lock:
+        closing = [
+            data
+            for retired_at, data in _retired_data
+            if force or retired_at <= deadline
+        ]
+        _retired_data[:] = [
+            (retired_at, data)
+            for retired_at, data in _retired_data
+            if not force and retired_at > deadline
+        ]
+
+    for data in closing:
+        if data is _active_data:
+            continue
+
+        close = getattr(data, "close", None)
+
+        if close is None:
+            continue
+
+        try:
+            close()
+        except BaseException as exception:
+            _log_reload_error(
+                f"unable to unmap a replaced generation: {_failure_message(exception)}"
+            )
 
 
 def _reload_worker(
@@ -1913,10 +2262,13 @@ def _reload_worker(
     try:
         loaded = _load_data(stop_event)
 
-        if stop_event.is_set() or lifecycle_token is not _lifecycle_token:
-            return
-
-        if loaded.generation != generation_id or _read_generation() != generation_id:
+        if (
+            stop_event.is_set()
+            or lifecycle_token is not _lifecycle_token
+            or loaded.generation != generation_id
+            or _read_generation() != generation_id
+        ):
+            _discard_unpublished_data(loaded)
             return
 
         _activate_loaded_data(loaded, "reloaded")
@@ -1976,6 +2328,7 @@ def _watch_worker(lifecycle_token: object, stop_event: threading.Event) -> None:
             return
 
         _flush_events()
+        _close_retired_data(False)
 
         try:
             generation_id = _read_generation()
@@ -2584,6 +2937,7 @@ def deinit(module_id: int) -> bool:
         loader_thread.join()
 
     _flush_events()
+    _close_retired_data(True)
 
     if _active_data is not None:
         with _event_lock:

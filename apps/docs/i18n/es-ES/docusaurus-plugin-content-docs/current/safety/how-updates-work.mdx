@@ -26,7 +26,9 @@ Para cada lista DNS activada, Sinkhole:
 4. Compila la política global, de red, de dispositivo, de dominios permitidos y de alertas a partir de datos locales guardados.
 5. Despliega en `/var/unbound` una generación que puede descubrir el módulo Python ya cargado.
 
-Un fallo de descarga, análisis o validación registra un error sin sustituir la última copia válida. El DNS sigue usando la generación local desplegada durante todo el intento.
+Un fallo de descarga, análisis o validación registra un error sin sustituir la última copia válida cuando la URL de la lista no ha cambiado. El DNS sigue usando la generación local desplegada durante todo el intento.
+
+Después de que cambie la URL de una lista, la siguiente actualización que la descargue descarta la copia de la URL anterior antes de obtener la nueva, de modo que una primera descarga fallida deja esa lista sin copia guardada. Una lista desactivada, o una Bypass List cuya protección esté desactivada, no se descarga, así que conserva los datos de la copia anterior hasta que se vuelva a activar.
 
 ## Despliegue y cachés del Resolver \{#deployment-and-resolver-caches}
 
@@ -50,7 +52,7 @@ Un ancla `sinkhole/ip` existente puede recibir solo un `pfctl -T replace` de sus
 
 La frecuencia predeterminada de actualización de listas es Daily. Los horarios Hourly, Every 6 hours, Daily y Weekly usan componentes de minuto aleatorios estables para que el firewall no cambie la hora del trabajo cada vez que se guarda.
 
-Las actualizaciones de listas DNS, de IP/país, el trabajo de aplicación relacionado con catálogos y la actualización automática del paquete se coordinan mediante `/var/run/sinkhole-update.lock`. Una acción Update del paquete espera a que termine una actualización de listas activa en vez de cambiar el paquete instalado mientras se ejecuta.
+Las actualizaciones DNS, de Bypass y de IP/país, las aplicaciones de la configuración, las comprobaciones y actualizaciones automáticas del paquete y la limpieza de la eliminación se coordinan mediante `/var/run/sinkhole-update.lock`. Una comprobación del paquete o una acción Update no espera: si otra operación tiene el bloqueo, se detiene con `Another package operation is already running.` y se puede reintentar cuando esa operación termine.
 
 ## Las actualizaciones de catálogos son independientes \{#catalog-refreshes-are-separate}
 

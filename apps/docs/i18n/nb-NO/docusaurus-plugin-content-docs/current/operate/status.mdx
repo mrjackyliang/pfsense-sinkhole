@@ -1,7 +1,7 @@
 ---
 id: status
 title: Status
-description: Les alle Sinkhole-panelene i Status, skill mellom aktive, ventende, pausede, lastede, manglende og utdaterte tilstander, og kjør en manuell listeoppdatering.
+description: Les alle Sinkhole-panelene i Status, skill mellom aktive, ventende, pausede, lastede, manglende og utdaterte tilstander, og følg en manuell listeoppdatering i den direkte Update Log.
 keywords:
   - sinkhole for pfsense
   - status
@@ -26,16 +26,19 @@ Les statusen for lagrede lister, omfang, varsler, Bypass, IP, kompilering, distr
 
 | Panel                   | Dette rapporteres                                                                                                                                              |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Summary                 | Kompilering, distribusjon, generasjon, operasjon, Resolver-eier, samlet Sinkhole-status og **Update Now** under panelet.                                       |
+| Summary                 | Kompilerte navn opp mot grensen, kompilering, distribusjon, generasjon, operasjon, Resolver-eier, samlet Sinkhole-status og **Update Now** under panelet.      |
+| Update Log              | Hvert trinn i den siste listeoppdateringen, med direkte oppfølging av en oppdatering som kjører.                                                               |
 | Lists                   | URL for DNS-liste, antall lagrede oppføringer, siste vellykkede oppdatering og siste feil.                                                                     |
 | Popular-List Catalogs   | Siste henting og siste feil for katalogkildene AdGuard Home og pfBlockerNG.                                                                                    |
 | Invalid Saved Rows      | Feilformede listerader som fortsatt er tilgjengelige for reparasjon. Vises bare når slike rader finnes.                                                        |
 | Scopes                  | Tidspunkt og feil for gjenoppbygging av klientkartet, etterfulgt av separate paneler for Networks og Devices.                                                  |
+| Blocked Services        | Registerhenting, siste feil og valgte tjenester per omfang.                                                                                                    |
+| SafeSearch              | Motorer per omfang og hver trygge verts adresser, siste kontroll og feil.                                                                                      |
 | Alerts                  | Siste kjøring, leste eller utdaterte hendelser, sendte eller tilbakeholdte varsler, forkastede hendelser og siste feil.                                        |
 | Bypass                  | Hver beskyttelse, grensesnitt, omdirigeringsregeltilstand, tilstand og antall for Bypass-ankeret, etterfulgt av Bypass Lists og eventuelle reparasjonspaneler. |
 | IP and Country Blocking | Policyvalg, antall tabeller og regler, oppdateringer, feil og ankertilstand, etterfulgt av et separat panel for IP Lists.                                      |
 
-Deaktiverte liste- og omfangsrader vises dempet. En kilde med feil kan fortsatt vise oppføringer og en tidligere vellykket oppdatering fordi den siste gyldige kopien forblir aktiv.
+Deaktiverte liste- og omfangsrader vises dempet. En kilde med feil kan fortsatt vise oppføringer og en tidligere vellykket oppdatering fordi den siste gyldige kopien forblir aktiv. Når URL-en for en liste endres, forkaster den neste oppdateringen som laster den ned, kopien fra den forrige URL-en, så raden viser ingen oppføringer før den første nedlastingen fra den nye URL-en lykkes.
 
 <img src={listsScopesStatus} alt="Fanen Status viser oppdateringer av lagrede demolister, nettverksdelnett og gjeldende adresser for demoenheter" width={1024} height={949} style={{maxWidth: '100%', height: 'auto'}} />
 
@@ -59,20 +62,21 @@ Når Sinkhole er deaktivert med hensikt, er **Deployment Needed** `No`, **Loaded
 
 ## Tilstand for kompilering og distribusjon \{#compile-and-deployment-state}
 
-| Felt                | Betydning                                                                                           |
-|---------------------|-----------------------------------------------------------------------------------------------------|
-| Compile Needed      | Lagret policy er endret, eller den siste kompileringen ble ikke fullført.                           |
-| Compiled Generation | Identifikator produsert av den siste vellykkede kompileringen.                                      |
-| Deployment Needed   | Kompilert innhold er ikke innholdet som er distribuert for Unbound, eller integrasjonen er inaktiv. |
-| Deployed Generation | Identifikator i det distribuerte kjøretidsmanifestet.                                               |
-| Loaded Generation   | Identifikator som Unbound-modulen rapporterer som lastet.                                           |
-| Update Running      | Vises bare mens en liste- eller IP-oppdatering eier den delte oppdateringslåsen.                    |
-| Removal in Progress | Vises bare mens den vedvarende fjerningsmarkøren er satt og integrasjonen trekkes tilbake.          |
-| Python Script Owner | Gjeldende verdi for den eneste `python_script`-plassen i Resolver, eller `None`.                    |
+| Felt                             | Betydning                                                                                                                                                                                 |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compiled Names                   | Navn i den distribuerte DNS-blokkeringsindeksen (lister og blokkerte tjenester) pluss navn i Bypass-indeksen, opp mot grensen på 10 000 000 navn.                                         |
+| Compile Needed                   | Lagret policy er endret, eller den siste kompileringen ble ikke fullført.                                                                                                                 |
+| Compiled Generation              | Identifikator produsert av den siste vellykkede kompileringen.                                                                                                                            |
+| Deployment Needed                | Kompilert innhold er ikke innholdet som er distribuert for Unbound, eller integrasjonen er inaktiv.                                                                                       |
+| Deployed Generation              | Identifikator i det distribuerte kjøretidsmanifestet.                                                                                                                                     |
+| Loaded Generation                | Identifikator som Unbound-modulen rapporterer som lastet.                                                                                                                                 |
+| Update Running                   | Vises bare mens en aktiv prosess eier den delte oppdateringslåsen: en DNS-, Bypass- eller IP-oppdatering, en innstillingsanvendelse, en pakkekontroll eller -oppdatering, eller fjerning. |
+| Removal in Progress              | Vises bare mens den vedvarende fjerningsmarkøren er satt og integrasjonen trekkes tilbake.                                                                                                |
+| DNS Resolver Python Script Owner | Gjeldende verdi for den eneste `python_script`-plassen i Resolver, eller `None`.                                                                                                          |
 
 Siden viser en varslingsboks når kompilering eller distribusjon venter, inkludert den registrerte årsaken. Samsvarende identifikatorer for kompilert, distribuert og lastet viser at lagret policy nådde modulen som kjører.
 
-<img src={summaryStatus} alt="Panelet Status Summary viser samsvarende kompilerte, distribuerte og lastede generasjoner med aktiv Sinkhole" width={1024} height={914} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={summaryStatus} alt="Panelet Status Summary viser kompilerte navn mot grensen, samsvarende kompilerte, distribuerte og lastede generasjoner med aktiv Sinkhole og Update Log for en fullført manuell oppdatering" width={1024} height={1284} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Tilstand for omfang og varsler \{#scope-and-alert-state}
 
@@ -92,9 +96,9 @@ Det uavhengige brannmurankeret rapporterer:
 
 | Felt                    | Betydning                                                                                                  |
 |-------------------------|------------------------------------------------------------------------------------------------------------|
-| Firewall rules loaded   | Om ankeret `sinkhole/bypass` finnes når gjeldende innstillinger krever det.                                |
-| Firewall rules current  | Om lastet sammendrag, regler og tabeller samsvarer med gjeldende innstillinger og siste gyldige listedata. |
-| Firewall rule count     | Antall aktive regler i Bypass-ankeret.                                                                     |
+| Firewall Rules Loaded   | Om ankeret `sinkhole/bypass` finnes når gjeldende innstillinger krever det.                                |
+| Firewall Rules Current  | Om lastet sammendrag, regler og tabeller samsvarer med gjeldende innstillinger og siste gyldige listedata. |
+| Firewall Rule Count     | Antall aktive regler i Bypass-ankeret.                                                                     |
 | IPv4/IPv6 table entries | Endelig antall leverandør-, Tor- og VPN-adresser etter at beskyttede brannmuradresser er fjernet.          |
 
 Tabellen **Bypass Lists** rapporterer hver rads type, aktiverte tilstand, antall lagrede oppføringer, siste henting og siste feil. En mislykket henting kan derfor vise en feil sammen med oppføringer fra den siste gyldige kopien som ble beholdt.
@@ -107,7 +111,16 @@ Tabellen **Bypass Lists** rapporterer hver rads type, aktiverte tilstand, antall
 | On       | Redirect er aktivert, og alle lagrede unntak er gyldige.                                 |
 | Paused   | Minst ett lagret kilde- eller målunntak er ugyldig, så ingen omdirigeringsregler brukes. |
 
-Feltet **pfSense loaded rules** har tre tilstander:
+Mens Redirect er på, men reglene ikke er lastet, viser en rød advarsel øverst på siden årsaken:
+
+- Sinkhole er deaktivert.
+- DNS Resolver kjører ikke.
+- Et lagret unntak er ugyldig.
+- Sinkhole blir fjernet.
+
+Reglene er ikke avhengige av Resolverens Python-modul, så pfBlockerNG eller et annet skript som holder den, stopper aldri omdirigeringen. Fanen **Bypass** viser den samme advarselen under **Redirect**.
+
+Feltet **pfSense Loaded Rules** har tre tilstander:
 
 | Tilstand    | Betydning                                                                                                   |
 |-------------|-------------------------------------------------------------------------------------------------------------|
@@ -115,7 +128,7 @@ Feltet **pfSense loaded rules** har tre tilstander:
 | No          | Den ønskede blokken er ikke lastet.                                                                         |
 | Out of Date | En Sinkhole-blokk er lastet, men teksten samsvarer ikke med gjeldende innstillinger eller Resolver-lyttere. |
 
-Hvert familiemål er enten den valgte lytteradressen eller en årsak til at ingen regel kan bygges. **Last parse error** vises bare mens den gjeldende blokken mangler etter at pfSense avviste den.
+Hvert familiemål er enten den valgte lytteradressen eller en årsak til at ingen regel kan bygges. **Last Parse Error** vises bare mens den gjeldende blokken mangler etter at pfSense avviste den.
 
 ## IP- og landtilstand \{#ip-and-country-state}
 
@@ -127,11 +140,39 @@ Antall tabelloppføringer viser de endelige sammenslåtte IPv4- og IPv6-nettverk
 
 **GeoLite2 Last Update** er uavhengig av den siste listeoppdateringen.
 
-<img src={ipStatus} alt="Panelet Status IP and Country Blocking viser tabellantall, oppdateringstilstand, et lastet anker og en demo-IP-listerad" width={1024} height={1102} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipStatus} alt="Panelet Status IP and Country Blocking viser tabellantall, oppdateringstilstand, et lastet anker og to demo-IP-listerader" width={1024} height={1135} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Kjør Update Now \{#run-update-now}
 
-Når du velger **Update Now** under Summary, starter `/usr/local/sbin/sinkhole --manual` i bakgrunnen og returnerer umiddelbart. Knappen strømmer ikke utdata, så **Update Running**, radene for DNS-/Bypass-/IP-lister, kompileringsfeltene og de siste feilene viser resultatet.
+Når du velger **Update Now** under Summary, starter `/usr/local/sbin/sinkhole --manual` i bakgrunnen og returnerer umiddelbart. **Update Log** følger deretter kjøringen, så du kan se den uten å laste inn siden på nytt.
 
 Den manuelle jobben bruker den samme delte oppdateringslåsen som planlagte listeoppdateringer og automatisk pakkeoppdatering. Hvis en annen oppdatering eier den, fortsetter den eksisterende jobben, og ventende bruksarbeid bevares.
+
+## Update Log \{#update-log}
+
+Panelet **Update Log** under Summary viser hvert trinn i den siste oppdateringen, enten den var planlagt, ble startet med **Update Now** eller ble brukt etter en endring av innstillingene. Før en oppdatering har kjørt, viser det `No update has run yet.`
+
+Mens en oppdatering kjører, ser siden etter nye linjer hvert 2. sekund:
+
+- Nye linjer legges til nederst, og visningen ruller med dem med mindre du har rullet opp for å lese tidligere linjer.
+- **Update Running** vises i Summary, og feltene for kompilering, distribusjon og generasjon endres når kjøringen når dem.
+- Kontrollen stopper når kjøringen er ferdig, etter en siste kontroll for avslutningslinjen.
+
+Hver linje begynner med den lokale tiden på brannmuren. En kjøring rapporterer disse trinnene:
+
+| Trinn            | Dette viser loggen                                                                                                                                 |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Start            | `Update started` med utløseren: `manual`, `scheduled` eller `settings change`.                                                                     |
+| Nedlastinger     | Hver DNS-, Bypass- og IP-liste etter navn og vert, deretter oppføringene, hoppede linjer og om den er endret.                                      |
+| Kildeendringer   | En liste der URL-en er endret, og at kopien fra den forrige URL-en ble forkastet.                                                                  |
+| Feil             | Listen som mislyktes og årsaken, med merknad om hvorvidt den siste gyldige kopien fortsatt brukes, eller om listen ennå ikke har noen lagret kopi. |
+| GeoLite2         | Om landdataene ble lastet ned eller den lagrede kopien ble gjenbrukt, med antall nettverk.                                                         |
+| Kompilering      | Den nye generasjonen og antall navn i den, eller at innholdet er uendret.                                                                          |
+| Distribusjon     | Om generasjonen nådde DNS Resolver, og den nye innlastingen av Resolver som tømmer bufferen.                                                       |
+| Brannmurtabeller | IPv4- og IPv6-oppføringene som er lastet inn i Bypass- og IP-ankrene.                                                                              |
+| Slutt            | `Update finished` med varighet og totaler, eller `Update failed` med årsaken.                                                                      |
+
+Loggen viser bare verten for en liste, aldri den fullstendige URL-en, banen, spørrestrengen eller legitimasjonen, og den viser aldri MaxMind-lisensnøkkelen. Systemloggen beholder sine egne `Sinkhole:`-linjer som før.
+
+Hver oppdatering erstatter loggen fra forrige kjøring, som lagres i `/var/run/sinkhole-update.log` og er begrenset til 256 KiB. En kjøring som når grensen, legger til én `Log truncated`-linje og registrerer fortsatt hvordan den ble avsluttet.
 

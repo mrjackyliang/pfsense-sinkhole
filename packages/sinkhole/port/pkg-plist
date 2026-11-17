@@ -65,6 +65,7 @@ pkg/sinkhole/translations/ru_RU.php
 pkg/sinkhole/translations/es_ES.php
 pkg/sinkhole/translations/es_AR.php
 pkg/sinkhole/UnboundCustomOptions.php
+pkg/sinkhole/UpdateLog.php
 pkg/sinkhole/UpdateManager.php
 pkg/sinkhole/Updater.php
 pkg/sinkhole/ValidationException.php

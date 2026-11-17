@@ -336,6 +336,9 @@ $pglinks = [
 ];
 
 include('head.inc');
+?>
+<link rel="stylesheet" href="/css/sinkhole.css">
+<?php
 display_top_tabs(pfsensePackageSinkholeTabs('scopes'));
 
 if (is_string($actionMessage)) {

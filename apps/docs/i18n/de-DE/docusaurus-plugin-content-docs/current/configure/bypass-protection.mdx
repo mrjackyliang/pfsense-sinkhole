@@ -24,7 +24,7 @@ Halte DNS-Abfragen ausgewählter Client-Schnittstellen auf Pfaden, die Sinkhole 
 
 Die Netzwerk- und Gerätezuordnung verwendet die aktuellen Subnetze dieser Schnittstellen, genau wie gewöhnliche Sinkhole-Scopes. Ein Client außerhalb der ausgewählten Subnetze erhält keine Bypass-DNS-Antwort.
 
-<img src={bypassProtection} alt="Bypass-Registerkarte mit ausgewähltem LAN, ausgeschalteter Umleitung für gewöhnliches DNS, aktivierten Schutzfunktionen für verschlüsseltes DNS und Tunnel, auf Answer with no records gesetzter Discovery und drei Demo-Bypass-Listen" width={1024} height={1490} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass-Registerkarte mit ausgewähltem LAN, ausgeschalteter Umleitung für gewöhnliches DNS, aktivierten Schutzfunktionen für verschlüsseltes DNS und Tunnel, auf Answer with no records gesetzter Discovery, je einer ausgenommenen Demo-Quelle und Demo-Zieladresse und drei Demo-Bypass-Listen" width={1024} height={1679} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Gewöhnliches DNS umleiten \{#redirect-plain-dns}
 
@@ -41,6 +41,15 @@ Die Umleitung behält ihre vorhandenen listenerabhängigen Ziele und Ausnahmen:
 - **Exempt Destinations** empfangen weiterhin DNS-Verkehr, was einen internen Resolver in einem anderen Netzwerk unterstützt.
 
 Jede Ausnahme akzeptiert pro Zeile eine IPv4-Adresse, eine IPv6-Adresse, ein CIDR-Netzwerk oder einen vorhandenen pfSense-Host-/Netzwerk-Alias. Eine ungültige gespeicherte Ausnahme pausiert alle Umleitungsregeln, bis sie korrigiert oder entfernt wird. Umgeleitete Clients benötigen weiterhin Zugriff durch die Zugriffskontrolleinstellungen des Resolvers.
+
+Die Umleitungsregeln werden geladen, sobald Sinkhole auf dem Tab **General** aktiviert ist und der DNS Resolver läuft. Sie hängen nicht vom Python-Modul des Resolvers ab und funktionieren daher weiter, während pfBlockerNG oder ein anderes Skript es belegt, etwa beim Umstieg von pfBlockerNG. Solange Redirect eingeschaltet ist, seine Regeln aber nicht geladen sind, nennt eine Zeile **Warning** unter **Redirect** den Grund:
+
+- Sinkhole ist deaktiviert.
+- Der DNS Resolver läuft nicht.
+- Eine gespeicherte Ausnahme ist ungültig.
+- Sinkhole wird entfernt.
+
+**Status** zeigt dieselbe Warnung oben auf der Seite.
 
 ## Verschlüsseltes DNS schützen \{#protect-encrypted-dns}
 
@@ -86,11 +95,24 @@ Beim Ausschalten von Discovery oder Entfernen von Sinkhole wird die Zonenzeile e
 
 Namen und Adressen aus Tor- und VPN-Listen verwenden dasselbe DNS- und Firewall-Verhalten wie Anbieterlisten für verschlüsseltes DNS. Diese Kontrollen reduzieren häufige alternative Pfade, erkennen aber nicht jeden verschlüsselten oder benutzerdefinierten Tunnel.
 
+## Geräte und Server von den Sperren ausnehmen \{#exempt-devices-and-servers-from-the-blocks}
+
+**Block Exemptions** enthält eine Liste **Exempt Sources** und eine Liste **Exempt Destinations**, die alle Firewall-Sperren auf dem Bypass-Tab gemeinsam nutzen: **TLS and QUIC**, **Providers**, **Tor**, **Block listed VPN providers** und **Block standard VPN ports**. Jede Zeile nimmt eine IPv4-Adresse, eine IPv6-Adresse, ein CIDR-Netzwerk oder einen vorhandenen pfSense-Host-/Netzwerk-Alias auf, also dieselben Werte wie die Umleitungsausnahmen. Jede Liste enthält höchstens 16 Aliase.
+
+- **Exempt Sources** umgehen die Sperren. Nutze sie für einen Client, der externe DNS-Server erreichen muss, etwa ein NAS, das DNS over TLS zu `1.1.1.1` verwendet.
+- **Exempt Destinations** bleiben für jeden Client an den ausgewählten Schnittstellen trotz der Sperren erreichbar, etwa ein öffentlicher Resolver, dem du vertraust.
+
+Eine Ausnahme öffnet von sich aus keinen Weg. Sinkhole fügt keine Pass-Regel hinzu: Ausgenommener Verkehr passt einfach nicht auf die Bypass-Sperren und läuft weiter zu deinen eigenen Firewall-Regeln, die weiterhin entscheiden, ob er durchgelassen wird.
+
+Ausnahmen gelten nur für die Firewall-Sperren. Anbieter-, Tor- und VPN-Namen aus Bypass Lists bleiben für ausgenommene Clients im DNS blockiert. Ein Client, der seinen Server über einen Namen wie `cloudflare-dns.com` findet, braucht diesen Namen daher zusätzlich in **Allowed Domains**. Gewöhnliches DNS auf Port 53 folgt stattdessen **Redirect** und dessen eigenen Ausnahmen.
+
+Wird eine gespeicherte Sperr-Ausnahme ungültig, etwa durch einen umbenannten oder gelöschten Alias, behält Sinkhole alle Sperren ohne Ausnahmen bei, schreibt einen Eintrag ins Systemprotokoll und zeigt den Wert unter **Invalid Saved Values**, bis er korrigiert oder entfernt wird.
+
 ## Aus dem Katalog hinzufügen \{#add-from-catalog}
 
 Öffne **Add from Catalog** auf dem Tab Bypass, um das Listenregister von AdGuard Home sowie die DNS-, IPv4- und IPv6-Abschnitte des Feed-Katalogs von pfBlockerNG zu durchsuchen. Die Ergebnisse sind auf Bypass-Feeds beschränkt und haben eine feste Art: **Encrypted DNS**, **Tor** oder **VPN**.
 
-Die Quellkataloge werden nur abgerufen, wenn du den Katalog öffnest oder **Refresh** auswählst. Das Hinzufügen eines Ergebnisses erstellt eine aktivierte Bypass List, die dem normalen Zeitplan für Listenaktualisierungen folgt.
+Die Quellkataloge werden nur abgerufen, wenn du den Katalog öffnest oder **Refresh** auswählst. Das Hinzufügen eines Ergebnisses erstellt eine aktivierte Bypass List; sie nimmt nur an geplanten Aktualisierungen teil, solange ihr passender Schutz **Providers**, **Tor** oder **VPN** eingeschaltet ist.
 
 Die Zeile **Contents** jeder Karte zeigt **Domains**, **IPv4 addresses** oder **IPv6 addresses**. Wenn du ein IPv4- oder IPv6-Ergebnis von pfBlockerNG hinzufügst, hängt Sinkhole ` (IPv4)` oder ` (IPv6)` an den gespeicherten Namen an; Domänenergebnisse behalten den unveränderten Katalognamen.
 
@@ -100,10 +122,10 @@ Wähle **Add** unter **Bypass Lists** und gib dann einen lokalen Namen, eine Art
 
 Jede Quelle akzeptiert einen Eintrag pro Zeile. Eine Liste kann Domains, IPv4-Adressen, IPv6-Adressen und CIDRs mischen; Text nach `#` ist ein Kommentar. Ungültige und überlange Zeilen werden übersprungen. Ein Download, der das feste Byte- oder Annahmelimit überschreitet, wird abgelehnt, sodass die letzte gültige Kopie bestehen bleibt.
 
-Bypass Lists werden nach dem konfigurierten Listenzeitplan mit demselben begrenzten Download-Client wie andere Listen aktualisiert. Ein fehlgeschlagener Abruf behält die letzte gültige gespeicherte Kopie, und **Status → Bypass Lists** meldet Einträge, letzten Abruf und den neuesten Fehler jeder Zeile. Sinkhole liefert keine Bypass List mit und empfiehlt auch keine.
+Eine aktivierte Bypass List wird nach dem konfigurierten Listenzeitplan mit demselben begrenzten Download-Client wie andere Listen aktualisiert, aber nur, solange ihr passender Schutz **Providers**, **Tor** oder **VPN** eingeschaltet ist. Ein fehlgeschlagener Abruf behält die letzte gültige gespeicherte Kopie von derselben URL, und **Status → Bypass Lists** meldet Einträge, letzten Abruf und den neuesten Fehler jeder Zeile. Sinkhole liefert keine Bypass List mit und empfiehlt auch keine.
 
 ## Aktiven Zustand prüfen \{#verify-the-active-state}
 
-Öffne nach dem Speichern **Status → Bypass** und bestätige, dass jeder beabsichtigte Schutz auf `On` steht, die ausgewählten Schnittstellen richtig sind und **Discovery Zone** bei eingeschaltetem Discovery `Present` ist. Bestätige, dass **Firewall rules loaded** sowie **Firewall rules current** für Firewall-Schutzfunktionen auf `Yes` stehen. Die Tabelle Bypass Lists zeigt die Anzahl gespeicherter Einträge und den letzten Abruf.
+Öffne nach dem Speichern **Status → Bypass** und bestätige, dass jeder beabsichtigte Schutz auf `On` steht, die ausgewählten Schnittstellen richtig sind und **Discovery Zone** bei eingeschaltetem Discovery `Present` ist. Bestätige, dass **Firewall Rules Loaded** sowie **Firewall Rules Current** für Firewall-Schutzfunktionen auf `Yes` stehen. Die Tabelle Bypass Lists zeigt die Anzahl gespeicherter Einträge und den letzten Abruf.
 
 Die Klartext-DNS-Umleitung behält ihren bestehenden minutenweisen Abgleich mit zwei Beobachtungen nach Änderungen der Resolver-Listener bei. Der Anker `sinkhole/bypass` wird unabhängig von `sinkhole/ip` geladen, sodass das Deaktivieren einer Funktion die andere nicht beeinträchtigt.

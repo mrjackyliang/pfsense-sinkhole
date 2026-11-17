@@ -45,6 +45,7 @@ U automatizaciji koristite instaliranu putanju, na primjer `/usr/local/sbin/sink
 | `state.json`                            | Trajno stanje kompajliranja, postavljanja, prethodne postavke Resolvera, rasporeda i uklanjanja. |
 | `updates.json`                          | Stanje provjere najnovijeg izdanja i sprečavanja duplih obavijesti.                              |
 | `update-status.json`                    | Napredak odvojenog samoažuriranja paketa.                                                        |
+| `safesearch-targets.json`               | Posljednje ispravne adrese sigurnih hostova za SafeSearch.                                       |
 | `unbound/sinkhole/`                     | Opcionalna trajna kopija trenutne kompajlirane generacije za oporavak RAM diska.                 |
 | `unbound/sinkhole.d/`                   | Opcionalna trajna kopija spremišta kompajliranih generacija.                                     |
 | `unbound/sinkhole-clients/clients.json` | Opcionalna trajna kopija mape klijenata.                                                         |
@@ -58,6 +59,7 @@ Kopija `unbound/` koristi se kada pfSense drži `/var` na RAM disku. Sync paketa
 | `sinkhole-alerts.json`               | Stanje perioda ponavljanja upozorenja i ograničenja po satu.   |
 | `sinkhole-catalog-adguard-home.json` | Predmemorirani registar lista AdGuard Homea.                   |
 | `sinkhole-catalog-pfblockerng.json`  | Predmemorirani katalog izvora pfBlockerNG-a.                   |
+| `sinkhole-services-registry.json`    | Predmemorirani registar servisa AdGuard Homea.                 |
 | `sinkhole-block-v4.txt`              | Konačna spojena i umanjena IPv4 tabela blokiranja.             |
 | `sinkhole-block-v6.txt`              | Konačna spojena i umanjena IPv6 tabela blokiranja.             |
 | `sinkhole-bypass-v4.txt`             | Konačna IPv4 Bypass tabela nakon oduzimanja zaštićenih adresa. |
@@ -79,6 +81,7 @@ Predmemorije kataloga i generirane IP tabele ponovljivi su radni podaci. Stanje 
 | `sinkhole-redirect-check.json`  | Prvo opažanje nepodudaranja koje koristi provjera preusmjeravanja s dva opažanja. |
 | `sinkhole-status.json`          | Trenutno stanje ažuriranja, kompajliranja, postavljanja, klijenata i upozorenja.  |
 | `sinkhole-status.json.lock`     | Zaključavanje za usklađivanje datoteke stanja.                                    |
+| `sinkhole-update.log`           | Koraci posljednjeg ažuriranja lista, prikazani u Update Logu na Statusu.          |
 | `sinkhole-ip-anchor.conf`       | Trenutno generirana pravila za sidro `sinkhole/ip`.                               |
 | `sinkhole-ip-anchor.sha256`     | Sažetak za poređenje generiranih i učitanih IP pravila.                           |
 | `sinkhole-ip-status.json`       | Stanje IP lista, GeoLite2, tabela i sidra.                                        |
@@ -89,17 +92,20 @@ Datoteke zaključavanja usklađuju poslove; samo njihovo postojanje ne dokazuje 
 
 ## Izvršno okruženje Resolvera pod `/var/unbound` \{#resolver-runtime}
 
-| Putanja                              | Namjena                                                              |
-|--------------------------------------|----------------------------------------------------------------------|
-| `sinkhole.py`                        | Pregledani Python modul kopiran u izvršni korijen Unbounda.          |
-| `sinkhole/`                          | Manifest i podaci aktivne generacije koje modul čita.                |
-| `sinkhole.d/`                        | Spremište kompajliranih generacija u vlasništvu root korisnika.      |
-| `sinkhole.d/<generation>/bypass.tsv` | Kompajlirani nazivi pružatelja, Tora i VPN-a za Bypass DNS odgovore. |
-| `sinkhole-clients/clients.json`      | Trenutna mapa adresa klijenata u opsege.                             |
-| `sinkhole-state/loaded`              | Identifikator generacije koju modul prijavljuje kao učitanu.         |
-| `sinkhole-state/events`              | Spojeni događaji blokiranih odgovora koji čekaju obradu upozorenja.  |
-| `sinkhole-state/events.processing`   | Skup događaja koji trenutno posjeduje procesor upozorenja.           |
-| `sinkhole-state/events-dropped`      | Broj događaja odbačenih nakon popunjavanja ograničenog reda.         |
+| Putanja                                 | Namjena                                                                                                                       |
+|-----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `sinkhole.py`                           | Pregledani Python modul kopiran u izvršni korijen Unbounda.                                                                   |
+| `sinkhole/`                             | Manifest i podaci aktivne generacije koje modul čita.                                                                         |
+| `sinkhole.d/`                           | Spremište kompajliranih generacija u vlasništvu root korisnika.                                                               |
+| `sinkhole.d/<generation>/domains.tsv`   | Kompajlirani nazivi iz konfigurisanih lista i Blocked Services s pripadnošću listama, sortirani po nazivu.                    |
+| `sinkhole.d/<generation>/domains.index` | Memorijski mapirani indeks naziva iz konfigurisanih lista i Blocked Services koje modul pretražuje, oko 18 bajtova po nazivu. |
+| `sinkhole.d/<generation>/bypass.tsv`    | Kompajlirani nazivi pružatelja, Tora i VPN-a, sortirani po nazivu.                                                            |
+| `sinkhole.d/<generation>/bypass.index`  | Memorijski mapirani indeks naziva s Bypass List koje modul pretražuje za Bypass DNS odgovore.                                 |
+| `sinkhole-clients/clients.json`         | Trenutna mapa adresa klijenata u opsege.                                                                                      |
+| `sinkhole-state/loaded`                 | Identifikator generacije koju modul prijavljuje kao učitanu.                                                                  |
+| `sinkhole-state/events`                 | Spojeni događaji blokiranih odgovora koji čekaju obradu upozorenja.                                                           |
+| `sinkhole-state/events.processing`      | Skup događaja koji trenutno posjeduje procesor upozorenja.                                                                    |
+| `sinkhole-state/events-dropped`         | Broj događaja odbačenih nakon popunjavanja ograničenog reda.                                                                  |
 
 Ove datoteke su izvršni materijal, a ne konfiguracija. Sinkhole ih vraća ili ponovo generira putem Synca paketa i uklanja ih pri deinstaliranju paketa.
 

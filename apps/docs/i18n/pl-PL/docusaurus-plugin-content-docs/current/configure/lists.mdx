@@ -60,11 +60,13 @@ Wyniki są wyświetlane jako karty. Użyj razem elementów sterujących wyszukiw
 
 Każda karta pokazuje nazwę listy, opiekuna lub kategorię, katalog źródłowy, dwuwierszowy opis, stronę główną i stan **Add** lub **Added**. Karty nie pokazują ocen, odznak ani rekomendacji. Wybranie **Add** tworzy zwykły wiersz listy, którego adres URL można przypisać tak jak każde źródło wprowadzone ręcznie.
 
+Nowe listy, w tym dodane z katalogu, mają początkowo odznaczone **Global**, więc niczego nie blokują, dopóki nie zaznaczysz Global lub nie wybierzesz ich w zakresie.
+
 Wiersz **Contents** na każdej karcie wskazuje **Domains**. Dodanie wyniku katalogu zachowuje jego nazwę katalogową bez zmian.
 
 Kopie katalogów są buforowane przez jeden dzień w `/var/db`. Nieudane odświeżenie zachowuje ostatnią prawidłową kopię katalogu i pokazuje błąd pobierania w Status.
 
-<img src={catalogSearch} alt="Panel Add from Catalog na karcie Lists z elementami sterującymi wyszukiwaniem katalogu i stanem pobierania" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Panel Add from Catalog na karcie Lists z elementami sterującymi wyszukiwaniem katalogu i stanem pobierania" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 Źródła przypisane do ochrony przed obejściem Encrypted DNS, Tor lub VPN nie są tutaj wyświetlane. Są dostępne tylko przez **Add from Catalog** na karcie Bypass.
 
@@ -76,7 +78,7 @@ Globalna dozwolona domena jest sprawdzana po regułach urządzenia i sieci. Dlat
 
 ## Wybieranie częstotliwości aktualizacji \{#choose-the-update-frequency}
 
-Ustawienie **General → Update Frequency** steruje zaplanowanymi aktualizacjami list DNS, a także dostarcza harmonogram aktualizacji po włączeniu blokowania IP:
+Ustawienie **General → Update Frequency** steruje zaplanowanymi aktualizacjami list DNS, gdy General jest włączone. Ten sam harmonogram uruchamia aktualizacje IP/krajów, gdy blokowanie IP jest włączone, a włączoną Bypass List tylko wtedy, gdy włączona jest odpowiadająca jej ochrona **Providers**, **Tor** lub **VPN**:
 
 | Ustawienie    | Harmonogram                                                       |
 |---------------|-------------------------------------------------------------------|

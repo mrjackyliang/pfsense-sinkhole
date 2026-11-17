@@ -17,6 +17,7 @@ require_once(__DIR__ . '/DownloadClient.php');
 require_once(__DIR__ . '/FileSystem.php');
 require_once(__DIR__ . '/PackagePaths.php');
 require_once(__DIR__ . '/PfSenseAdapter.php');
+require_once(__DIR__ . '/UpdateLog.php');
 
 /**
  * Bypass Updater.
@@ -32,7 +33,23 @@ final class BypassUpdater
     /** @var int @since 1.0.0 */
     public const MAXIMUM_DOWNLOAD_BYTES = 67_108_864;
 
-    /** @since 1.0.0 */
+    /**
+     * Bypass Updater - Constructor.
+     *
+     * The optional update log receives the same per-list progress the Status page
+     * shows for block lists.
+     *
+     * @param PfSenseAdapter  $adapter        - pfSense adapter.
+     * @param DownloadClient  $downloadClient - Download client.
+     * @param BypassParser    $parser         - Bypass List parser.
+     * @param BypassListStore $store          - Bypass List store.
+     * @param PackagePaths    $paths          - Package paths.
+     * @param Compiler        $compiler       - Compiler.
+     * @param UpdateLog|null  $updateLog      - Optional per-run progress log.
+     *
+     * @since 1.0.0
+     * @since 1.2.0
+     */
     public function __construct(
         private readonly PfSenseAdapter $adapter,
         private readonly DownloadClient $downloadClient,
@@ -40,6 +57,7 @@ final class BypassUpdater
         private readonly BypassListStore $store,
         private readonly PackagePaths $paths,
         private readonly Compiler $compiler,
+        private readonly ?UpdateLog $updateLog = null,
     ) {
     }
 
@@ -95,8 +113,35 @@ final class BypassUpdater
 
             $attempted++;
             $attemptedAt = gmdate('c');
+            $listLabel = 'Bypass List "' . (string) ($list['name'] ?? '') . '"';
+
+            try {
+                if ($this->store->discardMismatchedCopy($identifier, $list['url'])) {
+                    $changed = true;
+
+                    $this->updateLog?->line(
+                        $listLabel . ' source changed; discarding the copy from the previous URL.',
+                    );
+                    $this->adapter->log(
+                        'Discarded the saved copy of Bypass List ID ' . $identifier . ' from its previous URL.',
+                    );
+                }
+            } catch (Throwable $throwable) {
+                $this->adapter->log(
+                    'Unable to discard the previous-URL copy of Bypass List ID '
+                    . $identifier
+                    . ': '
+                    . $throwable->getMessage(),
+                );
+            }
+
+            $hadSavedCopy = $this->store->hasSavedCopy($identifier);
             $downloadPath = $this->store->createTemporaryFile('.download-');
             $normalizedPath = $this->store->createTemporaryFile('.normalized-');
+
+            $this->updateLog?->line(
+                'Downloading ' . $listLabel . ' from ' . UpdateLog::host($list['url']) . '.',
+            );
 
             try {
                 $download = $this->downloadClient->download(
@@ -144,10 +189,10 @@ final class BypassUpdater
                 }
 
                 $previous = $this->store->metadata($identifier);
-                $changed = !$this->store->hasSavedCopy($identifier)
+                $listChanged = !$this->store->hasSavedCopy($identifier)
                     || ($previous['sha256'] ?? null) !== $sha256
-                    || ($previous['kind'] ?? null) !== $list['kind']
-                    || $changed;
+                    || ($previous['kind'] ?? null) !== $list['kind'];
+                $changed = $listChanged || $changed;
                 $this->store->commitSuccessfulDownload($identifier, $normalizedPath, [
                     'url' => $list['url'],
                     'kind' => $list['kind'],
@@ -164,9 +209,25 @@ final class BypassUpdater
                     'last_error' => null,
                 ]);
                 $updated++;
+
+                $this->updateLog?->line(sprintf(
+                    '%s: %s (domains: %d, networks: %d), %d skipped, %s.',
+                    $listLabel,
+                    UpdateLog::count((int) $parsed['accepted'], 'entry', 'entries'),
+                    $parsed['domains'],
+                    $parsed['networks'],
+                    $parsed['skipped'],
+                    ($listChanged) ? 'changed' : 'unchanged',
+                ));
             } catch (Throwable $throwable) {
                 $failed++;
                 $safeError = substr(str_replace(["\r", "\n"], ' ', $throwable->getMessage()), 0, 500);
+
+                $failureOutcome = ($hadSavedCopy)
+                    ? ' failed; keeping the last good copy: '
+                    : ' failed; it has no saved copy yet: ';
+
+                $this->updateLog?->line($listLabel . $failureOutcome . $safeError);
 
                 try {
                     $this->store->recordFailure(
@@ -210,6 +271,14 @@ final class BypassUpdater
 
         $this->adapter->refreshBypassTables($configuration, $this->store);
 
+        if (($configuration['firewall_enabled'] ?? false) === true) {
+            $this->updateLog?->line(sprintf(
+                'Loaded the Bypass firewall rules with %d IPv4 and %d IPv6 table entries.',
+                $this->tableEntryCount($this->paths->bypassTableIpv4File),
+                $this->tableEntryCount($this->paths->bypassTableIpv6File),
+            ));
+        }
+
         return $this->result(
             ($failed > 0) ? 'warning' : 'completed',
             $attempted,
@@ -235,6 +304,30 @@ final class BypassUpdater
 
         return ($metadata['url'] ?? null) !== $list['url']
             || ($metadata['kind'] ?? null) !== $list['kind'];
+    }
+
+    /**
+     * Bypass Updater - Table Entry Count.
+     *
+     * Counts the networks in a table file just written, for the Update Log only;
+     * a missing file counts as an empty table.
+     *
+     * @param string $path - Table file path.
+     *
+     * @return int
+     *
+     * @since 1.2.0
+     * @private
+     */
+    private function tableEntryCount(string $path): int
+    {
+        if (!FileSystem::isRegularFile($path)) {
+            return 0;
+        }
+
+        $contents = file_get_contents($path);
+
+        return is_string($contents) ? substr_count($contents, "\n") : 0;
     }
 
     /** @since 1.0.0 */

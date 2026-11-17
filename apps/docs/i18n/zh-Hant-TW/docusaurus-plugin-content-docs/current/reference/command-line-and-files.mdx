@@ -45,6 +45,7 @@ tags:
 | `state.json`                            | 持久化的編譯、部署、先前 Resolver 設定、計劃和刪除狀態。 |
 | `updates.json`                          | 最新版本檢查和通知去重狀態。                    |
 | `update-status.json`                    | 分離的套件自更新進度。                       |
+| `safesearch-targets.json`               | SafeSearch 最後一次有效的安全主機地址。         |
 | `unbound/sinkhole/`                     | 當前編譯代次的可選持久鏡像，用於 RAM 磁盤恢復。        |
 | `unbound/sinkhole.d/`                   | 編譯代次存儲的可選持久鏡像。                    |
 | `unbound/sinkhole-clients/clients.json` | 用戶端映射的可選持久鏡像。                     |
@@ -58,6 +59,7 @@ tags:
 | `sinkhole-alerts.json`               | 警報重復窗口和每小時上限狀態。            |
 | `sinkhole-catalog-adguard-home.json` | 快取的 AdGuard Home 清單註冊表。    |
 | `sinkhole-catalog-pfblockerng.json`  | 快取的 pfBlockerNG 源目錄。       |
+| `sinkhole-services-registry.json`    | 快取的 AdGuard Home 服務註冊表。    |
 | `sinkhole-block-v4.txt`              | 最終合併並扣除後的 IPv4 封鎖表。        |
 | `sinkhole-block-v6.txt`              | 最終合併並扣除後的 IPv6 封鎖表。        |
 | `sinkhole-bypass-v4.txt`             | 扣除受保護地址後的最終 IPv4 Bypass 表。 |
@@ -69,37 +71,41 @@ tags:
 
 ## `/var/run` 下的臨時檔案 \{#transient-files}
 
-| 路徑                              | 用途                           |
-|---------------------------------|------------------------------|
-| `sinkhole-update.lock`          | 清單、IP 和套件更新共用的長時間執行鎖。        |
-| `sinkhole-runtime.lock`         | 編譯、激活和 Resolver 集成使用的短時鎖。    |
-| `sinkhole-clients.lock`         | 用戶端映射刷新鎖。                    |
-| `sinkhole-alerts.lock`          | 警報處理鎖。                       |
-| `sinkhole-redirect-check.lock`  | 重定向每分鐘檢查鎖。                   |
-| `sinkhole-redirect-check.json`  | 兩次觀察重定向檢查使用的第一次不匹配觀察。        |
-| `sinkhole-status.json`          | 當前更新、編譯、部署、用戶端和警報狀態。         |
-| `sinkhole-status.json.lock`     | 狀態檔案協調鎖。                     |
-| `sinkhole-ip-anchor.conf`       | 為 `sinkhole/ip` 錨點生成的當前規則。   |
-| `sinkhole-ip-anchor.sha256`     | 用於比較已生成和已載入 IP 策略的摘要。        |
-| `sinkhole-ip-status.json`       | IP 清單、GeoLite2、表和錨點狀態。       |
-| `sinkhole-bypass-anchor.conf`   | `sinkhole/bypass` 錨點目前產生的規則。 |
-| `sinkhole-bypass-anchor.sha256` | 用於比較產生和載入的 Bypass 原則的摘要。     |
+| 路徑                              | 用途                                     |
+|---------------------------------|----------------------------------------|
+| `sinkhole-update.lock`          | 清單、IP 和套件更新共用的長時間執行鎖。                  |
+| `sinkhole-runtime.lock`         | 編譯、激活和 Resolver 集成使用的短時鎖。              |
+| `sinkhole-clients.lock`         | 用戶端映射刷新鎖。                              |
+| `sinkhole-alerts.lock`          | 警報處理鎖。                                 |
+| `sinkhole-redirect-check.lock`  | 重定向每分鐘檢查鎖。                             |
+| `sinkhole-redirect-check.json`  | 兩次觀察重定向檢查使用的第一次不匹配觀察。                  |
+| `sinkhole-status.json`          | 當前更新、編譯、部署、用戶端和警報狀態。                   |
+| `sinkhole-status.json.lock`     | 狀態檔案協調鎖。                               |
+| `sinkhole-update.log`           | 最近一次清單更新的步驟，顯示在 Status 的 Update Log 中。 |
+| `sinkhole-ip-anchor.conf`       | 為 `sinkhole/ip` 錨點生成的當前規則。             |
+| `sinkhole-ip-anchor.sha256`     | 用於比較已生成和已載入 IP 策略的摘要。                  |
+| `sinkhole-ip-status.json`       | IP 清單、GeoLite2、表和錨點狀態。                 |
+| `sinkhole-bypass-anchor.conf`   | `sinkhole/bypass` 錨點目前產生的規則。           |
+| `sinkhole-bypass-anchor.sha256` | 用於比較產生和載入的 Bypass 原則的摘要。               |
 
 鎖檔案的存在本身並不能證明某個活動進程持有它們。在將鎖視為過期之前，請使用 Status 和命令輸出進行判斷。
 
 ## `/var/unbound` 下的 Resolver 執行時 \{#resolver-runtime}
 
-| 路徑                                   | 用途                                  |
-|--------------------------------------|-------------------------------------|
-| `sinkhole.py`                        | 複製到 Unbound 執行時根目錄的已審查 Python 模塊。   |
-| `sinkhole/`                          | 模塊讀取的清單和活動代次資料。                     |
-| `sinkhole.d/`                        | 由 root 擁有的編譯代次存儲。                   |
-| `sinkhole.d/<generation>/bypass.tsv` | 為 Bypass DNS 回應編譯的供應商、Tor 和 VPN 名稱。 |
-| `sinkhole-clients/clients.json`      | 當前用戶端地址到作用域的映射。                     |
-| `sinkhole-state/loaded`              | 模塊報告為已載入的代次識別碼。                     |
-| `sinkhole-state/events`              | 等待警報處理的合併封鎖回應事件。                    |
-| `sinkhole-state/events.processing`   | 當前由警報處理器持有的事件批次。                    |
-| `sinkhole-state/events-dropped`      | 有界隊列填滿後丟棄的事件數。                      |
+| 路徑                                      | 用途                                           |
+|-----------------------------------------|----------------------------------------------|
+| `sinkhole.py`                           | 複製到 Unbound 執行時根目錄的已審查 Python 模塊。            |
+| `sinkhole/`                             | 模塊讀取的清單和活動代次資料。                              |
+| `sinkhole.d/`                           | 由 root 擁有的編譯代次存儲。                            |
+| `sinkhole.d/<generation>/domains.tsv`   | 編譯後的已設定清單名稱和已封鎖的服務名稱及其所屬清單，按名稱排序。            |
+| `sinkhole.d/<generation>/domains.index` | 模塊搜尋的已設定清單名稱和已封鎖的服務名稱的記憶體映射索引，每個名稱約 18 字節。   |
+| `sinkhole.d/<generation>/bypass.tsv`    | 編譯後的供應商、Tor 和 VPN 名稱，按名稱排序。                  |
+| `sinkhole.d/<generation>/bypass.index`  | 模塊為 Bypass DNS 回應搜尋的 Bypass List 名稱的記憶體映射索引。 |
+| `sinkhole-clients/clients.json`         | 當前用戶端地址到作用域的映射。                              |
+| `sinkhole-state/loaded`                 | 模塊報告為已載入的代次識別碼。                              |
+| `sinkhole-state/events`                 | 等待警報處理的合併封鎖回應事件。                             |
+| `sinkhole-state/events.processing`      | 當前由警報處理器持有的事件批次。                             |
+| `sinkhole-state/events-dropped`         | 有界隊列填滿後丟棄的事件數。                               |
 
 這些檔案是執行時材料，而不是配置。Sinkhole 通過套件 Sync 恢復或重新生成它們，並在卸載套件時將其刪除。
 

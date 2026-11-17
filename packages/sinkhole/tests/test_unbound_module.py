@@ -1,6 +1,7 @@
 """Tests for the Sinkhole Unbound Python module.
 
-Since: UNRELEASED
+Since:
+    1.0.0
 """
 
 from __future__ import annotations
@@ -33,10 +34,63 @@ MODULE_PATH = (
 LIST_IDENTIFIER = "11111111111111111111111111111111"
 
 
+def write_name_index(
+    directory: Path,
+    filename: str,
+    rows: list[tuple[str, str, str]],
+    record_size: int = 18,
+) -> dict[str, Any]:
+    """Write one compiler-format name index and return its manifest entry.
+
+    The file is replaced through a new inode, as each compiler generation is, so a
+    mapping held by already loaded data stays valid.
+
+    Args:
+        directory: Generation directory.
+        filename: Index filename.
+        rows: Domain, exact column, and subtree column.
+        record_size: Record size, 18 or 20 bytes.
+
+    Returns:
+        Manifest index entry.
+
+    Since:
+        1.2.0
+    """
+
+    masks: list[list[str]] = []
+    mask_positions: dict[tuple[str, str], int] = {}
+    records: list[bytes] = []
+
+    for domain, exact, subtree in rows:
+        mask = (exact, subtree)
+
+        if mask not in mask_positions:
+            mask_positions[mask] = len(masks)
+            masks.append([exact, subtree])
+
+        key = hashlib.sha256(domain.encode("ascii")).digest()[:16]
+        records.append(key + mask_positions[mask].to_bytes(record_size - 16, "big"))
+
+    records.sort()
+    contents = b"".join(records)
+    temporary_path = directory / f".{filename}.tmp"
+    temporary_path.write_bytes(contents)
+    os.replace(temporary_path, directory / filename)
+
+    return {
+        "file": filename,
+        "record_size": record_size,
+        "sha256": hashlib.sha256(contents).hexdigest(),
+        "masks": masks,
+    }
+
+
 class ExecutedModule:
     """Expose a source file executed in an embedded-interpreter namespace.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     def __init__(self, path: Path) -> None:
@@ -45,7 +99,8 @@ class ExecutedModule:
         Args:
             path: Python source path.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         namespace: dict[str, Any] = {}
@@ -62,7 +117,8 @@ class ExecutedModule:
         Returns:
             Executed global value.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         try:
@@ -77,7 +133,8 @@ class ExecutedModule:
             name: Global name.
             value: Replacement value.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self._namespace[name] = value
@@ -149,7 +206,8 @@ class CoordinatedClientCache(
 class FakeDnsMessage:
     """Capture DNS responses created by the module.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     created: list["FakeDnsMessage"] = []
@@ -163,7 +221,8 @@ class FakeDnsMessage:
             query_class: Query class.
             flags: DNS flags.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.name = name
@@ -183,7 +242,8 @@ class FakeDnsMessage:
         Returns:
             Always ``True``.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         qstate.return_msg = self
@@ -194,13 +254,15 @@ class FakeDnsMessage:
 class SinkholeUnboundTest(unittest.TestCase):
     """Exercise matching, loading, and embedded-interpreter behavior.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     def setUp(self) -> None:
         """Execute a fresh module namespace with stubbed Unbound globals.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.temporary_directory = tempfile.TemporaryDirectory()
@@ -214,8 +276,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         self.module = ExecutedModule(MODULE_PATH)
         self.module.DATA_DIRECTORY = str(self.data_directory)
         self.module.MANIFEST_PATH = str(self.data_directory / "manifest.json")
-        self.module.DOMAINS_PATH = str(self.data_directory / "domains.tsv")
-        self.module.BYPASS_PATH = str(self.data_directory / "bypass.tsv")
+        self.module.DOMAINS_INDEX_PATH = str(self.data_directory / "domains.index")
+        self.module.BYPASS_INDEX_PATH = str(self.data_directory / "bypass.index")
         self.module.ALLOW_PATH = str(self.data_directory / "allow.txt")
         self.module.GENERATION_PATH = str(self.data_directory / "generation")
         self.module.LOADED_GENERATION_PATH = str(self.state_directory / "loaded")
@@ -262,7 +324,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def tearDown(self) -> None:
         """Wait for any loader and remove temporary compiler data.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.module.deinit(0)
@@ -291,7 +354,8 @@ class SinkholeUnboundTest(unittest.TestCase):
             include_list: Whether to define the fixture list.
             domain_count: Optional manifest count override.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         lists = (
@@ -317,7 +381,7 @@ class SinkholeUnboundTest(unittest.TestCase):
             "discovery_port": 0,
         }
         manifest = {
-            "schema_version": 3,
+            "schema_version": 4,
             "generation": generation,
             "generated_at": "2026-01-01T00:00:00+00:00",
             "domains_file": "domains.tsv",
@@ -325,6 +389,16 @@ class SinkholeUnboundTest(unittest.TestCase):
             "domain_count": len(domains) if domain_count is None else domain_count,
             "bypass_file": "bypass.tsv",
             "bypass_domain_count": len(bypass_domains),
+            "domain_index": write_name_index(
+                self.data_directory,
+                "domains.index",
+                domains,
+            ),
+            "bypass_index": write_name_index(
+                self.data_directory,
+                "bypass.index",
+                bypass_domains,
+            ),
             "bypass": bypass,
             "lists": lists,
             "scopes": {
@@ -340,17 +414,6 @@ class SinkholeUnboundTest(unittest.TestCase):
             json.dumps(manifest),
             encoding="utf-8",
         )
-        (self.data_directory / "domains.tsv").write_text(
-            "".join(f"{domain}\t{exact}\t{subtree}\n" for domain, exact, subtree in domains),
-            encoding="ascii",
-        )
-        (self.data_directory / "bypass.tsv").write_text(
-            "".join(
-                f"{domain}\t{exact}\t{subtree}\n"
-                for domain, exact, subtree in bypass_domains
-            ),
-            encoding="ascii",
-        )
         (self.data_directory / "allow.txt").write_text(
             "".join(f"{domain}\n" for domain in (allowed or [])),
             encoding="ascii",
@@ -363,7 +426,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def wait_for_loader(self) -> None:
         """Wait for the current asynchronous reload to finish.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         loader_thread = self.module._loader_thread
@@ -395,7 +459,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         Args:
             generation: Expected generation.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         deadline = time.monotonic() + 3.0
@@ -416,7 +481,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         Args:
             digest: Expected digest.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         deadline = time.monotonic() + 3.0
@@ -446,7 +512,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         Returns:
             Content digest.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         semantic = {
@@ -489,7 +556,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         Returns:
             Stable list, scope, and rule IDs.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = {
@@ -513,7 +581,7 @@ class SinkholeUnboundTest(unittest.TestCase):
             ("cname-network.example.test", "1", ""),
         ]
         manifest = {
-            "schema_version": 3,
+            "schema_version": 4,
             "generation": generation,
             "generated_at": "2026-01-01T00:00:00+00:00",
             "domains_file": "domains.tsv",
@@ -521,6 +589,16 @@ class SinkholeUnboundTest(unittest.TestCase):
             "domain_count": len(domains),
             "bypass_file": "bypass.tsv",
             "bypass_domain_count": 0,
+            "domain_index": write_name_index(
+                self.data_directory,
+                "domains.index",
+                domains,
+            ),
+            "bypass_index": write_name_index(
+                self.data_directory,
+                "bypass.index",
+                [],
+            ),
             "bypass": {
                 "interfaces": [],
                 "block_encrypted_dns": False,
@@ -588,14 +666,6 @@ class SinkholeUnboundTest(unittest.TestCase):
             json.dumps(manifest),
             encoding="utf-8",
         )
-        (self.data_directory / "domains.tsv").write_text(
-            "".join(
-                f"{domain}\t{exact}\t{subtree}\n"
-                for domain, exact, subtree in domains
-            ),
-            encoding="ascii",
-        )
-        (self.data_directory / "bypass.tsv").write_text("", encoding="ascii")
         (self.data_directory / "allow.txt").write_text(
             "network-list.example.test\nglobal-allow.example.test\n",
             encoding="ascii",
@@ -637,7 +707,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         Returns:
             Mutable namespace matching fields used by the module.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         reply = None
@@ -678,7 +749,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         Returns:
             Object exposing the SWIG reply and packed-key attributes.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         return self.sectioned_reply_info(records, [], [])
@@ -699,7 +771,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         Returns:
             Object exposing section counts and packed RRsets.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         records = answers + authorities + additionals
@@ -721,7 +794,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def initialize(self) -> None:
         """Synchronously initialize the module against current test files.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.assertTrue(self.module.init_standard(0, object()))
@@ -733,7 +807,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         Returns:
             Decoded event objects.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         event_path = self.state_directory / "events"
@@ -749,15 +824,16 @@ class SinkholeUnboundTest(unittest.TestCase):
     def reexecute_source(self) -> None:
         """Execute the script again in the same dictionary, as pythonmod does.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         source = MODULE_PATH.read_text(encoding="utf-8")
         exec(compile(source, str(MODULE_PATH), "exec"), self.module._namespace)
         self.module.DATA_DIRECTORY = str(self.data_directory)
         self.module.MANIFEST_PATH = str(self.data_directory / "manifest.json")
-        self.module.DOMAINS_PATH = str(self.data_directory / "domains.tsv")
-        self.module.BYPASS_PATH = str(self.data_directory / "bypass.tsv")
+        self.module.DOMAINS_INDEX_PATH = str(self.data_directory / "domains.index")
+        self.module.BYPASS_INDEX_PATH = str(self.data_directory / "bypass.index")
         self.module.ALLOW_PATH = str(self.data_directory / "allow.txt")
         self.module.GENERATION_PATH = str(self.data_directory / "generation")
         self.module.LOADED_GENERATION_PATH = str(self.state_directory / "loaded")
@@ -780,7 +856,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_blocked_types_return_sinkhole_or_nodata(self) -> None:
         """A, AAAA, and MX receive sinkhole or NODATA responses.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-a", [("example.test", "0", "")])
@@ -1042,7 +1119,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_scope_decision_order_matrix(self) -> None:
         """All six policy checks and the final pass execute in binding order.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data("generation-scope-order")
@@ -1077,7 +1155,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_alert_events_match_rules_and_deciding_list_level(self) -> None:
         """Only matching blocks emit the deciding level's list identifiers.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data(
@@ -1127,7 +1206,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_cname_alert_event_names_blocked_owner(self) -> None:
         """A downstream CNAME block records the query and blocked owner.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data(
@@ -1165,7 +1245,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_same_blocking_owner_does_not_set_cname(self) -> None:
         """An event never describes the query name as its own CNAME owner.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data(
@@ -1193,7 +1274,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_watcher_coalesces_identical_blocks_with_counts(self) -> None:
         """One chatty name leaves room for another event in the same tick.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data(
@@ -1234,7 +1316,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_brief_queue_lock_contention_waits_without_a_drop(self) -> None:
         """The DNS path tolerates a short watcher snapshot lock hold.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data(
@@ -1271,7 +1354,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_watcher_retains_batch_while_reader_holds_file_lock(self) -> None:
         """The append side retries rather than writing through the reader lock.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_scoped_data(
@@ -1305,7 +1389,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_dropped_marker_is_written_only_when_its_value_changes(self) -> None:
         """Unchanged drop totals do not replace the marker every watcher tick.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         calls: list[tuple[str, str]] = []
@@ -1328,7 +1413,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_bad_alert_section_disables_events_but_keeps_blocking(self) -> None:
         """Malformed alert metadata cannot make the policy fail open.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_scoped_data(
@@ -1360,7 +1446,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_event_queue_and_file_caps_count_drops(self) -> None:
         """Queue and file bounds discard new events and persist the counter.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data(
@@ -1402,7 +1489,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_watcher_flushes_events(self) -> None:
         """The existing watcher appends queued events without another query.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data(
@@ -1434,7 +1522,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_deinit_flushes_and_stashes_unwritten_events(self) -> None:
         """Deinit flushes first and a failed write survives same-interpreter reload.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data(
@@ -1465,7 +1554,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_dns_path_does_not_raise_when_event_file_is_unwritable(self) -> None:
         """A watcher write failure never escapes into blocking query handling.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data(
@@ -1498,7 +1588,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_client_lookup_uses_longest_prefix_and_ipv4_mapped_addresses(self) -> None:
         """Exact devices beat networks and overlapping networks use longest prefix.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data("generation-client-lookup")
@@ -1528,7 +1619,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_watcher_reloads_client_map_and_clears_lookup_cache(self) -> None:
         """A changed digest publishes new scopes and clears prior address decisions.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data("generation-map-watch")
@@ -1618,7 +1710,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_bad_client_map_keeps_last_good_and_logs_once(self) -> None:
         """Malformed map content never replaces the last validated client mapping.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data("generation-map-bad")
@@ -1658,7 +1751,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_unknown_client_map_scope_ids_are_ignored(self) -> None:
         """Valid map records unknown to the manifest cannot acquire policy.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_scoped_data("generation-map-unknown")
@@ -1681,7 +1775,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_cname_owner_decisions_are_per_client_and_query_allow_wins(self) -> None:
         """CNAME owners block by client while a query-level device allow passes.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         identifiers = self.write_scoped_data("generation-cname-clients")
@@ -1729,7 +1824,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_subtree_allow_and_unusual_child_matching(self) -> None:
         """Allow roots pass while underscore children of listed roots stay listed.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data(
@@ -1756,7 +1852,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_internal_subquery_is_not_blocked_but_is_not_cached(self) -> None:
         """A listed name with no client address always passes without cache storage.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-c", [("example.test", "0", "")])
@@ -1772,7 +1869,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_zero_lists_load_and_block_nothing(self) -> None:
         """An object-valued empty list map is valid and blocks no names.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-zero", [], include_list=False)
@@ -1791,7 +1889,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_missing_startup_data_does_not_block_resolver(self) -> None:
         """Missing local files log an error and leave every query untouched.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.assertTrue(self.module.init_standard(0, object()))
@@ -1808,7 +1907,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_reload_swaps_valid_data_and_suppresses_failed_generation(self) -> None:
         """A valid content change swaps once and one bad stamp is not reparsed.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-d1", [("old.example.test", "0", "")])
@@ -1854,7 +1954,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_memory_error_keeps_current_generation(self) -> None:
         """Memory exhaustion is caught and leaves the current policy active.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-e1", [("old.example.test", "0", "")])
@@ -1879,7 +1980,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_concurrent_queries_never_wait_while_watcher_loads(self) -> None:
         """Queries use old data immediately while the watcher owns one slow load.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-f1", [("old.example.test", "0", "")])
@@ -1942,7 +2044,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_cold_start_loads_synchronously_before_init_returns(self) -> None:
         """A cold start publishes readable compiler data synchronously.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-cold", [("cold.example.net", "0", "")])
@@ -1965,7 +2068,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_watcher_loads_new_stamp_without_queries(self) -> None:
         """The watcher publishes changed stamp content without query activity.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-watch-1", [("old.example.net", "0", "")])
@@ -1979,7 +2083,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_moddone_invalidates_listed_owners_and_blocks_only_eligible_client(self) -> None:
         """Listed answer owners expire once and block only eligible client replies.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data(
@@ -2039,7 +2144,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     ) -> None:
         """Listed answer or additional owners disable storage, but authority does not.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data(
@@ -2118,7 +2224,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     ) -> None:
         """Every lifecycle quietly ignores absent and fails open on malformed responses.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data(
@@ -2174,7 +2281,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_query_response_registration_failure_logs_once_and_continues(self) -> None:
         """A registration exception logs one warning without failing initialization.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         def fail_registration(
@@ -2205,7 +2313,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_query_response_refused_registration_logs_once_and_continues(self) -> None:
         """A refused registration logs one warning without failing initialization.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         def refuse_registration(
@@ -2236,7 +2345,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_moddone_expires_only_answers_that_were_cacheable(self) -> None:
         """MODDONE skips invalidation after an upstream callback disabled storage.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data(
@@ -2265,7 +2375,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_deinit_stops_and_joins_watcher_and_running_loader(self) -> None:
         """No watcher or loader survives module deinitialization.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-stop-1", [("old.example.net", "0", "")])
@@ -2298,7 +2409,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_same_dictionary_reload_reuses_matching_stash_without_parsing(self) -> None:
         """A matching stashed generation is reused by identity after script re-exec.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-stash", [("cached.example.net", "0", "")])
@@ -2318,7 +2430,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_init_clears_invalid_stash(self) -> None:
         """Initialization deletes an invalid interpreter stash immediately.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         setattr(sys, self.module.STASH_ATTRIBUTE, {"version": -1})
@@ -2332,7 +2445,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_same_dictionary_reload_serves_stash_during_background_load(self) -> None:
         """A changed generation loads behind the immediately restored stashed policy.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-stash-1", [("old.example.net", "0", "")])
@@ -2362,7 +2476,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_loader_from_previous_script_execution_cannot_publish(self) -> None:
         """A stale loader token cannot overwrite data from a later script execution.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data("generation-token-1", [("old.example.net", "0", "")])
@@ -2393,7 +2508,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_compiler_validation_rejects_oversized_manifest(self) -> None:
         """The module refuses data claiming more than two million unique names.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.write_data(
@@ -2408,6 +2524,318 @@ class SinkholeUnboundTest(unittest.TestCase):
         self.assertIsNone(self.module._active_data)
         self.assertTrue(any("domain count is invalid" in message for message in self.logs))
 
+    def test_combined_counts_above_the_limit_are_refused(self) -> None:
+        """Block and Bypass names share one limit, so their sum is checked.
+
+        Since:
+            1.2.0
+        """
+
+        self.write_data(
+            "generation-combined-large",
+            [],
+            include_list=False,
+            domain_count=self.module.MAXIMUM_UNIQUE_NAMES,
+            bypass_domains=[("one.example.test", "", "encrypted_dns")],
+            bypass=self.bypass_configuration(block_encrypted_dns=True),
+        )
+
+        self.assertTrue(self.module.init_standard(0, object()))
+
+        self.assertIsNone(self.module._active_data)
+        self.assertTrue(
+            any("Bypass domain count is invalid" in message for message in self.logs)
+        )
+
+    def test_index_lookups_match_dictionary_semantics(self) -> None:
+        """Mapped lookups return exactly what the former dictionaries returned.
+
+        Since:
+            1.2.0
+        """
+
+        bit_columns = ["0", "1", "0,1", ""]
+        domains: list[tuple[str, str, str]] = []
+        bypass_domains: list[tuple[str, str, str]] = []
+        kind_columns = ["encrypted_dns", "tor", "encrypted_dns,vpn", ""]
+
+        for position in range(1_500):
+            exact = bit_columns[position % 4]
+            subtree = bit_columns[(position // 4) % 4]
+
+            if exact == "" and subtree == "":
+                subtree = "1"
+
+            domains.append((f"host-{position}.zone-{position % 37}.example.test", exact, subtree))
+
+        domains.append(("zone-3.example.test", "", "0"))
+        domains.append(("example.test", "1", ""))
+
+        for position in range(300):
+            exact = kind_columns[position % 4]
+            subtree = kind_columns[(position // 4) % 4]
+
+            if exact == "" and subtree == "":
+                subtree = "tor"
+
+            bypass_domains.append((f"relay-{position}.example.net", exact, subtree))
+
+        bypass_domains.append(("example.net", "", "vpn"))
+        lists = {
+            LIST_IDENTIFIER: {"name": "Example", "bit": 0},
+            "22222222222222222222222222222222": {"name": "Second", "bit": 1},
+        }
+        self.write_data(
+            "generation-equivalence",
+            domains,
+            bypass_domains=bypass_domains,
+            bypass=self.bypass_configuration(
+                block_encrypted_dns=True,
+                block_tor=True,
+                block_vpn=True,
+            ),
+        )
+        manifest_path = self.data_directory / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["lists"] = lists
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.initialize()
+        data = self.module._active_data
+        self.assertIsNotNone(data)
+
+        def bits(column: str) -> int:
+            mask = 0
+
+            for raw_bit in filter(None, column.split(",")):
+                mask |= 1 << int(raw_bit)
+
+            return mask
+
+        def kinds(column: str) -> int:
+            mask = 0
+
+            for kind in filter(None, column.split(",")):
+                mask |= self.module.BYPASS_KIND_BITS[kind]
+
+            return mask
+
+        reference_domains = {
+            domain: (bits(exact), bits(subtree)) for domain, exact, subtree in domains
+        }
+        reference_bypass = {
+            domain: (kinds(exact), kinds(subtree))
+            for domain, exact, subtree in bypass_domains
+        }
+
+        def reference_mask(name: str, table: dict[str, tuple[int, int]]) -> int:
+            mask = 0
+            exact_masks = table.get(name)
+
+            if exact_masks is not None:
+                mask |= exact_masks[0]
+
+            for candidate in self.module._parents(name):
+                masks = table.get(candidate)
+
+                if masks is not None:
+                    mask |= masks[1]
+
+            return mask
+
+        queries = [domain for domain, _exact, _subtree in domains]
+        queries += [f"child.{domain}" for domain, _exact, _subtree in domains[::7]]
+        queries += [domain for domain, _exact, _subtree in bypass_domains]
+        queries += [f"deep.child.{domain}" for domain, _exact, _subtree in bypass_domains[::5]]
+        queries += [f"missing-{position}.example.org" for position in range(400)]
+        queries += ["example.test", "test", "zone-3.example.test", "a.zone-3.example.test"]
+        queries += ["café.zone-3.example.test", "x.example.net", "net", ""]
+
+        for query in queries:
+            self.assertEqual(
+                reference_mask(query, reference_domains),
+                data.listed_mask(query),
+                query,
+            )
+            self.assertEqual(
+                reference_mask(query, reference_bypass),
+                data.bypass_mask(query),
+                query,
+            )
+
+        self.assertEqual(len(domains), len(data.domains))
+        self.assertEqual(len(bypass_domains), len(data.bypass_domains))
+        self.assertIn("example.test", data.domains)
+        self.assertNotIn("missing.example.test", data.domains)
+
+    def test_wide_index_records_load(self) -> None:
+        """Twenty-byte records with four-byte mask positions load and match.
+
+        Since:
+            1.2.0
+        """
+
+        self.write_data("generation-wide", [("wide.example.test", "0", "")])
+        manifest_path = self.data_directory / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["domain_index"] = write_name_index(
+            self.data_directory,
+            "domains.index",
+            [("wide.example.test", "0", "")],
+            record_size=20,
+        )
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.initialize()
+
+        self.assertEqual((True, True), self.module._active_data.match("wide.example.test"))
+        self.assertEqual(0, self.module._active_data.listed_mask("a.wide.example.test"))
+
+    def corrupt_index(self, generation: str, corruption: str) -> None:
+        """Write a valid generation and then damage its domain index one way.
+
+        Args:
+            generation: Generation identifier.
+            corruption: Damage to apply.
+
+        Since:
+            1.2.0
+        """
+
+        rows = [(f"name-{position}.example.test", "0", "") for position in range(64)]
+        self.write_data(generation, rows)
+        manifest_path = self.data_directory / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        index_path = self.data_directory / "domains.index"
+        contents = index_path.read_bytes()
+
+        match corruption:
+            case "truncated":
+                contents = contents[:-1]
+
+            case "count":
+                manifest["domain_count"] = len(rows) + 1
+
+            case "digest":
+                contents = contents[:16] + bytes([contents[16] ^ 1]) + contents[17:]
+
+            case "unsorted":
+                records = [contents[offset:offset + 18] for offset in range(0, len(contents), 18)]
+                contents = b"".join(reversed(records))
+                manifest["domain_index"]["sha256"] = hashlib.sha256(contents).hexdigest()
+
+            case "mask":
+                contents = contents[:16] + b"\x00\x07" + contents[18:]
+                manifest["domain_index"]["sha256"] = hashlib.sha256(contents).hexdigest()
+
+            case "record_size":
+                manifest["domain_index"]["record_size"] = 17
+
+            case "filename":
+                manifest["domain_index"]["file"] = "../domains.index"
+
+            case "empty_masks":
+                manifest["domain_index"]["masks"] = []
+
+            case _:
+                raise AssertionError(corruption)
+
+        index_path.write_bytes(contents)
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    def test_invalid_indexes_fail_closed(self) -> None:
+        """Damaged indexes leave the module without data instead of misanswering.
+
+        Since:
+            1.2.0
+        """
+
+        expected_messages = {
+            "truncated": "domain index file is invalid",
+            "count": "domain count does not match the index file",
+            "digest": "domain index digest does not match",
+            "unsorted": "domain index is not sorted",
+            "mask": "domain index references an unknown mask",
+            "record_size": "manifest domain index is invalid",
+            "filename": "manifest domain index is invalid",
+            "empty_masks": "manifest domain index masks are invalid",
+        }
+
+        for corruption, expected_message in expected_messages.items():
+            with self.subTest(corruption=corruption):
+                self.module.deinit(0)
+                self.logs.clear()
+                self.corrupt_index(f"generation-{corruption}", corruption)
+
+                self.assertTrue(self.module.init_standard(0, object()))
+
+                self.assertIsNone(self.module._active_data)
+                self.assertTrue(
+                    any(expected_message in message for message in self.logs),
+                    self.logs,
+                )
+
+    def test_previous_schema_manifest_fails_closed_until_recompiled(self) -> None:
+        """A 1.1.0 schema-3 generation never crashes the module after an upgrade.
+
+        Since:
+            1.2.0
+        """
+
+        self.write_data("generation-schema-three", [("old.example.test", "0", "")])
+        manifest_path = self.data_directory / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["schema_version"] = 3
+        del manifest["domain_index"]
+        del manifest["bypass_index"]
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        setattr(
+            sys,
+            self.module.STASH_ATTRIBUTE,
+            {"version": self.module.STASH_VERSION - 1, "data": object()},
+        )
+
+        self.assertTrue(self.module.init_standard(0, object()))
+
+        self.assertIsNone(self.module._active_data)
+        self.assertTrue(any("schema is unsupported" in message for message in self.logs))
+
+        self.write_data("generation-schema-four", [("new.example.test", "0", "")])
+        self.wait_for_generation("generation-schema-four")
+
+        self.assertTrue(self.module._active_data.is_listed("new.example.test"))
+
+    def test_reload_keeps_the_old_mapping_until_it_is_retired(self) -> None:
+        """A swap keeps the previous mapping readable, then closes it after retirement.
+
+        Since:
+            1.2.0
+        """
+
+        self.write_data("generation-map-one", [("first.example.test", "0", "")])
+        self.initialize()
+        first_data = self.module._active_data
+        self.write_data("generation-map-two", [("second.example.test", "0", "")])
+        self.wait_for_generation("generation-map-two")
+        second_data = self.module._active_data
+
+        self.assertIsNot(first_data, second_data)
+        self.assertTrue(first_data.is_listed("first.example.test"))
+        self.assertFalse(second_data.is_listed("first.example.test"))
+        self.assertTrue(second_data.is_listed("second.example.test"))
+        self.assertEqual(1, len(self.module._retired_data))
+
+        self.module._close_retired_data(False)
+
+        self.assertTrue(first_data.is_listed("first.example.test"))
+
+        self.module._close_retired_data(True)
+
+        self.assertEqual([], self.module._retired_data)
+
+        with self.assertRaises(ValueError):
+            first_data.domains.get("first.example.test")
+
+        self.assertTrue(second_data.is_listed("second.example.test"))
+
     def write_safesearch_data(self, generation: str) -> dict[str, str]:
         """Write the scoped fixture with a SafeSearch section and client map.
 
@@ -2417,7 +2845,8 @@ class SinkholeUnboundTest(unittest.TestCase):
         Returns:
             Stable list and scope IDs.
 
-        Since: 1.1.0
+        Since:
+            1.1.0
         """
 
         identifiers = self.write_scoped_data(generation)
@@ -2491,7 +2920,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_safesearch_answers_scoped_clients_with_safe_hosts(self) -> None:
         """Scoped clients receive CNAME answers; others pass, and none are cached.
 
-        Since: 1.1.0
+        Since:
+            1.1.0
         """
 
         self.write_safesearch_data("generation-safesearch")
@@ -2582,7 +3012,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_safesearch_blocking_list_wins_over_rewrite(self) -> None:
         """A name a list blocks for the client stays blocked under SafeSearch.
 
-        Since: 1.1.0
+        Since:
+            1.1.0
         """
 
         identifiers = self.write_safesearch_data("generation-safesearch-block")
@@ -2608,7 +3039,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_invalid_safesearch_section_keeps_generation_unloaded(self) -> None:
         """A malformed SafeSearch address rejects the whole generation.
 
-        Since: 1.1.0
+        Since:
+            1.1.0
         """
 
         self.write_safesearch_data("generation-safesearch-bad")
@@ -2624,7 +3056,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_manifest_without_safesearch_section_loads(self) -> None:
         """Generations compiled before SafeSearch existed still load.
 
-        Since: 1.1.0
+        Since:
+            1.1.0
         """
 
         self.write_scoped_data("generation-no-safesearch")
@@ -2635,7 +3068,8 @@ class SinkholeUnboundTest(unittest.TestCase):
     def test_get_q_ip_reads_mesh_reply_address(self) -> None:
         """Client lookup follows the pfBlockerNG mesh reply-list path.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         qstate = self.query_state("example.test.", self.module.RR_TYPE_A, "198.51.100.9")

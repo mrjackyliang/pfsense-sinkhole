@@ -64,7 +64,7 @@ Blokiranje država zahtijeva vlastiti ID MaxMind računa i GeoLite2 licencni klj
 - Prilagođene konfiguracije šifriranog DNS-a i tunela i dalje mogu zaobići pravila zasnovana na DNS-u, pa Sinkhole ne obećava potpunu zaštitu.
 - Unboundove ugrađene lokalne zone `test.`, `invalid.`, `onion.` i `localhost.` odgovaraju prije Python modula i nisu korisne za testiranje filtriranja uživo.
 - Sukob adrese uređaja dodjeljuje se prvom uređaju po redoslijedu u tabeli, a Status prijavljuje sukob.
-- U mjerenom testiranju s 300.000 naziva, RSS Unbounda porastao je sa 41 MiB na 103 MiB, a vršna memorija pravila iznosila je približno 157 bajtova po nazivu.
+- Jedna generacija sadrži do 10.000.000 naziva, pri čemu se indeks DNS blokiranja (liste i Blocked Services) i Bypass indeks broje zajedno. Duplikati se spajaju unutar svakog indeksa, ali naziv koji je u oba indeksa broji se jednom u svakom. Unbound modul ih čita iz memorijski mapiranog indeksa od oko 18 bajtova po nazivu umjesto da ih drži u memoriji, pa njegova vlastita memorija ostaje na nekoliko MiB bez obzira na to koliko liste narastu.
 
 ## Jezici \{#languages}
 

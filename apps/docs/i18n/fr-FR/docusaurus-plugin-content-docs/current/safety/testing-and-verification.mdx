@@ -54,7 +54,7 @@ Répétez dans la fenêtre de répétition de la règle pour vérifier la suppre
 Choisissez une interface de laboratoire isolée et activez une seule protection Bypass à la fois. Après chaque test, vérifiez qu’un client équivalent sur une interface non sélectionnée reste intact.
 
 1. Activez **Redirect**, vérifiez que sa famille d’adresses possède une écoute du Resolver et envoyez des requêtes DNS ordinaires sur les ports UDP et TCP 53 vers une autre destination. Vérifiez que pfSense les reçoit.
-2. Ajoutez volontairement une exemption non valide uniquement dans une configuration jetable et vérifiez que la redirection devient **Paused** au lieu de charger des règles partielles. Restaurez des données valides, attendez les deux observations minute et vérifiez que **pfSense loaded rules** revient à `Yes`.
+2. Ajoutez volontairement une exemption non valide uniquement dans une configuration jetable et vérifiez que la redirection devient **Paused** au lieu de charger des règles partielles. Restaurez des données valides, attendez les deux observations minute et vérifiez que **pfSense Loaded Rules** revient à `Yes`.
 3. Activez **TLS and QUIC**, puis vérifiez que les ports TCP et UDP 853 vers une destination de laboratoire sont bloqués, contrairement au trafic vers le pare-feu.
 4. Ajoutez une Bypass List désactivée contenant uniquement des domaines, adresses et CIDR inventés, des commentaires et des données incorrectes. Activez-la avec sa protection correspondante, puis vérifiez que les noms et adresses valides sont bloqués, les lignes non valides ignorées et qu’une récupération échouée ultérieure conserve la copie enregistrée.
 5. Vérifiez que les requêtes de test Firefox et Private Relay reçoivent `NXDOMAIN`. Vérifiez que DDR renvoie une réponse `NOERROR` vide en mode **Answer with no records**.
@@ -77,4 +77,4 @@ Avant la suppression, décidez si **Keep Settings** doit conserver la configurat
 
 ## Consigner l’environnement \{#record-the-environment}
 
-Pour un compte rendu utile, notez la version de Sinkhole, l’édition et la version de pfSense, la version de FreeBSD, les fonctions sélectionnées, l’état dans Status et des lignes `Sinkhole:` nettoyées du journal système. Aucune version de pfSense n’est actuellement indiquée comme officiellement testée ; les tests de compatibilité ont lieu avant chaque version de Sinkhole.
+Pour un compte rendu utile, notez la version de Sinkhole, l’édition et la version de pfSense, la version de FreeBSD, les fonctions sélectionnées, l’état dans Status et des lignes `Sinkhole:` nettoyées du journal système. L’onglet About et [Versions testées](/docs/compatibility#tested-releases) indiquent les versions de pfSense sur lesquelles chaque version de Sinkhole a réussi de bout en bout l’installation, la mise à jour, un test de blocage et la suppression.

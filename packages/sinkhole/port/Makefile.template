@@ -148,6 +148,8 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg/sinkhole/translations
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/UnboundCustomOptions.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/UpdateLog.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/UpdateManager.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Updater.php \

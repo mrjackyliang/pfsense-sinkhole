@@ -26,7 +26,9 @@ Para cada lista de DNS habilitada, o Sinkhole:
 4. Compila a política global, de rede, de dispositivo, de domínios permitidos e de alertas a partir dos dados locais salvos.
 5. Implanta uma geração em `/var/unbound` para que o módulo Python já carregado a encontre.
 
-Uma falha de download, análise ou validação registra um erro sem substituir a última cópia válida. O DNS continua usando a geração local implantada durante toda a tentativa.
+Uma falha de download, análise ou validação registra um erro sem substituir a última cópia válida quando a URL da lista não mudou. O DNS continua usando a geração local implantada durante toda a tentativa.
+
+Depois que a URL de uma lista muda, a próxima atualização que a baixar descarta a cópia da URL anterior antes de buscar a nova, então uma falha no primeiro download deixa essa lista sem cópia salva. Uma lista desativada, ou uma Bypass List cuja proteção está desligada, não é baixada, então mantém os detalhes da cópia anterior até ser ativada novamente.
 
 ## Implantação e caches do Resolver \{#deployment-and-resolver-caches}
 
@@ -50,7 +52,7 @@ Uma âncora `sinkhole/ip` existente pode receber apenas uma atualização de tab
 
 A frequência padrão de atualização das listas é Daily. Os agendamentos Hourly, Every 6 hours, Daily e Weekly usam componentes de minutos aleatórios estáveis para que o firewall não altere o horário do trabalho sempre que a configuração for salva.
 
-As atualizações de listas de DNS e de IP/países, o trabalho de aplicação relacionado ao catálogo e a autoatualização do pacote são coordenados por `/var/run/sinkhole-update.lock`. Uma ação Update do pacote aguarda o término de uma atualização de lista ativa em vez de alterar o pacote instalado durante sua execução.
+As atualizações de DNS, Bypass e IP/países, a aplicação de configurações, as verificações e autoatualizações do pacote e a limpeza da remoção são coordenadas por `/var/run/sinkhole-update.lock`. Uma verificação do pacote ou a ação Update não espera: se outra operação mantiver o lock, ela para com `Another package operation is already running.` e pode ser repetida quando essa operação terminar.
 
 ## As atualizações dos catálogos são separadas \{#catalog-refreshes-are-separate}
 

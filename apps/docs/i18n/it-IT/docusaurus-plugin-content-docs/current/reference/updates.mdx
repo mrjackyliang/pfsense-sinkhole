@@ -48,7 +48,7 @@ Un elenco di attendibilità installato vuoto significa che non è richiesta una 
 
 ## Lock degli aggiornamenti \{#update-locking}
 
-Il controllo e l’aggiornamento automatico del pacchetto condividono `/var/run/sinkhole-update.lock` con gli aggiornamenti delle liste DNS e IP/paesi. Se è in corso un aggiornamento delle liste, l’azione **Update** in About non può iniziare finché l’attività non termina.
+Il controllo e l’aggiornamento automatico del pacchetto condividono `/var/run/sinkhole-update.lock` con gli aggiornamenti DNS, Bypass e IP/paesi, le applicazioni delle impostazioni e la pulizia durante la rimozione. Non attendono il lock: se un’altra operazione lo detiene, il controllo o l’azione **Update** si interrompe con `Another package operation is already running.`
 
 Il lock impedisce che i file del pacchetto cambino mentre il pacchetto corrente scarica, analizza, compila o applica i criteri. Riprova da About quando Status non mostra più un aggiornamento in esecuzione.
 

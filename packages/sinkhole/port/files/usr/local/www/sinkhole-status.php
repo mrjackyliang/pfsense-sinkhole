@@ -19,6 +19,7 @@ use PfSense\Sinkhole\Domain\Settings;
 use PfSense\Sinkhole\Domain\ServiceConfiguration;
 use PfSense\Sinkhole\Runtime\CatalogCache;
 use PfSense\Sinkhole\Runtime\BypassListStore;
+use PfSense\Sinkhole\Runtime\Compiler;
 use PfSense\Sinkhole\Runtime\ClientMap;
 use PfSense\Sinkhole\Runtime\CurlDownloadClient;
 use PfSense\Sinkhole\Runtime\FileSystem;
@@ -27,6 +28,7 @@ use PfSense\Sinkhole\Runtime\PackagePaths;
 use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Runtime\StateStore;
 use PfSense\Sinkhole\Runtime\ServiceRegistryCache;
+use PfSense\Sinkhole\Runtime\UpdateLog;
 
 require_once('guiconfig.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
@@ -42,22 +44,58 @@ require_once('/usr/local/pkg/sinkhole/Settings.php');
 require_once('/usr/local/pkg/sinkhole/ServiceConfiguration.php');
 require_once('/usr/local/pkg/sinkhole/ServiceRegistryCache.php');
 require_once('/usr/local/pkg/sinkhole/StateStore.php');
+require_once('/usr/local/pkg/sinkhole/UpdateLog.php');
+
+$paths = new PackagePaths();
+
+// The Update Log poller: read-only JSON behind the same Status privilege as the page.
+if (isset($_GET['update_log'])) {
+    header('Content-Type: application/json; charset=UTF-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    header('X-Content-Type-Options: nosniff');
+
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'GET') {
+        $updateLogResponse = pfsensePackageSinkholeUpdateLogResponse($paths, $_GET);
+    } else {
+        header('Allow: GET');
+        $updateLogResponse = [
+            'status' => 405,
+            'body' => ['error' => 'Only GET is allowed.'],
+        ];
+    }
+
+    http_response_code($updateLogResponse['status']);
+    echo json_encode(
+        $updateLogResponse['body'],
+        JSON_HEX_TAG
+            | JSON_HEX_AMP
+            | JSON_HEX_APOS
+            | JSON_HEX_QUOT
+            | JSON_INVALID_UTF8_SUBSTITUTE
+            | JSON_UNESCAPED_SLASHES
+            | JSON_UNESCAPED_UNICODE,
+    );
+    exit;
+}
 
 $actionMessage = null;
 $actionClass = 'info';
+$updateStarted = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_now'])) {
     try {
         pfsensePackageSinkholeAdapter()->runUpdaterInBackground();
         $actionMessage = pfsensePackageSinkholeTranslate('update_started');
         $actionClass = 'success';
+        $updateStarted = true;
     } catch (Throwable $throwable) {
         $actionMessage = pfsensePackageSinkholeThrowableMessage($throwable);
         $actionClass = 'danger';
     }
 }
 
-$paths = new PackagePaths();
 $store = new SavedListStore($paths);
 $bypassStore = new BypassListStore($paths);
 $ipStore = new IpListStore($paths);
@@ -67,6 +105,7 @@ $lists = [];
 $invalidRows = [];
 $configurationError = null;
 $totalEntries = 0;
+$compiledNames = null;
 $lastCompile = '';
 $compiledGeneration = '';
 $compiledDigest = '';
@@ -101,6 +140,7 @@ $alertEventsDropped = 0;
 $alertLastError = '';
 $redirectEnabled = false;
 $redirectPaused = false;
+$redirectInactiveReason = null;
 $redirectInterfaces = [];
 $redirectInvalidExemptions = [];
 $redirectTargets = [];
@@ -175,7 +215,12 @@ try {
     $redirectInvalidExemptions = $redirectConfiguration['invalid_exemptions'];
     $bypassConfiguration = pfsensePackageSinkholeGetBypassConfiguration();
 
-    foreach ($bypassConfiguration['invalid_values'] ?? [] as $invalidBypassValue) {
+    $invalidBypassValues = array_merge(
+        $bypassConfiguration['invalid_values'] ?? [],
+        $bypassConfiguration['invalid_exemptions'] ?? [],
+    );
+
+    foreach ($invalidBypassValues as $invalidBypassValue) {
         if (is_array($invalidBypassValue)) {
             $bypassWarnings[] = pfsensePackageSinkholeInvalidReason($invalidBypassValue);
         }
@@ -234,6 +279,13 @@ try {
     $redirectRuleStatus = pfsensePackageSinkholeRedirectStatus();
     $bypassRuleStatus = pfsensePackageSinkholeBypassRuleStatus();
     $ipRuleStatus = pfsensePackageSinkholeIpRuleStatus();
+} catch (Throwable $throwable) {
+    $configurationError = $configurationError
+        ?? pfsensePackageSinkholeThrowableMessage($throwable);
+}
+
+try {
+    $redirectInactiveReason = pfsensePackageSinkholeAdapter()->redirectInactiveReason();
 } catch (Throwable $throwable) {
     $configurationError = $configurationError
         ?? pfsensePackageSinkholeThrowableMessage($throwable);
@@ -327,6 +379,14 @@ if ($manifestPath !== '' && FileSystem::isRegularFile($manifestPath)) {
 
             if (is_array($manifest) && is_string($manifest['content_digest'] ?? null)) {
                 $deployedDigest = $manifest['content_digest'];
+            }
+
+            if (
+                is_array($manifest)
+                && is_int($manifest['domain_count'] ?? null)
+                && is_int($manifest['bypass_domain_count'] ?? null)
+            ) {
+                $compiledNames = $manifest['domain_count'] + $manifest['bypass_domain_count'];
             }
         }
     } catch (Throwable $throwable) {
@@ -456,6 +516,7 @@ if ($generationPath === null) {
 }
 
 $updateRunning = pfsensePackageSinkholeUpdateRunning($paths);
+$updateLogState = UpdateLog::read($paths->updateLogFile, 0, null, UpdateLog::MAXIMUM_BYTES);
 $dnsIntegrationWanted = false;
 
 try {
@@ -498,6 +559,9 @@ $pglinks = [
 ];
 
 include('head.inc');
+?>
+<link rel="stylesheet" href="/css/sinkhole.css">
+<?php
 
 if (is_string($actionMessage)) {
     print_info_box(htmlspecialchars($actionMessage), $actionClass, false);
@@ -523,6 +587,13 @@ if ($deploymentNeeded) {
     )), 'warning', false);
 }
 
+if (is_string($redirectInactiveReason)) {
+    print_info_box(htmlspecialchars(pfsensePackageSinkholeTranslateMapped(
+        'redirect_inactive_reason',
+        $redirectInactiveReason,
+    )), 'danger', false);
+}
+
 $updateButton = new Form_Button(
     'update_now',
     pfsensePackageSinkholeTranslate('update_now'),
@@ -541,43 +612,73 @@ $summarySection->addInput(new Form_StaticText(
     pfsensePackageSinkholeTranslate('total_entries'),
     htmlspecialchars((string) $totalEntries),
 ));
+$compiledNamesText = ($compiledNames === null)
+    ? pfsensePackageSinkholeTranslate('none')
+    : pfsensePackageSinkholeTranslate(
+        'compiled_names_value',
+        [
+            number_format($compiledNames),
+            number_format(Compiler::MAXIMUM_UNIQUE_NAMES),
+        ],
+    );
+$summarySection->addInput(new Form_StaticText(
+    pfsensePackageSinkholeTranslate('compiled_names'),
+    htmlspecialchars($compiledNamesText),
+));
 $summarySection->addInput(new Form_StaticText(
     pfsensePackageSinkholeTranslate('last_compile'),
     htmlspecialchars(($lastCompile === '') ? pfsensePackageSinkholeTranslate('never') : $lastCompile),
 ));
 $summarySection->addInput(new Form_StaticText(
     pfsensePackageSinkholeTranslate('compile_needed'),
-    htmlspecialchars(pfsensePackageSinkholeTranslateMapped(
-        'boolean',
-        ($compileNeeded) ? 'true' : 'false',
-    )),
+    '<span id="sinkhole-compile-needed">'
+        . htmlspecialchars(pfsensePackageSinkholeTranslateMapped(
+            'boolean',
+            ($compileNeeded) ? 'true' : 'false',
+        ))
+        . '</span>',
 ));
 $summarySection->addInput(new Form_StaticText(
     pfsensePackageSinkholeTranslate('compiled_generation'),
-    htmlspecialchars(($compiledGeneration === '') ? pfsensePackageSinkholeTranslate('none') : $compiledGeneration),
+    '<span id="sinkhole-compiled-generation">'
+        . htmlspecialchars(($compiledGeneration === '') ? pfsensePackageSinkholeTranslate('none') : $compiledGeneration)
+        . '</span>',
 ));
 $summarySection->addInput(new Form_StaticText(
     pfsensePackageSinkholeTranslate('deployment_needed'),
-    htmlspecialchars(pfsensePackageSinkholeTranslateMapped(
-        'boolean',
-        ($deploymentNeeded) ? 'true' : 'false',
-    )),
+    '<span id="sinkhole-deployment-needed">'
+        . htmlspecialchars(pfsensePackageSinkholeTranslateMapped(
+            'boolean',
+            ($deploymentNeeded) ? 'true' : 'false',
+        ))
+        . '</span>',
 ));
 $summarySection->addInput(new Form_StaticText(
     pfsensePackageSinkholeTranslate('deployed_generation'),
-    htmlspecialchars(($deployedGeneration === '') ? pfsensePackageSinkholeTranslate('none') : $deployedGeneration),
+    '<span id="sinkhole-deployed-generation">'
+        . htmlspecialchars(($deployedGeneration === '') ? pfsensePackageSinkholeTranslate('none') : $deployedGeneration)
+        . '</span>',
 ));
 $summarySection->addInput(new Form_StaticText(
     pfsensePackageSinkholeTranslate('loaded_generation'),
-    htmlspecialchars($loadedGeneration),
+    '<span id="sinkhole-loaded-generation">' . htmlspecialchars($loadedGeneration) . '</span>',
 ));
 
-if ($updateRunning) {
-    $summarySection->addInput(new Form_StaticText(
-        pfsensePackageSinkholeTranslate('update_running'),
-        htmlspecialchars(pfsensePackageSinkholeTranslateMapped('boolean', 'true')),
-    ));
+// The row stays in the markup while hidden, so the Update Log poller can show it mid-run.
+$updateRunningGroup = new Form_Group(pfsensePackageSinkholeTranslate('update_running'));
+$updateRunningGroup->add(new Form_StaticText(
+    pfsensePackageSinkholeTranslate('update_running'),
+    '<span id="sinkhole-update-running">'
+        . htmlspecialchars(pfsensePackageSinkholeTranslateMapped('boolean', 'true'))
+        . '</span>',
+));
+$updateRunningGroup->setAttribute('id', 'sinkhole-update-running-row');
+
+if (!$updateRunning) {
+    $updateRunningGroup->addClass('hidden');
 }
+
+$summarySection->add($updateRunningGroup);
 
 if ($removing) {
     $summarySection->addInput(new Form_StaticText(
@@ -593,7 +694,17 @@ $summarySection->addInput(new Form_StaticText(
 $summarySection->addInput(new Form_StaticText('Sinkhole', htmlspecialchars($statusText)));
 $summaryForm->add($summarySection);
 print($summaryForm);
+
+$updateLogTitle = pfsensePackageSinkholeTranslate('update_log');
 ?>
+<div class="panel panel-default" id="sinkhole-update-log" data-run="<?=htmlspecialchars($updateLogState['run'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>" data-offset="<?=htmlspecialchars((string) $updateLogState['offset'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>" data-running="<?=($updateRunning) ? '1' : '0'?>" data-started="<?=($updateStarted) ? '1' : '0'?>">
+	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars($updateLogTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?></h2></div>
+	<div class="panel-body">
+		<div class="form-group sinkhole-update-log-row">
+			<textarea id="sinkhole-update-log-text" class="form-control sinkhole-update-log" rows="15" readonly="readonly" spellcheck="false" wrap="off" aria-label="<?=htmlspecialchars($updateLogTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>" placeholder="<?=htmlspecialchars(pfsensePackageSinkholeTranslate('update_log_empty'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>"><?=htmlspecialchars($updateLogState['text'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?></textarea>
+		</div>
+	</div>
+</div>
 <div class="panel panel-default">
 	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('lists'))?></h2></div>
 	<div class="panel-body table-responsive">
@@ -1223,4 +1334,146 @@ print($ipForm);
 		</table>
 	</div>
 </div>
+<script>
+events.push(function () {
+	var panel = document.getElementById('sinkhole-update-log');
+	var output = document.getElementById('sinkhole-update-log-text');
+
+	if (!panel || !output) {
+		return;
+	}
+
+	output.scrollTop = output.scrollHeight;
+
+	if (typeof window.fetch !== 'function') {
+		return;
+	}
+
+	var offset = parseInt(panel.getAttribute('data-offset'), 10) || 0;
+	var run = panel.getAttribute('data-run') || '';
+	var startingRun = run;
+	var waitingForStart = panel.getAttribute('data-started') === '1';
+	var startPollsLeft = 15;
+	var finalFetchPending = false;
+	var failuresLeft = 5;
+	var summaryCells = {
+		update_running: 'sinkhole-update-running',
+		compile_needed: 'sinkhole-compile-needed',
+		compiled_generation: 'sinkhole-compiled-generation',
+		deployment_needed: 'sinkhole-deployment-needed',
+		deployed_generation: 'sinkhole-deployed-generation',
+		loaded_generation: 'sinkhole-loaded-generation'
+	};
+
+	function followingEnd() {
+		return 4 > output.scrollHeight - output.scrollTop - output.clientHeight;
+	}
+
+	function showSummary(summary, running) {
+		var runningRow = document.getElementById('sinkhole-update-running-row');
+
+		if (runningRow) {
+			runningRow.classList.toggle('hidden', !running);
+		}
+
+		if (!summary) {
+			return;
+		}
+
+		Object.keys(summaryCells).forEach(function (key) {
+			var cell = document.getElementById(summaryCells[key]);
+
+			if (cell && typeof summary[key] === 'string') {
+				cell.textContent = summary[key];
+			}
+		});
+	}
+
+	function schedulePoll() {
+		window.setTimeout(poll, 2000);
+	}
+
+	function showUpdate(update) {
+		var following = followingEnd();
+		var running = update.running === true;
+
+		if (update.reset === true) {
+			output.value = '';
+		}
+
+		if (typeof update.text === 'string' && update.text !== '') {
+			output.value += update.text;
+		}
+
+		offset = (typeof update.offset === 'number') ? update.offset : 0;
+		run = (typeof update.run === 'string') ? update.run : '';
+
+		if (following) {
+			output.scrollTop = output.scrollHeight;
+		}
+
+		showSummary(update.summary, running);
+
+		if (running) {
+			waitingForStart = false;
+			finalFetchPending = true;
+			schedulePoll();
+
+			return;
+		}
+
+		if (waitingForStart && run !== '' && run !== startingRun) {
+			waitingForStart = false;
+			finalFetchPending = true;
+		}
+
+		if (waitingForStart) {
+			startPollsLeft -= 1;
+
+			if (startPollsLeft > 0) {
+				schedulePoll();
+			}
+
+			return;
+		}
+
+		if (finalFetchPending) {
+			finalFetchPending = false;
+			schedulePoll();
+		}
+	}
+
+	function poll() {
+		var url = 'sinkhole-status.php?update_log=1&offset='
+			+ encodeURIComponent(String(offset))
+			+ '&run='
+			+ encodeURIComponent(run);
+
+		window.fetch(url, {
+			credentials: 'same-origin',
+			cache: 'no-store',
+			headers: { Accept: 'application/json' }
+		}).then(function (response) {
+			if (!response.ok) {
+				throw new Error('update log');
+			}
+
+			return response.json();
+		}).then(function (update) {
+			failuresLeft = 5;
+			showUpdate(update);
+		}).catch(function () {
+			failuresLeft -= 1;
+
+			if (failuresLeft > 0) {
+				schedulePoll();
+			}
+		});
+	}
+
+	if (panel.getAttribute('data-running') === '1' || waitingForStart) {
+		poll();
+	}
+});
+</script>
 <?php include('foot.inc');

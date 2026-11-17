@@ -421,7 +421,8 @@ final class RedirectConfiguration
      * Redirect Configuration - Partition Exemptions.
      *
      * Keeps valid normalized values, original display values, and repair reasons
-     * together for one source or destination list.
+     * together for one source or destination list. Bypass block exemptions share
+     * this boundary so both features accept exactly the same values.
      *
      * @param mixed $value - Persisted exemption list.
      * @param array<string, string> $aliases - Existing host and network aliases.
@@ -436,9 +437,9 @@ final class RedirectConfiguration
      * }
      *
      * @since 1.0.0
-     * @private
+     * @since 1.2.0
      */
-    private static function partitionExemptions(
+    public static function partitionExemptions(
         mixed $value,
         array $aliases,
         string $pluralFieldKey,
@@ -505,9 +506,9 @@ final class RedirectConfiguration
      * @throws InvalidArgumentException When the text cannot be split.
      *
      * @since 1.0.0
-     * @private
+     * @since 1.2.0
      */
-    private static function nonEmptyLines(string $text, string $errorMessageKey): array
+    public static function nonEmptyLines(string $text, string $errorMessageKey): array
     {
         $lines = preg_split('/\r\n|\r|\n/', $text);
 

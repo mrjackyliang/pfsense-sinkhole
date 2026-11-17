@@ -64,7 +64,7 @@ Voor landblokkering zijn de eigen MaxMind-account-ID en GeoLite2-licentiesleutel
 - Aangepaste configuraties voor versleutelde DNS en tunnels kunnen DNS-beleid nog steeds omzeilen. Sinkhole belooft daarom geen volledige bescherming.
 - De ingebouwde lokale zones `test.`, `invalid.`, `onion.` en `localhost.` van Unbound antwoorden vóór Python-modules en zijn niet geschikt voor live filtertests.
 - Bij een conflict tussen apparaatadressen krijgt het eerste apparaat in de tabelvolgorde voorrang en meldt Status het conflict.
-- Bij gemeten tests met 300.000 namen steeg het RSS-gebruik van Unbound van 41 MiB naar 103 MiB en bedroeg het maximale beleidsgeheugen ongeveer 157 bytes per naam.
+- Eén generatie bevat maximaal 10.000.000 namen, waarbij de DNS-blokkeerindex (lijsten en geblokkeerde services) en de Bypass-index samen worden geteld. Dubbele namen vallen binnen elke index samen, maar een naam die in beide staat, telt in elke index één keer. De Unbound-module leest ze uit een geheugengekoppelde index van ongeveer 18 bytes per naam in plaats van ze in het geheugen te houden, zodat het eigen geheugen van de module op enkele MiB blijft, hoe groot de lijsten ook worden.
 
 ## Talen \{#languages}
 

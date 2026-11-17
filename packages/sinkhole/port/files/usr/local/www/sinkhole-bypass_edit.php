@@ -23,13 +23,24 @@ require_once('/usr/local/pkg/sinkhole.inc');
 require_once('/usr/local/pkg/sinkhole/BypassConfiguration.php');
 require_once('/usr/local/pkg/sinkhole/ListConfiguration.php');
 
-/** @since 1.0.0 */
+/**
+ * Sinkhole Bypass Editor - Require Repair.
+ *
+ * @param array $bypass - Partitioned Bypass configuration.
+ * @param array $redirect - Partitioned redirect configuration.
+ *
+ * @return void
+ *
+ * @since 1.0.0
+ * @since 1.2.0
+ */
 function sinkholeBypassEditorRequireRepair(array $bypass, array $redirect): void
 {
     $invalidValues = array_merge(
         $redirect['invalid_values'],
         $redirect['invalid_exemptions'],
         $bypass['invalid_values'],
+        $bypass['invalid_exemptions'],
     );
 
     if ($invalidValues === []) {

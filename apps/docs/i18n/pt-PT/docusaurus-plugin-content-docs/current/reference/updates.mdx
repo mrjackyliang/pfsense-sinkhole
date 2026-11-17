@@ -48,7 +48,7 @@ Uma lista de confiança instalada vazia significa que nenhuma assinatura é exig
 
 ## Lock de atualização \{#update-locking}
 
-A verificação do pacote e a autoatualização compartilham `/var/run/sinkhole-update.lock` com as atualizações das listas de DNS e de IP/países. Se uma atualização de lista estiver em execução, a ação **Update** de About não poderá começar até que esse trabalho termine.
+A verificação do pacote e a autoatualização partilham `/var/run/sinkhole-update.lock` com as atualizações de DNS, Bypass e IP/países, a aplicação de definições e a limpeza da remoção. Não esperam pelo lock: se outra operação o mantiver, a verificação ou a ação **Update** para com `Another package operation is already running.`
 
 O lock impede que os ficheiros do pacote sejam alterados enquanto o pacote atual está a transferir, analisando, compilando ou aplicando a política. Tente novamente em About depois que Status deixar de mostrar uma atualização em execução.
 

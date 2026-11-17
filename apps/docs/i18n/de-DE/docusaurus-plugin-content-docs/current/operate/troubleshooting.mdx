@@ -19,6 +19,7 @@ Verfolge ein Problem vom Status-Panel und Systemprotokoll bis zu der konkreten L
 ## Wo du nachsehen kannst \{#where-to-look}
 
 - **Firewall → Sinkhole → Status** zeigt Listen-, Katalog-, Client-Map-, Alarm-, Bypass-, IP-, Kompilierungs-, Bereitstellungs- und Resolver-Zustände.
+- **Status → Update Log** zeigt jeden Schritt der letzten Listenaktualisierung, einschließlich der fehlgeschlagenen Liste und des Grunds.
 - **Status → System Logs → System → General** zeigt Betriebszeilen, die mit `Sinkhole:` beginnen.
 - `/usr/local/sbin/sinkhole --help` gibt die unterstützten Wartungsmodi aus.
 
@@ -78,14 +79,30 @@ ISC-Lease-Zeiten können abhängig von der Lease-Zeiteinstellung der Schnittstel
 
 Ein fehlgeschlagener DNS-, Bypass- oder IP-Download, Parse- oder Validierungsvorgang behält die vorherige gespeicherte Kopie bei und zeichnet den Fehler auf. DNS verwendet weiterhin die bereitgestellte lokale Generation, statt auf die fehlgeschlagene Quelle zu warten.
 
+Eine Kopie, die von der vorherigen URL einer Liste gespeichert wurde, wird nie behalten. Nachdem du die URL einer Liste geändert hast, verwirft die nächste Aktualisierung diese Kopie und protokolliert `source changed; discarding the copy from the previous URL.`, sodass die Liste nichts beiträgt und Status ihren Fehler anzeigt, bis der erste Download von der neuen URL erfolgreich ist.
+
+Das [Update Log](/docs/operate/status#update-log) nennt für den letzten Lauf die fehlgeschlagene Liste, ihren Host und den Grund. Es wird empfohlen, nach der Korrektur der Quelle **Update Now** zu wählen und den erneuten Versuch dort zu verfolgen.
+
 Kataloge werden nur abgerufen, wenn die Suche geöffnet oder aktualisiert wird; ein fehlgeschlagener Abruf behält den zwischengespeicherten letzten gültigen Katalog. Prüfe HTTPS-Verbindung, Quell-URL und Statusfehler, bevor du eine weitere Aktualisierung erzwingst.
+
+## Kompilierung überschreitet das Namenslimit \{#compile-exceeds-the-name-limit}
+
+Eine Kompilierung, die mehr als 10.000.000 eindeutige Namen findet, stoppt mit einem Fehler wie `The compile found 10,412,331 unique names; the limit is 10,000,000.` Der DNS-Blockierungsindex (Listen und Blocked Services) und der Bypass-Index werden zusammen gezählt. Ein Name, den mehrere Listen enthalten, zählt innerhalb eines Index einmal, ein Name in beiden Indizes zählt aber in jedem einmal.
+
+Die vorherige Generation bleibt aktiv, und **Compile Needed** bleibt `Yes`, bis eine Kompilierung erfolgreich ist. **Summary → Compiled Names** zeigt die bereitgestellte Anzahl im Verhältnis zum Limit.
+
+So bringst du die Anzahl unter das Limit:
+
+1. Deaktiviere oder entferne die größte Liste, die du nicht brauchst, oder ersetze sie durch eine kleinere Variante desselben Herausgebers.
+2. Entferne Listen, die größtenteils in einer anderen aktivierten Liste enthalten sind.
+3. Wähle **Update Now** und prüfe, ob **Compile Needed** wieder `No` ist.
 
 ## Klartext-DNS-Umleitung ist pausiert oder fehlt \{#plain-dns-redirect-is-paused-or-missing}
 
 - **Paused** — Korrigiere oder entferne jede ungültige Ausnahme, die im Panel Bypass angezeigt wird.
 - **No family address** — Füge die Familie zur Schnittstelle hinzu oder akzeptiere, dass keine Regel für diese Familie erzeugt werden kann.
 - **Resolver does not listen** — Ändere **DNS Resolver → Network Interfaces** oder entferne diese Umleitungsauswahl.
-- **Rules missing or out of date** — Warte zwei Minutenbeobachtungen ab und prüfe anschließend **Last parse error** und die Systemprotokolle.
+- **Rules missing or out of date** — Warte zwei Minutenbeobachtungen ab und prüfe anschließend **Last Parse Error** und die Systemprotokolle.
 - **Queries are refused** — Füge das Clientnetzwerk zur Zugriffskontrolle des Resolvers hinzu.
 
 Die Minutenprüfung lädt den Filter nicht neu, solange die Paketsperre von pfSense gehalten wird oder pfSense denselben unveränderten Regeltext bereits abgelehnt hat. Nach einer Änderung der ungültigen Konfiguration können die nächsten beiden Beobachtungen sie abgleichen.
@@ -112,9 +129,11 @@ Ereignisse, die älter als 10 Minuten sind, gelten als veraltet, und ein Lauf be
 
 ## Hoher Speicherverbrauch \{#memory-use-is-high}
 
-Messungen mit 300.000 Namen erhöhten den RSS-Speicher von Unbound von 41 MiB auf 103 MiB, bei einem maximalen Richtlinienspeicher von ungefähr 157 Byte pro Name. Der tatsächliche Verbrauch hängt von eindeutigen normalisierten Namen, Scope-Zuweisungen und dem laufenden Resolver ab.
+Das Unbound-Modul hält kompilierte Namen nicht im Speicher. Es liest einen speicherabgebildeten Index mit etwa 18 Byte pro Name aus der aktiven Generation, sodass sein eigener Speicher bei jeder Listengröße bis zum Limit von 10.000.000 Namen bei wenigen MiB bleibt.
 
-Es wird empfohlen, die Eintragszahlen in Status und den Unbound-Speicher vor und nach dem Hinzufügen einer großen Quelle zu vergleichen. Wird eine ungenutzte Liste deaktiviert, bleibt sie bei der nächsten Kompilierung außerhalb der aktiven Richtlinie.
+Indexseiten, die Abfragen lesen, zählen als Datei-Cache zum residenten Speicher von Unbound, den FreeBSD bei Speicherdruck zurückgewinnt. Ein großer RSS-Wert von Unbound stammt daher meist von den eigenen Message- und RRset-Caches des Resolvers; vergleiche ihn mit den Cache-Größen unter **DNS Resolver → Advanced Settings**, bevor du Listen änderst.
+
+Jede Generation braucht außerdem Speicherplatz auf dem Datenträger für ihre kompilierten Dateien, etwa 55 Byte pro Name, in `/var/unbound` und auf einem System mit RAM-Disk im persistenten Spiegel. Eine Bereitstellung, die nicht passt, stoppt mit dem Fehler `Not enough deployment space` und behält die vorherige Generation.
 
 ## Problem melden \{#report-a-problem}
 

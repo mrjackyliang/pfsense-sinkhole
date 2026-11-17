@@ -60,11 +60,13 @@ Resultatene vises som kort. Bruk kontrollene for søk, kilde og vedlikeholder sa
 
 Hvert kort viser listenavnet, vedlikeholderen eller kategorien, kildekatalogen, en beskrivelse på to linjer, hjemmesiden og statusen **Add** eller **Added**. Kortene viser ingen vurderinger, merker eller anbefalinger. Når du velger **Add**, opprettes en vanlig listerad der URL-en kan tilordnes som enhver manuelt angitt kilde.
 
+Nye lister, også de som legges til fra katalogen, starter med **Global** ikke avkrysset, så de blokkerer ingenting før du krysser av for Global eller velger dem i et omfang.
+
 Linjen **Contents** på hvert kort viser **Domains**. Når du legger til et katalogresultat, beholdes katalognavnet uendret.
 
 Katalogkopier bufres under `/var/db` i én dag. En mislykket oppdatering beholder den siste gyldige katalogkopien og viser hentefeilen i Status.
 
-<img src={catalogSearch} alt="Panelet Add from Catalog på fanen Lists viser kontroller for katalogsøk og hentestatus" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Panelet Add from Catalog på fanen Lists viser kontroller for katalogsøk og hentestatus" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 Feeder som er tilordnet omgåelsesbeskyttelse for Encrypted DNS, Tor eller VPN, vises ikke her. De er bare tilgjengelige gjennom **Add from Catalog** på Bypass-fanen.
 
@@ -76,7 +78,7 @@ Et globalt tillatt domene kontrolleres etter enhets- og nettverksregler. Det kan
 
 ## Velg oppdateringsfrekvens \{#choose-the-update-frequency}
 
-Innstillingen **General → Update Frequency** styrer planlagte oppdateringer av DNS-lister og leverer også oppdateringsplanen når IP-blokkering er aktivert:
+Innstillingen **General → Update Frequency** styrer planlagte oppdateringer av DNS-lister mens General er aktivert. Den samme planen kjører IP-/landoppdateringer mens IP-blokkering er aktivert, og en aktivert Bypass List bare mens den tilhørende **Providers**-, **Tor**- eller **VPN**-beskyttelsen er på:
 
 | Innstilling   | Tidsplan                                                      |
 |---------------|---------------------------------------------------------------|

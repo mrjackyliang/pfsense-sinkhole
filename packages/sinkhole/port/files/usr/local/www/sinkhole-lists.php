@@ -314,28 +314,14 @@ if (is_string($actionMessage)) {
 		<i class="fa-solid fa-plus icon-embed-btn"></i>
 		<?=htmlspecialchars(pfsensePackageSinkholeTranslate('add'))?>
 	</a>
-</nav>
 <?php if ($catalogOpen === false): ?>
-<?php
-$catalogOpenButton = '<a class="btn btn-primary btn-sm" href="sinkhole-lists.php?catalog=1" role="button">'
-    . '<i class="fa-solid fa-search icon-embed-btn"></i> '
-    . htmlspecialchars(pfsensePackageSinkholeTranslate('open_catalog'))
-    . '</a>';
-$catalogIntroForm = new Form(false);
-$catalogIntroSection = new Form_Section(
-    pfsensePackageSinkholeTranslate('add_from_catalog'),
-);
-$catalogIntroSection->addInput(new Form_StaticText(
-    '',
-    '<span class="help-block">'
-        . htmlspecialchars(pfsensePackageSinkholeTranslate('catalog_search_help'))
-        . '</span>',
-));
-$catalogIntroSection->addInput(new Form_StaticText('', $catalogOpenButton));
-$catalogIntroForm->add($catalogIntroSection);
-print($catalogIntroForm);
-?>
-<?php else: ?>
+	<a href="sinkhole-lists.php?catalog=1" role="button" class="btn btn-primary btn-sm">
+		<i class="fa-solid fa-search icon-embed-btn"></i>
+		<?=htmlspecialchars(pfsensePackageSinkholeTranslate('add_from_catalog'))?>
+	</a>
+<?php endif; ?>
+</nav>
+<?php if ($catalogOpen === true): ?>
 <?php
 $catalogStateParameters = [
     'catalog' => '1',

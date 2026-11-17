@@ -31,12 +31,12 @@ import listsTab from './_assets_/first-run-1.png';
 
 1. 打开 **Lists**，添加您信任的来源 URL；也可以打开 **Add from Catalog** 搜索两个按需目录。
 2. 为来源指定本地名称，并保持 **Enabled** 选中，让 Sinkhole 下载它。
-3. 仅当该列表应在所有设备和网络规则之后应用时，才保持 **Global** 选中。
+3. 仅当该列表应在所有设备和网络规则之后应用时，才选中 **Global**。
 4. 如果需要放行已知的误报，请添加任意全局 **Allowed Domains**，每行一个域名。
 
 Sinkhole 不推荐任何来源。[列表和已保存副本](/docs/configure/lists)说明可接受的格式，以及目录结果如何成为普通列表行。
 
-<img src={listsTab} alt="Lists 选项卡显示五个演示阻止列表及其 Global 和 Used By 列，以及两个全局允许域名" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Lists 选项卡显示五个演示阻止列表及其 Global 和 Used By 列，以及两个全局允许域名" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 添加可选作用域 \{#add-optional-scopes}
 
@@ -52,9 +52,9 @@ Sinkhole 不推荐任何来源。[列表和已保存副本](/docs/configure/list
 1. 返回 **General** 并选择 **Enable**。
 2. 为已启用的 DNS 列表选择 **Update Frequency** 并保存。
 3. 打开 **Status** 并选择 **Update Now**。
-4. 等待 **Update running** 恢复为 `No`。
+4. 跟踪 **Update Log**，直到其显示 `Update finished`。
 
-General 开关启用计划 DNS 列表更新和 DNS Resolver 集成。已启用的 Bypass Lists 和 IP/国家地区策略独立使用同一更新计划；所有 Bypass 和 IP 保护在管理员启用之前都保持关闭。
+General 开关启用计划 DNS 列表更新和 DNS Resolver 集成。IP/国家地区策略独立使用同一更新计划，已启用的 Bypass List 仅在其对应的 **Providers**、**Tor** 或 **VPN** 保护开启时才加入该计划；所有 Bypass 和 IP 保护在管理员启用之前都保持关闭。
 
 ## 验证活动状态 \{#verify-the-active-state}
 

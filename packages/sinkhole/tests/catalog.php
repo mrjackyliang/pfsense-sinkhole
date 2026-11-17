@@ -1158,7 +1158,7 @@ sinkholeTestRun([
             'Add must retain the validated catalog URL.',
         );
         sinkholeTestAssertSame(true, $list['enabled'], 'A catalog list must use the manual enabled default.');
-        sinkholeTestAssertSame(true, $list['global'], 'A catalog list must use the manual global default.');
+        sinkholeTestAssertSame(false, $list['global'], 'A catalog list must use the manual global default.');
 
         $marked = Catalog::markAdded($entries, $lists);
         sinkholeTestAssertSame(true, $marked[0]['added'], 'The same URL must be marked as added.');
@@ -1668,7 +1668,6 @@ sinkholeTestRun([
             'last_fetch',
             'no_catalog_results',
             'no_homepage',
-            'open_catalog',
             'popular_list_catalogs',
             'refresh',
             'search',

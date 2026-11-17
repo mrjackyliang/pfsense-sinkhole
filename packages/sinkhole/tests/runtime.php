@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PfSense\Sinkhole\Domain\BypassParser;
 use PfSense\Sinkhole\Domain\DomainParser;
 use PfSense\Sinkhole\Domain\IpNetwork;
 use PfSense\Sinkhole\Runtime\AtomicFile;
@@ -17,11 +18,13 @@ use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Domain\SafeSearchConfiguration;
 use PfSense\Sinkhole\Runtime\StateStore;
 use PfSense\Sinkhole\Runtime\UpdateLockRunner;
+use PfSense\Sinkhole\Runtime\UpdateLog;
 use PfSense\Sinkhole\Runtime\Updater;
 use PfSense\Sinkhole\Domain\ScopeConfiguration;
 
 require_once(__DIR__ . '/TestSupport.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/AtomicFile.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/BypassParser.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/ClientSource.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/ClientMap.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Compiler.php');
@@ -725,7 +728,7 @@ sinkholeTestRun([
                 $listIdentifier => [
                     'id' => $listIdentifier,
                     'descr' => 'Example',
-                    'url' => 'https://lists.example.invalid/example.test',
+                    'url' => 'https://lists.example.invalid/' . $listIdentifier . '.test',
                     'enabled' => 'on',
                 ],
             ];
@@ -839,13 +842,13 @@ sinkholeTestRun([
                 $firstIdentifier => [
                     'id' => $firstIdentifier,
                     'descr' => 'First Example',
-                    'url' => 'https://lists.example.invalid/first.test',
+                    'url' => 'https://lists.example.invalid/' . $firstIdentifier . '.test',
                     'enabled' => 'on',
                 ],
                 $secondIdentifier => [
                     'id' => $secondIdentifier,
                     'descr' => 'Second Example',
-                    'url' => 'https://lists.example.invalid/second.test',
+                    'url' => 'https://lists.example.invalid/' . $secondIdentifier . '.test',
                     'enabled' => 'on',
                 ],
             ];
@@ -942,7 +945,7 @@ sinkholeTestRun([
                 $identifier => [
                     'id' => $identifier,
                     'descr' => 'Previous Example',
-                    'url' => 'https://lists.example.invalid/previous.test',
+                    'url' => 'https://lists.example.invalid/' . $identifier . '.test',
                     'enabled' => 'on',
                 ],
             ], []);
@@ -1056,7 +1059,7 @@ sinkholeTestRun([
                 $identifier => [
                     'id' => $identifier,
                     'descr' => 'Widening Example',
-                    'url' => 'https://lists.example.invalid/widening.test',
+                    'url' => 'https://lists.example.invalid/' . $identifier . '.test',
                     'enabled' => 'on',
                 ],
             ];
@@ -1157,7 +1160,7 @@ sinkholeTestRun([
                 $identifier => [
                     'id' => $identifier,
                     'descr' => 'Fallback Example',
-                    'url' => 'https://lists.example.invalid/fallback.test',
+                    'url' => 'https://lists.example.invalid/' . $identifier . '.test',
                     'enabled' => 'on',
                 ],
             ];
@@ -1414,6 +1417,390 @@ sinkholeTestRun([
         } finally {
             sinkholeTestRemoveTemporaryDirectory($directory);
         }
+    },
+    'a URL change with a failed download discards the previous copy' => static function (): void {
+        foreach (['manual' => false, 'apply' => true] as $runName => $apply) {
+            $directory = sinkholeTestTemporaryDirectory();
+
+            try {
+                $paths = sinkholeRuntimeTestPaths($directory);
+                $store = new SavedListStore($paths);
+                $identifier = '88888888888888888888888888888888';
+                $previousUrl = 'https://lists.example.invalid/' . $identifier . '.test';
+                $currentUrl = 'https://lists.example.invalid/medium.test';
+                sinkholeRuntimeTestSaveList($store, $identifier, "E\tprevious.example.test\n");
+                $stateStore = new StateStore($paths->stateFile);
+                $compiler = new Compiler($paths, $store, $stateStore);
+                $compiler->compile(
+                    [
+                        $identifier => [
+                            'id' => $identifier,
+                            'descr' => 'Changed Example',
+                            'url' => $previousUrl,
+                            'enabled' => 'on',
+                        ],
+                    ],
+                    [],
+                );
+                $platform = new SinkholeRuntimeTestPlatformAdapter(
+                    ['enabled' => 'on', 'update_frequency' => 'daily'],
+                    [
+                        $identifier => [
+                            'id' => $identifier,
+                            'descr' => 'Changed Example',
+                            'url' => $currentUrl,
+                            'enabled' => 'on',
+                        ],
+                    ],
+                );
+                $updateLog = new UpdateLog($directory . '/update.log');
+                $updateLog->begin('manual');
+                $result = (new Updater(
+                    $platform,
+                    new SinkholeRuntimeTestDownloadClient('failed'),
+                    new DomainParser(),
+                    $store,
+                    $compiler,
+                    $stateStore,
+                    null,
+                    null,
+                    null,
+                    $updateLog,
+                ))->run(!$apply, $apply);
+                $rows = sinkholeRuntimeTestLoadRows($paths->runtimeDataDirectory . '/domains.tsv');
+                $metadata = $store->metadata($identifier);
+                $logContents = (string) file_get_contents($directory . '/update.log');
+
+                sinkholeTestAssertSame(1, $result['attempted'], 'The ' . $runName . ' run must try the new URL.');
+                sinkholeTestAssertSame(1, $result['failed'], 'The ' . $runName . ' download must fail.');
+                sinkholeTestAssertSame(true, $result['compiled'], 'Dropping the copy must recompile.');
+                sinkholeTestAssertSame(
+                    false,
+                    $store->hasSavedCopy($identifier),
+                    'The ' . $runName . ' run must remove the previous-URL copy.',
+                );
+                sinkholeTestAssertSame(
+                    [],
+                    $rows,
+                    'The ' . $runName . ' run must stop compiling the previous-URL names.',
+                );
+                sinkholeTestAssertSame(0, $metadata['entries'], 'Status must show no entries.');
+                sinkholeTestAssertSame(null, $metadata['fetched_at'], 'Status must show no fetch time.');
+                sinkholeTestAssertSame($currentUrl, $metadata['last_attempt_url'], 'The attempted URL must be recorded.');
+                sinkholeTestAssertTrue(
+                    is_string($metadata['last_error']) && $metadata['last_error'] !== '',
+                    'Status must show the download error.',
+                );
+                sinkholeTestAssertContains(
+                    'Block list "Changed Example" source changed; discarding the copy from the previous URL.',
+                    $logContents,
+                    'The Update Log must say the previous copy was discarded.',
+                );
+                sinkholeTestAssertContains(
+                    'Block list "Changed Example" failed; it has no saved copy yet: ',
+                    $logContents,
+                    'The Update Log must not claim a last good copy was kept.',
+                );
+            } finally {
+                sinkholeTestRemoveTemporaryDirectory($directory);
+            }
+        }
+    },
+    'a URL change with a good download replaces the previous copy' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $paths = sinkholeRuntimeTestPaths($directory);
+            $store = new SavedListStore($paths);
+            $identifier = '99999999999999999999999999999999';
+            $currentUrl = 'https://lists.example.invalid/replacement.test';
+            sinkholeRuntimeTestSaveList($store, $identifier, "E\tprevious.example.test\n");
+            $stateStore = new StateStore($paths->stateFile);
+            $platform = new SinkholeRuntimeTestPlatformAdapter(
+                ['enabled' => 'on', 'update_frequency' => 'daily'],
+                [
+                    $identifier => [
+                        'id' => $identifier,
+                        'descr' => 'Replaced Example',
+                        'url' => $currentUrl,
+                        'enabled' => 'on',
+                    ],
+                ],
+            );
+            $result = (new Updater(
+                $platform,
+                new SinkholeRuntimeTestDownloadClient('success'),
+                new DomainParser(),
+                $store,
+                new Compiler($paths, $store, $stateStore),
+                $stateStore,
+            ))->run(false, true);
+            $rows = sinkholeRuntimeTestLoadRows($paths->runtimeDataDirectory . '/domains.tsv');
+
+            sinkholeTestAssertSame(1, $result['updated'], 'The new URL must download.');
+            sinkholeTestAssertSame($currentUrl, $store->metadata($identifier)['url'], 'The copy must name its own URL.');
+            sinkholeTestAssertSame(
+                ['downloaded.example.test'],
+                array_keys($rows),
+                'Only the new URL content may compile.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'a failed download keeps the copy source URL in its metadata' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $paths = sinkholeRuntimeTestPaths($directory);
+            $store = new SavedListStore($paths);
+            $identifier = 'abababababababababababababababab';
+            $savedUrl = 'https://lists.example.invalid/' . $identifier . '.test';
+            sinkholeRuntimeTestSaveList($store, $identifier, "E\tprevious.example.test\n");
+
+            $store->recordFailure(
+                $identifier,
+                'https://lists.example.invalid/other.test',
+                '2026-01-02T00:00:00+00:00',
+                'Invented failure.',
+            );
+
+            $metadata = $store->metadata($identifier);
+
+            sinkholeTestAssertSame($savedUrl, $metadata['url'], 'A failure must not relabel the kept copy.');
+            sinkholeTestAssertSame(
+                'https://lists.example.invalid/other.test',
+                $metadata['last_attempt_url'],
+                'The attempted URL must be kept separately.',
+            );
+            sinkholeTestAssertSame(false, $store->hasUsableCopy($identifier, 'https://lists.example.invalid/other.test'), 'The relabelled URL must not match.');
+            sinkholeTestAssertSame(true, $store->hasUsableCopy($identifier, $savedUrl), 'The copy must still match its own URL.');
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'the compiler refuses a copy saved from another URL' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $paths = sinkholeRuntimeTestPaths($directory);
+            $store = new SavedListStore($paths);
+            $matchingIdentifier = 'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd';
+            $editedIdentifier = 'efefefefefefefefefefefefefefefef';
+            sinkholeRuntimeTestSaveList($store, $matchingIdentifier, "E\tkept.example.test\n");
+            sinkholeRuntimeTestSaveList($store, $editedIdentifier, "E\tstale.example.test\n");
+            $result = (new Compiler($paths, $store))->compile(
+                [
+                    $matchingIdentifier => [
+                        'id' => $matchingIdentifier,
+                        'descr' => 'Matching Example',
+                        'url' => 'https://lists.example.invalid/' . $matchingIdentifier . '.test',
+                        'enabled' => 'on',
+                    ],
+                    $editedIdentifier => [
+                        'id' => $editedIdentifier,
+                        'descr' => 'Edited Example',
+                        'url' => 'https://lists.example.invalid/edited-but-not-updated.test',
+                        'enabled' => 'on',
+                    ],
+                ],
+                [],
+            );
+            $rows = sinkholeRuntimeTestLoadRows($paths->runtimeDataDirectory . '/domains.tsv');
+
+            sinkholeTestAssertSame(1, $result['lists'], 'Only the matching copy may compile.');
+            sinkholeTestAssertSame(['kept.example.test'], array_keys($rows), 'The edited list must contribute nothing.');
+            sinkholeTestAssertSame(true, $store->hasSavedCopy($editedIdentifier), 'The compiler must not delete copies.');
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'the compiler writes a key-sorted name index with a shared mask table' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $paths = sinkholeRuntimeTestPaths($directory);
+            $store = new SavedListStore($paths);
+            $firstIdentifier = '12121212121212121212121212121212';
+            $secondIdentifier = '34343434343434343434343434343434';
+            $firstRows = '';
+
+            for ($position = 0; $position < 600; $position++) {
+                $firstRows .= "E\tname-" . $position . ".example.test\n";
+            }
+
+            sinkholeRuntimeTestSaveList(
+                $store,
+                $firstIdentifier,
+                $firstRows . "S\ttree.example.test\n",
+            );
+            sinkholeRuntimeTestSaveList(
+                $store,
+                $secondIdentifier,
+                "E\tname-1.example.test\nE\tsecond-only.example.test\n",
+            );
+            $result = (new Compiler($paths, $store))->compile(
+                [
+                    $firstIdentifier => [
+                        'id' => $firstIdentifier,
+                        'descr' => 'First Index Example',
+                        'url' => 'https://lists.example.invalid/' . $firstIdentifier . '.test',
+                        'enabled' => 'on',
+                    ],
+                    $secondIdentifier => [
+                        'id' => $secondIdentifier,
+                        'descr' => 'Second Index Example',
+                        'url' => 'https://lists.example.invalid/' . $secondIdentifier . '.test',
+                        'enabled' => 'on',
+                    ],
+                ],
+                [],
+            );
+            $manifest = json_decode(
+                (string) file_get_contents($paths->runtimeDataDirectory . '/manifest.json'),
+                true,
+                16,
+                JSON_THROW_ON_ERROR,
+            );
+            $index = (string) file_get_contents($paths->runtimeDataDirectory . '/domains.index');
+            $domainIndex = $manifest['domain_index'];
+            $rows = sinkholeRuntimeTestLoadRows($paths->runtimeDataDirectory . '/domains.tsv');
+
+            sinkholeTestAssertSame(602, $result['domains'], 'Every unique name must compile.');
+            sinkholeTestAssertSame(Compiler::MANIFEST_SCHEMA_VERSION, $manifest['schema_version'], 'The manifest must use the index schema.');
+            sinkholeTestAssertSame('domains.index', $domainIndex['file'], 'The manifest must name the index.');
+            sinkholeTestAssertSame(18, $domainIndex['record_size'], 'A small mask table must use two-byte positions.');
+            sinkholeTestAssertSame(602 * 18, strlen($index), 'The index must hold one fixed record per name.');
+            sinkholeTestAssertSame(hash('sha256', $index), $domainIndex['sha256'], 'The manifest must carry the index digest.');
+            sinkholeTestAssertSame(
+                [
+                    ['0', ''],
+                    ['0,1', ''],
+                    ['1', ''],
+                    ['', '0'],
+                ],
+                $domainIndex['masks'],
+                'Each distinct exact and subtree column pair must appear once in first-seen order.',
+            );
+
+            $previousKey = '';
+            $recordsByKey = [];
+
+            foreach (str_split($index, 18) as $record) {
+                $key = substr($record, 0, 16);
+
+                sinkholeTestAssertTrue(strcmp($previousKey, $key) < 0, 'Index keys must be strictly increasing.');
+
+                $previousKey = $key;
+                $recordsByKey[$key] = unpack('n', substr($record, 16, 2))[1];
+            }
+
+            foreach ($rows as $domain => $row) {
+                $key = substr(hash('sha256', $domain, true), 0, 16);
+                $mask = $domainIndex['masks'][$recordsByKey[$key]];
+
+                sinkholeTestAssertSame(
+                    [implode(',', $row['exact']), implode(',', $row['subtree'])],
+                    $mask,
+                    'The index must point ' . $domain . ' at its own compiled columns.',
+                );
+            }
+
+            sinkholeTestAssertSame(
+                '',
+                (string) file_get_contents($paths->runtimeDataDirectory . '/bypass.index'),
+                'An empty Bypass index must still be written.',
+            );
+            sinkholeTestAssertSame([], $manifest['bypass_index']['masks'], 'An empty Bypass index has no masks.');
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'the unique-name limit reports the counted names and keeps the active generation' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $paths = sinkholeRuntimeTestPaths($directory);
+            $store = new SavedListStore($paths);
+            $identifier = '56565656565656565656565656565656';
+            $lists = [
+                $identifier => [
+                    'id' => $identifier,
+                    'descr' => 'Limit Example',
+                    'url' => 'https://lists.example.invalid/' . $identifier . '.test',
+                    'enabled' => 'on',
+                ],
+            ];
+            sinkholeRuntimeTestSaveList(
+                $store,
+                $identifier,
+                "E\tone.example.test\nE\ttwo.example.test\nE\tthree.example.test\n",
+            );
+            $stateStore = new StateStore($paths->stateFile);
+            $exactLimit = (new Compiler($paths, $store, $stateStore, null, null, 3))->compile($lists, []);
+            $message = '';
+
+            try {
+                (new Compiler($paths, $store, $stateStore, null, null, 2))->compile($lists, []);
+            } catch (RuntimeException $exception) {
+                $message = $exception->getMessage();
+            }
+
+            sinkholeTestAssertSame(3, $exactLimit['domains'], 'A compile exactly at the limit must succeed.');
+            sinkholeTestAssertSame(
+                'The compile found 3 unique names; the limit is 2.',
+                $message,
+                'The limit failure must name the counted names and the limit.',
+            );
+            sinkholeTestAssertSame(
+                $exactLimit['generation'],
+                trim((string) file_get_contents($paths->runtimeDataDirectory . '/generation')),
+                'A limit failure must keep the active generation.',
+            );
+            sinkholeTestAssertSame(
+                'The compile found 10,412,331 unique names; the limit is 10,000,000.',
+                sprintf(
+                    'The compile found %s unique names; the limit is %s.',
+                    number_format(10412331),
+                    number_format(Compiler::MAXIMUM_UNIQUE_NAMES),
+                ),
+                'The production limit must format with thousands separators.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'the PHP and Python limits and index key sizes match' => static function (): void {
+        $module = (string) file_get_contents(
+            __DIR__ . '/../port/files/usr/local/pkg/sinkhole/sinkhole_unbound.py',
+        );
+        $limitMatched = preg_match('/^MAXIMUM_UNIQUE_NAMES: Final\[int\] = ([0-9_]+)$/m', $module, $limitMatches);
+        $keyMatched = preg_match('/^INDEX_KEY_BYTES: Final\[int\] = ([0-9_]+)$/m', $module, $keyMatches);
+        $schemaMatched = preg_match('/^MANIFEST_SCHEMA_VERSION: Final\[int\] = ([0-9_]+)$/m', $module, $schemaMatches);
+
+        sinkholeTestAssertSame(1, $limitMatched, 'The module must declare its unique-name limit.');
+        sinkholeTestAssertSame(1, $keyMatched, 'The module must declare its index key size.');
+        sinkholeTestAssertSame(1, $schemaMatched, 'The module must declare its manifest schema.');
+        sinkholeTestAssertSame(
+            Compiler::MAXIMUM_UNIQUE_NAMES,
+            (int) str_replace('_', '', $limitMatches[1]),
+            'The compiler and module unique-name limits must match.',
+        );
+        sinkholeTestAssertSame(
+            Compiler::INDEX_KEY_BYTES,
+            (int) str_replace('_', '', $keyMatches[1]),
+            'The compiler and module index key sizes must match.',
+        );
+        sinkholeTestAssertSame(
+            Compiler::MANIFEST_SCHEMA_VERSION,
+            (int) str_replace('_', '', $schemaMatches[1]),
+            'The compiler and module manifest schemas must match.',
+        );
+        sinkholeTestAssertSame(
+            Compiler::MAXIMUM_UNIQUE_NAMES,
+            BypassParser::MAXIMUM_ENTRIES,
+            'One Bypass List must not exceed the compiled unique-name limit.',
+        );
     },
     'inactive compile redeploys by digest when integration returns' => static function (): void {
         $directory = sinkholeTestTemporaryDirectory();
@@ -1830,21 +2217,21 @@ sinkholeTestRun([
                 $globalList => [
                     'id' => $globalList,
                     'descr' => 'Global',
-                    'url' => 'https://lists.example.invalid/global.test',
+                    'url' => 'https://lists.example.invalid/' . $globalList . '.test',
                     'enabled' => 'on',
                     'global' => 'on',
                 ],
                 $sameNameList => [
                     'id' => $sameNameList,
                     'descr' => 'Same Name',
-                    'url' => 'https://lists.example.invalid/same.test',
+                    'url' => 'https://lists.example.invalid/' . $sameNameList . '.test',
                     'enabled' => 'on',
                     'global' => '',
                 ],
                 $newNameList => [
                     'id' => $newNameList,
                     'descr' => 'New Name',
-                    'url' => 'https://lists.example.invalid/new.test',
+                    'url' => 'https://lists.example.invalid/' . $newNameList . '.test',
                     'enabled' => 'on',
                     'global' => '',
                 ],

@@ -1,6 +1,7 @@
 """Cross-language Sinkhole compiler and Unbound module test.
 
-Since: UNRELEASED
+Since:
+    1.0.0
 """
 
 from __future__ import annotations
@@ -30,10 +31,56 @@ MODULE_RELATIVE_PATH = Path(
 )
 
 
+def write_name_index(
+    directory: Path,
+    filename: str,
+    rows: list[tuple[str, str, str]],
+) -> dict[str, Any]:
+    """Write one compiler-format name index and return its manifest entry.
+
+    Args:
+        directory: Generation directory.
+        filename: Index filename.
+        rows: Domain, exact column, and subtree column.
+
+    Returns:
+        Manifest index entry.
+
+    Since:
+        1.2.0
+    """
+
+    masks: list[list[str]] = []
+    mask_positions: dict[tuple[str, str], int] = {}
+    records: list[bytes] = []
+
+    for domain, exact, subtree in rows:
+        mask = (exact, subtree)
+
+        if mask not in mask_positions:
+            mask_positions[mask] = len(masks)
+            masks.append([exact, subtree])
+
+        key = hashlib.sha256(domain.encode("ascii")).digest()[:16]
+        records.append(key + mask_positions[mask].to_bytes(2, "big"))
+
+    records.sort()
+    contents = b"".join(records)
+    (directory / filename).write_bytes(contents)
+
+    return {
+        "file": filename,
+        "record_size": 18,
+        "sha256": hashlib.sha256(contents).hexdigest(),
+        "masks": masks,
+    }
+
+
 class FakeDnsMessage:
     """Capture a response built by the Unbound module.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     def __init__(self, name: str, query_type: int, query_class: int, flags: int) -> None:
@@ -45,7 +92,8 @@ class FakeDnsMessage:
             query_class: Query class.
             flags: DNS flags.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self.name = name
@@ -64,7 +112,8 @@ class FakeDnsMessage:
         Returns:
             Always ``True``.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         qstate.return_msg = self
@@ -75,7 +124,8 @@ class FakeDnsMessage:
 class ModuleNamespace:
     """Attribute access for a directly executed namespace dictionary.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     def __init__(self, source_path: Path) -> None:
@@ -84,7 +134,8 @@ class ModuleNamespace:
         Args:
             source_path: Installed module source.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         namespace: dict[str, Any] = {}
@@ -101,7 +152,8 @@ class ModuleNamespace:
         Returns:
             Global value.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         try:
@@ -116,7 +168,8 @@ class ModuleNamespace:
             name: Global name.
             value: Replacement value.
 
-        Since: UNRELEASED
+        Since:
+            1.0.0
         """
 
         self._namespace[name] = value
@@ -129,7 +182,8 @@ def write_python_generation(root: Path, scenario: str) -> None:
         root: Scenario root.
         scenario: Initial, reload, or zero scenario.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     runtime_root = root / "runtime"
@@ -207,7 +261,7 @@ def write_python_generation(root: Path, scenario: str) -> None:
 
     generation = f"python-{scenario}"
     manifest = {
-        "schema_version": 3,
+        "schema_version": 4,
         "generation": generation,
         "generated_at": "2026-01-01T00:00:00+00:00",
         "domains_file": "domains.tsv",
@@ -215,6 +269,12 @@ def write_python_generation(root: Path, scenario: str) -> None:
         "domain_count": len(domains),
         "bypass_file": "bypass.tsv",
         "bypass_domain_count": 0,
+        "domain_index": write_name_index(
+            generation_directory,
+            "domains.index",
+            domains,
+        ),
+        "bypass_index": write_name_index(generation_directory, "bypass.index", []),
         "bypass": {
             "interfaces": [],
             "block_encrypted_dns": False,
@@ -241,11 +301,6 @@ def write_python_generation(root: Path, scenario: str) -> None:
         json.dumps(manifest),
         encoding="utf-8",
     )
-    (generation_directory / "domains.tsv").write_text(
-        "".join(f"{domain}\t{exact}\t{subtree}\n" for domain, exact, subtree in domains),
-        encoding="ascii",
-    )
-    (generation_directory / "bypass.tsv").write_text("", encoding="ascii")
     (generation_directory / "allow.txt").write_text(
         "".join(f"{domain}\n" for domain in allowed),
         encoding="ascii",
@@ -327,7 +382,8 @@ def execute_module(source_path: Path, scenario_root: Path) -> ModuleNamespace:
     Returns:
         Configured namespace wrapper.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     module = ModuleNamespace(source_path)
@@ -336,8 +392,8 @@ def execute_module(source_path: Path, scenario_root: Path) -> ModuleNamespace:
     state_directory.mkdir(mode=0o755, exist_ok=True)
     module.DATA_DIRECTORY = str(data_directory)
     module.MANIFEST_PATH = str(data_directory / "manifest.json")
-    module.DOMAINS_PATH = str(data_directory / "domains.tsv")
-    module.BYPASS_PATH = str(data_directory / "bypass.tsv")
+    module.DOMAINS_INDEX_PATH = str(data_directory / "domains.index")
+    module.BYPASS_INDEX_PATH = str(data_directory / "bypass.index")
     module.ALLOW_PATH = str(data_directory / "allow.txt")
     module.GENERATION_PATH = str(data_directory / "generation")
     module.LOADED_GENERATION_PATH = str(state_directory / "loaded")
@@ -391,7 +447,8 @@ def query_state(
     Returns:
         Mutable query state.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     reply = None
@@ -441,7 +498,8 @@ def operate(
     Returns:
         Resulting query state.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     state = query_state(name, query_type, client)
@@ -467,7 +525,8 @@ def assert_blocked(
     Returns:
         Blocked query state.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     state = operate(module, name, query_type, client)
@@ -484,7 +543,8 @@ def recompile_with_php(workspace: Path, temporary_root: Path) -> None:
         workspace: Package workspace.
         temporary_root: Host temporary root.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     mode = os.environ["SINKHOLE_E2E_PHP_MODE"]
@@ -530,7 +590,8 @@ def run_alert_job_with_php(workspace: Path, temporary_root: Path) -> dict[str, A
     Returns:
         Decoded alert-job result and channel calls.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     mode = os.environ["SINKHOLE_E2E_PHP_MODE"]
@@ -577,7 +638,8 @@ def run(python_only: bool) -> None:
     Args:
         python_only: Generate equivalent fixture data without PHP.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     workspace = Path(__file__).resolve().parents[1]
@@ -733,7 +795,8 @@ def run(python_only: bool) -> None:
 def main() -> None:
     """Parse runner mode and execute the end-to-end assertions.
 
-    Since: UNRELEASED
+    Since:
+        1.0.0
     """
 
     parser = argparse.ArgumentParser()

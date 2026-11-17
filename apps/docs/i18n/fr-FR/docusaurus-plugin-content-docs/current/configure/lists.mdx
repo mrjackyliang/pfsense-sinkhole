@@ -60,11 +60,13 @@ Les résultats apparaissent sous forme de cartes. Utilisez ensemble les contrôl
 
 Chaque carte affiche le nom de la liste, son responsable ou sa catégorie, le catalogue source, une description sur deux lignes, la page d’accueil et l’état **Add** ou **Added**. Les cartes n’affichent aucune note, aucun badge ni recommandation. **Add** crée une ligne de liste ordinaire dont l’URL peut être attribuée comme toute source saisie manuellement.
 
+Les nouvelles listes, y compris celles ajoutées depuis le catalogue, commencent avec **Global** décoché ; elles ne bloquent donc rien tant que vous ne cochez pas Global ou ne les sélectionnez pas dans une portée.
+
 La ligne **Contents** de chaque carte indique **Domains**. L’ajout d’un résultat du catalogue conserve son nom de catalogue inchangé.
 
 Les copies des catalogues sont mises en cache sous `/var/db` pendant un jour. Une actualisation en échec conserve la dernière copie valide du catalogue et affiche l’erreur de récupération dans Status.
 
-<img src={catalogSearch} alt="Panneau Add from Catalog de l’onglet Lists avec les contrôles de recherche du catalogue et l’état de récupération" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Panneau Add from Catalog de l’onglet Lists avec les contrôles de recherche du catalogue et l’état de récupération" width={1024} height={920} style={{maxWidth: '100%', height: 'auto'}} />
 
 Les flux attribués à la protection contre le contournement Encrypted DNS, Tor ou VPN n'apparaissent pas ici. Ils sont disponibles uniquement avec **Add from Catalog** dans l'onglet Bypass.
 
@@ -76,7 +78,7 @@ Un domaine autorisé global est vérifié après les règles d’appareil et de 
 
 ## Choisir la fréquence de mise à jour \{#choose-the-update-frequency}
 
-Le réglage **General → Update Frequency** contrôle les mises à jour planifiées des listes DNS et fournit également le calendrier lorsque le blocage IP est activé :
+Le réglage **General → Update Frequency** contrôle les mises à jour planifiées des listes DNS tant que General est activé. Le même calendrier exécute les mises à jour IP/pays tant que le blocage IP est activé, et celles d’une Bypass List activée uniquement tant que sa protection correspondante **Providers**, **Tor** ou **VPN** est activée :
 
 | Réglage       | Calendrier                                                                       |
 |---------------|----------------------------------------------------------------------------------|

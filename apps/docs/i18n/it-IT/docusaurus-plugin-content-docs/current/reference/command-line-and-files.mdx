@@ -45,6 +45,7 @@ Usa il percorso installato nelle automazioni, ad esempio `/usr/local/sbin/sinkho
 | `state.json`                            | Stato persistente di compilazione, distribuzione, impostazioni precedenti del Resolver, pianificazione e rimozione. |
 | `updates.json`                          | Stato del controllo dell’ultima release e della deduplicazione degli avvisi.                                        |
 | `update-status.json`                    | Avanzamento dell’aggiornamento automatico separato del pacchetto.                                                   |
+| `safesearch-targets.json`               | Ultimi indirizzi validi degli host sicuri per SafeSearch.                                                           |
 | `unbound/sinkhole/`                     | Mirror persistente facoltativo della generazione compilata corrente per il ripristino del disco RAM.                |
 | `unbound/sinkhole.d/`                   | Mirror persistente facoltativo dello storage delle generazioni compilate.                                           |
 | `unbound/sinkhole-clients/clients.json` | Mirror persistente facoltativo della mappa dei client.                                                              |
@@ -58,6 +59,7 @@ Il mirror `unbound/` viene usato quando pfSense mantiene `/var` su un disco RAM.
 | `sinkhole-alerts.json`               | Stato delle finestre di ripetizione e dei limiti orari.                  |
 | `sinkhole-catalog-adguard-home.json` | Registro delle liste AdGuard Home nella cache.                           |
 | `sinkhole-catalog-pfblockerng.json`  | Catalogo dei feed pfBlockerNG nella cache.                               |
+| `sinkhole-services-registry.json`    | Registro dei servizi AdGuard Home nella cache.                           |
 | `sinkhole-block-v4.txt`              | Tabella di blocco IPv4 finale unita e sottratta.                         |
 | `sinkhole-block-v6.txt`              | Tabella di blocco IPv6 finale unita e sottratta.                         |
 | `sinkhole-bypass-v4.txt`             | Tabella Bypass IPv4 finale dopo la sottrazione degli indirizzi protetti. |
@@ -79,6 +81,7 @@ Le cache dei cataloghi e le tabelle IP generate sono dati di lavoro riproducibil
 | `sinkhole-redirect-check.json`  | Prima osservazione della differenza usata dal controllo del reindirizzamento a due osservazioni. |
 | `sinkhole-status.json`          | Stato corrente di aggiornamento, compilazione, distribuzione, client e avvisi.                   |
 | `sinkhole-status.json.lock`     | Lock di coordinamento del file di stato.                                                         |
+| `sinkhole-update.log`           | Passaggi dell’aggiornamento delle liste più recente, mostrati nell’Update Log di Status.         |
 | `sinkhole-ip-anchor.conf`       | Regole generate correnti per l’anchor `sinkhole/ip`.                                             |
 | `sinkhole-ip-anchor.sha256`     | Digest usato per confrontare i criteri IP generati e caricati.                                   |
 | `sinkhole-ip-status.json`       | Stato di liste IP, GeoLite2, tabelle e anchor.                                                   |
@@ -89,17 +92,20 @@ La sola esistenza dei file di lock non dimostra che un processo attivo li deteng
 
 ## Runtime del Resolver in `/var/unbound` \{#resolver-runtime}
 
-| Percorso                             | Scopo                                                                           |
-|--------------------------------------|---------------------------------------------------------------------------------|
-| `sinkhole.py`                        | Modulo Python revisionato copiato nella radice runtime di Unbound.              |
-| `sinkhole/`                          | Manifesto e dati della generazione attiva letti dal modulo.                     |
-| `sinkhole.d/`                        | Storage delle generazioni compilate di proprietà di root.                       |
-| `sinkhole.d/<generation>/bypass.tsv` | Nomi compilati di provider, Tor e VPN per le risposte DNS di Bypass.            |
-| `sinkhole-clients/clients.json`      | Mappa corrente dagli indirizzi dei client agli ambiti.                          |
-| `sinkhole-state/loaded`              | Identificatore della generazione segnalata come caricata dal modulo.            |
-| `sinkhole-state/events`              | Eventi di risposte bloccate aggregati in attesa dell’elaborazione degli avvisi. |
-| `sinkhole-state/events.processing`   | Lotto di eventi attualmente posseduto dal processore degli avvisi.              |
-| `sinkhole-state/events-dropped`      | Numero di eventi scartati dopo il riempimento della coda limitata.              |
+| Percorso                                | Scopo                                                                                                                             |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `sinkhole.py`                           | Modulo Python revisionato copiato nella radice runtime di Unbound.                                                                |
+| `sinkhole/`                             | Manifesto e dati della generazione attiva letti dal modulo.                                                                       |
+| `sinkhole.d/`                           | Storage delle generazioni compilate di proprietà di root.                                                                         |
+| `sinkhole.d/<generation>/domains.tsv`   | Nomi compilati delle liste configurate e dei servizi bloccati con le liste a cui appartengono, ordinati per nome.                 |
+| `sinkhole.d/<generation>/domains.index` | Indice mappato in memoria dei nomi delle liste configurate e dei servizi bloccati in cui il modulo cerca, circa 18 byte per nome. |
+| `sinkhole.d/<generation>/bypass.tsv`    | Nomi compilati di provider, Tor e VPN, ordinati per nome.                                                                         |
+| `sinkhole.d/<generation>/bypass.index`  | Indice mappato in memoria dei nomi delle Bypass Lists in cui il modulo cerca per le risposte DNS di Bypass.                       |
+| `sinkhole-clients/clients.json`         | Mappa corrente dagli indirizzi dei client agli ambiti.                                                                            |
+| `sinkhole-state/loaded`                 | Identificatore della generazione segnalata come caricata dal modulo.                                                              |
+| `sinkhole-state/events`                 | Eventi di risposte bloccate aggregati in attesa dell’elaborazione degli avvisi.                                                   |
+| `sinkhole-state/events.processing`      | Lotto di eventi attualmente posseduto dal processore degli avvisi.                                                                |
+| `sinkhole-state/events-dropped`         | Numero di eventi scartati dopo il riempimento della coda limitata.                                                                |
 
 Questi file sono materiale runtime, non configurazione. Sinkhole li ripristina o rigenera tramite Sync del pacchetto e li rimuove alla disinstallazione.
 

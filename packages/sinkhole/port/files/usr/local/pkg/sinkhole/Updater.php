@@ -23,6 +23,7 @@ require_once(__DIR__ . '/PlatformAdapter.php');
 require_once(__DIR__ . '/SavedListStore.php');
 require_once(__DIR__ . '/Settings.php');
 require_once(__DIR__ . '/StateStore.php');
+require_once(__DIR__ . '/UpdateLog.php');
 
 /**
  * Updater.
@@ -58,8 +59,10 @@ final class Updater
      * @param ClientMap|null $clientMap - Optional production client-map refresher.
      * @param IpUpdater|null $ipUpdater - Optional IP and country updater.
      * @param BypassUpdater|null $bypassUpdater - Optional Bypass List and anchor updater.
+     * @param UpdateLog|null $updateLog - Optional per-run progress log for the Status page.
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
     public function __construct(
         private readonly PlatformAdapter $platformAdapter,
@@ -71,6 +74,7 @@ final class Updater
         private readonly ?ClientMap $clientMap = null,
         private readonly ?IpUpdater $ipUpdater = null,
         private readonly ?BypassUpdater $bypassUpdater = null,
+        private readonly ?UpdateLog $updateLog = null,
     ) {
     }
 
@@ -113,6 +117,7 @@ final class Updater
                     $warning = 'Bypass update failed; DNS and IP updates continued: '
                         . substr(str_replace(["\r", "\n"], ' ', $throwable->getMessage()), 0, 500);
                     $this->platformAdapter->log($warning);
+                    $this->updateLog?->line($warning);
                     $this->recordBypassUpdateWarning($warning);
                     $bypassResult = [
                         'status' => 'warning',
@@ -240,6 +245,8 @@ final class Updater
             && $manual === false
             && $apply === false
         ) {
+            $this->updateLog?->line('DNS blocking is off; skipping block lists.');
+
             return [
                 'status' => 'disabled',
                 'attempted' => 0,
@@ -275,9 +282,35 @@ final class Updater
 
             $attempted++;
             $attemptedAt = gmdate('c');
+            $listLabel = 'Block list "' . $list['name'] . '"';
+
+            try {
+                if ($this->store->discardMismatchedCopy($identifier, $list['url'])) {
+                    $changed = true;
+
+                    $this->updateLog?->line(
+                        $listLabel . ' source changed; discarding the copy from the previous URL.',
+                    );
+                    $this->platformAdapter->log(
+                        'Discarded the saved copy of list ID ' . $identifier . ' from its previous URL.',
+                    );
+                }
+            } catch (Throwable $throwable) {
+                $this->platformAdapter->log(
+                    'Unable to discard the previous-URL copy of list ID '
+                    . $identifier
+                    . ': '
+                    . $throwable->getMessage(),
+                );
+            }
+
             $hadSavedCopy = $this->store->hasSavedCopy($identifier);
             $downloadPath = $this->store->createTemporaryFile('.download-');
             $normalizedPath = $this->store->createTemporaryFile('.normalized-');
+
+            $this->updateLog?->line(
+                'Downloading ' . lcfirst($listLabel) . ' from ' . UpdateLog::host($list['url']) . '.',
+            );
 
             try {
                 $download = $this->downloadClient->download(
@@ -316,9 +349,9 @@ final class Updater
                 }
 
                 $previousMetadata = $this->store->metadata($identifier);
-                $changed = $hadSavedCopy === false
-                    || ($previousMetadata['sha256'] ?? null) !== $sha256
-                    || $changed;
+                $listChanged = $hadSavedCopy === false
+                    || ($previousMetadata['sha256'] ?? null) !== $sha256;
+                $changed = $listChanged || $changed;
                 $fetchedAt = gmdate('c');
 
                 $this->store->commitSuccessfulDownload(
@@ -335,8 +368,24 @@ final class Updater
                     ],
                 );
                 $updated++;
+
+                $this->updateLog?->line(sprintf(
+                    '%s: %s, %d skipped, %s.',
+                    $listLabel,
+                    UpdateLog::count((int) $parseResult['accepted'], 'entry', 'entries'),
+                    $parseResult['ignored'],
+                    ($listChanged) ? 'changed' : 'unchanged',
+                ));
             } catch (Throwable $throwable) {
                 $failed++;
+
+                $failureOutcome = ($hadSavedCopy)
+                    ? ' failed; keeping the last good copy: '
+                    : ' failed; it has no saved copy yet: ';
+
+                $this->updateLog?->line(
+                    $listLabel . $failureOutcome . $throwable->getMessage(),
+                );
 
                 try {
                     $this->store->recordFailure(
@@ -387,6 +436,9 @@ final class Updater
             $this->platformAdapter->log(
                 'SafeSearch address lookup failed: ' . $throwable->getMessage(),
             );
+            $this->updateLog?->line(
+                'SafeSearch address lookup failed: ' . $throwable->getMessage(),
+            );
         }
 
         if ($changed) {
@@ -416,6 +468,8 @@ final class Updater
                     'added_names' => 0,
                 ];
             }
+
+            $this->updateLog?->line('Compiling DNS blocking data.');
 
             $compileResult = $this->compiler->compile(
                 $lists,
@@ -458,6 +512,10 @@ final class Updater
             );
             $compiled = true;
             $addedNames = $compileResult['added_names'];
+
+            $this->logCompileResult($compileResult);
+        } else {
+            $this->updateLog?->line('DNS blocking data is current; no compile needed.');
         }
 
         $this->applyPendingSynchronization();
@@ -526,11 +584,16 @@ final class Updater
             return;
         }
 
+        $this->updateLog?->line(
+            'Reloading the DNS Resolver to clear its cache for generation ' . $generation . '.',
+        );
+
         try {
             $this->platformAdapter->reloadUnboundAfterDeploy($generation);
             $this->platformAdapter->log(
                 'Reloaded Unbound to clear its cache for generation ' . $generation . '.',
             );
+            $this->updateLog?->line('DNS Resolver reloaded; its cache is clear.');
             $this->stateStore->clearCacheClearOwed($generation);
         } catch (Throwable $throwable) {
             $this->platformAdapter->log(
@@ -539,7 +602,67 @@ final class Updater
                 . ': '
                 . $throwable->getMessage(),
             );
+            $this->updateLog?->line(
+                'DNS Resolver reload failed; the cache clear stays pending: '
+                . $throwable->getMessage(),
+            );
         }
+    }
+
+    /**
+     * Updater - Log Compile Result.
+     *
+     * Tells the Status page's Update Log whether compilation produced a new
+     * generation and whether the DNS Resolver module received it.
+     *
+     * @param array $compileResult - Compiler result.
+     *
+     * @return void
+     *
+     * @since 1.2.0
+     * @private
+     */
+    private function logCompileResult(array $compileResult): void
+    {
+        if ($this->updateLog === null) {
+            return;
+        }
+
+        $generation = (string) ($compileResult['generation'] ?? '');
+        $domains = (int) ($compileResult['domains'] ?? 0);
+        $bypassDomains = (int) ($compileResult['bypass_domains'] ?? 0);
+        $deployed = ($compileResult['deployed'] ?? false) === true;
+        $names = UpdateLog::count($domains, 'block-list name', 'block-list names');
+
+        if ($bypassDomains > 0) {
+            $names .= ' and ' . UpdateLog::count($bypassDomains, 'Bypass name', 'Bypass names');
+        }
+
+        if (($compileResult['changed'] ?? false) !== true && !$deployed) {
+            $this->updateLog->line(sprintf(
+                'Compiled %s; content is unchanged, so generation %s stays active.',
+                $names,
+                $generation,
+            ));
+
+            return;
+        }
+
+        $this->updateLog->line(sprintf(
+            'Compiled generation %s with %s.',
+            $generation,
+            $names,
+        ));
+
+        if ($deployed) {
+            $this->updateLog->line('Deployed generation ' . $generation . ' to the DNS Resolver.');
+
+            return;
+        }
+
+        $this->updateLog->line(
+            'Generation ' . $generation . ' was not deployed because DNS Resolver integration is inactive.',
+        );
     }
 
     /**

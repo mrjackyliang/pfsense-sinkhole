@@ -31,12 +31,12 @@ Sinkhole verweigert das Speichern von **Enable**, solange pfBlockerNG installier
 
 1. Öffne **Lists** und füge die URL einer vertrauenswürdigen Quelle hinzu, oder öffne **Add from Catalog**, um die beiden Kataloge auf Abruf zu durchsuchen.
 2. Vergib einen lokalen Namen für die Quelle und lasse **Enabled** ausgewählt, damit Sinkhole sie herunterlädt.
-3. Lasse **Global** nur ausgewählt, wenn die Liste nach allen Geräte- und Netzwerkregeln gelten soll.
+3. Wähle **Global** nur aus, wenn die Liste nach allen Geräte- und Netzwerkregeln gelten soll.
 4. Füge bei Bedarf unter **Allowed Domains** globale Ausnahmen hinzu, eine Domain pro Zeile, damit ein bekannter Fehlalarm zugelassen wird.
 
 Sinkhole empfiehlt keine Quelle. [Listen und gespeicherte Kopien](/docs/configure/lists) beschreibt die akzeptierten Formate und wie Katalogergebnisse zu gewöhnlichen Listeneinträgen werden.
 
-<img src={listsTab} alt="Tab Lists mit fünf Demo-Blocklisten samt den Spalten Global und Used By sowie zwei global erlaubten Domains" width={1024} height={996} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Tab Lists mit fünf Demo-Blocklisten samt den Spalten Global und Used By sowie zwei global erlaubten Domains" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Optionale Scopes hinzufügen \{#add-optional-scopes}
 
@@ -52,9 +52,9 @@ Ein Gerät erbt das Netzwerk, in dem es sich aktuell befindet, und das Netzwerk 
 1. Kehre zu **General** zurück und wähle **Enable**.
 2. Wähle unter **Update Frequency** den Zeitplan für aktivierte DNS-Listen und speichere.
 3. Öffne **Status** und wähle **Update Now**.
-4. Warte, bis **Update running** wieder `No` anzeigt.
+4. Verfolge das **Update Log**, bis es `Update finished` anzeigt.
 
-Der Schalter auf General aktiviert geplante DNS-Listenaktualisierungen und die DNS-Resolver-Integration. Aktivierte Bypass Lists sowie IP-/Länderrichtlinien verwenden denselben Aktualisierungszeitplan unabhängig voneinander; jeder Bypass- und IP-Schutz bleibt ausgeschaltet, bis ein Administrator ihn aktiviert.
+Der Schalter auf General aktiviert geplante DNS-Listenaktualisierungen und die DNS-Resolver-Integration. IP-/Länderrichtlinien verwenden denselben Aktualisierungszeitplan unabhängig davon, und eine aktivierte Bypass List schließt sich ihm nur an, solange ihr passender Schutz **Providers**, **Tor** oder **VPN** eingeschaltet ist; jeder Bypass- und IP-Schutz bleibt ausgeschaltet, bis ein Administrator ihn aktiviert.
 
 ## Aktiven Zustand prüfen \{#verify-the-active-state}
 

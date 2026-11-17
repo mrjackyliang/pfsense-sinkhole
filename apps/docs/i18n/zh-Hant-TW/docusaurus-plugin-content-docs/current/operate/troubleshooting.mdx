@@ -19,6 +19,7 @@ tags:
 ## 查看位置 \{#where-to-look}
 
 - **Firewall → Sinkhole → Status** 顯示清單、目錄、用戶端映射、警報、Bypass、IP、編譯、部署和 Resolver 狀態。
+- **Status → Update Log** 顯示最近一次清單更新的每個步驟，包括哪個清單失敗及其原因。
 - **Status → System Logs → System → General** 顯示以 `Sinkhole:` 開頭的執行日誌行。
 - `/usr/local/sbin/sinkhole --help` 輸出支持的維護模式。
 
@@ -78,14 +79,30 @@ ISC 租約時間可能採用 GMT 或防火牆本地時間，具體取決於介�
 
 DNS、Bypass 或 IP 下載、解析或驗證失敗時會保留之前的已儲存副本並記錄錯誤。DNS 繼續使用已部署的本地代次，而不會等待失敗的來源。
 
+從清單之前的 URL 儲存的副本永遠不會被保留。更改清單的 URL 後，下一次更新會丟棄該副本並記錄 `source changed; discarding the copy from the previous URL.`，因此在從新 URL 首次下載成功之前，該清單不提供任何項目，Status 會顯示其錯誤。
+
+[更新日誌](/docs/operate/status#update-log)會列出最近一次執行中失敗的清單、其主機和原因。建議在修復來源後選擇 **Update Now**，並在那裡查看重試情況。
+
 目錄只在搜索打開或刷新時獲取；獲取失敗會保留快取的最後有效目錄。強制再次刷新前，請確認 HTTPS 連接、來源 URL 和 Status 錯誤。
+
+## 編譯超過名稱上限 \{#compile-exceeds-the-name-limit}
+
+發現超過 10,000,000 個唯一名稱的編譯會因錯誤而停止，例如 `The compile found 10,412,331 unique names; the limit is 10,000,000.` DNS 封鎖索引（清單和已封鎖的服務）與 Bypass 索引合併計數。被多個清單列出的名稱在一個索引內只計一次，但同時出現在兩個索引中的名稱在每個索引中各計一次。
+
+之前的代次維持活動，**Compile Needed** 會維持為 `Yes`，直到編譯成功。**Summary → Compiled Names** 會顯示已部署的名稱數及其與上限的對比。
+
+要將數量降到上限以下：
+
+1. 禁用或刪除不需要的最大清單，或將其替換為同一發布者的較小變體。
+2. 刪除大部分內容已包含在另一個已啓用清單中的清單。
+3. 選擇 **Update Now**，並確認 **Compile Needed** 恢復為 `No`。
 
 ## 普通 DNS 重定向已暫停或缺失 \{#plain-dns-redirect-is-paused-or-missing}
 
 - **Paused** — 修復或刪除 Bypass 面板中顯示的每個無效豁免。
 - **No family address** — 為介面新增該地址族，或接受無法為其生成規則。
 - **Resolver does not listen** — 更改 **DNS Resolver → Network Interfaces**，或移除該重定向選擇。
-- **Rules missing or out of date** — 等待兩次每分鐘觀察，然後檢查 **Last parse error** 和系統日誌。
+- **Rules missing or out of date** — 等待兩次每分鐘觀察，然後檢查 **Last Parse Error** 和系統日誌。
 - **Queries are refused** — 將用戶端網路新增到 Resolver 的訪問控制配置。
 
 當 pfSense 的套件鎖被持有，或 pfSense 已拒絕未改變的規則文本時，每分鐘檢查不會重新載入過濾器。更正無效配置後，接下來的兩次觀察會進行協調。
@@ -112,9 +129,11 @@ IPv6 重定向目標始終使用介面地址，因為實測 FreeBSD 會丟棄從
 
 ## 記憶體使用量很高 \{#memory-use-is-high}
 
-對 300,000 個名稱的實測使 Unbound RSS 從 41 MiB 增至 103 MiB，策略記憶體峰值約為每個名稱 157 字節。實際用量取決於唯一規範化名稱、作用域分配和正在執行的 Resolver。
+Unbound 模塊不會將編譯後的名稱保存在記憶體中。它從活動代次讀取每個名稱約 18 字節的記憶體映射索引，因此在不超過 10,000,000 個名稱上限的任何清單規模下，其自身記憶體都維持在幾 MiB。
 
-建議在新增大型來源前後，將 Status 項目計數與 Unbound 記憶體進行比較。禁用未使用的清單後，它會在下一次編譯時退出活動策略。
+查詢讀取的索引頁會作為檔案快取計入 Unbound 的常駐記憶體，FreeBSD 會在記憶體緊張時回收這些快取。因此，Unbound RSS 較大通常來自 Resolver 自身的消息和 RRset 快取；更改清單前，請將其與 **DNS Resolver → Advanced Settings** 中的快取大小進行比較。
+
+每個代次還需要磁盤空間來存放其編譯檔案，約為每個名稱 55 字節，位於 `/var/unbound` 中；在 RAM 磁盤系統上，還位於持久鏡像中。空間不足的部署會因 `Not enough deployment space` 錯誤而停止，並保留之前的代次。
 
 ## 報告問題 \{#report-a-problem}
 

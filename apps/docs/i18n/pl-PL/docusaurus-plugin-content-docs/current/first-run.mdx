@@ -31,12 +31,12 @@ Sinkhole odmawia zapisania **Enable**, gdy pfBlockerNG jest zainstalowany i wł�
 
 1. Otwórz **Lists** i dodaj adres URL zaufanego źródła albo otwórz **Add from Catalog**, aby przeszukać dwa katalogi na żądanie.
 2. Nadaj źródłu lokalną nazwę i pozostaw **Enabled** zaznaczone, aby Sinkhole je pobierał.
-3. Pozostaw **Global** zaznaczone tylko wtedy, gdy lista ma być stosowana po wszystkich regułach urządzenia i sieci.
+3. Zaznacz **Global** tylko wtedy, gdy lista ma być stosowana po wszystkich regułach urządzenia i sieci.
 4. Dodaj globalne **Allowed Domains**, po jednej domenie w wierszu, jeśli znany wynik fałszywie dodatni ma być przepuszczany.
 
 Sinkhole nie poleca żadnego źródła. [Listy i zapisane kopie](/docs/configure/lists) objaśnia obsługiwane formaty oraz sposób przekształcania wyników katalogu w zwykłe wiersze list.
 
-<img src={listsTab} alt="Karta Lists pokazująca pięć demonstracyjnych list blokowania z kolumnami Global i Used By oraz dwie globalnie dozwolone domeny" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Karta Lists pokazująca pięć demonstracyjnych list blokowania z kolumnami Global i Used By oraz dwie globalnie dozwolone domeny" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Dodawanie opcjonalnych zakresów \{#add-optional-scopes}
 
@@ -52,9 +52,9 @@ Urządzenie dziedziczy sieć, w której aktualnie się znajduje, a sieć dziedzi
 1. Wróć do **General** i zaznacz **Enable**.
 2. Wybierz **Update Frequency** dla włączonych list DNS i zapisz ustawienia.
 3. Otwórz **Status** i wybierz **Update Now**.
-4. Poczekaj, aż **Update running** ponownie przyjmie wartość `No`.
+4. Śledź **Update Log**, aż pokaże `Update finished`.
 
-Przełącznik General włącza zaplanowane aktualizacje list DNS i integrację z DNS Resolver. Włączone Bypass Lists oraz zasady IP/krajów niezależnie korzystają z tego samego harmonogramu aktualizacji; każda ochrona Bypass i IP pozostaje wyłączona, dopóki administrator jej nie włączy.
+Przełącznik General włącza zaplanowane aktualizacje list DNS i integrację z DNS Resolver. Zasady IP/krajów niezależnie korzystają z tego samego harmonogramu aktualizacji, a włączona Bypass List uczestniczy w nim tylko wtedy, gdy włączona jest odpowiadająca jej ochrona **Providers**, **Tor** lub **VPN**; każda ochrona Bypass i IP pozostaje wyłączona, dopóki administrator jej nie włączy.
 
 ## Weryfikacja stanu aktywnego \{#verify-the-active-state}
 

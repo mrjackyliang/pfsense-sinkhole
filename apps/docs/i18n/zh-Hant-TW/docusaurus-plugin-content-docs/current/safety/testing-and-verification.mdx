@@ -54,7 +54,7 @@ Sinkhole 拒絕替換 Unbound 唯一 Python 模塊插槽中的 pfBlockerNG DNSBL
 選擇一個隔離的實驗室介面，每次啓用一項 Bypass 保護。每次測試後，確認未選擇介面上的同等用戶端不受影響。
 
 1. 啓用 **Redirect**，確認其地址族有 Resolver 監聽地址，並向其他目標發送普通 UDP 和 TCP 端口 53 查詢。確認 pfSense 收到這些查詢。
-2. 只在可丟棄配置中新增故意無效的豁免，並確認重定向變為 **Paused**，而不是載入部分規則。恢復有效資料，等待兩次每分鐘觀察，並確認 **pfSense loaded rules** 恢復為 `Yes`。
+2. 只在可丟棄配置中新增故意無效的豁免，並確認重定向變為 **Paused**，而不是載入部分規則。恢復有效資料，等待兩次每分鐘觀察，並確認 **pfSense Loaded Rules** 恢復為 `Yes`。
 3. 啓用 **TLS and QUIC**，然後確認前往實驗室目標的 TCP 和 UDP 端口 853 被封鎖，而前往防火牆的流量不受封鎖。
 4. 新增一個已停用的 Bypass List，其中僅包含虛構網域、地址、CIDR、註解和無效資料。啓用該清單及其對應保護，然後確認有效名稱和地址被封鎖、無效行被跳過，且後續擷取失敗會保留已儲存副本。
 5. 確認 Firefox 和 Private Relay 測試查詢收到 `NXDOMAIN`。確認 DDR 在 **Answer with no records** 模式下傳回空的 `NOERROR` 回應。
@@ -77,4 +77,4 @@ Sinkhole 拒絕替換 Unbound 唯一 Python 模塊插槽中的 pfBlockerNG DNSBL
 
 ## 記錄環境 \{#record-the-environment}
 
-有用的測試記錄應包含 Sinkhole 版本、pfSense 版本和版本號、FreeBSD 版本、所選功能、Status 狀態以及經過清理的 `Sinkhole:` 系統日誌行。目前沒有任何 pfSense 版本列為正式測試版本；每個 Sinkhole 版本發佈前都會進行兼容性測試。
+有用的測試記錄應包含 Sinkhole 版本、pfSense 版本和版本號、FreeBSD 版本、所選功能、Status 狀態以及經過清理的 `Sinkhole:` 系統日誌行。About 分頁和[已測試的發行版](/docs/compatibility#tested-releases)列出了每個 Sinkhole 版本已端到端通過安裝、更新、封鎖測試和移除的 pfSense 版本。

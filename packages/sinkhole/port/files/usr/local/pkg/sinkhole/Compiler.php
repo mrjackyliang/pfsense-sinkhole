@@ -45,20 +45,56 @@ final class Compiler
     /**
      * Compiler - Manifest Schema Version.
      *
-     * Version 3 adds interface-scoped bypass-answer metadata and domain data.
+     * Version 3 adds interface-scoped bypass-answer metadata and domain data; version
+     * 4 adds the memory-mapped name indexes the Unbound module loads instead.
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
-    public const MANIFEST_SCHEMA_VERSION = 3;
+    public const MANIFEST_SCHEMA_VERSION = 4;
 
     /**
      * Compiler - Maximum Unique Names.
      *
-     * Both compiler and Unbound module enforce this hard memory-safety boundary.
+     * Both compiler and Unbound module enforce this boundary across block and Bypass
+     * names; the module maps their indexes instead of holding names in memory.
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
-    public const MAXIMUM_UNIQUE_NAMES = 2000000;
+    public const MAXIMUM_UNIQUE_NAMES = 10000000;
+
+    /**
+     * Compiler - Index Key Bytes.
+     *
+     * Each index record starts with this many leading bytes of the SHA-256 digest of
+     * one normalized name, which the Unbound module computes the same way.
+     *
+     * @since 1.2.0
+     */
+    public const INDEX_KEY_BYTES = 16;
+
+    /**
+     * Compiler - Index Bucket Count.
+     *
+     * Records are spread across one bucket per leading key byte, so each bucket sorts
+     * in memory while the whole index never does.
+     *
+     * @since 1.2.0
+     * @private
+     */
+    private const INDEX_BUCKET_COUNT = 256;
+
+    /**
+     * Compiler - Index Buffer Bytes.
+     *
+     * Bucket writes are batched to this size to avoid one write call per name while
+     * keeping every buffer small.
+     *
+     * @since 1.2.0
+     * @private
+     */
+    private const INDEX_BUFFER_BYTES = 16384;
 
     /**
      * Compiler - Runtime Lock Timeout Seconds.
@@ -104,8 +140,10 @@ final class Compiler
      * @param StateStore|null $stateStore - State store.
      * @param int|null $availableSpaceOverride - Test-only available-byte override.
      * @param BypassListStore|null $bypassStore - Saved mixed Bypass Lists.
+     * @param int|null $uniqueNameLimitOverride - Test-only unique-name limit override.
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
     public function __construct(
         private readonly PackagePaths $paths,
@@ -113,6 +151,7 @@ final class Compiler
         ?StateStore $stateStore = null,
         private readonly ?int $availableSpaceOverride = null,
         private readonly ?BypassListStore $bypassStore = null,
+        private readonly ?int $uniqueNameLimitOverride = null,
     ) {
         $this->stateStore = $stateStore ?? new StateStore(
             $this->paths->stateFile,
@@ -558,11 +597,29 @@ final class Compiler
                 $buildDirectory . '/bypass.tsv',
             );
 
-            if ($domainCount + $bypassDomainCount > self::MAXIMUM_UNIQUE_NAMES) {
-                throw new RuntimeException(
-                    'The compile exceeds the 2,000,000 unique-name limit.',
-                );
+            $uniqueNameCount = $domainCount + $bypassDomainCount;
+            $uniqueNameLimit = $this->uniqueNameLimitOverride ?? self::MAXIMUM_UNIQUE_NAMES;
+
+            if ($uniqueNameCount > $uniqueNameLimit) {
+                throw new RuntimeException(sprintf(
+                    'The compile found %s unique names; the limit is %s.',
+                    number_format($uniqueNameCount),
+                    number_format($uniqueNameLimit),
+                ));
             }
+
+            $domainIndex = $this->writeNameIndex(
+                $buildDirectory . '/domains.tsv',
+                $buildDirectory . '/domains.index',
+                $chunkDirectory,
+                $domainCount,
+            );
+            $bypassIndex = $this->writeNameIndex(
+                $buildDirectory . '/bypass.tsv',
+                $buildDirectory . '/bypass.index',
+                $chunkDirectory,
+                $bypassDomainCount,
+            );
 
             foreach ($scopeData['allow_files'] as $allowFile => $domains) {
                 $allowContents = (count($domains) > 0)
@@ -593,6 +650,14 @@ final class Compiler
                 'allow_file' => 'allow.txt',
                 'domain_count' => $domainCount,
                 'bypass_domain_count' => $bypassDomainCount,
+                'domain_index' => [
+                    'file' => 'domains.index',
+                    ...$domainIndex,
+                ],
+                'bypass_index' => [
+                    'file' => 'bypass.index',
+                    ...$bypassIndex,
+                ],
                 'lists' => $digestManifest['lists'],
                 'scopes' => $digestManifest['scopes'],
                 'alerts' => $digestManifest['alerts'],
@@ -630,6 +695,7 @@ final class Compiler
             return [
                 'generation' => $deployment['generation'],
                 'domains' => $domainCount,
+                'bypass_domains' => $bypassDomainCount,
                 'lists' => count($manifestLists),
                 'generated_at' => $generatedAt,
                 'content_digest' => $contentDigest,
@@ -882,8 +948,9 @@ final class Compiler
                     $bypass['configuration'],
                     $list['kind'],
                 )
+                || !is_string($list['url'] ?? null)
                 || $this->bypassStore === null
-                || !$this->bypassStore->hasSavedCopy((string) $identifier)
+                || !$this->bypassStore->hasUsableCopy((string) $identifier, $list['url'])
             ) {
                 continue;
             }
@@ -1085,8 +1152,8 @@ final class Compiler
     /**
      * Compiler - Normalize Scopes.
      *
-     * Selects only enabled scopes and lists with saved copies, then prepares one
-     * independently normalized allow file per effective scope.
+     * Selects only enabled scopes and lists whose saved copy came from the configured
+     * URL, then prepares one independently normalized allow file per effective scope.
      *
      * @param array<string, array> $lists - Normalized configured lists.
      * @param list<string> $globalAllowedDomains - Normalized global allowed domains.
@@ -1100,6 +1167,7 @@ final class Compiler
      * }
      *
      * @since 1.0.0
+     * @since 1.2.0
      * @private
      */
     private function normalizeScopes(
@@ -1111,7 +1179,7 @@ final class Compiler
         $availableLists = [];
 
         foreach ($lists as $identifier => $list) {
-            if ($list['enabled'] && $this->store->hasSavedCopy($identifier)) {
+            if ($list['enabled'] && $this->store->hasUsableCopy($identifier, $list['url'])) {
                 $availableLists[$identifier] = true;
             }
         }
@@ -2123,12 +2191,6 @@ final class Compiler
                 $bit = $fields[2];
 
                 if ($currentDomain !== null && $domain !== $currentDomain) {
-                    if ($domainCount >= self::MAXIMUM_UNIQUE_NAMES) {
-                        throw new RuntimeException(
-                            'The compile exceeds the 2,000,000 unique-name limit.',
-                        );
-                    }
-
                     $this->writeDomainRow($outputHandle, $currentDomain, $exactBits, $subtreeBits);
                     $domainCount++;
                     $exactBits = [];
@@ -2155,12 +2217,6 @@ final class Compiler
             }
 
             if ($currentDomain !== null) {
-                if ($domainCount >= self::MAXIMUM_UNIQUE_NAMES) {
-                    throw new RuntimeException(
-                        'The compile exceeds the 2,000,000 unique-name limit.',
-                    );
-                }
-
                 $this->writeDomainRow($outputHandle, $currentDomain, $exactBits, $subtreeBits);
                 $domainCount++;
             }
@@ -2212,6 +2268,234 @@ final class Compiler
 
         if (fwrite($handle, $row) !== strlen($row)) {
             throw new RuntimeException('Unable to write compiled domains data.');
+        }
+    }
+
+    /**
+     * Compiler - Write Name Index.
+     *
+     * Turns one sorted compiled TSV into fixed-size records sorted by name key, each
+     * pointing into a small table of the distinct exact and subtree mask columns.
+     *
+     * @param string $tsvPath         - Compiled TSV path.
+     * @param string $indexPath       - Index output path.
+     * @param string $bucketDirectory - Private scratch directory.
+     * @param int    $expectedCount   - Unique names in the TSV.
+     *
+     * @return array{record_size: int, sha256: string, masks: list<list<string>>}
+     *
+     * @throws RuntimeException When the TSV cannot be indexed.
+     *
+     * @since 1.2.0
+     * @private
+     */
+    private function writeNameIndex(
+        string $tsvPath,
+        string $indexPath,
+        string $bucketDirectory,
+        int $expectedCount,
+    ): array {
+        $input = fopen($tsvPath, 'rb');
+
+        if ($input === false) {
+            throw new RuntimeException('Unable to read compiled names for the index.');
+        }
+
+        $bucketPaths = [];
+        $bucketHandles = [];
+        $bucketBuffers = [];
+        $maskIndexes = [];
+        $rowCount = 0;
+
+        try {
+            for ($bucket = 0; $bucket < self::INDEX_BUCKET_COUNT; $bucket++) {
+                $bucketPath = FileSystem::createTemporaryFile($bucketDirectory, 'index-', 0600);
+                $bucketPaths[$bucket] = $bucketPath;
+
+                $bucketHandle = fopen($bucketPath, 'wb');
+
+                if ($bucketHandle === false) {
+                    throw new RuntimeException('Unable to create an index bucket.');
+                }
+
+                $bucketHandles[$bucket] = $bucketHandle;
+                $bucketBuffers[$bucket] = '';
+            }
+
+            while (($line = fgets($input)) !== false) {
+                $fields = explode("\t", rtrim($line, "\r\n"));
+
+                if (count($fields) !== 3 || $fields[0] === '') {
+                    throw new RuntimeException('A compiled row cannot be indexed.');
+                }
+
+                $maskKey = $fields[1] . "\t" . $fields[2];
+
+                if (!isset($maskIndexes[$maskKey])) {
+                    $maskIndexes[$maskKey] = count($maskIndexes);
+                }
+
+                $digest = hash('sha256', $fields[0], true);
+                $bucket = ord($digest[0]);
+                $bucketBuffers[$bucket] .= substr($digest, 0, self::INDEX_KEY_BYTES)
+                    . pack('N', $maskIndexes[$maskKey]);
+                $rowCount++;
+
+                if (strlen($bucketBuffers[$bucket]) >= self::INDEX_BUFFER_BYTES) {
+                    $this->writeIndexBytes($bucketHandles[$bucket], $bucketBuffers[$bucket]);
+                    $bucketBuffers[$bucket] = '';
+                }
+            }
+
+            if (!feof($input)) {
+                throw new RuntimeException('Unable to finish reading compiled names for the index.');
+            }
+
+            foreach ($bucketHandles as $bucket => $bucketHandle) {
+                $this->writeIndexBytes($bucketHandle, $bucketBuffers[$bucket]);
+                $bucketBuffers[$bucket] = '';
+
+                fclose($bucketHandle);
+                unset($bucketHandles[$bucket]);
+            }
+
+            if ($rowCount !== $expectedCount) {
+                throw new RuntimeException('The index name count does not match the compiled names.');
+            }
+
+            $valueBytes = (count($maskIndexes) <= 65536) ? 2 : 4;
+            $sha256 = $this->writeSortedIndex($bucketPaths, $indexPath, $valueBytes);
+        } finally {
+            foreach ($bucketHandles as $bucketHandle) {
+                fclose($bucketHandle);
+            }
+
+            foreach ($bucketPaths as $bucketPath) {
+                FileSystem::removeFixedFile($bucketPath);
+            }
+
+            fclose($input);
+        }
+
+        $masks = [];
+
+        foreach (array_keys($maskIndexes) as $maskKey) {
+            $masks[] = explode("\t", (string) $maskKey);
+        }
+
+        return [
+            'record_size' => self::INDEX_KEY_BYTES + $valueBytes,
+            'sha256' => $sha256,
+            'masks' => $masks,
+        ];
+    }
+
+    /**
+     * Compiler - Write Sorted Index.
+     *
+     * Sorts one bucket at a time in memory and appends it in key order, so the full
+     * index never has to fit in PHP memory. Equal keys mean a digest collision.
+     *
+     * @param array<int, string> $bucketPaths - Bucket files in leading-byte order.
+     * @param string             $indexPath   - Index output path.
+     * @param int                $valueBytes  - Mask index width in each record.
+     *
+     * @return string
+     *
+     * @throws RuntimeException When the index cannot be written.
+     *
+     * @since 1.2.0
+     * @private
+     */
+    private function writeSortedIndex(array $bucketPaths, string $indexPath, int $valueBytes): string
+    {
+        $previousMask = umask(0177);
+
+        try {
+            $output = fopen($indexPath, 'x+b');
+        } finally {
+            umask($previousMask);
+        }
+
+        if ($output === false) {
+            throw new RuntimeException('Unable to create the name index.');
+        }
+
+        $context = hash_init('sha256');
+        $bucketRecordSize = self::INDEX_KEY_BYTES + 4;
+        $previousKey = '';
+
+        try {
+            foreach ($bucketPaths as $bucketPath) {
+                $contents = file_get_contents($bucketPath);
+
+                if ($contents === false || strlen($contents) % $bucketRecordSize !== 0) {
+                    throw new RuntimeException('Unable to read an index bucket.');
+                }
+
+                if ($contents === '') {
+                    continue;
+                }
+
+                $records = str_split($contents, $bucketRecordSize);
+
+                unset($contents);
+
+                sort($records, SORT_STRING);
+
+                $sortedBytes = '';
+
+                foreach ($records as $record) {
+                    $key = substr($record, 0, self::INDEX_KEY_BYTES);
+
+                    if (strcmp($key, $previousKey) <= 0) {
+                        throw new RuntimeException('Two compiled names share an index key.');
+                    }
+
+                    $previousKey = $key;
+                    $sortedBytes .= $key . substr($record, $bucketRecordSize - $valueBytes);
+                }
+
+                unset($records);
+
+                $this->writeIndexBytes($output, $sortedBytes);
+                hash_update($context, $sortedBytes);
+            }
+
+            if (fflush($output) === false) {
+                throw new RuntimeException('Unable to flush the name index.');
+            }
+        } finally {
+            fclose($output);
+        }
+
+        return hash_final($context);
+    }
+
+    /**
+     * Compiler - Write Index Bytes.
+     *
+     * Index buckets and the final index share one complete-write check, so a short
+     * write can never leave a silently truncated record behind.
+     *
+     * @param mixed  $handle - Open output resource.
+     * @param string $bytes  - Bytes to append.
+     *
+     * @return void
+     *
+     * @throws RuntimeException When the bytes cannot be written.
+     *
+     * @since 1.2.0
+     * @private
+     */
+    private function writeIndexBytes(mixed $handle, string $bytes): void
+    {
+        if ($bytes === '') {
+            return;
+        }
+
+        if (fwrite($handle, $bytes) !== strlen($bytes)) {
+            throw new RuntimeException('Unable to write the name index.');
         }
     }
 

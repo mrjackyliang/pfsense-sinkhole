@@ -191,6 +191,16 @@ final class PackagePaths
     public const STATUS_LOCK_FILE = '/var/run/sinkhole-status.json.lock';
 
     /**
+     * Package Paths - Update Log File.
+     *
+     * Each list update replaces this root-only progress log, which the Status page
+     * follows live; it stays on the runtime filesystem like other job status.
+     *
+     * @since 1.2.0
+     */
+    public const UPDATE_LOG_FILE = '/var/run/sinkhole-update.log';
+
+    /**
      * Package Paths - Boot Restore Status File.
      *
      * The early boot restore writes one outcome here for package Sync to relay after
@@ -493,6 +503,9 @@ final class PackagePaths
     /** @var string @since 1.0.0 */
     public readonly string $statusLockFile;
 
+    /** @var string @since 1.2.0 */
+    public readonly string $updateLogFile;
+
     /** @var string @since 1.0.0 */
     public readonly string $bootStatusFile;
 
@@ -675,6 +688,10 @@ final class PackagePaths
             ?? (isset($overrides['status_file']) || isset($overrides['runtime_root_directory'])
                 ? $this->statusFile . '.lock'
                 : self::STATUS_LOCK_FILE);
+        $this->updateLogFile = $overrides['update_log_file']
+            ?? (isset($overrides['runtime_root_directory'])
+                ? $this->runtimeRootDirectory . '/sinkhole-update.log'
+                : self::UPDATE_LOG_FILE);
         $this->bootStatusFile = $overrides['boot_status_file']
             ?? (isset($overrides['runtime_root_directory'])
                 ? $this->runtimeRootDirectory . '/sinkhole-boot-restore'

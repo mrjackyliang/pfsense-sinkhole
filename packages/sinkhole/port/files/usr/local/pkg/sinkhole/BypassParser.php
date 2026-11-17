@@ -40,8 +40,18 @@ final class BypassParser
         'ff00::/8',
     ];
 
-    /** @var int @since 1.0.0 */
-    public const MAXIMUM_ENTRIES = 2_000_000;
+    /**
+     * Bypass Parser - Maximum Entries.
+     *
+     * Matches the compiler's unique-name limit, so one list never holds more names
+     * than a generation can load.
+     *
+     * @var int
+     *
+     * @since 1.0.0
+     * @since 1.2.0
+     */
+    public const MAXIMUM_ENTRIES = 10_000_000;
 
     /** @var int @since 1.0.0 */
     public const MAXIMUM_LINE_LENGTH = 8192;

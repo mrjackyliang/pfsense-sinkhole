@@ -546,6 +546,7 @@ class Form_Group extends SinkholeStubFormElement
     public function __construct(mixed $title)
     {
         $this->title = (string) $title;
+        $this->classes = ['form-group'];
     }
 
     /** @since 1.0.0 */
@@ -602,7 +603,8 @@ class Form_Group extends SinkholeStubFormElement
                 . $this->help
                 . '</span></div>';
 
-        return '<div class="form-group">'
+        // pfSense's Form_Group renders its classes and attributes like any Form_Element.
+        return '<div' . $this->renderAttributes() . '>'
             . '<label class="col-sm-2 control-label"' . $for . '>'
             . $title
             . '</label>'

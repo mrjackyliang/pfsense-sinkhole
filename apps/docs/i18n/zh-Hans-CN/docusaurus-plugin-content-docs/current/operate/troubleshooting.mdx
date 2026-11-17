@@ -19,6 +19,7 @@ tags:
 ## 查看位置 \{#where-to-look}
 
 - **Firewall → Sinkhole → Status** 显示列表、目录、客户端映射、警报、Bypass、IP、编译、部署和 Resolver 状态。
+- **Status → Update Log** 显示最近一次列表更新的每个步骤，包括哪个列表失败及其原因。
 - **Status → System Logs → System → General** 显示以 `Sinkhole:` 开头的运行日志行。
 - `/usr/local/sbin/sinkhole --help` 输出支持的维护模式。
 
@@ -78,14 +79,30 @@ ISC 租约时间可能采用 GMT 或防火墙本地时间，具体取决于接�
 
 DNS、Bypass 或 IP 下载、解析或验证失败时会保留之前的已保存副本并记录错误。DNS 继续使用已部署的本地代次，而不会等待失败的来源。
 
+从列表之前的 URL 保存的副本永远不会被保留。更改列表的 URL 后，下一次更新会丢弃该副本并记录 `source changed; discarding the copy from the previous URL.`，因此在从新 URL 首次下载成功之前，该列表不提供任何条目，Status 会显示其错误。
+
+[更新日志](/docs/operate/status#update-log)会列出最近一次运行中失败的列表、其主机和原因。建议在修复来源后选择 **Update Now**，并在那里查看重试情况。
+
 目录只在搜索打开或刷新时获取；获取失败会保留缓存的最后有效目录。强制再次刷新前，请确认 HTTPS 连接、来源 URL 和 Status 错误。
+
+## 编译超过名称上限 \{#compile-exceeds-the-name-limit}
+
+发现超过 10,000,000 个唯一名称的编译会因错误而停止，例如 `The compile found 10,412,331 unique names; the limit is 10,000,000.` DNS 阻止索引（列表和已阻止的服务）与 Bypass 索引合并计数。被多个列表列出的名称在一个索引内只计一次，但同时出现在两个索引中的名称在每个索引中各计一次。
+
+之前的代次保持活动，**Compile Needed** 会保持为 `Yes`，直到编译成功。**Summary → Compiled Names** 会显示已部署的名称数及其与上限的对比。
+
+要将数量降到上限以下：
+
+1. 禁用或删除不需要的最大列表，或将其替换为同一发布者的较小变体。
+2. 删除大部分内容已包含在另一个已启用列表中的列表。
+3. 选择 **Update Now**，并确认 **Compile Needed** 恢复为 `No`。
 
 ## 普通 DNS 重定向已暂停或缺失 \{#plain-dns-redirect-is-paused-or-missing}
 
 - **Paused** — 修复或删除 Bypass 面板中显示的每个无效豁免。
 - **No family address** — 为接口添加该地址族，或接受无法为其生成规则。
 - **Resolver does not listen** — 更改 **DNS Resolver → Network Interfaces**，或移除该重定向选择。
-- **Rules missing or out of date** — 等待两次每分钟观察，然后检查 **Last parse error** 和系统日志。
+- **Rules missing or out of date** — 等待两次每分钟观察，然后检查 **Last Parse Error** 和系统日志。
 - **Queries are refused** — 将客户端网络添加到 Resolver 的访问控制配置。
 
 当 pfSense 的软件包锁被持有，或 pfSense 已拒绝未改变的规则文本时，每分钟检查不会重新加载过滤器。更正无效配置后，接下来的两次观察会进行协调。
@@ -112,9 +129,11 @@ IPv6 重定向目标始终使用接口地址，因为实测 FreeBSD 会丢弃从
 
 ## 内存使用量很高 \{#memory-use-is-high}
 
-对 300,000 个名称的实测使 Unbound RSS 从 41 MiB 增至 103 MiB，策略内存峰值约为每个名称 157 字节。实际用量取决于唯一规范化名称、作用域分配和正在运行的 Resolver。
+Unbound 模块不会将编译后的名称保存在内存中。它从活动代次读取每个名称约 18 字节的内存映射索引，因此在不超过 10,000,000 个名称上限的任何列表规模下，其自身内存都保持在几 MiB。
 
-建议在添加大型来源前后，将 Status 条目计数与 Unbound 内存进行比较。禁用未使用的列表后，它会在下一次编译时退出活动策略。
+查询读取的索引页会作为文件缓存计入 Unbound 的常驻内存，FreeBSD 会在内存紧张时回收这些缓存。因此，Unbound RSS 较大通常来自 Resolver 自身的消息和 RRset 缓存；更改列表前，请将其与 **DNS Resolver → Advanced Settings** 中的缓存大小进行比较。
+
+每个代次还需要磁盘空间来存放其编译文件，约为每个名称 55 字节，位于 `/var/unbound` 中；在 RAM 磁盘系统上，还位于持久镜像中。空间不足的部署会因 `Not enough deployment space` 错误而停止，并保留之前的代次。
 
 ## 报告问题 \{#report-a-problem}
 

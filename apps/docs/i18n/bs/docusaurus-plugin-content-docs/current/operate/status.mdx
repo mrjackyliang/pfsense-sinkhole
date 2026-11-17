@@ -1,7 +1,7 @@
 ---
 id: status
 title: Stanje
-description: Čitajte svaki panel Statusa Sinkholea, razlikujte aktivna, na čekanju, pauzirana, učitana, nedostajuća i zastarjela stanja te pokrenite ručno ažuriranje.
+description: Čitajte svaki panel Statusa Sinkholea, razlikujte aktivna, na čekanju, pauzirana, učitana, nedostajuća i zastarjela stanja te pratite ručno ažuriranje u živom Update Logu.
 keywords:
   - sinkhole for pfsense
   - status
@@ -24,18 +24,21 @@ import summaryStatus from './_assets_/status-2.png';
 
 Otvorite **Firewall → Sinkhole → Status** da biste vidjeli ove panele:
 
-| Panel                   | Šta prikazuje                                                                                                                                    |
-|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Summary                 | Kompajliranje, postavljanje, generaciju, operaciju, vlasnika Resolvera, ukupno stanje Sinkholea i **Update Now** ispod panela.                   |
-| Lists                   | URL DNS liste, broj sačuvanih zapisa, posljednje uspješno ažuriranje i posljednju grešku.                                                        |
-| Popular-List Catalogs   | Posljednje dohvatanje i posljednju grešku za kataloške izvore AdGuard Homea i pfBlockerNG-a.                                                     |
-| Invalid Saved Rows      | Neispravne redove lista koji ostaju dostupni za popravak; prikazuje se samo kada takvi redovi postoje.                                           |
-| Scopes                  | Vrijeme i grešku ponovne izgradnje mape klijenata, nakon čega slijede zasebni paneli Networks i Devices.                                         |
-| Alerts                  | Posljednje pokretanje, pročitane ili zastarjele događaje, poslane ili zadržane obavijesti, odbačene događaje i posljednju grešku.                |
-| Bypass                  | Svaku zaštitu, interfejse, stanje pravila preusmjeravanja, stanje i brojanja Bypass sidra, nakon čega slijede Bypass Lists i paneli za popravak. |
-| IP and Country Blocking | Odabire pravila, broj tabela i pravila, ažuriranja, greške i stanje sidra, nakon čega slijedi zasebni panel IP Lists.                            |
+| Panel                   | Šta prikazuje                                                                                                                                                               |
+|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Summary                 | Kompajlirane nazive u odnosu na ograničenje, kompajliranje, postavljanje, generaciju, operaciju, vlasnika Resolvera, ukupno stanje Sinkholea i **Update Now** ispod panela. |
+| Update Log              | Svaki korak posljednjeg ažuriranja lista, uz praćenje ažuriranja u toku uživo.                                                                                              |
+| Lists                   | URL DNS liste, broj sačuvanih zapisa, posljednje uspješno ažuriranje i posljednju grešku.                                                                                   |
+| Popular-List Catalogs   | Posljednje dohvatanje i posljednju grešku za kataloške izvore AdGuard Homea i pfBlockerNG-a.                                                                                |
+| Invalid Saved Rows      | Neispravne redove lista koji ostaju dostupni za popravak; prikazuje se samo kada takvi redovi postoje.                                                                      |
+| Scopes                  | Vrijeme i grešku ponovne izgradnje mape klijenata, nakon čega slijede zasebni paneli Networks i Devices.                                                                    |
+| Blocked Services        | Preuzimanje registra, posljednju grešku i servise odabrane po opsegu.                                                                                                       |
+| SafeSearch              | Pretraživače po opsegu te adrese svakog sigurnog hosta, posljednju provjeru i grešku.                                                                                       |
+| Alerts                  | Posljednje pokretanje, pročitane ili zastarjele događaje, poslane ili zadržane obavijesti, odbačene događaje i posljednju grešku.                                           |
+| Bypass                  | Svaku zaštitu, interfejse, stanje pravila preusmjeravanja, stanje i brojanja Bypass sidra, nakon čega slijede Bypass Lists i paneli za popravak.                            |
+| IP and Country Blocking | Odabire pravila, broj tabela i pravila, ažuriranja, greške i stanje sidra, nakon čega slijedi zasebni panel IP Lists.                                                       |
 
-Onemogućeni redovi lista i opsega prikazuju se prigušeno. Izvor s greškom i dalje može prikazivati zapise i ranije uspješno ažuriranje jer posljednja ispravna kopija ostaje aktivna.
+Onemogućeni redovi lista i opsega prikazuju se prigušeno. Izvor s greškom i dalje može prikazivati zapise i ranije uspješno ažuriranje jer posljednja ispravna kopija ostaje aktivna. Nakon promjene URL-a liste, sljedeće ažuriranje koje je preuzima odbacuje kopiju s prethodnog URL-a, pa red ne prikazuje zapise dok prvo preuzimanje s novog URL-a ne uspije.
 
 <img src={listsScopesStatus} alt="Kartica Status prikazuje ažuriranja sačuvane demonstracijske liste, mrežne podmreže i trenutne adrese demonstracijskog uređaja" width={1024} height={949} style={{maxWidth: '100%', height: 'auto'}} />
 
@@ -59,20 +62,21 @@ Kada je Sinkhole namjerno onemogućen, **Deployment Needed** je `No`, **Loaded G
 
 ## Stanje kompajliranja i postavljanja \{#compile-and-deployment-state}
 
-| Polje               | Značenje                                                                                       |
-|---------------------|------------------------------------------------------------------------------------------------|
-| Compile Needed      | Sačuvana pravila su promijenjena ili posljednje kompajliranje nije uspješno završeno.          |
-| Compiled Generation | Identifikator nastao posljednjim uspješnim kompajliranjem.                                     |
-| Deployment Needed   | Kompajlirani sadržaj nije sadržaj postavljen za Unbound ili je integracija neaktivna.          |
-| Deployed Generation | Identifikator u trenutno postavljenom manifestu izvršnog okruženja.                            |
-| Loaded Generation   | Identifikator koji Unbound modul prijavljuje kao učitan.                                       |
-| Update Running      | Prikazuje se samo dok ažuriranje lista ili IP-a posjeduje zajedničko zaključavanje ažuriranja. |
-| Removal in Progress | Prikazuje se samo dok je trajna oznaka uklanjanja postavljena i integracija se povlači.        |
-| Python Script Owner | Trenutna vrijednost jedinog mjesta `python_script` u Resolveru ili `None`.                     |
+| Polje                            | Značenje                                                                                                                                                                           |
+|----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compiled Names                   | Nazivi u postavljenom indeksu DNS blokiranja (liste i Blocked Services) plus nazivi u Bypass indeksu, u odnosu na ograničenje od 10.000.000 naziva.                                |
+| Compile Needed                   | Sačuvana pravila su promijenjena ili posljednje kompajliranje nije uspješno završeno.                                                                                              |
+| Compiled Generation              | Identifikator nastao posljednjim uspješnim kompajliranjem.                                                                                                                         |
+| Deployment Needed                | Kompajlirani sadržaj nije sadržaj postavljen za Unbound ili je integracija neaktivna.                                                                                              |
+| Deployed Generation              | Identifikator u trenutno postavljenom manifestu izvršnog okruženja.                                                                                                                |
+| Loaded Generation                | Identifikator koji Unbound modul prijavljuje kao učitan.                                                                                                                           |
+| Update Running                   | Prikazuje se samo dok živi proces posjeduje zajedničko zaključavanje ažuriranja: DNS, Bypass ili IP ažuriranje, primjena postavki, provjera ili ažuriranje paketa, ili uklanjanje. |
+| Removal in Progress              | Prikazuje se samo dok je trajna oznaka uklanjanja postavljena i integracija se povlači.                                                                                            |
+| DNS Resolver Python Script Owner | Trenutna vrijednost jedinog mjesta `python_script` u Resolveru ili `None`.                                                                                                         |
 
 Stranica prikazuje okvir upozorenja kada kompajliranje ili postavljanje čeka, uključujući zabilježeni razlog. Podudarni identifikatori kompajlirane, postavljene i učitane generacije pokazuju da su sačuvana pravila stigla do pokrenutog modula.
 
-<img src={summaryStatus} alt="Panel Status Summary prikazuje podudarne kompajlirane, postavljene i učitane generacije uz aktivan Sinkhole" width={1024} height={914} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={summaryStatus} alt="Panel Status Summary prikazuje broj kompajliranih imena u odnosu na ograničenje, podudarne kompajlirane, postavljene i učitane generacije uz aktivan Sinkhole te Update Log završenog ručnog ažuriranja" width={1024} height={1284} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Stanje opsega i upozorenja \{#scope-and-alert-state}
 
@@ -92,9 +96,9 @@ Nezavisno sidro zaštitnog zida prikazuje:
 
 | Polje                   | Značenje                                                                                                     |
 |-------------------------|--------------------------------------------------------------------------------------------------------------|
-| Firewall rules loaded   | Postoji li sidro `sinkhole/bypass` kada ga trenutne postavke zahtijevaju.                                    |
-| Firewall rules current  | Odgovaraju li učitani sažetak, pravila i tabele trenutnim postavkama i posljednjim ispravnim podacima lista. |
-| Firewall rule count     | Broj aktivnih pravila u Bypass sidru.                                                                        |
+| Firewall Rules Loaded   | Postoji li sidro `sinkhole/bypass` kada ga trenutne postavke zahtijevaju.                                    |
+| Firewall Rules Current  | Odgovaraju li učitani sažetak, pravila i tabele trenutnim postavkama i posljednjim ispravnim podacima lista. |
+| Firewall Rule Count     | Broj aktivnih pravila u Bypass sidru.                                                                        |
 | IPv4/IPv6 table entries | Konačni broj adresa pružatelja, Tora i VPN-a nakon uklanjanja zaštićenih adresa zaštitnog zida.              |
 
 Tabela **Bypass Lists** prikazuje vrstu, omogućeno stanje, broj sačuvanih zapisa, posljednje dohvatanje i posljednju grešku svakog reda. Neuspjelo dohvatanje stoga može prikazivati grešku zajedno sa zapisima iz zadržane posljednje ispravne kopije.
@@ -107,7 +111,16 @@ Tabela **Bypass Lists** prikazuje vrstu, omogućeno stanje, broj sačuvanih zapi
 | On     | Redirect je omogućen i svaki sačuvani izuzetak je važeći.                                                    |
 | Paused | Najmanje jedan sačuvani izuzetak izvora ili odredišta je nevažeći, pa se pravila preusmjeravanja ne koriste. |
 
-Polje **pfSense loaded rules** ima tri stanja:
+Dok je Redirect uključen, a njegova pravila nisu učitana, crveno upozorenje na vrhu stranice navodi razlog:
+
+- Sinkhole je onemogućen.
+- DNS Resolver ne radi.
+- Sačuvani izuzetak je nevažeći.
+- Sinkhole se uklanja.
+
+Pravila ne zavise od Python modula Resolvera, pa pfBlockerNG ili druga skripta koja ga drži nikad ne zaustavlja preusmjeravanje. Kartica **Bypass** prikazuje isto upozorenje ispod **Redirect**.
+
+Polje **pfSense Loaded Rules** ima tri stanja:
 
 | Stanje      | Značenje                                                                                            |
 |-------------|-----------------------------------------------------------------------------------------------------|
@@ -115,7 +128,7 @@ Polje **pfSense loaded rules** ima tri stanja:
 | No          | Željeni blok nije učitan.                                                                           |
 | Out of Date | Sinkhole blok je učitan, ali njegov tekst ne odgovara trenutnim postavkama ili slušačima Resolvera. |
 
-Cilj svake porodice je odabrana adresa slušača ili razlog zbog kojeg se pravilo ne može izgraditi. **Last parse error** prikazuje se samo dok trenutni blok nedostaje nakon što ga je pfSense odbio.
+Cilj svake porodice je odabrana adresa slušača ili razlog zbog kojeg se pravilo ne može izgraditi. **Last Parse Error** prikazuje se samo dok trenutni blok nedostaje nakon što ga je pfSense odbio.
 
 ## Stanje IP-a i država \{#ip-and-country-state}
 
@@ -127,10 +140,38 @@ Broj zapisa tabele prikazuje konačne spojene IPv4 i IPv6 mreže nakon oduzimanj
 
 **GeoLite2 Last Update** nezavisan je od posljednjeg ažuriranja liste.
 
-<img src={ipStatus} alt="Panel Status IP and Country Blocking prikazuje broj zapisa tabele, stanje ažuriranja, učitano sidro i red demonstracijske IP liste" width={1024} height={1022} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipStatus} alt="Panel Status IP and Country Blocking prikazuje broj zapisa tabele, stanje ažuriranja, učitano sidro i dva reda demonstracijskih IP lista" width={1024} height={1055} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Pokrenite Update Now \{#run-update-now}
 
-Odabir **Update Now** ispod panela Summary pokreće `/usr/local/sbin/sinkhole --manual` u pozadini i odmah se vraća. Dugme ne prenosi izlaz, pa rezultat prikazuju **Update Running**, redovi DNS/Bypass/IP lista, polja kompajliranja i posljednje greške.
+Odabir **Update Now** ispod panela Summary pokreće `/usr/local/sbin/sinkhole --manual` u pozadini i odmah se vraća. **Update Log** zatim prati pokretanje, pa ga možete pratiti bez osvježavanja stranice.
 
 Ručni posao koristi isto zajedničko zaključavanje ažuriranja kao zakazana ažuriranja lista i samoažuriranje paketa. Ako ga drugo ažuriranje već posjeduje, postojeći posao se nastavlja, a primjena na čekanju ostaje sačuvana.
+
+## Update Log \{#update-log}
+
+Panel **Update Log** ispod panela Summary prikazuje svaki korak posljednjeg ažuriranja, bilo da je zakazano, pokrenuto s **Update Now** ili primijenjeno nakon promjene postavki. Dok se ne pokrene nijedno ažuriranje, prikazuje `No update has run yet.`
+
+Dok ažuriranje traje, stranica svake 2 sekunde provjerava nove redove:
+
+- Novi redovi dodaju se na dno, a prikaz se pomiče s njima osim ako ste se pomjerili gore da čitate ranije redove.
+- **Update Running** pojavljuje se u panelu Summary, a polja kompajliranja, postavljanja i generacije mijenjaju se kako ih pokretanje dostiže.
+- Provjeravanje prestaje kada se pokretanje završi, nakon još jedne provjere za njegov završni red.
+
+Svaki red počinje lokalnim vremenom zaštitnog zida. Pokretanje prijavljuje ove korake:
+
+| Korak                 | Šta zapisnik prikazuje                                                                                                               |
+|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Početak               | `Update started` s okidačem: `manual`, `scheduled` ili `settings change`.                                                            |
+| Preuzimanja           | Svaka DNS, Bypass i IP lista po nazivu i hostu, zatim njeni zapisi, preskočeni redovi i da li se promijenila.                        |
+| Promjene izvora       | Lista čiji se URL promijenio i da je kopija s njenog prethodnog URL-a odbačena.                                                      |
+| Greške                | Lista koja nije uspjela i razlog, uz napomenu da li njena posljednja ispravna kopija ostaje u upotrebi ili još nema sačuvanu kopiju. |
+| GeoLite2              | Da li su podaci o državama preuzeti ili je ponovo korištena sačuvana kopija, s brojem mreža.                                         |
+| Kompajliranje         | Nova generacija i njen broj naziva, ili da je sadržaj nepromijenjen.                                                                 |
+| Postavljanje          | Da li je generacija stigla do DNS Resolvera i ponovno učitavanje Resolvera koje čisti njegovu predmemoriju.                          |
+| Tabele zaštitnog zida | IPv4 i IPv6 zapisi učitani u Bypass i IP sidra.                                                                                      |
+| Kraj                  | `Update finished` s trajanjem i ukupnim brojevima, ili `Update failed` s razlogom.                                                   |
+
+Zapisnik prikazuje samo host liste, nikada njen puni URL, putanju, upitni niz ili vjerodajnice, i nikada ne prikazuje MaxMind licencni ključ. Sistemski zapisnik i dalje zadržava vlastite redove `Sinkhole:` kao i prije.
+
+Svako ažuriranje zamjenjuje zapisnik prethodnog pokretanja, koji se čuva u `/var/run/sinkhole-update.log` i ograničen je na 256 KiB. Pokretanje koje dostigne ograničenje dodaje jedan red `Log truncated` i i dalje bilježi kako je završilo.

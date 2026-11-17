@@ -38,6 +38,8 @@ import generalTab from './_assets_/settings-1.png';
 | Expired Answer Lifetime | Empty | 过期的缓存应答仍可提供的秒数；`0` 表示不限制。          |
 | Expired Answer Wait     | Empty | 在提供过期应答之前等待新应答的毫秒数；`0` 表示立即应答。     |
 
+Rebind Exceptions 最多接受 100 个域名。Expired Answer Lifetime 接受 `0` 到 `31536000` 之间的整数秒，Expired Answer Wait 接受 `0` 到 `60000` 之间的整数毫秒。
+
 字段留空时不写入任何内容，并保留 Resolver 的默认值。[Resolver 设置](/docs/configure/resolver-settings)说明这些值何时生效。
 
 ## 软件包更新 \{#package-updates}
@@ -56,7 +58,7 @@ import generalTab from './_assets_/settings-1.png';
 | Name            | Empty | 分配、警报和 Status 使用的本地标签。        |
 | URL             | Empty | 不含嵌入凭据的 HTTP 或 HTTPS 来源。      |
 | Enabled         | On    | 在分配后将来源纳入更新和编译策略。             |
-| Global          | On    | 在设备和网络决定之后将列表应用于每个客户端。        |
+| Global          | Off   | 在设备和网络决定之后将列表应用于每个客户端。        |
 | Allowed Domains | Empty | 每行一个全局允许域名；每个条目都允许该域名及其所有子域名。 |
 
 **Add from Catalog** 按需搜索 AdGuard Home 列表注册表和 pfBlockerNG 源目录。添加结果会创建与手动输入 URL 相同的普通行。
@@ -73,26 +75,26 @@ import generalTab from './_assets_/settings-1.png';
 
 ## Network Scopes \{#network-scopes}
 
-| 字段              | 默认值   | 说明                                         |
-|-----------------|-------|--------------------------------------------|
-| Interface       | Empty | 其当前 IPv4 和 IPv6 子网用于识别网络的已配置 pfSense 接口。   |
-| Lists           | Empty | 阻止该网络中客户端的其他 DNS 列表。                       |
-| Allowed Domains | Empty | 每行一个网络例外；每个条目都在该网络列表和所有全局策略之前允许该域名及其所有子域名。 |
-| Enabled         | On    | 使该行参与客户端匹配和编译策略。                           |
+| 字段              | 默认值   | 说明                                                                   |
+|-----------------|-------|----------------------------------------------------------------------|
+| Interface       | LAN   | 其当前 IPv4 和 IPv6 子网用于识别网络的已配置 pfSense 接口。没有 LAN 时，会选择第一个未使用的非 WAN 接口。 |
+| Lists           | Empty | 阻止该网络中客户端的其他 DNS 列表。                                                 |
+| Allowed Domains | Empty | 每行一个网络例外；每个条目都在该网络列表和所有全局策略之前允许该域名及其所有子域名。                           |
+| Enabled         | On    | 使该行参与客户端匹配和编译策略。                                                     |
 
 每个接口只能出现一次。不可用的已保存接口仍会显示以供修正，而不会被丢弃。
 
 ## Device Scopes \{#device-scopes}
 
-| 字段                  | 默认值        | 说明                                               |
-|---------------------|------------|--------------------------------------------------|
-| Name                | Empty      | 在策略和 Status 中显示的本地标签。                            |
-| Identified By       | IP address | 选择 IP address、DHCP static mapping 或 MAC address。 |
-| IP or MAC Address   | Empty      | 选择 IP address 或 MAC address 时使用的准确标识符。           |
-| DHCP Static Mapping | Empty      | 使用该识别方式时选择的现有映射。                                 |
-| Lists               | Empty      | 阻止该设备的其他 DNS 列表。                                 |
-| Allowed Domains     | Empty      | 每行一个设备例外；每个条目都在所有网络和全局决定之前允许该域名及其所有子域名。          |
-| Enabled             | On         | 使该行参与客户端匹配和编译策略。                                 |
+| 字段                       | 默认值        | 说明                                               |
+|--------------------------|------------|--------------------------------------------------|
+| Name                     | Empty      | 在策略和 Status 中显示的本地标签。                            |
+| Identified By            | IP address | 选择 IP address、DHCP static mapping 或 MAC address。 |
+| IP Address / MAC Address | Empty      | 选择 IP address 或 MAC address 时使用的准确标识符。标签随所选方法变化。 |
+| DHCP Static Mapping      | Empty      | 使用该识别方式时选择的现有映射。                                 |
+| Lists                    | Empty      | 阻止该设备的其他 DNS 列表。                                 |
+| Allowed Domains          | Empty      | 每行一个设备例外；每个条目都在所有网络和全局决定之前允许该域名及其所有子域名。          |
+| Enabled                  | On         | 使该行参与客户端匹配和编译策略。                                 |
 
 静态映射会使用其配置地址以及为映射 MAC 观察到的当前地址。MAC 行使用当前 ARP、NDP 和 DHCP 租约数据。
 
@@ -112,22 +114,26 @@ import generalTab from './_assets_/settings-1.png';
 
 ## Bypass 保护 \{#bypass-protection}
 
-| 字段                  | 默认值   | 说明                                                   |
-|---------------------|-------|------------------------------------------------------|
-| Apply to            | Empty | 所有 Bypass 保护共用的面向客户端的到达接口。                           |
-| Redirect            | Off   | 将选定接口上的普通 UDP 和 TCP 端口 53 流量发送到防火墙。                  |
-| Exempt Sources      | Empty | 每行一个绕过普通 DNS 重定向的 IP 地址、CIDR、别名或 `This Firewall` 条目。 |
-| Exempt Destinations | Empty | 每行一个绕过普通 DNS 重定向的目标 IP 地址、CIDR 或别名。                  |
-| TLS and QUIC        | Off   | 阻止前往防火墙以外目标的 TCP 和 UDP 端口 853 流量。                    |
-| Providers           | Off   | 阻止已启用的 **Encrypted DNS** Bypass Lists 中的名称和地址。       |
-| Firefox             | Off   | 对 Firefox 的自动 DNS-over-HTTPS 金丝雀名称及其子域返回 `NXDOMAIN`。 |
-| Private Relay       | Off   | 对 Apple 的两个 Private Relay 可用性名称返回 `NXDOMAIN`。        |
-| Discovery           | Off   | 保持 DDR 不变、通告防火墙的 DNS over TLS，或返回不含记录的 `NOERROR` 响应。 |
-| Tor                 | Off   | 阻止已启用的 **Tor** Bypass Lists 中的名称和地址。                 |
-| VPN providers       | Off   | 阻止已启用的 **VPN** Bypass Lists 中的名称和地址。                 |
-| Standard VPN ports  | Off   | 阻止前往防火墙以外目标的 OpenVPN、WireGuard、IPsec UDP 端口和 ESP。    |
+| 字段                                     | 默认值   | 说明                                                   |
+|----------------------------------------|-------|------------------------------------------------------|
+| Apply to                               | Empty | 所有 Bypass 保护共用的面向客户端的到达接口。                           |
+| Redirect                               | Off   | 将选定接口上的普通 UDP 和 TCP 端口 53 流量发送到防火墙。                  |
+| Exempt Sources                         | Empty | 每行一个绕过普通 DNS 重定向的 IPv4 或 IPv6 地址、CIDR 网络或现有主机/网络别名。  |
+| Exempt Destinations                    | Empty | 每行一个绕过普通 DNS 重定向的目标 IP 地址、CIDR 或别名。                  |
+| TLS and QUIC                           | Off   | 阻止前往防火墙以外目标的 TCP 和 UDP 端口 853 流量。                    |
+| Providers                              | Off   | 阻止已启用的 **Encrypted DNS** Bypass Lists 中的名称和地址。       |
+| Firefox                                | Off   | 对 Firefox 的自动 DNS-over-HTTPS 金丝雀名称及其子域返回 `NXDOMAIN`。 |
+| Private Relay                          | Off   | 对 Apple 的两个 Private Relay 可用性名称返回 `NXDOMAIN`。        |
+| Discovery                              | Off   | 保持 DDR 不变、通告防火墙的 DNS over TLS，或返回不含记录的 `NOERROR` 响应。 |
+| Tor                                    | Off   | 阻止已启用的 **Tor** Bypass Lists 中的名称和地址。                 |
+| VPN (Block listed VPN providers)       | Off   | 阻止已启用的 **VPN** Bypass Lists 中的名称和地址。                 |
+| VPN (Block standard VPN ports)         | Off   | 阻止前往防火墙以外目标的 OpenVPN、WireGuard、IPsec UDP 端口和 ESP。    |
+| Block Exemptions → Exempt Sources      | Empty | 每行一个 IP 地址、CIDR 或别名，其流量跳过所有 Bypass 防火墙阻止。            |
+| Block Exemptions → Exempt Destinations | Empty | 每行一个目标 IP 地址、CIDR 或别名，任何 Bypass 防火墙阻止都不会拦下它。         |
 
 必须所有已保存的重定向豁免都有效，才会使用任何重定向规则。只有 Resolver 在 `127.0.0.1` 监听时 IPv4 才使用它，否则使用接口地址；IPv6 始终使用接口地址。**Discovery → Advertise** 要求 DNS Resolver 的 SSL/TLS 服务和证书主机名。
+
+阻止豁免不添加任何 pass 规则，因此豁免流量仍会经过您自己的防火墙规则。每个列表最多接受 16 个别名。已保存的阻止豁免无效时，所有 Bypass 防火墙阻止都会在不应用豁免的情况下保留，直到它被修正或移除。
 
 ### Bypass Lists \{#bypass-lists}
 
@@ -144,16 +150,16 @@ Bypass List 输入每行使用一个条目，并支持 `#` 注释。获取失败
 
 ## IP and Country Blocking \{#ip-and-country-blocking}
 
-| 字段                  | 默认值   | 说明                           |
-|---------------------|-------|------------------------------|
-| Enable              | Off   | 启用独立加载的 `sinkhole/ip` 防火墙锚点。 |
-| Interfaces          | Empty | 应用阻止规则的到达接口。                 |
-| Directions          | Empty | 选择入站来源阻止、出站目标阻止或两者。          |
-| Countries           | Empty | 每行一个 GeoLite2 两字母国家或地区代码。    |
-| MaxMind Account ID  | Empty | 用于获取 GeoLite2 Country 归档的账户。 |
-| MaxMind License Key | Unset | 管理员提供的只写密钥；留空可保留已存储值。        |
-| Clear License Key   | Off   | 保存时删除已存储的 MaxMind 密钥。        |
-| IP Allowlist        | Empty | 每行一个从最终阻止表扣除的 IP 地址或 CIDR。   |
+| 字段                  | 默认值   | 说明                                              |
+|---------------------|-------|-------------------------------------------------|
+| Enable              | Off   | 启用独立加载的 `sinkhole/ip` 防火墙锚点。                    |
+| Interfaces          | Empty | 应用阻止规则的到达接口。                                    |
+| Directions          | Empty | 选择入站来源阻止、出站目标阻止或两者。                             |
+| Countries           | Empty | 每行一个 GeoLite2 两字母国家或地区代码。                       |
+| MaxMind Account ID  | Empty | 用于获取 GeoLite2 Country 归档的账户。                    |
+| MaxMind License Key | Unset | 管理员提供的只写密钥；留空可保留已存储值。                           |
+| Clear License Key   | Off   | 保存时删除已存储的 MaxMind 密钥。                           |
+| IP Allowlist        | Empty | 每行一个从最终阻止表扣除的 IPv4 或 IPv6 地址、CIDR 网络或现有主机/网络别名。 |
 
 每个 IP 列表行都有名称、URL、IPv4/IPv6/Both 地址族选择和 Enabled 开关。Sinkhole 还会从最终表中移除防火墙接口、网关和 DNS 地址，使自身规则不会阻止受保护基础设施。
 

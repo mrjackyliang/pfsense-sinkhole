@@ -45,6 +45,7 @@ Bruk den installerte banen i automatisering, for eksempel `/usr/local/sbin/sinkh
 | `state.json`                            | Vedvarende tilstand for kompilering, distribusjon, forrige Resolver-innstilling, tidsplan og fjerning. |
 | `updates.json`                          | Tilstand for kontroll av nyeste utgivelse og deduplisering av varsler.                                 |
 | `update-status.json`                    | Fremdrift for frakoblet automatisk pakkeoppdatering.                                                   |
+| `safesearch-targets.json`               | Siste gyldige adresser for trygge verter for SafeSearch.                                               |
 | `unbound/sinkhole/`                     | Valgfritt vedvarende speil av gjeldende kompilerte generasjon for gjenoppretting av RAM-disk.          |
 | `unbound/sinkhole.d/`                   | Valgfritt vedvarende speil av lagring for kompilerte generasjoner.                                     |
 | `unbound/sinkhole-clients/clients.json` | Valgfritt vedvarende speil av klientkartet.                                                            |
@@ -58,6 +59,7 @@ Speilet under `unbound/` brukes når pfSense har `/var` på en RAM-disk. Pakke-S
 | `sinkhole-alerts.json`               | Tilstand for gjentakelsesvindu og timegrense for varsler.         |
 | `sinkhole-catalog-adguard-home.json` | Bufret listeregister fra AdGuard Home.                            |
 | `sinkhole-catalog-pfblockerng.json`  | Bufret feedkatalog fra pfBlockerNG.                               |
+| `sinkhole-services-registry.json`    | Bufret tjenesteregister fra AdGuard Home.                         |
 | `sinkhole-block-v4.txt`              | Endelig sammenslått og fratrukket IPv4-blokkeringstabell.         |
 | `sinkhole-block-v6.txt`              | Endelig sammenslått og fratrukket IPv6-blokkeringstabell.         |
 | `sinkhole-bypass-v4.txt`             | Endelig IPv4-Bypass-tabell etter fratrekk av beskyttede adresser. |
@@ -79,6 +81,7 @@ Katalogbuffere og genererte IP-tabeller er reproduserbare arbeidsdata. Varslings
 | `sinkhole-redirect-check.json`  | Første observasjon av avvik som brukes av omdirigeringskontrollen med to observasjoner. |
 | `sinkhole-status.json`          | Gjeldende status for oppdatering, kompilering, distribusjon, klient og varsling.        |
 | `sinkhole-status.json.lock`     | Koordineringslås for statusfilen.                                                       |
+| `sinkhole-update.log`           | Trinnene i den siste listeoppdateringen, vist i Update Log under Status.                |
 | `sinkhole-ip-anchor.conf`       | Gjeldende genererte regler for ankeret `sinkhole/ip`.                                   |
 | `sinkhole-ip-anchor.sha256`     | Sammendrag som brukes til å sammenligne generert og lastet IP-policy.                   |
 | `sinkhole-ip-status.json`       | Status for IP-lister, GeoLite2, tabeller og anker.                                      |
@@ -89,17 +92,20 @@ Låsefiler koordinerer jobber. At de finnes, beviser ikke alene at en aktiv pros
 
 ## Resolver-kjøretid under `/var/unbound` \{#resolver-runtime}
 
-| Bane                                 | Formål                                                                       |
-|--------------------------------------|------------------------------------------------------------------------------|
-| `sinkhole.py`                        | Gjennomgått Python-modul kopiert til kjøretidsroten i Unbound.               |
-| `sinkhole/`                          | Manifest og data for aktiv generasjon som leses av modulen.                  |
-| `sinkhole.d/`                        | Lagring av kompilerte generasjoner eid av root.                              |
-| `sinkhole.d/<generation>/bypass.tsv` | Kompilerte leverandør-, Tor- og VPN-navn for Bypass-DNS-svar.                |
-| `sinkhole-clients/clients.json`      | Gjeldende tilordning fra klientadresse til omfang.                           |
-| `sinkhole-state/loaded`              | Generasjons-ID som modulen rapporterer som lastet.                           |
-| `sinkhole-state/events`              | Sammenslåtte hendelser med blokkerte svar som venter på varslingsbehandling. |
-| `sinkhole-state/events.processing`   | Hendelsesgruppe som eies av varslingsprosessen.                              |
-| `sinkhole-state/events-dropped`      | Antall hendelser som ble forkastet etter at den avgrensede køen ble full.    |
+| Bane                                    | Formål                                                                                                                           |
+|-----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| `sinkhole.py`                           | Gjennomgått Python-modul kopiert til kjøretidsroten i Unbound.                                                                   |
+| `sinkhole/`                             | Manifest og data for aktiv generasjon som leses av modulen.                                                                      |
+| `sinkhole.d/`                           | Lagring av kompilerte generasjoner eid av root.                                                                                  |
+| `sinkhole.d/<generation>/domains.tsv`   | Kompilerte navn fra konfigurerte lister og blokkerte tjenester med listetilhørighet, sortert etter navn.                         |
+| `sinkhole.d/<generation>/domains.index` | Minnetilordnet indeks over navnene fra konfigurerte lister og blokkerte tjenester som modulen søker i, omtrent 18 byte per navn. |
+| `sinkhole.d/<generation>/bypass.tsv`    | Kompilerte leverandør-, Tor- og VPN-navn, sortert etter navn.                                                                    |
+| `sinkhole.d/<generation>/bypass.index`  | Minnetilordnet indeks over navnene i Bypass List som modulen søker i for Bypass-DNS-svar.                                        |
+| `sinkhole-clients/clients.json`         | Gjeldende tilordning fra klientadresse til omfang.                                                                               |
+| `sinkhole-state/loaded`                 | Generasjons-ID som modulen rapporterer som lastet.                                                                               |
+| `sinkhole-state/events`                 | Sammenslåtte hendelser med blokkerte svar som venter på varslingsbehandling.                                                     |
+| `sinkhole-state/events.processing`      | Hendelsesgruppe som eies av varslingsprosessen.                                                                                  |
+| `sinkhole-state/events-dropped`         | Antall hendelser som ble forkastet etter at den avgrensede køen ble full.                                                        |
 
 Disse filene er kjøretidsmateriale, ikke konfigurasjon. Sinkhole gjenoppretter eller genererer dem på nytt gjennom pakke-Sync og fjerner dem når pakken avinstalleres.
 

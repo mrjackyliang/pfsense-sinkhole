@@ -1,7 +1,7 @@
 ---
 id: status
 title: Status
-description: Read every Sinkhole Status panel, distinguish active, pending, paused, loaded, missing, and out-of-date states, and run a manual list update.
+description: Read every Sinkhole Status panel, distinguish active, pending, paused, loaded, missing, and out-of-date states, and follow a manual list update in the live Update Log.
 keywords:
   - sinkhole for pfsense
   - status
@@ -24,18 +24,21 @@ Read saved-list, scope, alert, Bypass, IP, compile, deployment, and Resolver sta
 
 Open **Firewall → Sinkhole → Status** to see these panels:
 
-| Panel                   | What it reports                                                                                                                    |
-|-------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| Summary                 | Compile, deployment, generation, operation, Resolver owner, overall Sinkhole state, and **Update Now** beneath the panel.          |
-| Lists                   | DNS-list URL, saved entry count, last successful update, and last error.                                                           |
-| Popular-List Catalogs   | Last fetch and last error for the AdGuard Home and pfBlockerNG catalog sources.                                                    |
-| Invalid Saved Rows      | Malformed list rows that remain available for repair; shown only when such rows exist.                                             |
-| Scopes                  | Client-map rebuild time and error, followed by separate Networks and Devices panels.                                               |
-| Alerts                  | Last run, events read or stale, notifications sent or held back, dropped events, and last error.                                   |
-| Bypass                  | Every protection, interfaces, redirect-rule state, Bypass anchor state and counts, followed by Bypass Lists and any repair panels. |
-| IP and Country Blocking | Policy selections, table and rule counts, updates, errors, and anchor state, followed by a separate IP Lists panel.                |
+| Panel                   | What it reports                                                                                                                                             |
+|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Summary                 | Compiled names against the limit, compile, deployment, generation, operation, Resolver owner, overall Sinkhole state, and **Update Now** beneath the panel. |
+| Update Log              | Every step of the most recent list update, following a running update live.                                                                                 |
+| Lists                   | DNS-list URL, saved entry count, last successful update, and last error.                                                                                    |
+| Popular-List Catalogs   | Last fetch and last error for the AdGuard Home and pfBlockerNG catalog sources.                                                                             |
+| Invalid Saved Rows      | Malformed list rows that remain available for repair; shown only when such rows exist.                                                                      |
+| Scopes                  | Client-map rebuild time and error, followed by separate Networks and Devices panels.                                                                        |
+| Blocked Services        | Registry fetch, last error, and services selected per scope.                                                                                                |
+| SafeSearch              | Engines per scope and each safe host's addresses, last check, and error.                                                                                    |
+| Alerts                  | Last run, events read or stale, notifications sent or held back, dropped events, and last error.                                                            |
+| Bypass                  | Every protection, interfaces, redirect-rule state, Bypass anchor state and counts, followed by Bypass Lists and any repair panels.                          |
+| IP and Country Blocking | Policy selections, table and rule counts, updates, errors, and anchor state, followed by a separate IP Lists panel.                                         |
 
-Disabled list and scope rows appear muted. A source with an error can still show entries and an earlier successful update because the last-good copy remains active.
+Disabled list and scope rows appear muted. A source with an error can still show entries and an earlier successful update because the last-good copy remains active. After a list's URL changes, the next update that downloads it discards the copy from the previous URL, so the row shows no entries until the first download from the new URL succeeds.
 
 <img src={listsScopesStatus} alt="Status tab showing saved demo list updates, network subnets, and current demo device addresses" width={1024} height={929} style={{maxWidth: '100%', height: 'auto'}} />
 
@@ -59,20 +62,21 @@ When Sinkhole is deliberately disabled, **Deployment Needed** is `No`, **Loaded 
 
 ## Compile and Deployment State \{#compile-and-deployment-state}
 
-| Field               | Meaning                                                                                |
-|---------------------|----------------------------------------------------------------------------------------|
-| Compile Needed      | Saved policy changed or the last compile didn't complete successfully.                 |
-| Compiled Generation | Identifier produced by the most recent successful compile.                             |
-| Deployment Needed   | Compiled content isn't the content deployed for Unbound, or integration is inactive.   |
-| Deployed Generation | Identifier in the currently deployed runtime manifest.                                 |
-| Loaded Generation   | Identifier the Unbound module reports it loaded.                                       |
-| Update Running      | Shown only while a list or IP update owns the shared update lock.                      |
-| Removal in Progress | Shown only while the durable removal marker is set and integration is being withdrawn. |
-| Python Script Owner | Current value of the Resolver's single `python_script` slot, or `None`.                |
+| Field                            | Meaning                                                                                                                                            |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compiled Names                   | Names in the deployed DNS-blocking index (lists and Blocked Services) plus names in the Bypass index, against the 10,000,000-name limit.           |
+| Compile Needed                   | Saved policy changed or the last compile didn't complete successfully.                                                                             |
+| Compiled Generation              | Identifier produced by the most recent successful compile.                                                                                         |
+| Deployment Needed                | Compiled content isn't the content deployed for Unbound, or integration is inactive.                                                               |
+| Deployed Generation              | Identifier in the currently deployed runtime manifest.                                                                                             |
+| Loaded Generation                | Identifier the Unbound module reports it loaded.                                                                                                   |
+| Update Running                   | Shown only while a live process owns the shared update lock: a DNS, Bypass, or IP update, a settings apply, a package check or update, or removal. |
+| Removal in Progress              | Shown only while the durable removal marker is set and integration is being withdrawn.                                                             |
+| DNS Resolver Python Script Owner | Current value of the Resolver's single `python_script` slot, or `None`.                                                                            |
 
 The page shows a warning box when compile or deployment is pending, including the recorded reason. Matching compiled, deployed, and loaded identifiers show that saved policy reached the running module.
 
-<img src={summaryStatus} alt="Status Summary panel showing matching compiled, deployed, and loaded generations with Sinkhole active" width={1024} height={834} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={summaryStatus} alt="Status Summary panel showing compiled names against the limit, matching compiled, deployed, and loaded generations with Sinkhole active, and the Update Log of a finished manual update" width={1024} height={1204} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Scope and Alert State \{#scope-and-alert-state}
 
@@ -92,9 +96,9 @@ The independent firewall anchor reports:
 
 | Field                   | Meaning                                                                                          |
 |-------------------------|--------------------------------------------------------------------------------------------------|
-| Firewall rules loaded   | Whether the `sinkhole/bypass` anchor exists when current settings require it.                    |
-| Firewall rules current  | Whether the loaded digest, rules, and tables match the current settings and last-good list data. |
-| Firewall rule count     | Number of active rules in the Bypass anchor.                                                     |
+| Firewall Rules Loaded   | Whether the `sinkhole/bypass` anchor exists when current settings require it.                    |
+| Firewall Rules Current  | Whether the loaded digest, rules, and tables match the current settings and last-good list data. |
+| Firewall Rule Count     | Number of active rules in the Bypass anchor.                                                     |
 | IPv4/IPv6 table entries | Final provider, Tor, and VPN address counts after protected firewall addresses are removed.      |
 
 The **Bypass Lists** table reports each row's kind, enabled state, saved entry count, last fetch, and last error. A failed fetch can therefore show an error alongside entries from the retained last-good copy.
@@ -107,7 +111,16 @@ The **Bypass Lists** table reports each row's kind, enabled state, saved entry c
 | On     | Redirect is enabled and every saved exemption is valid.                                       |
 | Paused | At least one saved source or destination exemption is invalid, so no redirect rules are used. |
 
-The **pfSense loaded rules** field has three states:
+While Redirect is on but its rules aren't loaded, a red warning at the top of the page gives the reason:
+
+- Sinkhole is disabled.
+- The DNS Resolver isn't running.
+- A saved exemption is invalid.
+- Sinkhole is being removed.
+
+The rules don't depend on the Resolver's Python Module, so pfBlockerNG or another script holding it never stops the redirect. The **Bypass** tab shows the same warning under **Redirect**.
+
+The **pfSense Loaded Rules** field has three states:
 
 | State       | Meaning                                                                                        |
 |-------------|------------------------------------------------------------------------------------------------|
@@ -115,7 +128,7 @@ The **pfSense loaded rules** field has three states:
 | No          | The wanted block isn't loaded.                                                                 |
 | Out of Date | A Sinkhole block is loaded, but its text doesn't match current settings or Resolver listeners. |
 
-Each family target is either the selected listener address or a reason no rule can be built. **Last parse error** is shown only while the current block is missing after pfSense rejected it.
+Each family target is either the selected listener address or a reason no rule can be built. **Last Parse Error** is shown only while the current block is missing after pfSense rejected it.
 
 ## IP and Country State \{#ip-and-country-state}
 
@@ -127,10 +140,38 @@ Table entry counts show the final merged IPv4 and IPv6 networks after allowlist 
 
 **GeoLite2 Last Update** is independent from the most recent list update.
 
-<img src={ipStatus} alt="Status IP and Country Blocking panel showing table counts, update state, a loaded anchor, and a demo IP-list row" width={1024} height={1022} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipStatus} alt="Status IP and Country Blocking panel showing table counts, update state, a loaded anchor, and two demo IP-list rows" width={1024} height={1055} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Run Update Now \{#run-update-now}
 
-Selecting **Update Now** beneath Summary starts `/usr/local/sbin/sinkhole --manual` in the background and returns immediately. The button doesn't stream output, so **Update Running**, the DNS/Bypass/IP list rows, compile fields, and last errors provide the result.
+Selecting **Update Now** beneath Summary starts `/usr/local/sbin/sinkhole --manual` in the background and returns immediately. The **Update Log** then follows the run, so you can watch it without refreshing the page.
 
 The manual job uses the same shared update lock as scheduled list updates and package self-update. If another update owns it, the existing job continues and pending apply work is preserved.
+
+## Update Log \{#update-log}
+
+The **Update Log** panel below Summary shows every step of the most recent update, whether it was scheduled, started with **Update Now**, or applied after a settings change. Until an update has run, it says `No update has run yet.`
+
+While an update runs, the page checks for new lines every 2 seconds:
+
+- New lines are added at the bottom, and the view scrolls with them unless you've scrolled up to read earlier lines.
+- **Update Running** appears in Summary, and the compile, deployment, and generation fields change as the run reaches them.
+- Checking stops once the run ends, after one last check for its closing line.
+
+Each line starts with the firewall's local time. A run reports these steps:
+
+| Step            | What the log shows                                                                                               |
+|-----------------|------------------------------------------------------------------------------------------------------------------|
+| Start           | `Update started` with the trigger: `manual`, `scheduled`, or `settings change`.                                  |
+| Downloads       | Each DNS, Bypass, and IP list by name and host, then its entries, skipped lines, and whether it changed.         |
+| Source changes  | A list whose URL changed, and that the copy from its previous URL was discarded.                                 |
+| Failures        | The list that failed and the reason, noting whether its last good copy stays in use or it has no saved copy yet. |
+| GeoLite2        | Whether the country data downloaded or the saved copy was reused, with network counts.                           |
+| Compile         | The new generation and its name count, or that the content is unchanged.                                         |
+| Deploy          | Whether the generation reached the DNS Resolver, and the Resolver reload that clears its cache.                  |
+| Firewall tables | The IPv4 and IPv6 entries loaded into the Bypass and IP anchors.                                                 |
+| End             | `Update finished` with its duration and totals, or `Update failed` with the reason.                              |
+
+The log shows a list's host only, never its full URL, path, query string, or credentials, and it never shows the MaxMind license key. The system log keeps its own `Sinkhole:` lines as before.
+
+Each update replaces the previous run's log, which is kept in `/var/run/sinkhole-update.log` and capped at 256 KiB. A run that reaches the cap adds one `Log truncated` line and still records how it ended.

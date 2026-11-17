@@ -24,7 +24,7 @@ Open **Firewall → Sinkhole → Bypass** en selecteer interfaces bij **Apply to
 
 Netwerk- en apparaatovereenkomsten gebruiken de huidige subnetten van die interfaces, net als gewone Sinkhole-scopes. Een client buiten de geselecteerde subnetten ontvangt geen Bypass-DNS-antwoord.
 
-<img src={bypassProtection} alt="Tabblad Bypass met LAN geselecteerd, gewone DNS-omleiding uitgeschakeld, bescherming voor versleutelde DNS en tunnels ingeschakeld, Discovery ingesteld op Answer with no records en drie demo-Bypass Lists" width={1024} height={1510} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Tabblad Bypass met LAN geselecteerd, gewone DNS-omleiding uitgeschakeld, bescherming voor versleutelde DNS en tunnels ingeschakeld, Discovery ingesteld op Answer with no records, één uitgezonderde demobron en -bestemming, en drie demo-Bypass Lists" width={1024} height={1699} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Gewone DNS omleiden \{#redirect-plain-dns}
 
@@ -41,6 +41,15 @@ De omleiding behoudt de bestaande luisterafhankelijke doelen en uitzonderingen:
 - **Exempt Destinations** blijven DNS-verkeer ontvangen, zodat een interne resolver op een ander netwerk wordt ondersteund.
 
 Elke uitzondering accepteert per regel één IPv4-adres, IPv6-adres, CIDR-netwerk of bestaande pfSense-host-/netwerkalias. Een ongeldige opgeslagen uitzondering pauzeert alle omleidingsregels totdat deze is gecorrigeerd of verwijderd. Omgeleide clients moeten nog steeds toegang hebben via de toegangsbeheerinstellingen van de Resolver.
+
+De omleidingsregels worden geladen zodra Sinkhole is ingeschakeld op het tabblad **General** en de DNS Resolver draait. Ze zijn niet afhankelijk van de Python-module van de Resolver, dus ze blijven werken terwijl pfBlockerNG of een ander script die bezet, bijvoorbeeld tijdens een overstap van pfBlockerNG. Zolang Redirect aan staat maar de regels niet zijn geladen, geeft een rij **Warning** onder **Redirect** de reden:
+
+- Sinkhole is uitgeschakeld.
+- De DNS Resolver draait niet.
+- Een opgeslagen uitzondering is ongeldig.
+- Sinkhole wordt verwijderd.
+
+**Status** toont dezelfde waarschuwing boven aan de pagina.
 
 ## Versleutelde DNS beveiligen \{#protect-encrypted-dns}
 
@@ -86,11 +95,24 @@ Als Discovery wordt uitgeschakeld of Sinkhole wordt verwijderd, wordt de zonereg
 
 Namen en adressen uit Tor- en VPN-lijsten gebruiken hetzelfde DNS- en firewallgedrag als providerlijsten voor versleutelde DNS. Deze instellingen beperken veelgebruikte alternatieve paden, maar herkennen niet elke versleutelde of aangepaste tunnel.
 
+## Apparaten en servers uitzonderen van de blokkades \{#exempt-devices-and-servers-from-the-blocks}
+
+**Block Exemptions** bevat één lijst **Exempt Sources** en één lijst **Exempt Destinations** die alle firewallblokkades op het tabblad Bypass delen: **TLS and QUIC**, **Providers**, **Tor**, **Block listed VPN providers** en **Block standard VPN ports**. Elke regel bevat één IPv4-adres, IPv6-adres, CIDR-netwerk of bestaande pfSense-host-/netwerkalias, dezelfde waarden die de omleidingsuitzonderingen accepteren. Elke lijst bevat maximaal 16 aliassen.
+
+- **Exempt Sources** slaan de blokkades over. Gebruik deze lijst voor een client die externe DNS-servers moet bereiken, zoals een NAS die DNS over TLS naar `1.1.1.1` gebruikt.
+- **Exempt Destinations** blijven ondanks de blokkades bereikbaar voor elke client op de geselecteerde interfaces, zoals één openbare resolver die je vertrouwt.
+
+Een uitzondering opent nooit zelf een pad. Sinkhole voegt geen pass-regel toe: uitgezonderd verkeer komt simpelweg niet overeen met de Bypass-blokkades en gaat verder naar je eigen firewallregels, die nog steeds bepalen of het wordt doorgelaten.
+
+Uitzonderingen gelden alleen voor de firewallblokkades. Provider-, Tor- en VPN-namen uit Bypass Lists blijven voor uitgezonderde clients geblokkeerd in DNS, dus een client die zijn server op naam vindt, zoals `cloudflare-dns.com`, heeft die naam ook nodig in **Allowed Domains**. Gewone DNS op poort 53 volgt in plaats daarvan **Redirect** en de eigen uitzonderingen daarvan.
+
+Als een opgeslagen blokkeringsuitzondering ongeldig wordt, zoals een alias die is hernoemd of verwijderd, houdt Sinkhole alle blokkades aan zonder uitzonderingen, schrijft het één regel naar het systeemlogboek en toont het de waarde onder **Invalid Saved Values** totdat die is gecorrigeerd of verwijderd.
+
 ## Toevoegen vanuit de catalogus \{#add-from-catalog}
 
 Open **Add from Catalog** op het tabblad Bypass om het lijstenregister van AdGuard Home en de DNS-, IPv4- en IPv6-secties van de feedcatalogus van pfBlockerNG te doorzoeken. De resultaten zijn beperkt tot bypass-feeds en hebben een vast type: **Encrypted DNS**, **Tor** of **VPN**.
 
-De broncatalogi worden alleen opgehaald wanneer je de catalogus opent of **Refresh** selecteert. Het toevoegen van een resultaat maakt een ingeschakelde Bypass List die het normale schema voor lijstupdates volgt.
+De broncatalogi worden alleen opgehaald wanneer je de catalogus opent of **Refresh** selecteert. Het toevoegen van een resultaat maakt een ingeschakelde Bypass List; die neemt alleen deel aan geplande updates zolang de bijbehorende beveiliging **Providers**, **Tor** of **VPN** aan staat.
 
 De regel **Contents** op elke kaart toont **Domains**, **IPv4 addresses** of **IPv6 addresses**. Wanneer u een IPv4- of IPv6-resultaat van pfBlockerNG toevoegt, voegt Sinkhole ` (IPv4)` of ` (IPv6)` toe aan de opgeslagen naam; domeinresultaten behouden de ongewijzigde catalogusnaam.
 
@@ -100,10 +122,10 @@ Selecteer **Add** onder **Bypass Lists** en voer vervolgens een lokale naam, typ
 
 Elke bron accepteert één item per regel. Een lijst kan domeinen, IPv4-adressen, IPv6-adressen en CIDR's combineren; tekst na `#` is een opmerking. Ongeldige en te lange regels worden overgeslagen. Een download die de vaste byte- of geaccepteerde-itemslimiet overschrijdt, wordt geweigerd, zodat de laatste goede kopie behouden blijft.
 
-Bypass Lists worden volgens het geconfigureerde lijstschema bijgewerkt met dezelfde begrensde downloadclient als andere lijsten. Een mislukte ophaalactie behoudt de laatste goede opgeslagen kopie en **Status → Bypass Lists** meldt items, laatste ophaalactie en de meest recente fout voor elke rij. Sinkhole levert of adviseert geen Bypass List.
+Een ingeschakelde Bypass List wordt volgens het geconfigureerde lijstschema bijgewerkt met dezelfde begrensde downloadclient als andere lijsten, maar alleen zolang de bijbehorende beveiliging **Providers**, **Tor** of **VPN** aan staat. Een mislukte ophaalactie behoudt de laatste goede opgeslagen kopie van dezelfde URL en **Status → Bypass Lists** meldt items, laatste ophaalactie en de meest recente fout voor elke rij. Sinkhole levert of adviseert geen Bypass List.
 
 ## De actieve status verifiëren \{#verify-the-active-state}
 
-Open na het opslaan **Status → Bypass** en bevestig dat elke beoogde beveiliging `On` is, dat de geselecteerde interfaces juist zijn en dat **Discovery Zone** `Present` is wanneer Discovery aan staat. Bevestig dat **Firewall rules loaded** en **Firewall rules current** voor firewallbeveiligingen `Yes` zijn. De tabel Bypass Lists toont het aantal opgeslagen items en de laatste ophaalactie.
+Open na het opslaan **Status → Bypass** en bevestig dat elke beoogde beveiliging `On` is, dat de geselecteerde interfaces juist zijn en dat **Discovery Zone** `Present` is wanneer Discovery aan staat. Bevestig dat **Firewall Rules Loaded** en **Firewall Rules Current** voor firewallbeveiligingen `Yes` zijn. De tabel Bypass Lists toont het aantal opgeslagen items en de laatste ophaalactie.
 
 De omleiding van gewone DNS behoudt de bestaande afstemming per minuut met twee waarnemingen na wijzigingen aan Resolver-luisteraars. Het anker `sinkhole/bypass` wordt onafhankelijk van `sinkhole/ip` geladen, zodat het uitschakelen van de ene functie de andere niet verstoort.

@@ -54,7 +54,7 @@ Unbound는 Python 모듈보다 먼저 기본 제공 영역 `test.`, `invalid.`, 
 격리된 실습용 인터페이스 하나를 선택하고 Bypass 보호를 한 번에 하나씩 활성화합니다. 각 테스트 후 선택하지 않은 인터페이스의 동일한 클라이언트가 영향을 받지 않는지 확인합니다.
 
 1. **Redirect**를 활성화하고 해당 주소 패밀리에 Resolver 리스너가 있는지 확인한 다음 다른 목적지에 일반 UDP 및 TCP 포트 53 쿼리를 보냅니다. pfSense가 수신하는지 확인합니다.
-2. 폐기 가능한 구성에서만 의도적으로 잘못된 예외를 추가하고 부분 규칙을 로드하는 대신 리디렉션이 **Paused** 상태가 되는지 확인합니다. 올바른 데이터를 복원하고 두 번의 분 단위 관찰을 기다린 다음 **pfSense loaded rules**가 `Yes`로 돌아오는지 확인합니다.
+2. 폐기 가능한 구성에서만 의도적으로 잘못된 예외를 추가하고 부분 규칙을 로드하는 대신 리디렉션이 **Paused** 상태가 되는지 확인합니다. 올바른 데이터를 복원하고 두 번의 분 단위 관찰을 기다린 다음 **pfSense Loaded Rules**가 `Yes`로 돌아오는지 확인합니다.
 3. **TLS and QUIC**를 활성화한 다음 실습용 목적지로 향하는 TCP 및 UDP 포트 853은 차단되고 방화벽으로 향하는 트래픽은 차단되지 않는지 확인합니다.
 4. 만든 도메인, 주소, CIDR, 주석 및 잘못된 데이터만 포함하는 비활성화된 Bypass List를 추가합니다. 이 목록과 일치하는 보호를 활성화한 다음 유효한 이름과 주소가 차단되고, 잘못된 줄은 건너뛰며, 나중에 가져오기가 실패해도 저장된 복사본이 유지되는지 확인합니다.
 5. Firefox 및 Private Relay 테스트 쿼리가 `NXDOMAIN`을 받는지 확인합니다. **Answer with no records** 모드에서 DDR이 비어 있는 `NOERROR` 응답을 반환하는지 확인합니다.
@@ -77,4 +77,4 @@ Unbound는 Python 모듈보다 먼저 기본 제공 영역 `test.`, `invalid.`, 
 
 ## 환경 기록 \{#record-the-environment}
 
-유용한 테스트 기록을 위해 Sinkhole 버전, pfSense 에디션과 릴리스, FreeBSD 릴리스, 선택한 기능, Status 상태 및 민감 정보를 제거한 `Sinkhole:` 시스템 로그 줄을 기록합니다. 현재 공식적으로 테스트되었다고 나열된 pfSense 릴리스는 없으며 호환성 테스트는 각 Sinkhole 릴리스 전에 수행됩니다.
+유용한 테스트 기록을 위해 Sinkhole 버전, pfSense 에디션과 릴리스, FreeBSD 릴리스, 선택한 기능, Status 상태 및 민감 정보를 제거한 `Sinkhole:` 시스템 로그 줄을 기록합니다. About 탭과 [테스트된 릴리스](/docs/compatibility#tested-releases)에는 각 Sinkhole 버전이 설치, 업데이트, 차단 테스트 및 제거를 처음부터 끝까지 통과한 pfSense 릴리스가 나열됩니다.

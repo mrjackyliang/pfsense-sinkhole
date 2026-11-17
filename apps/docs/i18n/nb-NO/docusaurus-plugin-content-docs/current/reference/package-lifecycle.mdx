@@ -42,7 +42,7 @@ Denne bevaringen erklærer ikke kompatibilitet med en utestet pfSense-utgivelse.
 
 ## Keep Settings \{#keep-settings}
 
-**General → Keep Settings** er valgt som standard. Når alternativet er valgt, bevarer pakkefjerning Sinkhole-konfigurasjonen i pfSense og dataene i `/cf/conf/sinkhole`, slik at lagrede lister og policy er tilgjengelige etter ny installasjon.
+**General → Keep Settings** er valgt som standard. Når alternativet er valgt, bevarer pakkefjerning Sinkhole-konfigurasjonen i pfSense og dataene i `/cf/conf/sinkhole`, inkludert lagrede DNS- og IP-lister, SafeSearch-mål og vedvarende tilstand, slik at policyen er tilgjengelig etter ny installasjon. Fjerningen sletter likevel de lagrede kopiene av Bypass Lists og det valgfrie vedvarende Unbound-speilet; ny installasjon laster dem ned eller genererer dem på nytt.
 
 Denne standardinnstillingen beskytter også data under en oppgradering med pakkebehandleren som først fjerner og deretter installerer. Fjern valget bare når målet er fullstendig sletting av konfigurasjon og lagrede data.
 
@@ -56,7 +56,7 @@ pkg delete -f pfSense-pkg-Sinkhole
 
 Fjerningen stopper planlagte jobber, blokkerer nytt oppdateringsarbeid, gjenoppretter de tidligere Python-innstillingene i Resolver, fjerner Sinkholes administrerte Discovery-blokk fra DNS Resolverens **Custom options**, fjerner kjøretidsinnhold i `/var/unbound`, rydder midlertidige låser og status, trekker tilbake reglene for omdirigering av vanlig DNS, tømmer ankrene `sinkhole/bypass` og `sinkhole/ip` og fjerner bufrede Bypass Lists og tabellfiler. Den administrerte Discovery-blokken fjernes enten **Keep Settings** er på eller av. Fjerningen tar også bort pakkefilene som er installert under `/usr/local`.
 
-Når **Keep Settings** er på, beholdes konfigurasjonen og vedvarende lagrede lister for ny installasjon. Når alternativet er av, sletter fjerningen alle Sinkhole-innstillinger og lagrede data, inkludert `/cf/conf/sinkhole` og hele Sinkhole-grenen i pakkekonfigurasjonen i pfSense.
+Når **Keep Settings** er på, beholdes konfigurasjonen og de lagrede DNS- og IP-listene for ny installasjon, mens kopier av Bypass Lists og det vedvarende Unbound-speilet fjernes uansett. Når alternativet er av, sletter fjerningen alle Sinkhole-innstillinger og lagrede data, inkludert `/cf/conf/sinkhole` og hele Sinkhole-grenen i pakkekonfigurasjonen i pfSense.
 
 ## Kontroller fjerningen \{#verify-removal}
 

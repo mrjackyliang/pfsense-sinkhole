@@ -850,6 +850,11 @@ sinkholeTestRun([
                 'An early discovery call must leave the package error file alone.',
             );
             $expectedNatRules = $adapter->redirectRuleText();
+            sinkholeTestAssertContains(
+                'rdr pass on em0',
+                $expectedNatRules,
+                'An enabled redirect with a running Resolver must produce rules.',
+            );
             sinkholeTestAssertSame(
                 $expectedNatRules,
                 pfsensePackageSinkholeFilterRules('nat'),
@@ -900,12 +905,40 @@ sinkholeTestRun([
 
             config_set_path('unbound/python_script', 'other');
             sinkholeTestAssertSame(
-                '',
+                $expectedNatRules,
                 pfsensePackageSinkholeFilterRules('nat'),
-                'An inactive integration must return no redirect rules.',
+                'Another script in the Python Module slot must keep the redirect rules.',
             );
 
             config_set_path('unbound/python_script', 'sinkhole');
+            config_del_path('unbound/python');
+            sinkholeTestAssertSame(
+                $expectedNatRules,
+                pfsensePackageSinkholeFilterRules('nat'),
+                'A disabled Python Module must keep the redirect rules.',
+            );
+
+            config_set_path('unbound/python', '');
+            config_set_path('installedpackages/package', [['name' => 'pfBlockerNG-devel']]);
+            config_set_path('installedpackages/pfblockerng/config', [['enable_cb' => 'on']]);
+            sinkholeTestAssertSame(
+                true,
+                $adapter->pfBlockerNgActive(),
+                'The pfBlockerNG fixture must count as active.',
+            );
+            sinkholeTestAssertSame(
+                $expectedNatRules,
+                pfsensePackageSinkholeFilterRules('nat'),
+                'An active pfBlockerNG must keep the redirect rules.',
+            );
+            sinkholeTestAssertSame(
+                null,
+                $adapter->redirectInactiveReason(),
+                'Loaded redirect rules must have no inactive reason.',
+            );
+
+            config_del_path('installedpackages/package');
+            config_del_path('installedpackages/pfblockerng');
             $stateStore->markRemoving();
             sinkholeTestAssertSame(
                 '',
@@ -940,6 +973,137 @@ sinkholeTestRun([
                 'A redirect without a valid configured interface must return no rules.',
             );
         } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'redirect inactive reason names each blocked gate without the Python slot' => static function (): void {
+        global $sinkholeStubInterfaceAddresses;
+        global $sinkholeStubInterfaces;
+        global $sinkholeStubRealInterfaces;
+        global $sinkholeStubRunningProcesses;
+
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            sinkholeStubReset([
+                'installedpackages' => [
+                    'sinkhole' => [
+                        'config' => [[
+                            'enabled' => 'on',
+                            'update_frequency' => 'daily',
+                        ]],
+                        'redirect' => [
+                            'enabled' => 'on',
+                            'interfaces' => ['item' => ['lan']],
+                            'exempt_sources' => ['item' => []],
+                            'exempt_destinations' => ['item' => []],
+                        ],
+                    ],
+                ],
+                'unbound' => [
+                    'enable' => '',
+                    'python_order' => 'pre_validator',
+                    'python_script' => 'pfb_unbound',
+                ],
+            ]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN'];
+            $sinkholeStubInterfaceAddresses = ['lan' => ['ipv4' => '192.0.2.1']];
+            $sinkholeStubRealInterfaces = ['lan' => 'em0'];
+            $sinkholeStubRunningProcesses['unbound'] = true;
+            $paths = sinkholeRedirectTestPaths($directory);
+            $stateStore = new StateStore($paths->stateFile);
+            $adapter = new PfSenseAdapter($paths, $stateStore);
+            pfsensePackageSinkholeAdapter($adapter);
+
+            sinkholeTestAssertSame(
+                false,
+                $adapter->isIntegrationActive(),
+                'The fixture must leave the Python integration inactive.',
+            );
+            sinkholeTestAssertSame(
+                null,
+                $adapter->redirectInactiveReason(),
+                'A running Resolver must load the redirect without the Python Module.',
+            );
+            sinkholeTestAssertContains(
+                'rdr pass on em0',
+                pfsensePackageSinkholeFilterRules('nat'),
+                'The filter hook must return rules without the Python Module.',
+            );
+            sinkholeTestAssertSame(
+                'mismatch',
+                $adapter->reconcileRedirectRules(
+                    $directory . '/rules.debug',
+                    $paths->redirectRuleErrorFile,
+                ),
+                'The minute check must want the same rules as the filter hook.',
+            );
+
+            $cases = [
+                'redirect_inactive_resolver_stopped' => [
+                    static function () use (&$sinkholeStubRunningProcesses): void {
+                        $sinkholeStubRunningProcesses['unbound'] = false;
+                    },
+                    static function () use (&$sinkholeStubRunningProcesses): void {
+                        $sinkholeStubRunningProcesses['unbound'] = true;
+                    },
+                ],
+                'redirect_inactive_disabled' => [
+                    static function (): void {
+                        config_set_path('installedpackages/sinkhole/config/0/enabled', '');
+                    },
+                    static function (): void {
+                        config_set_path('installedpackages/sinkhole/config/0/enabled', 'on');
+                    },
+                ],
+                'redirect_inactive_removing' => [
+                    static function () use ($stateStore): void {
+                        $stateStore->markRemoving();
+                    },
+                    static function () use ($stateStore): void {
+                        $stateStore->clearRemoving();
+                    },
+                ],
+                'redirect_inactive_invalid_exemption' => [
+                    static function (): void {
+                        config_set_path(
+                            'installedpackages/sinkhole/redirect/exempt_sources/item',
+                            ['Missing_Source'],
+                        );
+                    },
+                    static function (): void {
+                        config_set_path(
+                            'installedpackages/sinkhole/redirect/exempt_sources/item',
+                            [],
+                        );
+                    },
+                ],
+            ];
+
+            foreach ($cases as $expectedReason => [$apply, $restore]) {
+                $apply();
+                sinkholeTestAssertSame(
+                    $expectedReason,
+                    $adapter->redirectInactiveReason(),
+                    'The inactive reason must name the blocked gate: ' . $expectedReason,
+                );
+                sinkholeTestAssertSame(
+                    '',
+                    pfsensePackageSinkholeFilterRules('nat'),
+                    'A blocked gate must return no redirect rules: ' . $expectedReason,
+                );
+                $restore();
+            }
+
+            config_set_path('installedpackages/sinkhole/redirect/enabled', '');
+            $sinkholeStubRunningProcesses['unbound'] = false;
+            sinkholeTestAssertSame(
+                null,
+                $adapter->redirectInactiveReason(),
+                'A Redirect that is off must have no inactive reason.',
+            );
+        } finally {
+            $sinkholeStubRunningProcesses['unbound'] = true;
             sinkholeTestRemoveTemporaryDirectory($directory);
         }
     },

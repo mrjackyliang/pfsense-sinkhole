@@ -24,7 +24,7 @@ Hold DNS-forespørsler fra valgte klientgrensesnitt på baner som Sinkhole kan i
 
 Nettverks- og enhetssamsvar bruker de gjeldende delnettene til disse grensesnittene, akkurat som vanlige Sinkhole-omfang. En klient utenfor de valgte delnettene mottar ikke noe Bypass-DNS-svar.
 
-<img src={bypassProtection} alt="Bypass-fanen med LAN valgt, omdirigering av vanlig DNS slått av, beskyttelse for kryptert DNS og tunneler slått på, Discovery satt til Answer with no records og tre demonstrasjonslister for Bypass" width={1024} height={1470} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass-fanen med LAN valgt, omdirigering av vanlig DNS slått av, beskyttelse for kryptert DNS og tunneler slått på, Discovery satt til Answer with no records, én unntatt demokilde og ett unntatt demomål, og tre demonstrasjonslister for Bypass" width={1024} height={1679} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Omdiriger vanlig DNS \{#redirect-plain-dns}
 
@@ -41,6 +41,15 @@ Omdirigeringen beholder eksisterende lytteravhengige mål og unntak:
 - **Exempt Destinations** fortsetter å motta DNS-trafikk, noe som støtter en intern resolver på et annet nettverk.
 
 Hvert unntak godtar én IPv4-adresse, IPv6-adresse, ett CIDR-nettverk eller eksisterende pfSense-verts-/nettverksalias per linje. Et ugyldig lagret unntak setter alle omdirigeringsregler på pause til det blir rettet eller fjernet. Omdirigerte klienter må fortsatt ha tilgang gjennom Resolverens innstillinger for tilgangskontroll.
+
+Omdirigeringsreglene lastes når Sinkhole er aktivert på fanen **General** og DNS Resolver kjører. De er ikke avhengige av Resolverens Python-modul, så de fortsetter å virke mens pfBlockerNG eller et annet skript holder den, for eksempel under en overgang fra pfBlockerNG. Mens Redirect er på, men reglene ikke er lastet, viser en **Warning**-rad under **Redirect** årsaken:
+
+- Sinkhole er deaktivert.
+- DNS Resolver kjører ikke.
+- Et lagret unntak er ugyldig.
+- Sinkhole blir fjernet.
+
+**Status** viser den samme advarselen øverst på siden.
 
 ## Beskytt kryptert DNS \{#protect-encrypted-dns}
 
@@ -86,11 +95,24 @@ Når Discovery slås av eller Sinkhole fjernes, blir sonelinjen fjernet. Den sam
 
 Navn og adresser i Tor- og VPN-lister bruker samme DNS- og brannmuratferd som leverandørlister for kryptert DNS. Disse kontrollene reduserer vanlige alternative baner, men identifiserer ikke alle krypterte eller egendefinerte tunneler.
 
+## Unnta enheter og servere fra blokkeringene \{#exempt-devices-and-servers-from-the-blocks}
+
+**Block Exemptions** har én liste for **Exempt Sources** og én liste for **Exempt Destinations** som alle brannmurblokkeringene på Bypass-fanen deler: **TLS and QUIC**, **Providers**, **Tor**, **Block listed VPN providers** og **Block standard VPN ports**. Hver linje tar én IPv4-adresse, IPv6-adresse, ett CIDR-nettverk eller ett eksisterende pfSense-verts-/nettverksalias, de samme verdiene som omdirigeringsunntakene godtar. Hver liste rommer høyst 16 alias.
+
+- **Exempt Sources** slipper forbi blokkeringene. Bruk den for en klient som må nå eksterne DNS-servere, for eksempel en NAS som bruker DNS over TLS til `1.1.1.1`.
+- **Exempt Destinations** forblir nåbare forbi blokkeringene fra alle klienter på de valgte grensesnittene, for eksempel én offentlig resolver du stoler på.
+
+Et unntak åpner aldri en vei på egen hånd. Sinkhole legger ikke til noen pass-regel: unntatt trafikk treffer rett og slett ikke Bypass-blokkeringene og går videre til dine egne brannmurregler, som fortsatt avgjør om den slippes gjennom.
+
+Unntak gjelder bare brannmurblokkeringene. Leverandør-, Tor- og VPN-navn fra Bypass Lists forblir blokkert i DNS for unntatte klienter, så en klient som finner serveren sin ved navn, for eksempel `cloudflare-dns.com`, trenger også det navnet i **Allowed Domains**. Vanlig DNS på port 53 følger i stedet **Redirect** og dens egne unntak.
+
+Hvis et lagret blokkeringsunntak blir ugyldig, for eksempel et alias som ble omdøpt eller slettet, beholder Sinkhole alle blokkeringer uten unntak, skriver én oppføring i systemloggen og viser verdien under **Invalid Saved Values** til den rettes eller fjernes.
+
 ## Legg til fra katalogen \{#add-from-catalog}
 
 Åpne **Add from Catalog** på Bypass-fanen for å søke i listeregisteret til AdGuard Home og DNS-, IPv4- og IPv6-delene av feedkatalogen til pfBlockerNG. Resultatene er begrenset til omgåelsesfeeder og har en fast type: **Encrypted DNS**, **Tor** eller **VPN**.
 
-Kildekatalogene hentes bare når du åpner katalogen eller velger **Refresh**. Når du legger til et resultat, opprettes en aktivert Bypass List som følger den vanlige tidsplanen for listeoppdatering.
+Kildekatalogene hentes bare når du åpner katalogen eller velger **Refresh**. Når du legger til et resultat, opprettes en aktivert Bypass List; den blir med i planlagte oppdateringer bare mens den tilhørende **Providers**-, **Tor**- eller **VPN**-beskyttelsen er på.
 
 Linjen **Contents** på hvert kort viser **Domains**, **IPv4 addresses** eller **IPv6 addresses**. Når du legger til et IPv4- eller IPv6-resultat fra pfBlockerNG, legger Sinkhole til ` (IPv4)` eller ` (IPv6)` i det lagrede navnet; domeneresultater beholder det uendrede katalognavnet.
 
@@ -100,10 +122,10 @@ Velg **Add** under **Bypass Lists**, og skriv deretter inn et lokalt navn, en ty
 
 Hver kilde godtar én oppføring per linje. En liste kan blande domener, IPv4-adresser, IPv6-adresser og CIDR-er. Tekst etter `#` er en kommentar. Ugyldige og for lange linjer hoppes over. En nedlasting som overskrider den faste bytegrensen eller grensen for godkjente oppføringer, avvises, og den siste gode kopien beholdes.
 
-Bypass Lists oppdateres etter den konfigurerte listeplanen med den samme begrensede nedlastingsklienten som andre lister. En mislykket henting beholder den siste gode lagrede kopien, og **Status → Bypass Lists** viser oppføringer, siste henting og den nyeste feilen for hver rad. Sinkhole leverer eller anbefaler ingen Bypass List.
+En aktivert Bypass List oppdateres etter den konfigurerte listeplanen, med den samme begrensede nedlastingsklienten som andre lister, bare mens den tilhørende **Providers**-, **Tor**- eller **VPN**-beskyttelsen er på. En mislykket henting beholder den siste gode lagrede kopien fra samme URL, og **Status → Bypass Lists** viser oppføringer, siste henting og den nyeste feilen for hver rad. Sinkhole leverer eller anbefaler ingen Bypass List.
 
 ## Verifiser aktiv tilstand \{#verify-the-active-state}
 
-Etter lagring åpner du **Status → Bypass** og bekrefter at hver tiltenkte beskyttelse er `On`, at de valgte grensesnittene er riktige, og at **Discovery Zone** er `Present` når Discovery er på. Bekreft at **Firewall rules loaded** og **Firewall rules current** er `Yes` for brannmurbeskyttelse. Tabellen Bypass Lists viser antall lagrede oppføringer og siste henting.
+Etter lagring åpner du **Status → Bypass** og bekrefter at hver tiltenkte beskyttelse er `On`, at de valgte grensesnittene er riktige, og at **Discovery Zone** er `Present` når Discovery er på. Bekreft at **Firewall Rules Loaded** og **Firewall Rules Current** er `Yes` for brannmurbeskyttelse. Tabellen Bypass Lists viser antall lagrede oppføringer og siste henting.
 
 Omdirigeringen av vanlig DNS beholder den eksisterende minuttavstemmingen med to observasjoner etter endringer i Resolver-lyttere. Ankeret `sinkhole/bypass` lastes uavhengig av `sinkhole/ip`, slik at deaktivering av én funksjon ikke forstyrrer den andre.

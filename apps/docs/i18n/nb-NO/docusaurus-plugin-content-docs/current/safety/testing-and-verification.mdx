@@ -54,7 +54,7 @@ Gjenta innenfor gjentakelsesvinduet for regelen for å bekrefte at varselet unde
 Velg ett isolert laboratoriegrensesnitt og aktiver én Bypass-beskyttelse om gangen. Etter hver test bekrefter du at en tilsvarende klient på et grensesnitt som ikke er valgt, forblir uberørt.
 
 1. Aktiver **Redirect**, bekreft at adressefamilien har en Resolver-lytter, og send vanlige UDP- og TCP-spørringer på port 53 til et annet mål. Bekreft at pfSense mottar dem.
-2. Legg til et bevisst ugyldig unntak bare i en midlertidig konfigurasjon, og bekreft at omdirigering blir **Paused** i stedet for å laste delvise regler. Gjenopprett gyldige data, vent på de to observasjonene per minutt, og bekreft at **pfSense loaded rules** går tilbake til `Yes`.
+2. Legg til et bevisst ugyldig unntak bare i en midlertidig konfigurasjon, og bekreft at omdirigering blir **Paused** i stedet for å laste delvise regler. Gjenopprett gyldige data, vent på de to observasjonene per minutt, og bekreft at **pfSense Loaded Rules** går tilbake til `Yes`.
 3. Aktiver **TLS and QUIC**, og bekreft deretter at TCP- og UDP-port 853 til et laboratoriemål blokkeres, mens trafikk til brannmuren ikke gjør det.
 4. Legg til en deaktivert Bypass List som bare inneholder oppdiktede domener, adresser, CIDR-er, kommentarer og ugyldige data. Aktiver den og den tilhørende beskyttelsen, og bekreft at gyldige navn og adresser blokkeres, ugyldige linjer hoppes over, og en senere mislykket henting beholder den lagrede kopien.
 5. Bekreft at testspørringer for Firefox og Private Relay mottar `NXDOMAIN`. Bekreft at DDR returnerer et tomt `NOERROR`-svar i modusen **Answer with no records**.
@@ -77,5 +77,5 @@ Før fjerning avgjør du om **Keep Settings** skal bevare konfigurasjon og lagre
 
 ## Registrer miljøet \{#record-the-environment}
 
-For en nyttig testlogg registrerer du Sinkhole-versjon, pfSense-utgave og -utgivelse, FreeBSD-utgivelse, valgte funksjoner, Status-tilstand og rensede `Sinkhole:`-linjer fra systemloggen. Ingen pfSense-utgivelse er for tiden oppført som offisielt testet. Kompatibilitetstesting utføres før hver Sinkhole-utgivelse.
+For en nyttig testlogg registrerer du Sinkhole-versjon, pfSense-utgave og -utgivelse, FreeBSD-utgivelse, valgte funksjoner, Status-tilstand og rensede `Sinkhole:`-linjer fra systemloggen. Fanen About og [Testede utgivelser](/docs/compatibility#tested-releases) viser pfSense-utgivelsene der hver Sinkhole-versjon besto installasjon, oppdatering, en blokkeringstest og fjerning fra ende til ende.
 

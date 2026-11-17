@@ -26,7 +26,9 @@ Voor elke ingeschakelde DNS-lijst doet Sinkhole het volgende:
 4. Compileert globaal, netwerk-, apparaat-, toegestaan-domein- en waarschuwingsbeleid uit lokaal opgeslagen gegevens.
 5. Rolt een generatie uit onder `/var/unbound`, zodat de al geladen Python-module deze kan vinden.
 
-Bij een mislukte download, analyse of validatie wordt een fout vastgelegd zonder de laatste geldige kopie te vervangen. DNS blijft tijdens de volledige poging de uitgerolde lokale generatie gebruiken.
+Bij een mislukte download, analyse of validatie wordt een fout vastgelegd zonder de laatste geldige kopie te vervangen wanneer de URL van de lijst ongewijzigd is. DNS blijft tijdens de volledige poging de uitgerolde lokale generatie gebruiken.
+
+Nadat de URL van een lijst is gewijzigd, verwijdert de volgende update die de lijst downloadt de kopie van de vorige URL voordat de nieuwe wordt opgehaald, zodat een mislukte eerste download die lijst zonder opgeslagen kopie achterlaat. Een uitgeschakelde lijst, of een Bypass List waarvan de beveiliging uit staat, wordt niet gedownload en behoudt dus de gegevens van de vorige kopie totdat deze weer wordt ingeschakeld.
 
 ## Uitrol en Resolver-caches \{#deployment-and-resolver-caches}
 
@@ -50,7 +52,7 @@ Een bestaand `sinkhole/ip`-anker kan na een geslaagde update alleen een tabelupd
 
 De standaardfrequentie voor lijstupdates is Daily. De schema's Hourly, Every 6 hours, Daily en Weekly gebruiken stabiele willekeurige minuutcomponenten, zodat de firewall het taakmoment niet bij elke opslag verplaatst.
 
-DNS-lijstupdates, IP-/landupdates, toepassingswerk voor de catalogus en automatische pakketupdates worden gecoördineerd via `/var/run/sinkhole-update.lock`. Een pakketactie Update wacht totdat een actieve lijstupdate is voltooid in plaats van het geïnstalleerde pakket eronder te wijzigen.
+DNS-, Bypass- en IP-/landupdates, het toepassen van instellingen, pakketcontroles en automatische pakketupdates, en het opruimen bij verwijdering worden gecoördineerd via `/var/run/sinkhole-update.lock`. Een pakketcontrole of de actie Update wacht niet: als een andere bewerking de vergrendeling bezit, stopt deze met `Another package operation is already running.` en kan deze opnieuw worden geprobeerd zodra die bewerking is voltooid.
 
 ## Catalogusvernieuwingen staan los \{#catalog-refreshes-are-separate}
 

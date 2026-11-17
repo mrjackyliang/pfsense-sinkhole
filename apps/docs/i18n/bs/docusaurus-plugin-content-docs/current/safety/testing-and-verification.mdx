@@ -54,7 +54,7 @@ Ponovite unutar perioda ponavljanja pravila kako biste potvrdili da je obavijest
 Odaberite jedan izolirani testni interfejs i omogućavajte jednu po jednu Bypass zaštitu. Nakon svakog testa potvrdite da isti klijent na neodabranom interfejsu ostaje netaknut.
 
 1. Omogućite **Redirect**, potvrdite da njegova porodica adresa ima slušač Resolvera i pošaljite obične UDP i TCP upite porta 53 drugom odredištu. Potvrdite da ih pfSense prima.
-2. Dodajte namjerno nevažeći izuzetak samo u jednokratnoj konfiguraciji i potvrdite da preusmjeravanje prelazi u **Paused** umjesto da učitava djelimična pravila. Vratite važeće podatke, pričekajte dva minutna opažanja i potvrdite da se **pfSense loaded rules** vraća na `Yes`.
+2. Dodajte namjerno nevažeći izuzetak samo u jednokratnoj konfiguraciji i potvrdite da preusmjeravanje prelazi u **Paused** umjesto da učitava djelimična pravila. Vratite važeće podatke, pričekajte dva minutna opažanja i potvrdite da se **pfSense Loaded Rules** vraća na `Yes`.
 3. Omogućite **TLS and QUIC**, zatim potvrdite da su TCP i UDP port 853 prema testnom odredištu blokirani, a saobraćaj prema zaštitnom zidu nije.
 4. Dodajte onemogućenu Bypass List koja sadrži samo izmišljene domene, adrese, CIDR-ove, komentare i neispravne podatke. Omogućite je i odgovarajuću zaštitu, zatim potvrdite da se važeći nazivi i adrese blokiraju, nevažeći redovi preskaču, a kasnije neuspjelo dohvatanje čuva sačuvanu kopiju.
 5. Potvrdite da testni upiti za Firefox i Private Relay primaju `NXDOMAIN`. Potvrdite da DDR vraća prazan odgovor `NOERROR` u načinu **Answer with no records**.
@@ -77,4 +77,4 @@ Prije uklanjanja odlučite treba li **Keep Settings** sačuvati konfiguraciju i 
 
 ## Zabilježite okruženje \{#record-the-environment}
 
-Za koristan zapis testa zabilježite verziju Sinkholea, izdanje i verziju pfSensea, verziju FreeBSD-a, odabrane funkcije, stanje Statusa i sanitizirane redove sistemskog dnevnika `Sinkhole:`. Trenutno nijedna verzija pfSensea nije navedena kao službeno testirana; testiranje kompatibilnosti provodi se prije svakog izdanja Sinkholea.
+Za koristan zapis testa zabilježite verziju Sinkholea, izdanje i verziju pfSensea, verziju FreeBSD-a, odabrane funkcije, stanje Statusa i sanitizirane redove sistemskog dnevnika `Sinkhole:`. Kartica About i [Testirana izdanja](/docs/compatibility#tested-releases) navode izdanja pfSensea na kojima je svaka verzija Sinkholea od početka do kraja prošla instalaciju, ažuriranje, test blokiranja i uklanjanje.

@@ -31,12 +31,12 @@ pfBlockerNG가 설치되어 활성화되어 있거나 다른 Python 스크립트
 
 1. **Lists**를 열고 신뢰하는 출처의 URL을 추가하거나 **Add from Catalog**를 열어 필요할 때만 가져오는 두 카탈로그를 검색합니다.
 2. 출처에 로컬 이름을 지정하고 Sinkhole이 다운로드하도록 **Enabled**를 선택한 상태로 둡니다.
-3. 모든 장치 및 네트워크 규칙 다음에 목록을 적용해야 하는 경우에만 **Global**을 선택한 상태로 둡니다.
+3. 모든 장치 및 네트워크 규칙 다음에 목록을 적용해야 하는 경우에만 **Global**을 선택합니다.
 4. 알려진 오탐을 허용해야 하면 전역 **Allowed Domains**에 한 줄당 한 도메인을 추가합니다.
 
 Sinkhole은 어떤 출처도 추천하지 않습니다. [목록과 저장된 사본](/docs/configure/lists)에서는 허용되는 형식과 카탈로그 결과가 일반 목록 행으로 추가되는 방식을 설명합니다.
 
-<img src={listsTab} alt="Global 및 Used By 열이 있는 데모 차단 목록 5개와 전역 허용 도메인 2개를 표시하는 Lists 탭" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Global 및 Used By 열이 있는 데모 차단 목록 5개와 전역 허용 도메인 2개를 표시하는 Lists 탭" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 선택적 범위 추가 \{#add-optional-scopes}
 
@@ -52,9 +52,9 @@ Sinkhole은 어떤 출처도 추천하지 않습니다. [목록과 저장된 사
 1. **General**로 돌아가 **Enable**을 선택합니다.
 2. 활성화된 DNS 목록의 **Update Frequency**를 선택하고 저장합니다.
 3. **Status**를 열고 **Update Now**를 선택합니다.
-4. **Update running**이 다시 `No`로 바뀔 때까지 기다립니다.
+4. **Update Log**에 `Update finished`가 표시될 때까지 따라갑니다.
 
-General 스위치는 예약된 DNS 목록 업데이트와 DNS Resolver 통합을 활성화합니다. 활성화된 Bypass Lists와 IP/국가 정책은 동일한 업데이트 일정을 독립적으로 사용하며, 모든 Bypass 및 IP 보호는 관리자가 활성화할 때까지 꺼져 있습니다.
+General 스위치는 예약된 DNS 목록 업데이트와 DNS Resolver 통합을 활성화합니다. IP/국가 정책은 동일한 업데이트 일정을 독립적으로 사용하고, 활성화된 Bypass List는 해당하는 **Providers**, **Tor** 또는 **VPN** 보호 기능이 켜져 있는 동안에만 이 일정에 포함되며, 모든 Bypass 및 IP 보호는 관리자가 활성화할 때까지 꺼져 있습니다.
 
 ## 활성 상태 확인 \{#verify-the-active-state}
 

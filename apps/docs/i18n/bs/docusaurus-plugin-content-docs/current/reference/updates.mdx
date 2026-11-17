@@ -48,7 +48,7 @@ Prazna instalirana lista pouzdanih ključeva znači da potpis nije potreban, ali
 
 ## Zaključavanje ažuriranja \{#update-locking}
 
-Provjera paketa i samoažuriranje dijele `/var/run/sinkhole-update.lock` s ažuriranjima DNS lista i IP-a/država. Ako je ažuriranje liste u toku, radnja **Update** u About ne može početi dok taj posao ne završi.
+Provjera paketa i samoažuriranje dijele `/var/run/sinkhole-update.lock` s DNS, Bypass i IP/country ažuriranjima, primjenama postavki i čišćenjem pri uklanjanju. Ne čekaju na zaključavanje: ako ga drži druga operacija, provjera ili radnja **Update** zaustavlja se s porukom `Another package operation is already running.`
 
 Zaključavanje sprečava promjenu datoteka paketa dok trenutni paket preuzima, parsira, kompajlira ili primjenjuje pravila. Pokušajte ponovo iz About nakon što Status više ne prikazuje pokrenuto ažuriranje.
 

@@ -49,6 +49,59 @@ final class IpListStore
     }
 
     /**
+     * IP List Store - Has Usable Copy.
+     *
+     * A copy counts only while its metadata names the configured URL, so the firewall
+     * table never loads networks saved from a previous URL.
+     *
+     * @param string $identifier - Stable list identifier.
+     * @param string $url        - Configured source URL.
+     *
+     * @return bool
+     *
+     * @since 1.2.0
+     */
+    public function hasUsableCopy(string $identifier, string $url): bool
+    {
+        if (!$this->hasSavedCopy($identifier)) {
+            return false;
+        }
+
+        try {
+            $metadata = $this->metadata($identifier);
+        } catch (RuntimeException) {
+            return false;
+        }
+
+        return ($metadata['url'] ?? null) === $url;
+    }
+
+    /**
+     * IP List Store - Discard Mismatched Copy.
+     *
+     * Removes a copy and its metadata when they came from another URL, so the list has
+     * no copy until its first successful download from the configured URL.
+     *
+     * @param string $identifier - Stable list identifier.
+     * @param string $url        - Configured source URL.
+     *
+     * @return bool
+     *
+     * @since 1.2.0
+     */
+    public function discardMismatchedCopy(string $identifier, string $url): bool
+    {
+        if (!$this->hasSavedCopy($identifier) || $this->hasUsableCopy($identifier, $url)) {
+            return false;
+        }
+
+        FileSystem::removeFixedFile($this->paths->ipListFile($identifier));
+        FileSystem::removeFixedFile($this->paths->ipMetadataFile($identifier));
+
+        return true;
+    }
+
+    /**
      * IP List Store - Read Networks.
      *
      * @param string $identifier - Stable list identifier.

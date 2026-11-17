@@ -33,13 +33,24 @@ require_once('/usr/local/pkg/sinkhole/CatalogPresentation.php');
 require_once('/usr/local/pkg/sinkhole/CurlDownloadClient.php');
 require_once('/usr/local/pkg/sinkhole/RedirectConfiguration.php');
 
-/** @since 1.0.0 */
+/**
+ * Sinkhole Bypass - Require Repair.
+ *
+ * @param array $bypass - Partitioned Bypass configuration.
+ * @param array $redirect - Partitioned redirect configuration.
+ *
+ * @return void
+ *
+ * @since 1.0.0
+ * @since 1.2.0
+ */
 function sinkholeBypassRequireRepair(array $bypass, array $redirect): void
 {
     $invalidValues = array_merge(
         $redirect['invalid_values'],
         $redirect['invalid_exemptions'],
         $bypass['invalid_values'],
+        $bypass['invalid_exemptions'],
     );
 
     if ($invalidValues === []) {
@@ -80,6 +91,8 @@ $displayInterfaces = $redirect['stored_interfaces'];
 $displayRedirectEnabled = $redirect['enabled'];
 $displayExemptSources = $redirect['stored_exempt_sources'];
 $displayExemptDestinations = $redirect['stored_exempt_destinations'];
+$displayBlockExemptSources = $configuration['stored_exempt_sources'];
+$displayBlockExemptDestinations = $configuration['stored_exempt_destinations'];
 $displaySettings = $configuration;
 $catalogOpen = (string) ($_GET['catalog'] ?? '') === '1'
     || isset($_POST['refresh_catalog'])
@@ -124,6 +137,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new ValidationException('exempt_destinations_invalid');
             }
 
+            $postedBlockExemptSources = $_POST['block_exempt_sources'] ?? '';
+            $postedBlockExemptDestinations = $_POST['block_exempt_destinations'] ?? '';
+            $displayBlockExemptSources = is_string($postedBlockExemptSources)
+                ? (preg_split('/\r\n|\r|\n/', $postedBlockExemptSources) ?: [])
+                : [];
+            $displayBlockExemptDestinations = is_string($postedBlockExemptDestinations)
+                ? (preg_split('/\r\n|\r|\n/', $postedBlockExemptDestinations) ?: [])
+                : [];
+
+            if (!is_string($postedBlockExemptSources)) {
+                throw new ValidationException('exempt_sources_invalid');
+            }
+
+            if (!is_string($postedBlockExemptDestinations)) {
+                throw new ValidationException('exempt_destinations_invalid');
+            }
+
             $postedDiscovery = $_POST['discovery'] ?? BypassConfiguration::DISCOVERY_OFF;
 
             if (!is_string($postedDiscovery)) {
@@ -138,6 +168,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $aliases,
                 $postedExemptDestinations,
             );
+            $blockExemptions = BypassConfiguration::normalizeExemptionSubmission(
+                $postedBlockExemptSources,
+                $postedBlockExemptDestinations,
+                $aliases,
+            );
             $settings = [
                 'block_tls_quic' => isset($_POST['block_tls_quic']),
                 'block_encrypted_dns' => isset($_POST['block_encrypted_dns']),
@@ -147,6 +182,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'block_tor' => isset($_POST['block_tor']),
                 'block_vpn' => isset($_POST['block_vpn']),
                 'block_vpn_ports' => isset($_POST['block_vpn_ports']),
+                'exempt_sources' => $blockExemptions['exempt_sources'],
+                'exempt_destinations' => $blockExemptions['exempt_destinations'],
             ];
             $displaySettings = array_replace($displaySettings, $settings);
             pfsensePackageSinkholeSaveBypass(
@@ -256,7 +293,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $displayRedirectEnabled = $redirect['enabled'];
         $displayExemptSources = $redirect['stored_exempt_sources'];
         $displayExemptDestinations = $redirect['stored_exempt_destinations'];
+        $displayBlockExemptSources = $configuration['stored_exempt_sources'];
+        $displayBlockExemptDestinations = $configuration['stored_exempt_destinations'];
         $displaySettings = $configuration;
+    }
+}
+
+$redirectInactiveReason = null;
+
+try {
+    $redirectInactiveReason = pfsensePackageSinkholeAdapter()->redirectInactiveReason();
+} catch (Throwable $throwable) {
+    if ($actionMessage === null) {
+        $actionMessage = pfsensePackageSinkholeThrowableMessage($throwable);
+        $actionClass = 'danger';
     }
 }
 
@@ -341,6 +391,8 @@ foreach ($lists as $identifier => $list) {
 
 $exemptSourcesText = implode(PHP_EOL, $displayExemptSources);
 $exemptDestinationsText = implode(PHP_EOL, $displayExemptDestinations);
+$blockExemptSourcesText = implode(PHP_EOL, $displayBlockExemptSources);
+$blockExemptDestinationsText = implode(PHP_EOL, $displayBlockExemptDestinations);
 $tlsStatus = $configuration['discovery_tls'];
 $tlsServiceStatus = $tlsStatus['service_enabled']
     ? pfsensePackageSinkholeTranslate('on')
@@ -363,7 +415,11 @@ if (is_string($actionMessage)) {
 
 display_top_tabs(pfsensePackageSinkholeTabs('bypass'));
 
-$invalidValues = array_merge($redirect['invalid_values'], $configuration['invalid_values']);
+$invalidValues = array_merge(
+    $redirect['invalid_values'],
+    $configuration['invalid_values'],
+    $configuration['invalid_exemptions'],
+);
 
 if ($invalidValues !== []):
 ?>
@@ -418,6 +474,19 @@ $plainSection->addInput(new Form_Checkbox(
     pfsensePackageSinkholeTranslate('bypass_redirect_help'),
     $displayRedirectEnabled,
 ));
+
+if (is_string($redirectInactiveReason)) {
+    $plainSection->addInput(new Form_StaticText(
+        pfsensePackageSinkholeTranslate('bypass_warning'),
+        '<span class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> '
+            . htmlspecialchars(pfsensePackageSinkholeTranslateMapped(
+                'redirect_inactive_reason',
+                $redirectInactiveReason,
+            ))
+            . '</span>',
+    ));
+}
+
 $sourceInput = new Form_Textarea(
     'redirect_exempt_sources',
     pfsensePackageSinkholeTranslate('exempt_sources'),
@@ -495,6 +564,25 @@ $tunnelSection->addInput(new Form_Checkbox(
     ($displaySettings['block_vpn_ports'] ?? false) === true,
 ));
 $form->add($tunnelSection);
+
+$blockExemptionsSection = new Form_Section(pfsensePackageSinkholeTranslate('block_exemptions'));
+$blockSourceInput = new Form_Textarea(
+    'block_exempt_sources',
+    pfsensePackageSinkholeTranslate('exempt_sources'),
+    $blockExemptSourcesText,
+);
+$blockSourceInput->setRows(4);
+$blockSourceInput->setHelp(pfsensePackageSinkholeTranslate('block_exempt_sources_help'));
+$blockExemptionsSection->addInput($blockSourceInput);
+$blockDestinationInput = new Form_Textarea(
+    'block_exempt_destinations',
+    pfsensePackageSinkholeTranslate('exempt_destinations'),
+    $blockExemptDestinationsText,
+);
+$blockDestinationInput->setRows(4);
+$blockDestinationInput->setHelp(pfsensePackageSinkholeTranslate('block_exempt_destinations_help'));
+$blockExemptionsSection->addInput($blockDestinationInput);
+$form->add($blockExemptionsSection);
 print($form);
 ?>
 <div class="panel panel-default">
@@ -544,28 +632,14 @@ print($form);
 		<i class="fa-solid fa-plus icon-embed-btn"></i>
 		<?=htmlspecialchars(pfsensePackageSinkholeTranslate('add'))?>
 	</a>
-</nav>
 <?php if ($catalogOpen === false): ?>
-<?php
-$catalogOpenButton = '<a class="btn btn-primary btn-sm" href="sinkhole-bypass.php?catalog=1" role="button">'
-    . '<i class="fa-solid fa-search icon-embed-btn"></i> '
-    . htmlspecialchars(pfsensePackageSinkholeTranslate('open_catalog'))
-    . '</a>';
-$catalogIntroForm = new Form(false);
-$catalogIntroSection = new Form_Section(
-    pfsensePackageSinkholeTranslate('add_from_catalog'),
-);
-$catalogIntroSection->addInput(new Form_StaticText(
-    '',
-    '<span class="help-block">'
-        . htmlspecialchars(pfsensePackageSinkholeTranslate('catalog_search_help'))
-        . '</span>',
-));
-$catalogIntroSection->addInput(new Form_StaticText('', $catalogOpenButton));
-$catalogIntroForm->add($catalogIntroSection);
-print($catalogIntroForm);
-?>
-<?php else: ?>
+	<a href="sinkhole-bypass.php?catalog=1" role="button" class="btn btn-primary btn-sm">
+		<i class="fa-solid fa-search icon-embed-btn"></i>
+		<?=htmlspecialchars(pfsensePackageSinkholeTranslate('add_from_catalog'))?>
+	</a>
+<?php endif; ?>
+</nav>
+<?php if ($catalogOpen === true): ?>
 <?php
 $catalogStateParameters = [
     'catalog' => '1',

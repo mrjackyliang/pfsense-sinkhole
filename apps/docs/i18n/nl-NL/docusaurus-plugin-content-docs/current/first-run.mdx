@@ -31,12 +31,12 @@ Sinkhole weigert **Enable** op te slaan zolang pfBlockerNG is geïnstalleerd en 
 
 1. Open **Lists** en voeg de URL toe van een bron die u vertrouwt, of open **Add from Catalog** om de twee catalogi op aanvraag te doorzoeken.
 2. Geef de bron een lokale naam en laat **Enabled** geselecteerd, zodat Sinkhole deze downloadt.
-3. Laat **Global** alleen geselecteerd wanneer de lijst na elke apparaat- en netwerkregel moet worden toegepast.
+3. Selecteer **Global** alleen wanneer de lijst na elke apparaat- en netwerkregel moet worden toegepast.
 4. Voeg eventuele globale **Allowed Domains** toe, één domein per regel, wanneer een bekende fout-positieve blokkering moet worden doorgelaten.
 
 Sinkhole beveelt geen enkele bron aan. [Lijsten en opgeslagen kopieën](/docs/configure/lists) beschrijft de geaccepteerde indelingen en hoe catalogusresultaten gewone lijstrijen worden.
 
-<img src={listsTab} alt="Tabblad Lists met vijf demoblokkeerlijsten, hun kolommen Global en Used By, en twee globaal toegestane domeinen" width={1024} height={996} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Tabblad Lists met vijf demoblokkeerlijsten, hun kolommen Global en Used By, en twee globaal toegestane domeinen" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Optionele scopes toevoegen \{#add-optional-scopes}
 
@@ -52,9 +52,9 @@ Een apparaat erft het netwerk waarop het zich momenteel bevindt, en het netwerk 
 1. Ga terug naar **General** en selecteer **Enable**.
 2. Kies **Update Frequency** voor ingeschakelde DNS-lijsten en sla de instellingen op.
 3. Open **Status** en selecteer **Update Now**.
-4. Wacht totdat **Update running** weer `No` aangeeft.
+4. Volg de **Update Log** totdat deze `Update finished` toont.
 
-De schakelaar in General schakelt geplande DNS-lijstupdates en de integratie met de DNS Resolver in. Ingeschakelde Bypass Lists en IP-/landbeleid gebruiken onafhankelijk hetzelfde updateschema; elke Bypass- en IP-beveiliging blijft uit totdat een beheerder deze inschakelt.
+De schakelaar in General schakelt geplande DNS-lijstupdates en de integratie met de DNS Resolver in. IP-/landbeleid gebruikt onafhankelijk hetzelfde updateschema, en een ingeschakelde Bypass List neemt daaraan alleen deel zolang de bijbehorende beveiliging **Providers**, **Tor** of **VPN** aan staat; elke Bypass- en IP-beveiliging blijft uit totdat een beheerder deze inschakelt.
 
 ## De actieve status controleren \{#verify-the-active-state}
 

@@ -45,6 +45,7 @@ Use the installed path in automation, for example `/usr/local/sbin/sinkhole --re
 | `state.json`                            | Durable compile, deployment, previous Resolver setting, schedule, and removal state.    |
 | `updates.json`                          | Latest-release check and notice de-duplication state.                                   |
 | `update-status.json`                    | Detached package self-update progress.                                                  |
+| `safesearch-targets.json`               | Last good safe-host addresses for SafeSearch.                                           |
 | `unbound/sinkhole/`                     | Optional persistent mirror of the current compiled generation for RAM-disk restoration. |
 | `unbound/sinkhole.d/`                   | Optional persistent mirror of compiled generation storage.                              |
 | `unbound/sinkhole-clients/clients.json` | Optional persistent mirror of the client map.                                           |
@@ -60,6 +61,7 @@ The minute client-map job and the Sync-time background refresh run only while DN
 | `sinkhole-alerts.json`               | Alert repeat-window and hourly-cap state.             |
 | `sinkhole-catalog-adguard-home.json` | Cached AdGuard Home list registry.                    |
 | `sinkhole-catalog-pfblockerng.json`  | Cached pfBlockerNG feed catalog.                      |
+| `sinkhole-services-registry.json`    | Cached AdGuard Home services registry.                |
 | `sinkhole-block-v4.txt`              | Final merged and subtracted IPv4 block table.         |
 | `sinkhole-block-v6.txt`              | Final merged and subtracted IPv6 block table.         |
 | `sinkhole-bypass-v4.txt`             | Final protected-address-subtracted IPv4 Bypass table. |
@@ -81,6 +83,7 @@ Catalog caches and generated IP tables are reproducible working data. The alert 
 | `sinkhole-redirect-check.json`  | First mismatch observation used by the two-observation redirect check. |
 | `sinkhole-status.json`          | Current update, compile, deployment, client, and alert status.         |
 | `sinkhole-status.json.lock`     | Status file coordination lock.                                         |
+| `sinkhole-update.log`           | Steps of the most recent list update, shown in the Status Update Log.  |
 | `sinkhole-ip-anchor.conf`       | Current generated rules for the `sinkhole/ip` anchor.                  |
 | `sinkhole-ip-anchor.sha256`     | Digest used to compare generated and loaded IP policy.                 |
 | `sinkhole-ip-status.json`       | IP-list, GeoLite2, table, and anchor status.                           |
@@ -91,16 +94,19 @@ Lock files coordinate jobs; their existence alone doesn't prove that a live proc
 
 ## Resolver Runtime Under `/var/unbound` \{#resolver-runtime}
 
-| Path                                 | Purpose                                                       |
-|--------------------------------------|---------------------------------------------------------------|
-| `sinkhole.py`                        | Reviewed Python module copied into Unbound's runtime root.    |
-| `sinkhole/`                          | Manifest and active generation data read by the module.       |
-| `sinkhole.d/`                        | Root-owned compiled generation storage.                       |
-| `sinkhole.d/<generation>/bypass.tsv` | Compiled provider, Tor, and VPN names for Bypass DNS answers. |
-| `sinkhole-clients/clients.json`      | Current client address-to-scope map.                          |
-| `sinkhole-state/loaded`              | Generation identifier reported as loaded by the module.       |
-| `sinkhole-state/events`              | Coalesced blocked-answer events waiting for alert processing. |
-| `sinkhole-state/events.processing`   | Event batch currently owned by the alert processor.           |
-| `sinkhole-state/events-dropped`      | Count of events dropped after the bounded queue filled.       |
+| Path                                    | Purpose                                                                                                                  |
+|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `sinkhole.py`                           | Reviewed Python module copied into Unbound's runtime root.                                                               |
+| `sinkhole/`                             | Manifest and active generation data read by the module.                                                                  |
+| `sinkhole.d/`                           | Root-owned compiled generation storage.                                                                                  |
+| `sinkhole.d/<generation>/domains.tsv`   | Compiled configured-list and Blocked Services names with their list memberships, sorted by name.                         |
+| `sinkhole.d/<generation>/domains.index` | Memory-mapped index of the configured-list and Blocked Services names that the module searches, about 18 bytes per name. |
+| `sinkhole.d/<generation>/bypass.tsv`    | Compiled provider, Tor, and VPN names, sorted by name.                                                                   |
+| `sinkhole.d/<generation>/bypass.index`  | Memory-mapped index of the Bypass List names that the module searches for Bypass DNS answers.                            |
+| `sinkhole-clients/clients.json`         | Current client address-to-scope map.                                                                                     |
+| `sinkhole-state/loaded`                 | Generation identifier reported as loaded by the module.                                                                  |
+| `sinkhole-state/events`                 | Coalesced blocked-answer events waiting for alert processing.                                                            |
+| `sinkhole-state/events.processing`      | Event batch currently owned by the alert processor.                                                                      |
+| `sinkhole-state/events-dropped`         | Count of events dropped after the bounded queue filled.                                                                  |
 
 These files are runtime material, not configuration. Sinkhole restores or regenerates them through package Sync and removes them when the package is uninstalled.

@@ -60,11 +60,13 @@ Sinkhole 接受以下标准格式，并将有效名称规范化为一个已保�
 
 每张卡片显示列表名称、维护者或类别（以当前未作为分组依据的一项为准）、源目录、两行说明、主页以及 **Add** 或 **Added** 状态。卡片不显示评分、徽章或推荐。选择 **Add** 会创建一个普通列表行，其 URL 可像任何手动输入的来源一样分配。
 
+新列表（包括从目录添加的列表）初始时不选中 **Global**，因此在您选中 Global 或在某个作用域中选择它们之前，不会阻止任何内容。
+
 每张卡片的 **Contents** 行显示 **Domains**。添加目录结果时，其目录名称保持不变。
 
 目录副本在 `/var/db` 下缓存一天。刷新失败时会保留最后一份有效目录副本，并在 Status 上显示获取错误。
 
-<img src={catalogSearch} alt="Lists 选项卡的 Add from Catalog 面板显示目录搜索控件和获取状态" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Lists 选项卡的 Add from Catalog 面板显示目录搜索控件和获取状态" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 分配给 Encrypted DNS、Tor 或 VPN 绕过防护的订阅源不会显示在此处。它们只能通过 Bypass 标签页上的 **Add from Catalog** 获取。
 
@@ -76,7 +78,7 @@ Sinkhole 接受以下标准格式，并将有效名称规范化为一个已保�
 
 ## 选择更新频率 \{#choose-the-update-frequency}
 
-**General → Update Frequency** 设置控制计划 DNS 列表更新；启用 IP 阻止时，它也提供更新计划：
+**General → Update Frequency** 设置在 General 启用时控制计划 DNS 列表更新。启用 IP 阻止时，同一计划也会运行 IP/国家地区更新；已启用的 Bypass List 仅在其对应的 **Providers**、**Tor** 或 **VPN** 保护开启时才按此计划更新：
 
 | 设置            | 计划                     |
 |---------------|------------------------|

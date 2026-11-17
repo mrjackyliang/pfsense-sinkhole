@@ -60,11 +60,13 @@ Die Ergebnisse erscheinen als Karten. Verwende Suche, Quelle und Maintainer-Steu
 
 Jede Karte zeigt den Listennamen, den Maintainer oder die Kategorie, den Quellkatalog, eine zweizeilige Beschreibung, die Homepage und den Zustand **Add** oder **Added**. Die Karten zeigen keine Bewertungen, Abzeichen oder Empfehlungen. Durch **Add** entsteht ein gewöhnlicher Listeneintrag, dessen URL wie jede manuell eingegebene Quelle zugewiesen werden kann.
 
+Neue Listen, auch solche aus dem Katalog, beginnen mit nicht angehaktem **Global**. Sie blockieren daher nichts, bis du Global anhakst oder sie in einem Scope auswählst.
+
 Die Zeile **Contents** jeder Karte zeigt **Domains**. Beim Hinzufügen eines Katalogergebnisses bleibt dessen Katalogname unverändert.
 
 Katalogkopien werden einen Tag lang unter `/var/db` zwischengespeichert. Bei einer fehlgeschlagenen Aktualisierung bleibt die letzte gültige Katalogkopie erhalten, und Status zeigt den Abruffehler an.
 
-<img src={catalogSearch} alt="Panel Add from Catalog auf dem Tab Lists mit Steuerelementen für die Katalogsuche und Abrufstatus" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Panel Add from Catalog auf dem Tab Lists mit Steuerelementen für die Katalogsuche und Abrufstatus" width={1024} height={920} style={{maxWidth: '100%', height: 'auto'}} />
 
 Feeds, die dem Bypass-Schutz für Encrypted DNS, Tor oder VPN zugeordnet sind, erscheinen hier nicht. Sie sind nur über **Add from Catalog** auf dem Tab Bypass verfügbar.
 
@@ -76,7 +78,7 @@ Eine global erlaubte Domain wird nach Geräte- und Netzwerkregeln geprüft. Sie 
 
 ## Aktualisierungshäufigkeit wählen \{#choose-the-update-frequency}
 
-Die Einstellung **General → Update Frequency** steuert geplante DNS-Listenaktualisierungen und liefert außerdem den Aktualisierungszeitplan, wenn IP-Blockierung aktiviert ist:
+Die Einstellung **General → Update Frequency** steuert geplante DNS-Listenaktualisierungen, solange General aktiviert ist. Derselbe Zeitplan führt IP-/Länderaktualisierungen aus, solange IP-Blockierung aktiviert ist, und eine aktivierte Bypass List nur, solange ihr passender Schutz **Providers**, **Tor** oder **VPN** eingeschaltet ist:
 
 | Einstellung   | Zeitplan                                                              |
 |---------------|-----------------------------------------------------------------------|

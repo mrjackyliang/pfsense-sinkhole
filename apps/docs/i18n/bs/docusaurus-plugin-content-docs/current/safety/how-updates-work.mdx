@@ -26,7 +26,9 @@ Za svaku omogućenu DNS listu Sinkhole:
 4. Kompajlira globalna, mrežna i uređajska pravila te pravila dopuštenih domena i upozorenja iz lokalno sačuvanih podataka.
 5. Postavlja generaciju pod `/var/unbound` kako bi je već učitani Python modul otkrio.
 
-Neuspjelo preuzimanje, parsiranje ili provjera bilježi grešku bez zamjene posljednje ispravne kopije. DNS tokom cijelog pokušaja nastavlja koristiti postavljenu lokalnu generaciju.
+Neuspjelo preuzimanje, parsiranje ili provjera bilježi grešku bez zamjene posljednje ispravne kopije kada je URL liste nepromijenjen. DNS tokom cijelog pokušaja nastavlja koristiti postavljenu lokalnu generaciju.
+
+Nakon promjene URL-a liste, sljedeće ažuriranje koje je preuzima odbacuje kopiju s prethodnog URL-a prije dohvatanja nove, pa neuspjelo prvo preuzimanje ostavlja tu listu bez sačuvane kopije. Onemogućena lista ili Bypass lista čija je zaštita isključena ne preuzima se, pa zadržava podatke prethodne kopije dok se ponovo ne omogući.
 
 ## Postavljanje i predmemorije Resolvera \{#deployment-and-resolver-caches}
 
@@ -50,7 +52,7 @@ Postojeće sidro `sinkhole/ip` nakon uspješnog ažuriranja može primiti samo z
 
 Zadana učestalost ažuriranja lista je Daily. Rasporedi Hourly, Every 6 hours, Daily i Weekly koriste stabilne nasumične minute, tako da zaštitni zid ne mijenja vrijeme posla nakon svakog spremanja.
 
-Ažuriranja DNS lista, ažuriranja IP-a/država, primjena povezana s katalogom i samoažuriranje paketa usklađuju se putem `/var/run/sinkhole-update.lock`. Radnja Update paketa čeka završetak aktivnog ažuriranja liste umjesto da mijenja instalirani paket ispod njega.
+DNS, Bypass i IP/country ažuriranja, primjene postavki, provjere i samoažuriranja paketa te čišćenje pri uklanjanju usklađuju se putem `/var/run/sinkhole-update.lock`. Provjera paketa ili radnja Update ne čeka: ako druga operacija drži zaključavanje, zaustavlja se s porukom `Another package operation is already running.` i može se ponoviti kada ta operacija završi.
 
 ## Osvježavanje kataloga je odvojeno \{#catalog-refreshes-are-separate}
 

@@ -38,6 +38,8 @@ Zakazana vremena koriste stabilne nasumične komponente. Hourly se pokreće u je
 | Expired Answer Lifetime | Empty  | Sekunde tokom kojih se istekli odgovor iz predmemorije još smije posluživati; `0` znači bez ograničenja.  |
 | Expired Answer Wait     | Empty  | Milisekunde čekanja na svjež odgovor prije posluživanja isteklog; `0` odgovara odmah.                     |
 
+Rebind Exceptions prihvata najviše 100 domena. Expired Answer Lifetime prihvata cijele sekunde od `0` do `31536000`, a Expired Answer Wait prihvata cijele milisekunde od `0` do `60000`.
+
 Prazno polje ništa ne upisuje i zadržava zadanu vrijednost Resolvera. [Postavke Resolvera](/docs/configure/resolver-settings) objašnjavaju kada se vrijednosti primjenjuju.
 
 ## Package Updates \{#package-updates}
@@ -56,7 +58,7 @@ Svaka nova verzija kreira jednu lokalnu obavijest pfSensea. **About → Check No
 | Name            | Empty  | Lokalna oznaka koju koriste dodjele, upozorenja i Status.                                   |
 | URL             | Empty  | HTTP ili HTTPS izvor bez ugrađenih vjerodajnica.                                            |
 | Enabled         | On     | Uključuje izvor u ažuriranja i kompajlirana pravila kada je dodijeljen.                     |
-| Global          | On     | Primjenjuje listu na svakog klijenta nakon odluka uređaja i mreže.                          |
+| Global          | Off    | Primjenjuje listu na svakog klijenta nakon odluka uređaja i mreže.                          |
 | Allowed Domains | Empty  | Jedna globalna dopuštena domena po redu; svaki unos dopušta tačnu domenu i svaku poddomenu. |
 
 **Add from Catalog** na zahtjev pretražuje registar lista AdGuard Homea i katalog izvora pfBlockerNG-a. Dodavanje rezultata kreira isti obični red kao i ručni unos URL-a.
@@ -73,26 +75,26 @@ SafeSearch odabiri su prema zadanim postavkama prazni za svaki opseg. Svaki opse
 
 ## Network Scopes \{#network-scopes}
 
-| Polje           | Zadano | Opis                                                                                                                       |
-|-----------------|--------|----------------------------------------------------------------------------------------------------------------------------|
-| Interface       | Empty  | Konfigurirani interfejs pfSensea čije trenutne IPv4 i IPv6 podmreže identificiraju mrežu.                                  |
-| Lists           | Empty  | Dodatne DNS liste koje blokiraju klijente u mreži.                                                                         |
-| Allowed Domains | Empty  | Jedan mrežni izuzetak po redu; svaki dopušta tačnu domenu i svaku poddomenu prije lista te mreže i svih globalnih pravila. |
-| Enabled         | On     | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                            |
+| Polje           | Zadano | Opis                                                                                                                                                  |
+|-----------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface       | LAN    | Konfigurirani interfejs pfSensea čije trenutne IPv4 i IPv6 podmreže identificiraju mrežu. Bez LAN-a odabire se prvi slobodni interfejs koji nije WAN. |
+| Lists           | Empty  | Dodatne DNS liste koje blokiraju klijente u mreži.                                                                                                    |
+| Allowed Domains | Empty  | Jedan mrežni izuzetak po redu; svaki dopušta tačnu domenu i svaku poddomenu prije lista te mreže i svih globalnih pravila.                            |
+| Enabled         | On     | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                                                       |
 
 Svaki interfejs može se pojaviti samo jednom. Nedostupan sačuvani interfejs ostaje vidljiv za ispravak umjesto da se odbaci.
 
 ## Device Scopes \{#device-scopes}
 
-| Polje               | Zadano     | Opis                                                                                                               |
-|---------------------|------------|--------------------------------------------------------------------------------------------------------------------|
-| Name                | Empty      | Lokalna oznaka prikazana u pravilima i Statusu.                                                                    |
-| Identified By       | IP address | Bira IP address, DHCP static mapping ili MAC address.                                                              |
-| IP or MAC Address   | Empty      | Tačan identifikator kada je odabran IP address ili MAC address.                                                    |
-| DHCP Static Mapping | Empty      | Postojeće mapiranje odabrano kada se koristi taj način identifikacije.                                             |
-| Lists               | Empty      | Dodatne DNS liste koje blokiraju ovaj uređaj.                                                                      |
-| Allowed Domains     | Empty      | Jedan izuzetak uređaja po redu; svaki dopušta tačnu domenu i svaku poddomenu prije svake mrežne i globalne odluke. |
-| Enabled             | On         | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                    |
+| Polje                    | Zadano     | Opis                                                                                                               |
+|--------------------------|------------|--------------------------------------------------------------------------------------------------------------------|
+| Name                     | Empty      | Lokalna oznaka prikazana u pravilima i Statusu.                                                                    |
+| Identified By            | IP address | Bira IP address, DHCP static mapping ili MAC address.                                                              |
+| IP Address / MAC Address | Empty      | Tačan identifikator kada je odabran IP address ili MAC address. Oznaka prati odabranu metodu.                      |
+| DHCP Static Mapping      | Empty      | Postojeće mapiranje odabrano kada se koristi taj način identifikacije.                                             |
+| Lists                    | Empty      | Dodatne DNS liste koje blokiraju ovaj uređaj.                                                                      |
+| Allowed Domains          | Empty      | Jedan izuzetak uređaja po redu; svaki dopušta tačnu domenu i svaku poddomenu prije svake mrežne i globalne odluke. |
+| Enabled                  | On         | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                    |
 
 Statička mapiranja koriste svoju konfiguriranu adresu i trenutne adrese opažene za MAC mapiranja. MAC red koristi trenutne podatke ARP-a, NDP-a i DHCP zakupa.
 
@@ -112,22 +114,26 @@ Minutni procesor šalje najviše 20 poruka po pokretanju i 60 poruka po pravilu 
 
 ## Bypass zaštita \{#bypass-protection}
 
-| Polje               | Zadano | Opis                                                                                                        |
-|---------------------|--------|-------------------------------------------------------------------------------------------------------------|
-| Apply to            | Empty  | Interfejsi dolaznog saobraćaja klijenata koje dijele sve Bypass zaštite.                                    |
-| Redirect            | Off    | Šalje obični UDP i TCP saobraćaj porta 53 na odabranim interfejsima zaštitnom zidu.                         |
-| Exempt Sources      | Empty  | Jedna IP adresa, CIDR, alias ili unos `This Firewall` po redu koji zaobilazi preusmjeravanje običnog DNS-a. |
-| Exempt Destinations | Empty  | Jedna odredišna IP adresa, CIDR ili alias po redu koji zaobilazi preusmjeravanje običnog DNS-a.             |
-| TLS and QUIC        | Off    | Blokira TCP i UDP port 853 prema odredištima koja nisu zaštitni zid.                                        |
-| Providers           | Off    | Blokira nazive i adrese iz omogućenih Bypass Lists vrste **Encrypted DNS**.                                 |
-| Firefox             | Off    | Vraća `NXDOMAIN` za Firefoxov kanarski naziv automatskog DNS-over-HTTPS-a i njegove poddomene.              |
-| Private Relay       | Off    | Vraća `NXDOMAIN` za dva Appleova naziva dostupnosti usluge Private Relay.                                   |
-| Discovery           | Off    | Ostavlja DDR nepromijenjenim, oglašava DNS over TLS zaštitnog zida ili odgovara s `NOERROR` bez zapisa.     |
-| Tor                 | Off    | Blokira nazive i adrese iz omogućenih Bypass Lists vrste **Tor**.                                           |
-| VPN providers       | Off    | Blokira nazive i adrese iz omogućenih Bypass Lists vrste **VPN**.                                           |
-| Standard VPN ports  | Off    | Blokira UDP portove OpenVPN-a, WireGuarda i IPsec-a te ESP prema odredištima koja nisu zaštitni zid.        |
+| Polje                                  | Zadano | Opis                                                                                                                         |
+|----------------------------------------|--------|------------------------------------------------------------------------------------------------------------------------------|
+| Apply to                               | Empty  | Interfejsi dolaznog saobraćaja klijenata koje dijele sve Bypass zaštite.                                                     |
+| Redirect                               | Off    | Šalje obični UDP i TCP saobraćaj porta 53 na odabranim interfejsima zaštitnom zidu.                                          |
+| Exempt Sources                         | Empty  | Jedna IPv4 ili IPv6 adresa, CIDR mreža ili postojeći alias hosta/mreže po redu koji zaobilazi preusmjeravanje običnog DNS-a. |
+| Exempt Destinations                    | Empty  | Jedna odredišna IP adresa, CIDR ili alias po redu koji zaobilazi preusmjeravanje običnog DNS-a.                              |
+| TLS and QUIC                           | Off    | Blokira TCP i UDP port 853 prema odredištima koja nisu zaštitni zid.                                                         |
+| Providers                              | Off    | Blokira nazive i adrese iz omogućenih Bypass Lists vrste **Encrypted DNS**.                                                  |
+| Firefox                                | Off    | Vraća `NXDOMAIN` za Firefoxov kanarski naziv automatskog DNS-over-HTTPS-a i njegove poddomene.                               |
+| Private Relay                          | Off    | Vraća `NXDOMAIN` za dva Appleova naziva dostupnosti usluge Private Relay.                                                    |
+| Discovery                              | Off    | Ostavlja DDR nepromijenjenim, oglašava DNS over TLS zaštitnog zida ili odgovara s `NOERROR` bez zapisa.                      |
+| Tor                                    | Off    | Blokira nazive i adrese iz omogućenih Bypass Lists vrste **Tor**.                                                            |
+| VPN (Block listed VPN providers)       | Off    | Blokira nazive i adrese iz omogućenih Bypass Lists vrste **VPN**.                                                            |
+| VPN (Block standard VPN ports)         | Off    | Blokira UDP portove OpenVPN-a, WireGuarda i IPsec-a te ESP prema odredištima koja nisu zaštitni zid.                         |
+| Block Exemptions → Exempt Sources      | Empty  | Jedna IP adresa, CIDR ili alias po redu čiji saobraćaj zaobilazi svaku Bypass blokadu zaštitnog zida.                        |
+| Block Exemptions → Exempt Destinations | Empty  | Jedna odredišna IP adresa, CIDR ili alias po redu koje nijedna Bypass blokada zaštitnog zida ne zaustavlja.                  |
 
 Svaki sačuvani izuzetak preusmjeravanja mora biti važeći prije upotrebe bilo kojeg pravila preusmjeravanja. IPv4 cilja `127.0.0.1` samo kada Resolver tamo sluša, a inače koristi adresu interfejsa; IPv6 uvijek koristi adresu interfejsa. **Discovery → Advertise** zahtijeva SSL/TLS uslugu DNS Resolvera i naziv hosta certifikata.
+
+Izuzeci od blokiranja ne dodaju pravilo propuštanja, pa izuzeti saobraćaj i dalje prolazi kroz vaša vlastita pravila zaštitnog zida. Svaka lista prihvata najviše 16 aliasa. Nevažeći sačuvani izuzetak od blokiranja zadržava svaku Bypass blokadu zaštitnog zida bez izuzetaka dok se ne ispravi ili ukloni.
 
 ### Bypass Lists \{#bypass-lists}
 
@@ -144,16 +150,16 @@ Unos za Bypass List koristi jedan unos po redu i komentare s `#`. Neuspjelo preu
 
 ## IP and Country Blocking \{#ip-and-country-blocking}
 
-| Polje               | Zadano | Opis                                                                                    |
-|---------------------|--------|-----------------------------------------------------------------------------------------|
-| Enable              | Off    | Omogućava nezavisno učitano sidro zaštitnog zida `sinkhole/ip`.                         |
-| Interfaces          | Empty  | Dolazni interfejsi na kojima se primjenjuju pravila blokiranja.                         |
-| Directions          | Empty  | Bira ulazno blokiranje izvora, izlazno blokiranje odredišta ili oboje.                  |
-| Countries           | Empty  | Jedan dvoslovni kod države GeoLite2 po redu.                                            |
-| MaxMind Account ID  | Empty  | Račun koji se koristi za pribavljanje arhive GeoLite2 Country.                          |
-| MaxMind License Key | Unset  | Ključ samo za zapis koji daje administrator; prazno polje zadržava sačuvanu vrijednost. |
-| Clear License Key   | Off    | Briše sačuvani MaxMind ključ pri spremanju.                                             |
-| IP Allowlist        | Empty  | Jedna IP adresa ili CIDR po redu, oduzeta od konačnih tabela blokiranja.                |
+| Polje               | Zadano | Opis                                                                                                                   |
+|---------------------|--------|------------------------------------------------------------------------------------------------------------------------|
+| Enable              | Off    | Omogućava nezavisno učitano sidro zaštitnog zida `sinkhole/ip`.                                                        |
+| Interfaces          | Empty  | Dolazni interfejsi na kojima se primjenjuju pravila blokiranja.                                                        |
+| Directions          | Empty  | Bira ulazno blokiranje izvora, izlazno blokiranje odredišta ili oboje.                                                 |
+| Countries           | Empty  | Jedan dvoslovni kod države GeoLite2 po redu.                                                                           |
+| MaxMind Account ID  | Empty  | Račun koji se koristi za pribavljanje arhive GeoLite2 Country.                                                         |
+| MaxMind License Key | Unset  | Ključ samo za zapis koji daje administrator; prazno polje zadržava sačuvanu vrijednost.                                |
+| Clear License Key   | Off    | Briše sačuvani MaxMind ključ pri spremanju.                                                                            |
+| IP Allowlist        | Empty  | Jedna IPv4 ili IPv6 adresa, CIDR mreža ili postojeći alias hosta/mreže po redu, oduzeta od konačnih tabela blokiranja. |
 
 Svaki red IP liste ima naziv, URL, odabir porodice IPv4/IPv6/Both i prekidač Enabled. Sinkhole iz konačnih tabela uklanja i adrese interfejsa zaštitnog zida, pristupnika i DNS-a kako njegova pravila ne bi blokirala zaštićenu infrastrukturu.
 

@@ -50,7 +50,7 @@ An empty installed trust list means no signature is required, but checksum and p
 
 ## Update Locking \{#update-locking}
 
-Package checking and self-update share `/var/run/sinkhole-update.lock` with DNS-list and IP/country updates. If a list update is in progress, the About **Update** action can't begin until that job finishes.
+Package checking and self-update share `/var/run/sinkhole-update.lock` with DNS, Bypass, and IP/country updates, settings applies, and removal cleanup. They don't wait for the lock: if another operation holds it, the check or **Update** action stops with `Another package operation is already running.`
 
 The lock prevents package files from changing while the current package is downloading, parsing, compiling, or applying policy. Retry from About after Status no longer shows an update running.
 

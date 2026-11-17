@@ -31,12 +31,12 @@ O Sinkhole recusa-se a guardar **Enable** enquanto o pfBlockerNG estiver instala
 
 1. Abra **Lists** e adicione a URL de uma fonte em que confia ou abra **Add from Catalog** para pesquisar os dois catálogos sob demanda.
 2. Dê um nome local à fonte e mantenha **Enabled** selecionado para que o Sinkhole a transfira.
-3. Mantenha **Global** selecionado apenas quando a lista tiver de se aplicar depois de todas as regras de dispositivo e rede.
+3. Selecione **Global** apenas quando a lista tiver de se aplicar depois de todas as regras de dispositivo e rede.
 4. Adicione os **Allowed Domains** globais necessários, um domínio por linha, quando um falso positivo conhecido precisar ser permitido.
 
 O Sinkhole não recomenda nenhuma fonte. [Listas e cópias guardadas](/docs/configure/lists) explica os formatos aceitos e como resultados do catálogo tornam-se linhas de lista comuns.
 
-<img src={listsTab} alt="Separador Lists mostrando cinco listas de bloqueio de demonstração com as colunas Global e Used By, e dois domínios permitidos globais" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Separador Lists mostrando cinco listas de bloqueio de demonstração com as colunas Global e Used By, e dois domínios permitidos globais" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Adicione âmbitos opcionais \{#add-optional-scopes}
 
@@ -52,9 +52,9 @@ Um dispositivo herda a rede em que está no momento, e a rede herda as listas gl
 1. Volte para **General** e selecione **Enable**.
 2. Escolha **Update Frequency** para as listas DNS ativadas e salve.
 3. Abra **Status** e selecione **Update Now**.
-4. Aguarde **Update running** voltar a `No`.
+4. Acompanhe o **Update Log** até apresentar `Update finished`.
 
-A opção em General ativa as atualizações agendadas das listas DNS e a integração com o DNS Resolver. As Bypass Lists ativadas e a política de IP/país utilizam de forma independente o mesmo agendamento de atualização; todas as proteções Bypass e IP permanecem desativadas até que um administrador as ative.
+A opção em General ativa as atualizações agendadas das listas DNS e a integração com o DNS Resolver. A política de IP/país utiliza de forma independente o mesmo agendamento de atualização, e uma Bypass List ativada só participa nele enquanto a proteção correspondente **Providers**, **Tor** ou **VPN** estiver ativa; todas as proteções Bypass e IP permanecem desativadas até que um administrador as ative.
 
 ## Verifique o estado ativo \{#verify-the-active-state}
 

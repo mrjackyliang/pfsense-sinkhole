@@ -26,7 +26,9 @@ For every enabled DNS list, Sinkhole:
 4. Compiles global, network, device, allowed-domain, and alert policy from local saved data.
 5. Deploys a generation under `/var/unbound` for the already-loaded Python module to discover.
 
-A download, parse, or validation failure records an error without replacing the last-good copy. DNS keeps using the deployed local generation throughout the attempt.
+A download, parse, or validation failure records an error without replacing the last-good copy when the list's URL is unchanged. DNS keeps using the deployed local generation throughout the attempt.
+
+After a list's URL changes, the next update that downloads it discards the copy from the previous URL before fetching the new one, so a failed first download leaves that list with no saved copy. A disabled list, or a Bypass List whose protection is off, isn't downloaded, so it keeps the previous copy's details until it is enabled again.
 
 ## Deployment and Resolver Caches \{#deployment-and-resolver-caches}
 
@@ -50,7 +52,7 @@ An existing `sinkhole/ip` anchor can receive a table-only `pfctl -T replace` aft
 
 The default list update frequency is Daily. Hourly, Every 6 hours, Daily, and Weekly schedules use stable randomized minute components so the firewall doesn't move its job time on every save.
 
-DNS-list updates, IP/country updates, catalog-related apply work, and package self-update coordinate through `/var/run/sinkhole-update.lock`. A package Update action waits for an active list update to finish instead of changing the installed package underneath it.
+DNS, Bypass, and IP/country updates, settings applies, package checks and self-updates, and removal cleanup coordinate through `/var/run/sinkhole-update.lock`. A package check or Update action doesn't wait: if another operation holds the lock, it stops with `Another package operation is already running.` and can be retried once that operation ends.
 
 ## Catalog Refreshes Are Separate \{#catalog-refreshes-are-separate}
 

@@ -64,11 +64,13 @@ Results appear as cards. Use the search, source, and maintainer controls togethe
 
 Each card shows the list name, its maintainer or category, source catalog, a two-line description, homepage, and **Add** or **Added** state. The cards don't show ratings, badges, or recommendations. Selecting **Add** creates an ordinary list row whose URL can be assigned like any manually entered source.
 
+New lists, including ones added from the catalog, start with **Global** unticked, so they block nothing until you tick Global or select them in a scope.
+
 Each card's **Contents** line says **Domains**. Adding a catalog result keeps its catalog name unchanged.
 
 Catalog copies are cached under `/var/db` for one day. A failed refresh keeps the last good catalog copy and shows the fetch error on Status.
 
-<img src={catalogSearch} alt="Lists tab Add from Catalog panel showing catalog search controls and fetch status" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Lists tab Add from Catalog panel showing catalog search controls and fetch status" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Set Global Allowed Domains \{#set-global-allowed-domains}
 
@@ -78,7 +80,7 @@ A global allowed domain is checked after device and network rules. It therefore 
 
 ## Choose the Update Frequency \{#choose-the-update-frequency}
 
-The **General → Update Frequency** setting controls scheduled DNS-list updates and also supplies the update schedule when IP blocking is enabled:
+The **General → Update Frequency** setting controls scheduled DNS-list updates while General is enabled. The same schedule runs IP/country updates while IP blocking is enabled, and an enabled Bypass List only while its matching **Providers**, **Tor**, or **VPN** protection is on:
 
 | Setting       | Schedule                                                          |
 |---------------|-------------------------------------------------------------------|

@@ -302,3 +302,36 @@
 .sinkhole-service-repair {
   display: block;
 }
+
+/**
+ * ============================
+ * Scopes Page
+ * ============================
+ */
+select[name="network_lists[]"],
+select[name="device_lists[]"] {
+  min-height: 120px;
+
+  overflow: auto;
+  resize: vertical;
+}
+
+/**
+ * ============================
+ * Status Page
+ * ============================
+ */
+
+/* The Update Log reads like pfSense's package-install output: monospaced and unwrapped. */
+.sinkhole-update-log {
+  width: 100%;
+  min-height: 120px;
+
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+
+  overflow: auto;
+  resize: vertical;
+}

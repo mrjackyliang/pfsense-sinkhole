@@ -31,12 +31,12 @@ Sinkhole odbija sačuvati **Enable** dok je pfBlockerNG instaliran i omogućen i
 
 1. Otvorite **Lists** i dodajte URL pouzdanog izvora ili otvorite **Add from Catalog** kako biste pretražili dva kataloga na zahtjev.
 2. Izvoru dajte lokalni naziv i ostavite **Enabled** odabranim kako bi ga Sinkhole preuzeo.
-3. Ostavite **Global** odabranim samo kada se lista treba primijeniti nakon svakog pravila uređaja i mreže.
+3. Odaberite **Global** samo kada se lista treba primijeniti nakon svakog pravila uređaja i mreže.
 4. Dodajte sve globalne **Allowed Domains**, jednu domenu po redu, kada treba propustiti poznati lažno pozitivni rezultat.
 
 Sinkhole ne preporučuje nijedan izvor. [Liste i sačuvane kopije](/docs/configure/lists) objašnjavaju prihvaćene formate i način na koji rezultati kataloga postaju obični redovi liste.
 
-<img src={listsTab} alt="Kartica Lists prikazuje pet demonstracijskih lista blokiranja s kolonama Global i Used By te dvije globalno dozvoljene domene" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Kartica Lists prikazuje pet demonstracijskih lista blokiranja s kolonama Global i Used By te dvije globalno dozvoljene domene" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Dodajte opcionalne opsege \{#add-optional-scopes}
 
@@ -52,9 +52,9 @@ Uređaj nasljeđuje mrežu na kojoj se trenutno nalazi, a mreža nasljeđuje glo
 1. Vratite se na **General** i odaberite **Enable**.
 2. Odaberite **Update Frequency** za omogućene DNS liste i sačuvajte.
 3. Otvorite **Status** i odaberite **Update Now**.
-4. Pričekajte da se **Update running** vrati na `No`.
+4. Pratite **Update Log** dok ne prikaže `Update finished`.
 
-Prekidač General omogućava zakazana ažuriranja DNS lista i integraciju DNS Resolvera. Omogućene Bypass Lists i pravila za IP/države nezavisno koriste isti raspored ažuriranja; svaka Bypass i IP zaštita ostaje isključena dok je administrator ne omogući.
+Prekidač General omogućava zakazana ažuriranja DNS lista i integraciju DNS Resolvera. Pravila za IP/države nezavisno koriste isti raspored ažuriranja, a omogućena Bypass lista mu se pridružuje samo dok je uključena njena odgovarajuća zaštita **Providers**, **Tor** ili **VPN**; svaka Bypass i IP zaštita ostaje isključena dok je administrator ne omogući.
 
 ## Provjerite aktivno stanje \{#verify-the-active-state}
 

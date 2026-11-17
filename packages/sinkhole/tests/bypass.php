@@ -549,6 +549,10 @@ RULES;
                 $paths->bypassListFile($identifier),
                 "D\tS\tprovider.example.test\nI\t192.0.2.0/24\n",
             );
+            file_put_contents(
+                $paths->bypassMetadataFile($identifier),
+                '{"url": "https://example.test/provider.txt"}' . PHP_EOL,
+            );
             $configuration = BypassConfiguration::partition(
                 sinkholeBypassTestStorage([[
                     'id' => $identifier,
@@ -578,8 +582,18 @@ RULES;
                 JSON_THROW_ON_ERROR,
             );
 
-            sinkholeTestAssertSame(3, $manifest['schema_version'], 'Bypass data requires manifest schema 3.');
+            sinkholeTestAssertSame(4, $manifest['schema_version'], 'Bypass name indexes require manifest schema 4.');
             sinkholeTestAssertSame(1, $manifest['bypass_domain_count'], 'One effective Bypass name must compile.');
+            sinkholeTestAssertSame(
+                substr(hash('sha256', 'provider.example.test', true), 0, 16) . "\x00\x00",
+                file_get_contents($paths->runtimeDataDirectory . '/bypass.index'),
+                'The Bypass index must hold the hashed name and its kind-mask position.',
+            );
+            sinkholeTestAssertSame(
+                [['', 'encrypted_dns']],
+                $manifest['bypass_index']['masks'],
+                'The Bypass index mask table must keep the kind columns.',
+            );
             sinkholeTestAssertSame(
                 "provider.example.test\t\tencrypted_dns\n",
                 file_get_contents($paths->runtimeDataDirectory . '/bypass.tsv'),
@@ -590,6 +604,58 @@ RULES;
                 file_get_contents($paths->runtimeDataDirectory . '/allow.txt'),
                 'Allowed domains must remain available to outrank Bypass List names.',
             );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'compiler refuses a Bypass List copy saved from another URL' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+        $identifier = str_repeat('b', 32);
+
+        try {
+            $paths = sinkholeBypassTestPaths($root);
+            $stateStore = new StateStore($paths->stateFile, $paths->statusFile);
+            $bypassStore = new BypassListStore($paths);
+            mkdir($paths->bypassListDirectory, 0700, true);
+            file_put_contents(
+                $paths->bypassListFile($identifier),
+                "D\tS\tprevious-provider.example.test\n",
+            );
+            file_put_contents(
+                $paths->bypassMetadataFile($identifier),
+                '{"url": "https://example.test/previous-provider.txt"}' . PHP_EOL,
+            );
+            $configuration = BypassConfiguration::partition(
+                sinkholeBypassTestStorage([[
+                    'id' => $identifier,
+                    'descr' => 'Invented edited provider fixture',
+                    'url' => 'https://example.test/edited-provider.txt',
+                    'kind' => BypassConfiguration::KIND_ENCRYPTED_DNS,
+                    'enabled' => 'on',
+                ]], ['block_encrypted_dns' => 'on']),
+                ['lan'],
+            );
+            (new Compiler(
+                $paths,
+                new SavedListStore($paths),
+                $stateStore,
+                null,
+                $bypassStore,
+            ))->compile([], [], configuredBypass: $configuration);
+            $manifest = json_decode(
+                (string) file_get_contents($paths->runtimeDataDirectory . '/manifest.json'),
+                true,
+                16,
+                JSON_THROW_ON_ERROR,
+            );
+
+            sinkholeTestAssertSame(0, $manifest['bypass_domain_count'], 'The previous-URL copy must not compile.');
+            sinkholeTestAssertSame(
+                true,
+                $bypassStore->discardMismatchedCopy($identifier, 'https://example.test/edited-provider.txt'),
+                'An update must discard the previous-URL copy.',
+            );
+            sinkholeTestAssertSame(false, $bypassStore->hasSavedCopy($identifier), 'The copy must be gone.');
         } finally {
             sinkholeTestRemoveTemporaryDirectory($root);
         }
@@ -940,6 +1006,10 @@ RULES;
             file_put_contents(
                 $paths->bypassListFile($identifier),
                 "I\t198.51.100.0/24\n",
+            );
+            file_put_contents(
+                $paths->bypassMetadataFile($identifier),
+                json_encode(['url' => $list['url']]) . PHP_EOL,
             );
             file_put_contents($paths->bypassTableIpv4File, "203.0.113.0/24\n");
             file_put_contents($paths->bypassTableIpv6File, "2001:db8:ffff::/48\n");
@@ -1690,6 +1760,498 @@ RULES;
                 'IP removal cleanup failed:',
                 implode("\n", $sinkholeStubLogs),
                 'The independent IP cleanup failure must still be logged.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'Bypass block exemptions nest the blocks without passes for aliases and literals' => static function (): void {
+        $interfaces = [[
+            'interface' => 'lan',
+            'real_interface' => 'igc0',
+            'ipv4' => true,
+            'ipv6' => true,
+        ]];
+        $configuration = [
+            'block_tls_quic' => true,
+            'block_encrypted_dns' => true,
+            'exempt_sources' => ['IP4_CENTRALSTATION', '10.0.0.5'],
+            'exempt_destinations' => ['9.9.9.9'],
+            'invalid_exemptions' => [],
+        ];
+        $rules = BypassRuleConfiguration::anchorText(
+            $interfaces,
+            $configuration,
+            '/var/db/sinkhole-bypass-v4.txt',
+            '/var/db/sinkhole-bypass-v6.txt',
+        );
+        $expected = <<<'RULES'
+# Sinkhole bypass protection
+table <sinkhole_bypass_v4> persist file "/var/db/sinkhole-bypass-v4.txt"
+table <sinkhole_bypass_v6> persist file "/var/db/sinkhole-bypass-v6.txt"
+table <sinkhole_bypass_exempt_src> { 10.0.0.5 }
+table <sinkhole_bypass_exempt_dst> { 9.9.9.9 }
+anchor "ports" in from ! <sinkhole_bypass_exempt_src> to ! <sinkhole_bypass_exempt_dst> {
+    anchor "aliases_1" in from ! <IP4_CENTRALSTATION> {
+        block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
+        block drop in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 853
+    }
+}
+anchor "providers_inet" in inet from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v4> {
+    anchor "aliases_1" in from ! <IP4_CENTRALSTATION> {
+        block drop in quick on igc0 inet all
+    }
+}
+anchor "providers_inet6" in inet6 from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v6> {
+    anchor "aliases_1" in from ! <IP4_CENTRALSTATION> {
+        block drop in quick on igc0 inet6 all
+    }
+}
+RULES;
+
+        sinkholeTestAssertSame($expected . PHP_EOL, $rules, 'Mixed exemptions must nest every block exactly.');
+        sinkholeTestAssertSame(
+            0,
+            preg_match('/^\s*pass\b/m', $rules),
+            'Block exemptions must never pass firewall traffic.',
+        );
+        sinkholeTestAssertSame(
+            0,
+            preg_match('/^\s*anchor .*\bquick\b/m', $rules),
+            'Exemption anchors must not be quick, which would end evaluation for unmatched traffic.',
+        );
+
+        $aliasRules = BypassRuleConfiguration::anchorText(
+            $interfaces,
+            [
+                'block_tls_quic' => true,
+                'block_tor' => true,
+                'exempt_sources' => ['NAS_HOSTS', 'CAMERAS'],
+                'exempt_destinations' => ['DNS_SERVERS'],
+                'invalid_exemptions' => [],
+            ],
+            '/v4',
+            '/v6',
+        );
+        $expectedAliasRules = <<<'RULES'
+# Sinkhole bypass protection
+table <sinkhole_bypass_v4> persist file "/v4"
+table <sinkhole_bypass_v6> persist file "/v6"
+anchor "ports" in from ! <NAS_HOSTS> to ! <DNS_SERVERS> {
+    anchor "aliases_1" in from ! <CAMERAS> {
+        block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
+        block drop in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 853
+    }
+}
+anchor "providers_inet" in inet from any to <sinkhole_bypass_v4> {
+    anchor "aliases_1" in from ! <NAS_HOSTS> to ! <DNS_SERVERS> {
+        anchor "aliases_2" in from ! <CAMERAS> {
+            block drop in quick on igc0 inet all
+        }
+    }
+}
+anchor "providers_inet6" in inet6 from any to <sinkhole_bypass_v6> {
+    anchor "aliases_1" in from ! <NAS_HOSTS> to ! <DNS_SERVERS> {
+        anchor "aliases_2" in from ! <CAMERAS> {
+            block drop in quick on igc0 inet6 all
+        }
+    }
+}
+RULES;
+
+        sinkholeTestAssertSame(
+            $expectedAliasRules . PHP_EOL,
+            $aliasRules,
+            'Alias-only exemptions must reference pfSense alias tables one pair per level.',
+        );
+        sinkholeTestAssertSame(
+            false,
+            str_contains($aliasRules, 'sinkhole_bypass_exempt_'),
+            'Alias-only exemptions must not declare literal tables.',
+        );
+
+        $literalRules = BypassRuleConfiguration::anchorText(
+            [[
+                'interface' => 'lan',
+                'real_interface' => 'igc0',
+                'ipv4' => true,
+                'ipv6' => true,
+            ]],
+            [
+                'block_vpn_ports' => true,
+                'block_vpn' => true,
+                'exempt_sources' => ['192.0.2.10', '2001:db8:5::/64', '198.51.100.9/24'],
+                'exempt_destinations' => ['2606:4700:4700::1111'],
+                'invalid_exemptions' => [],
+            ],
+            '/v4',
+            '/v6',
+        );
+        $expectedLiteralRules = <<<'RULES'
+# Sinkhole bypass protection
+table <sinkhole_bypass_v4> persist file "/v4"
+table <sinkhole_bypass_v6> persist file "/v6"
+table <sinkhole_bypass_exempt_src> { 192.0.2.10 2001:db8:5::/64 198.51.100.0/24 }
+table <sinkhole_bypass_exempt_dst> { 2606:4700:4700::1111 }
+anchor "ports" in from ! <sinkhole_bypass_exempt_src> to ! <sinkhole_bypass_exempt_dst> {
+    block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 1194
+    block drop in quick on igc0 inet proto udp from any to ! (self) port { 500 4500 51820 }
+    block drop in quick on igc0 inet proto esp from any to ! (self)
+    block drop in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 1194
+    block drop in quick on igc0 inet6 proto udp from any to ! (self) port { 500 4500 51820 }
+    block drop in quick on igc0 inet6 proto esp from any to ! (self)
+}
+anchor "providers_inet" in inet from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v4> {
+    block drop in quick on igc0 inet all
+}
+anchor "providers_inet6" in inet6 from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v6> {
+    block drop in quick on igc0 inet6 all
+}
+RULES;
+
+        sinkholeTestAssertSame(
+            $expectedLiteralRules . PHP_EOL,
+            $literalRules,
+            'Literal exemptions of both families must share one masked table per direction.',
+        );
+
+        $destinationRules = BypassRuleConfiguration::anchorText(
+            [[
+                'interface' => 'lan',
+                'real_interface' => 'igc0',
+                'ipv4' => true,
+                'ipv6' => false,
+            ]],
+            [
+                'block_tls_quic' => true,
+                'block_encrypted_dns' => true,
+                'exempt_sources' => [],
+                'exempt_destinations' => ['1.1.1.1'],
+                'invalid_exemptions' => [],
+            ],
+            '/v4',
+            '/v6',
+        );
+        $expectedDestinationRules = <<<'RULES'
+# Sinkhole bypass protection
+table <sinkhole_bypass_v4> persist file "/v4"
+table <sinkhole_bypass_v6> persist file "/v6"
+table <sinkhole_bypass_exempt_dst> { 1.1.1.1 }
+anchor "ports" in to ! <sinkhole_bypass_exempt_dst> {
+    block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
+}
+block drop in quick on igc0 inet from any to <sinkhole_bypass_v4>
+RULES;
+
+        sinkholeTestAssertSame(
+            $expectedDestinationRules . PHP_EOL,
+            $destinationRules,
+            'Literal destinations alone must leave provider rules flat because the tables subtract them.',
+        );
+
+        $flatConfiguration = [
+            'block_tls_quic' => true,
+            'block_encrypted_dns' => true,
+        ];
+        $flatRules = BypassRuleConfiguration::anchorText($interfaces, $flatConfiguration, '/v4', '/v6');
+
+        sinkholeTestAssertSame(
+            $flatRules,
+            BypassRuleConfiguration::anchorText(
+                $interfaces,
+                array_replace($flatConfiguration, [
+                    'exempt_sources' => [],
+                    'exempt_destinations' => [],
+                    'invalid_exemptions' => [],
+                ]),
+                '/v4',
+                '/v6',
+            ),
+            'Empty exemptions must render the unchanged flat rules.',
+        );
+        sinkholeTestAssertSame(
+            $flatRules,
+            BypassRuleConfiguration::anchorText(
+                $interfaces,
+                array_replace($configuration, [
+                    'invalid_exemptions' => [[
+                        'field' => 'block_exemptions',
+                        'field_key' => 'block_exemptions',
+                        'value' => 'GONE',
+                        'reason' => 'invented',
+                        'reason_key' => 'exempt_source_value_invalid',
+                        'reason_arguments' => [],
+                    ]],
+                ]),
+                '/v4',
+                '/v6',
+            ),
+            'Any invalid saved exemption must keep every block without exemptions.',
+        );
+        sinkholeTestAssertSame(
+            ['literals' => ['10.0.0.5'], 'aliases' => ['IP4_CENTRALSTATION']],
+            BypassRuleConfiguration::splitExemptions([
+                'IP4_CENTRALSTATION',
+                '10.0.0.5',
+                'bad name',
+                '123',
+                '{ any }',
+            ]),
+            'Only literal networks and pf-safe alias names may reach rule text.',
+        );
+    },
+    'Bypass block exemptions partition invalid values without disabling the blocks' => static function (): void {
+        $aliases = [
+            'IP4_CENTRALSTATION' => 'host',
+            'Office_Net' => 'network',
+        ];
+        $storage = sinkholeBypassTestStorage([], [
+            'block_tls_quic' => 'on',
+            'exempt_sources' => ['item' => ['IP4_CENTRALSTATION', ' 10.0.0.5 ', '10.0.0.5']],
+            'exempt_destinations' => ['item' => ['2606:4700:4700:0:0:0:0:1111']],
+        ]);
+        $valid = BypassConfiguration::partition($storage, ['lan'], $aliases);
+
+        sinkholeTestAssertSame(
+            ['IP4_CENTRALSTATION', '10.0.0.5'],
+            $valid['exempt_sources'],
+            'Exempt sources must be normalized and deduplicated with the redirect rules.',
+        );
+        sinkholeTestAssertSame(
+            ['2606:4700:4700::1111'],
+            $valid['exempt_destinations'],
+            'A single saved exempt destination must be accepted and canonicalized.',
+        );
+        sinkholeTestAssertSame(
+            ['IP4_CENTRALSTATION', ' 10.0.0.5 ', '10.0.0.5'],
+            $valid['stored_exempt_sources'],
+            'The stored exempt sources must keep their original text for repair.',
+        );
+        sinkholeTestAssertSame([], $valid['invalid_exemptions'], 'Valid exemptions must report no repair.');
+
+        $invalid = BypassConfiguration::partition(
+            array_replace($storage, [
+                'exempt_destinations' => ['item' => ['Renamed_Alias', 'ports_alias!']],
+            ]),
+            ['lan'],
+            $aliases,
+        );
+
+        sinkholeTestAssertSame([], $invalid['invalid_values'], 'Invalid exemptions must not pause the blocks.');
+        sinkholeTestAssertSame(true, $invalid['firewall_enabled'], 'Invalid exemptions must keep the firewall blocks on.');
+        sinkholeTestAssertSame(2, count($invalid['invalid_exemptions']), 'Every invalid exemption must be listed for repair.');
+        sinkholeTestAssertSame(
+            'block_exemptions',
+            $invalid['invalid_exemptions'][0]['field_key'],
+            'Invalid block exemptions must name their own field.',
+        );
+        sinkholeTestAssertSame(
+            'exempt_destination_value_invalid',
+            $invalid['invalid_exemptions'][0]['reason_key'],
+            'A missing alias must reuse the redirect validation reason.',
+        );
+        sinkholeTestAssertSame(
+            ['sources' => [], 'destinations' => []],
+            BypassConfiguration::effectiveExemptions($invalid),
+            'Any invalid exemption must drop every exemption.',
+        );
+
+        $aliasLimit = BypassConfiguration::MAXIMUM_EXEMPTION_ALIASES + 1;
+        $manyAliases = [];
+
+        for ($aliasIndex = 0; $aliasIndex < $aliasLimit; $aliasIndex++) {
+            $manyAliases['Alias_' . $aliasIndex] = 'host';
+        }
+
+        $limited = BypassConfiguration::partition(
+            array_replace($storage, [
+                'exempt_sources' => ['item' => array_keys($manyAliases)],
+            ]),
+            ['lan'],
+            $manyAliases,
+        );
+
+        sinkholeTestAssertSame(
+            'bypass_exemption_aliases_limit',
+            $limited['invalid_exemptions'][0]['reason_key'] ?? '',
+            'Too many aliases must be refused before the anchors nest too deep.',
+        );
+
+        $rejected = '';
+
+        try {
+            BypassConfiguration::normalizeExemptionSubmission(
+                "10.0.0.5\n\nIP4_CENTRALSTATION",
+                'not-an-address',
+                $aliases,
+            );
+        } catch (ValidationException $exception) {
+            $rejected = $exception->messageKey();
+        }
+
+        sinkholeTestAssertSame(
+            'exempt_destination_value_invalid',
+            $rejected,
+            'A submitted invalid exempt destination must be refused.',
+        );
+        sinkholeTestAssertSame(
+            [
+                'exempt_sources' => ['10.0.0.5', 'IP4_CENTRALSTATION'],
+                'exempt_destinations' => ['9.9.9.9'],
+            ],
+            BypassConfiguration::normalizeExemptionSubmission(
+                "10.0.0.5\r\n\r\nIP4_CENTRALSTATION",
+                '9.9.9.9',
+                $aliases,
+            ),
+            'A valid submission must skip blank lines and keep order.',
+        );
+    },
+    'Bypass block exemptions save round trip subtract tables and fail closed' => static function (): void {
+        global $sinkholeStubInterfaceAddresses;
+        global $sinkholeStubInterfaces;
+        global $sinkholeStubLogs;
+        global $sinkholeStubRealInterfaces;
+
+        $root = sinkholeTestTemporaryDirectory();
+        $identifier = str_repeat('f', 32);
+        $list = [
+            'id' => $identifier,
+            'descr' => 'Invented exemption provider list',
+            'url' => 'https://example.test/exemption-provider.txt',
+            'kind' => BypassConfiguration::KIND_ENCRYPTED_DNS,
+            'enabled' => 'on',
+        ];
+        $redirect = [
+            'enabled' => false,
+            'interfaces' => ['lan'],
+            'exempt_sources' => [],
+            'exempt_destinations' => [],
+        ];
+
+        try {
+            $paths = sinkholeBypassTestPaths($root);
+            sinkholeStubReset([
+                'aliases' => [
+                    'alias' => [
+                        [
+                            'name' => 'IP4_CENTRALSTATION',
+                            'type' => 'host',
+                            'address' => '192.0.2.40',
+                        ],
+                    ],
+                ],
+            ]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN'];
+            $sinkholeStubInterfaceAddresses = ['lan' => ['ipv4' => '192.0.2.1']];
+            $sinkholeStubRealInterfaces = ['lan' => 'igc0'];
+            mkdir($paths->bypassListDirectory, 0700, true);
+            file_put_contents(
+                $paths->bypassListFile($identifier),
+                "I\t198.51.100.0/24\n",
+            );
+            file_put_contents(
+                $paths->bypassMetadataFile($identifier),
+                json_encode(['url' => $list['url']]) . PHP_EOL,
+            );
+            $adapter = new PfSenseAdapter(
+                $paths,
+                new StateStore($paths->stateFile, $paths->statusFile),
+            );
+
+            $storage = pfsensePackageSinkholeBypassStorage(
+                BypassConfiguration::partition([], ['lan']),
+                [$identifier => BypassConfiguration::normalizeListRow(
+                    $identifier,
+                    $list['descr'],
+                    $list['url'],
+                    true,
+                    BypassConfiguration::KIND_ENCRYPTED_DNS,
+                )],
+                [],
+                [
+                    'block_tls_quic' => true,
+                    'block_encrypted_dns' => true,
+                    'exempt_sources' => ['IP4_CENTRALSTATION', '10.0.0.5'],
+                    'exempt_destinations' => ['198.51.100.7'],
+                ],
+            );
+            $adapter->saveBypassConfiguration($storage, $redirect);
+
+            $stored = $adapter->getBypassConfiguration();
+            sinkholeTestAssertSame(
+                ['IP4_CENTRALSTATION', '10.0.0.5'],
+                $stored['exempt_sources'],
+                'Exempt sources must survive the XML round trip.',
+            );
+            sinkholeTestAssertSame(
+                ['198.51.100.7'],
+                $stored['exempt_destinations'],
+                'A single exempt destination must survive the XML round trip.',
+            );
+
+            $ipv4Table = (string) file_get_contents($paths->bypassTableIpv4File);
+            sinkholeTestAssertSame(
+                false,
+                str_contains($ipv4Table, '198.51.100.0/24') || str_contains($ipv4Table, '198.51.100.7/32'),
+                'A literal exempt destination must be subtracted from the provider table.',
+            );
+            sinkholeTestAssertContains('198.51.100.6/32', $ipv4Table, 'The rest of the provider network must stay blocked.');
+            sinkholeTestAssertContains('198.51.100.128/25', $ipv4Table, 'The rest of the provider network must stay blocked.');
+
+            $anchorText = (string) file_get_contents($paths->bypassAnchorFile);
+            sinkholeTestAssertContains(
+                'anchor "providers_inet" in inet from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v4> {',
+                $anchorText,
+                'The loaded anchor must apply the saved exemptions.',
+            );
+            sinkholeTestAssertSame(
+                2,
+                $adapter->bypassAnchorStatus()['rule_count'],
+                'Status must count nested block rules.',
+            );
+
+            $refused = '';
+
+            try {
+                $adapter->saveBypassConfiguration(
+                    array_replace($storage, [
+                        'exempt_sources' => ['item' => ['Missing_Alias']],
+                    ]),
+                    $redirect,
+                );
+            } catch (ValidationException $exception) {
+                $refused = $exception->messageKey();
+            }
+
+            sinkholeTestAssertSame(
+                'exempt_source_value_invalid',
+                $refused,
+                'Saving an unknown alias must be refused.',
+            );
+
+            config_set_path('aliases', []);
+            $paused = $adapter->getBypassConfiguration();
+            sinkholeTestAssertSame([], $paused['invalid_values'], 'A removed alias must not pause the blocks.');
+            sinkholeTestAssertSame(1, count($paused['invalid_exemptions']), 'A removed alias must need repair.');
+            sinkholeTestAssertSame(
+                false,
+                str_contains($adapter->bypassAnchorText(), 'anchor '),
+                'A removed alias must render the flat blocks with no exemption.',
+            );
+
+            $sinkholeStubLogs = [];
+            $adapter->applyBypassAnchor();
+            $adapter->applyBypassAnchor();
+            $ignoredLogs = array_values(array_filter(
+                $sinkholeStubLogs,
+                static fn (string $log): bool => str_contains($log, 'saved block exemption is invalid'),
+            ));
+            sinkholeTestAssertSame(1, count($ignoredLogs), 'Ignored exemptions must be logged once.');
+            sinkholeTestAssertSame(
+                false,
+                str_contains((string) file_get_contents($paths->bypassAnchorFile), 'anchor '),
+                'The loaded anchor must keep every block without exemptions.',
             );
         } finally {
             sinkholeTestRemoveTemporaryDirectory($root);

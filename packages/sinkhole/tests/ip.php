@@ -979,6 +979,10 @@ RULES;
             $sinkholeStubRealInterfaces = ['lan' => 'igc0'];
             mkdir($paths->ipListDirectory, 0700, true);
             file_put_contents($paths->ipListFile($identifier), "192.0.2.0/24\n");
+            file_put_contents(
+                $paths->ipMetadataFile($identifier),
+                '{"url": "https://example.test/last-good.txt", "family": "ipv4"}' . PHP_EOL,
+            );
             $adapter = new PfSenseAdapter(
                 $paths,
                 new StateStore($paths->stateFile, $paths->statusFile),
@@ -1024,6 +1028,68 @@ RULES;
                     . $paths->ipTableIpv6File . "'",
                 implode("\n", $sinkholeStubCommands),
                 'The updater must replace the existing IPv6 table through the stub.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'IP updater discards a previous-URL copy when the new URL fails' => static function (): void {
+        global $sinkholeStubInterfaceAddresses;
+        global $sinkholeStubInterfaces;
+        global $sinkholeStubRealInterfaces;
+
+        $root = sinkholeTestTemporaryDirectory();
+        $identifier = str_repeat('d', 32);
+
+        try {
+            $paths = sinkholeIpTestPaths($root);
+            sinkholeStubReset(['installedpackages' => ['sinkhole' => ['ip' => [
+                'enabled' => 'on',
+                'interfaces' => ['item' => ['lan']],
+                'directions' => ['item' => ['inbound']],
+                'lists' => ['item' => [[
+                    'id' => $identifier,
+                    'descr' => 'Invented changed feed',
+                    'url' => 'https://example.test/changed.txt',
+                    'family' => 'ipv4',
+                    'enabled' => 'on',
+                ]]],
+                'countries' => ['item' => []],
+                'account_id' => '',
+                'license_key' => '',
+                'allowlist' => ['item' => []],
+            ]]]]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN'];
+            $sinkholeStubInterfaceAddresses = ['lan' => ['ipv4' => '192.0.2.2']];
+            $sinkholeStubRealInterfaces = ['lan' => 'igc0'];
+            mkdir($paths->ipListDirectory, 0700, true);
+            file_put_contents($paths->ipListFile($identifier), "198.51.100.0/24\n");
+            file_put_contents(
+                $paths->ipMetadataFile($identifier),
+                '{"url": "https://example.test/previous.txt", "family": "ipv4"}' . PHP_EOL,
+            );
+            $adapter = new PfSenseAdapter(
+                $paths,
+                new StateStore($paths->stateFile, $paths->statusFile),
+            );
+            $store = new IpListStore($paths);
+            $result = (new IpUpdater(
+                $adapter,
+                new SinkholeIpTestDownloadClient('invented transport failure'),
+                new IpParser(),
+                $store,
+                $paths,
+                new GeoLite2(),
+                new IpStatusStore($paths->ipStatusFile),
+            ))->run(true);
+
+            sinkholeTestAssertSame(1, $result['failed'], 'The new URL download must fail.');
+            sinkholeTestAssertSame(false, $store->hasSavedCopy($identifier), 'The previous-URL copy must be removed.');
+            sinkholeTestAssertSame('', file_get_contents($paths->ipTableIpv4File), 'The previous-URL networks must leave the table.');
+            sinkholeTestAssertSame(
+                'https://example.test/changed.txt',
+                $store->metadata($identifier)['last_attempt_url'],
+                'The failed URL must be recorded for Status.',
             );
         } finally {
             sinkholeTestRemoveTemporaryDirectory($root);

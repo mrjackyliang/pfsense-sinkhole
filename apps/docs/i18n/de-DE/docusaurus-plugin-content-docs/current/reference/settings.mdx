@@ -38,6 +38,8 @@ Geplante Zeiten verwenden stabile Zufallskomponenten. Hourly läuft zu einer sta
 | Expired Answer Lifetime | Empty    | Sekunden, in denen eine abgelaufene zwischengespeicherte Antwort noch ausgeliefert werden darf; `0` bedeutet keine Grenze. |
 | Expired Answer Wait     | Empty    | Millisekunden, die auf eine frische Antwort gewartet wird, bevor eine abgelaufene ausgeliefert wird; `0` antwortet sofort. |
 
+Rebind Exceptions akzeptiert höchstens 100 Domains. Expired Answer Lifetime akzeptiert ganze Sekunden von `0` bis `31536000`, und Expired Answer Wait akzeptiert ganze Millisekunden von `0` bis `60000`.
+
 Ein leeres Feld schreibt nichts und behält den Standard des Resolvers bei. [Resolver-Einstellungen](/docs/configure/resolver-settings) erklärt, wann die Werte gelten.
 
 ## Package Updates \{#package-updates}
@@ -56,7 +58,7 @@ Jede neue Version erzeugt einen lokalen pfSense-Hinweis. **About → Check Now**
 | Name            | Empty    | Lokale Bezeichnung für Zuweisungen, Alarme und Status.                                             |
 | URL             | Empty    | HTTP- oder HTTPS-Quelle ohne eingebettete Zugangsdaten.                                            |
 | Enabled         | On       | Nimmt die Quelle in Aktualisierungen und bei Zuweisung in kompilierte Richtlinien auf.             |
-| Global          | On       | Wendet die Liste nach Geräte- und Netzwerkentscheidungen auf jeden Client an.                      |
+| Global          | Off      | Wendet die Liste nach Geräte- und Netzwerkentscheidungen auf jeden Client an.                      |
 | Allowed Domains | Empty    | Eine global erlaubte Domain pro Zeile; jeder Eintrag erlaubt die exakte Domain und jede Subdomain. |
 
 **Add from Catalog** durchsucht das Listenregister von AdGuard Home und den Feed-Katalog von pfBlockerNG auf Abruf. Durch das Hinzufügen eines Ergebnisses entsteht derselbe gewöhnliche Eintrag wie bei der manuellen Eingabe seiner URL.
@@ -73,26 +75,26 @@ Die SafeSearch-Auswahl ist für jeden Scope standardmäßig leer. Jeder Scope ka
 
 ## Network Scopes \{#network-scopes}
 
-| Feld            | Standard | Beschreibung                                                                                                                                       |
-|-----------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | Empty    | Konfigurierte pfSense-Schnittstelle, deren aktuelle IPv4- und IPv6-Subnetze das Netzwerk bestimmen.                                                |
-| Lists           | Empty    | Zusätzliche DNS-Listen, die Clients im Netzwerk blockieren.                                                                                        |
-| Allowed Domains | Empty    | Eine Netzwerkausnahme pro Zeile; jede erlaubt die exakte Domain und jede Subdomain vor den Listen dieses Netzwerks und allen globalen Richtlinien. |
-| Enabled         | On       | Nimmt den Eintrag in Clientzuordnung und kompilierte Richtlinien auf.                                                                              |
+| Feld            | Standard | Beschreibung                                                                                                                                                          |
+|-----------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface       | LAN      | Konfigurierte pfSense-Schnittstelle, deren aktuelle IPv4- und IPv6-Subnetze das Netzwerk bestimmen. Ohne LAN wird die erste freie Nicht-WAN-Schnittstelle ausgewählt. |
+| Lists           | Empty    | Zusätzliche DNS-Listen, die Clients im Netzwerk blockieren.                                                                                                           |
+| Allowed Domains | Empty    | Eine Netzwerkausnahme pro Zeile; jede erlaubt die exakte Domain und jede Subdomain vor den Listen dieses Netzwerks und allen globalen Richtlinien.                    |
+| Enabled         | On       | Nimmt den Eintrag in Clientzuordnung und kompilierte Richtlinien auf.                                                                                                 |
 
 Jede Schnittstelle darf nur einmal vorkommen. Eine gespeicherte, nicht verfügbare Schnittstelle bleibt zur Korrektur sichtbar, statt verworfen zu werden.
 
 ## Device Scopes \{#device-scopes}
 
-| Feld                | Standard   | Beschreibung                                                                                                                    |
-|---------------------|------------|---------------------------------------------------------------------------------------------------------------------------------|
-| Name                | Empty      | Lokale Bezeichnung, die in Richtlinien und Status angezeigt wird.                                                               |
-| Identified By       | IP address | Wählt IP address, DHCP static mapping oder MAC address.                                                                         |
-| IP or MAC Address   | Empty      | Exakter Identifikator, wenn IP address oder MAC address ausgewählt ist.                                                         |
-| DHCP Static Mapping | Empty      | Vorhandene Zuordnung, wenn diese Identifikationsmethode verwendet wird.                                                         |
-| Lists               | Empty      | Zusätzliche DNS-Listen, die dieses Gerät blockieren.                                                                            |
-| Allowed Domains     | Empty      | Eine Geräteausnahme pro Zeile; jede erlaubt die exakte Domain und jede Subdomain vor jeder Netzwerk- und globalen Entscheidung. |
-| Enabled             | On         | Nimmt den Eintrag in Clientzuordnung und kompilierte Richtlinien auf.                                                           |
+| Feld                     | Standard   | Beschreibung                                                                                                                    |
+|--------------------------|------------|---------------------------------------------------------------------------------------------------------------------------------|
+| Name                     | Empty      | Lokale Bezeichnung, die in Richtlinien und Status angezeigt wird.                                                               |
+| Identified By            | IP address | Wählt IP address, DHCP static mapping oder MAC address.                                                                         |
+| IP Address / MAC Address | Empty      | Exakter Identifikator, wenn IP address oder MAC address ausgewählt ist. Die Beschriftung folgt der ausgewählten Methode.        |
+| DHCP Static Mapping      | Empty      | Vorhandene Zuordnung, wenn diese Identifikationsmethode verwendet wird.                                                         |
+| Lists                    | Empty      | Zusätzliche DNS-Listen, die dieses Gerät blockieren.                                                                            |
+| Allowed Domains          | Empty      | Eine Geräteausnahme pro Zeile; jede erlaubt die exakte Domain und jede Subdomain vor jeder Netzwerk- und globalen Entscheidung. |
+| Enabled                  | On         | Nimmt den Eintrag in Clientzuordnung und kompilierte Richtlinien auf.                                                           |
 
 Statische Zuordnungen verwenden ihre konfigurierte Adresse sowie aktuelle Adressen, die für die MAC der Zuordnung beobachtet werden. Ein MAC-Eintrag verwendet aktuelle ARP-, NDP- und DHCP-Lease-Daten.
 
@@ -112,22 +114,26 @@ Der Minutenprozessor sendet höchstens 20 Nachrichten pro Lauf und 60 Nachrichte
 
 ## Bypass-Schutz \{#bypass-protection}
 
-| Feld                | Standard | Beschreibung                                                                                                         |
-|---------------------|----------|----------------------------------------------------------------------------------------------------------------------|
-| Apply to            | Empty    | Clientseitige Eingangsschnittstellen, die von jedem Bypass-Schutz gemeinsam verwendet werden.                        |
-| Redirect            | Off      | Leitet gewöhnlichen UDP- und TCP-Port-53-Verkehr auf ausgewählten Schnittstellen an die Firewall.                    |
-| Exempt Sources      | Empty    | Eine IP-Adresse, ein CIDR, ein Alias oder ein Eintrag `This Firewall` pro Zeile, der die Plain-DNS-Umleitung umgeht. |
-| Exempt Destinations | Empty    | Eine Ziel-IP-Adresse, ein CIDR oder ein Alias pro Zeile, der die Plain-DNS-Umleitung umgeht.                         |
-| TLS and QUIC        | Off      | Blockiert TCP- und UDP-Port 853 zu anderen Zielen als der Firewall.                                                  |
-| Providers           | Off      | Blockiert Namen und Adressen aus aktivierten Bypass Lists des Typs **Encrypted DNS**.                                |
-| Firefox             | Off      | Gibt `NXDOMAIN` für Firefox' Canary-Namen für automatisches DNS-over-HTTPS und dessen Subdomains zurück.             |
-| Private Relay       | Off      | Gibt `NXDOMAIN` für Apples zwei Verfügbarkeitsnamen von Private Relay zurück.                                        |
-| Discovery           | Off      | Lässt DDR unverändert, kündigt DNS over TLS der Firewall an oder antwortet mit `NOERROR` ohne Einträge.              |
-| Tor                 | Off      | Blockiert Namen und Adressen aus aktivierten Bypass Lists des Typs **Tor**.                                          |
-| VPN providers       | Off      | Blockiert Namen und Adressen aus aktivierten Bypass Lists des Typs **VPN**.                                          |
-| Standard VPN ports  | Off      | Blockiert OpenVPN-, WireGuard- und IPsec-UDP-Ports sowie ESP zu anderen Zielen als der Firewall.                     |
+| Feld                                   | Standard | Beschreibung                                                                                                                             |
+|----------------------------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------|
+| Apply to                               | Empty    | Clientseitige Eingangsschnittstellen, die von jedem Bypass-Schutz gemeinsam verwendet werden.                                            |
+| Redirect                               | Off      | Leitet gewöhnlichen UDP- und TCP-Port-53-Verkehr auf ausgewählten Schnittstellen an die Firewall.                                        |
+| Exempt Sources                         | Empty    | Eine IPv4- oder IPv6-Adresse, ein CIDR-Netzwerk oder ein vorhandener Host-/Netzwerk-Alias pro Zeile, der die Plain-DNS-Umleitung umgeht. |
+| Exempt Destinations                    | Empty    | Eine Ziel-IP-Adresse, ein CIDR oder ein Alias pro Zeile, der die Plain-DNS-Umleitung umgeht.                                             |
+| TLS and QUIC                           | Off      | Blockiert TCP- und UDP-Port 853 zu anderen Zielen als der Firewall.                                                                      |
+| Providers                              | Off      | Blockiert Namen und Adressen aus aktivierten Bypass Lists des Typs **Encrypted DNS**.                                                    |
+| Firefox                                | Off      | Gibt `NXDOMAIN` für Firefox' Canary-Namen für automatisches DNS-over-HTTPS und dessen Subdomains zurück.                                 |
+| Private Relay                          | Off      | Gibt `NXDOMAIN` für Apples zwei Verfügbarkeitsnamen von Private Relay zurück.                                                            |
+| Discovery                              | Off      | Lässt DDR unverändert, kündigt DNS over TLS der Firewall an oder antwortet mit `NOERROR` ohne Einträge.                                  |
+| Tor                                    | Off      | Blockiert Namen und Adressen aus aktivierten Bypass Lists des Typs **Tor**.                                                              |
+| VPN (Block listed VPN providers)       | Off      | Blockiert Namen und Adressen aus aktivierten Bypass Lists des Typs **VPN**.                                                              |
+| VPN (Block standard VPN ports)         | Off      | Blockiert OpenVPN-, WireGuard- und IPsec-UDP-Ports sowie ESP zu anderen Zielen als der Firewall.                                         |
+| Block Exemptions → Exempt Sources      | Empty    | Eine IP-Adresse, ein CIDR oder ein Alias pro Zeile, dessen Verkehr jede Bypass-Firewall-Sperre umgeht.                                   |
+| Block Exemptions → Exempt Destinations | Empty    | Eine Ziel-IP-Adresse, ein CIDR oder ein Alias pro Zeile, den keine Bypass-Firewall-Sperre aufhält.                                       |
 
 Jede gespeicherte Umleitungsausnahme muss gültig sein, bevor Umleitungsregeln verwendet werden. IPv4 zielt nur dann auf `127.0.0.1`, wenn der Resolver dort lauscht, und verwendet andernfalls die Schnittstellenadresse; IPv6 verwendet immer die Schnittstellenadresse. **Discovery → Advertise** erfordert den SSL/TLS-Dienst des DNS Resolvers und den Hostnamen des Zertifikats.
+
+Sperr-Ausnahmen fügen keine Pass-Regel hinzu, daher durchläuft ausgenommener Verkehr weiterhin deine eigenen Firewall-Regeln. Jede Liste akzeptiert höchstens 16 Aliase. Eine ungültige gespeicherte Sperr-Ausnahme lässt jede Bypass-Firewall-Sperre ohne Ausnahmen bestehen, bis sie korrigiert oder entfernt wird.
 
 ### Bypass Lists \{#bypass-lists}
 
@@ -144,16 +150,16 @@ Die Eingabe für eine Bypass List verwendet einen Eintrag pro Zeile und `#`-Komm
 
 ## IP and Country Blocking \{#ip-and-country-blocking}
 
-| Feld                | Standard | Beschreibung                                                                                     |
-|---------------------|----------|--------------------------------------------------------------------------------------------------|
-| Enable              | Off      | Aktiviert den unabhängig geladenen Firewall-Anker `sinkhole/ip`.                                 |
-| Interfaces          | Empty    | Eingangsschnittstellen, auf denen Blockierungsregeln gelten.                                     |
-| Directions          | Empty    | Wählt eingehende Quellblockierung, ausgehende Zielblockierung oder beides.                       |
-| Countries           | Empty    | Ein zweistelliger GeoLite2-Ländercode pro Zeile.                                                 |
-| MaxMind Account ID  | Empty    | Konto zum Abrufen des GeoLite2-Country-Archivs.                                                  |
-| MaxMind License Key | Unset    | Nur beschreibbarer Administratorschlüssel; ein leeres Feld bewahrt den gespeicherten Wert.       |
-| Clear License Key   | Off      | Löscht den gespeicherten MaxMind-Schlüssel beim Speichern.                                       |
-| IP Allowlist        | Empty    | Eine IP-Adresse oder ein CIDR pro Zeile, die von den endgültigen Blocktabellen abgezogen werden. |
+| Feld                | Standard | Beschreibung                                                                                                                                                 |
+|---------------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Enable              | Off      | Aktiviert den unabhängig geladenen Firewall-Anker `sinkhole/ip`.                                                                                             |
+| Interfaces          | Empty    | Eingangsschnittstellen, auf denen Blockierungsregeln gelten.                                                                                                 |
+| Directions          | Empty    | Wählt eingehende Quellblockierung, ausgehende Zielblockierung oder beides.                                                                                   |
+| Countries           | Empty    | Ein zweistelliger GeoLite2-Ländercode pro Zeile.                                                                                                             |
+| MaxMind Account ID  | Empty    | Konto zum Abrufen des GeoLite2-Country-Archivs.                                                                                                              |
+| MaxMind License Key | Unset    | Nur beschreibbarer Administratorschlüssel; ein leeres Feld bewahrt den gespeicherten Wert.                                                                   |
+| Clear License Key   | Off      | Löscht den gespeicherten MaxMind-Schlüssel beim Speichern.                                                                                                   |
+| IP Allowlist        | Empty    | Eine IPv4- oder IPv6-Adresse, ein CIDR-Netzwerk oder ein vorhandener Host-/Netzwerk-Alias pro Zeile, die von den endgültigen Blocktabellen abgezogen werden. |
 
 Jeder IP-Listeneintrag besitzt einen Namen, eine URL, die Familienauswahl IPv4/IPv6/Both und den Schalter Enabled. Sinkhole entfernt außerdem Firewall-Schnittstellen-, Gateway- und DNS-Adressen aus den endgültigen Tabellen, damit die eigenen Regeln keine geschützte Infrastruktur blockieren.
 

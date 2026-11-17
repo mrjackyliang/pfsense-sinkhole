@@ -350,11 +350,13 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * pfSense Adapter - Bypass Configuration.
      *
      * The interface selection stays in the existing redirect branch so upgrades
-     * preserve it and both features always share one client-facing scope.
+     * preserve it and both features always share one client-facing scope. Block
+     * exemptions are checked against the aliases that exist now.
      *
      * @return array
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
     public function getBypassConfiguration(): array
     {
@@ -362,6 +364,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         $configuration = BypassConfiguration::partition(
             config_get_path('installedpackages/sinkhole/bypass', []),
             $redirect['interfaces'],
+            $this->getHostNetworkAliases(),
         );
         $tls = $this->dnsResolverTlsStatus();
         $configuration['discovery_hostname'] = $tls['enabled'] ? $tls['hostname'] : '';
@@ -892,6 +895,49 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     }
 
     /**
+     * pfSense Adapter - Redirect Inactive Reason.
+     *
+     * Status and Bypass explain why a Redirect that is on has no rules. The checks
+     * ignore the Python Module slot, so pfBlockerNG never silently drops redirects.
+     *
+     * @param array|null $configuration - Partitioned redirect configuration.
+     *
+     * @return string|null
+     *
+     * @throws RuntimeException When pfSense's process helper is unavailable.
+     *
+     * @since 1.2.0
+     */
+    public function redirectInactiveReason(?array $configuration = null): ?string
+    {
+        $configuration ??= $this->getRedirectConfiguration();
+
+        if ($configuration['enabled'] === false) {
+            return null;
+        }
+
+        if ($this->stateStore->removing()) {
+            return 'redirect_inactive_removing';
+        }
+
+        $settings = Settings::fromStorage($this->getSettings());
+
+        if ($settings['enabled'] === false) {
+            return 'redirect_inactive_disabled';
+        }
+
+        if (count($configuration['invalid_exemptions']) > 0) {
+            return 'redirect_inactive_invalid_exemption';
+        }
+
+        if ($this->isDnsResolverRunning() === false) {
+            return 'redirect_inactive_resolver_stopped';
+        }
+
+        return null;
+    }
+
+    /**
      * pfSense Adapter - Redirect Rule Text.
      *
      * The filter hook and minute reconciler share one complete wanted-rules
@@ -900,30 +946,25 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return string
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
     public function redirectRuleText(): string
     {
-        $settings = Settings::fromStorage($this->getSettings());
-
-        if (
-            $settings['enabled'] === false
-            || $this->isIntegrationActive() === false
-            || $this->isDnsResolverRunning() === false
-        ) {
-            return '';
-        }
-
         $configuration = $this->getRedirectConfiguration();
 
-        if (
-            $configuration['enabled'] === false
-        ) {
+        if ($configuration['enabled'] === false) {
             return '';
         }
 
-        if (count($configuration['invalid_exemptions']) > 0) {
+        $inactiveReason = $this->redirectInactiveReason($configuration);
+
+        if ($inactiveReason === 'redirect_inactive_invalid_exemption') {
             $this->logRedirectPauseOnce($configuration['invalid_exemptions']);
 
+            return '';
+        }
+
+        if ($inactiveReason !== null) {
             return '';
         }
 
@@ -1686,6 +1727,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return void
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
     public function saveBypassConfiguration(
         array $storage,
@@ -1724,10 +1766,18 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             );
         }
 
-        $configuration = BypassConfiguration::partition($storage, $redirect['interfaces']);
+        $configuration = BypassConfiguration::partition(
+            $storage,
+            $redirect['interfaces'],
+            $this->getHostNetworkAliases(),
+        );
+        $invalidValues = array_merge(
+            $configuration['invalid_values'],
+            $configuration['invalid_exemptions'],
+        );
 
-        if ($configuration['invalid_values'] !== []) {
-            $invalid = $configuration['invalid_values'][0];
+        if ($invalidValues !== []) {
+            $invalid = $invalidValues[0];
 
             throw new ValidationException(
                 $invalid['reason_key'],
@@ -2428,9 +2478,13 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     /**
      * pfSense Adapter - Apply Bypass Anchor.
      *
+     * A load that changes the rule text while a saved block exemption is invalid
+     * logs once that every block now applies without exemptions.
+     *
      * @return string
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
     public function applyBypassAnchor(): string
     {
@@ -2476,6 +2530,15 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             0600,
         );
 
+        if (
+            $previousAnchorText !== $anchorText
+            && $this->getBypassConfiguration()['invalid_exemptions'] !== []
+        ) {
+            $this->log(
+                'Bypass blocks apply to all traffic because a saved block exemption is invalid.',
+            );
+        }
+
         return 'loaded';
     }
 
@@ -2484,6 +2547,8 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      *
      * Rebuilds fixed table files from only currently effective lists before the
      * anchor is loaded. Disabling every list-backed kind removes stale files.
+     * Literal exempt destinations are subtracted with the protected addresses,
+     * because the provider rules already use their destination for the table.
      *
      * @param array $configuration - Valid partitioned Bypass configuration.
      * @param BypassListStore|null $store - Optional existing list store.
@@ -2491,6 +2556,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return void
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
     public function refreshBypassTables(
         array $configuration,
@@ -2522,7 +2588,8 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
                 || !is_string($identifier)
                 || !is_string($list['kind'] ?? null)
                 || !BypassConfiguration::kindEnabled($configuration, $list['kind'])
-                || !$store->hasSavedCopy($identifier)
+                || !is_string($list['url'] ?? null)
+                || !$store->hasUsableCopy($identifier, $list['url'])
             ) {
                 continue;
             }
@@ -2534,13 +2601,17 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             }
         }
 
+        $exemptDestinations = BypassRuleConfiguration::splitExemptions(
+            BypassConfiguration::effectiveExemptions($configuration)['destinations'],
+        );
+        $protectedAddresses = $this->ipProtectedAddresses(
+            is_array($configuration['interfaces'] ?? null)
+                ? $configuration['interfaces']
+                : [],
+        );
         $blocked = IpNetwork::subtract(
             IpNetwork::merge($networks),
-            $this->ipProtectedAddresses(
-                is_array($configuration['interfaces'] ?? null)
-                    ? $configuration['interfaces']
-                    : [],
-            ),
+            array_merge($protectedAddresses, $exemptDestinations['literals']),
         );
         $ipv4 = array_values(array_filter(
             $blocked,
@@ -2967,7 +3038,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             if (is_string($contents)) {
                 $ruleCount = count(array_filter(
                     explode("\n", str_replace(["\r\n", "\r"], "\n", $contents)),
-                    static fn(string $line): bool => str_starts_with($line, 'block drop '),
+                    static fn(string $line): bool => str_starts_with(ltrim($line), 'block drop '),
                 ));
             }
         }
@@ -3584,9 +3655,13 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     /**
      * pfSense Adapter - Runtime Generation Missing.
      *
+     * A generation from an older manifest schema, or one without both name indexes,
+     * counts as missing, so the next Sync or update recompiles it for the module.
+     *
      * @return bool
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
     public function runtimeGenerationMissing(): bool
     {
@@ -3617,7 +3692,11 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             || !is_array($manifest['alerts'] ?? null)
             || !is_array($manifest['bypass'] ?? null)
             || ($manifest['bypass_file'] ?? null) !== 'bypass.tsv'
-            || !FileSystem::isRegularFile($generationPath . '/bypass.tsv');
+            || !FileSystem::isRegularFile($generationPath . '/bypass.tsv')
+            || ($manifest['domain_index']['file'] ?? null) !== 'domains.index'
+            || !FileSystem::isRegularFile($generationPath . '/domains.index')
+            || ($manifest['bypass_index']['file'] ?? null) !== 'bypass.index'
+            || !FileSystem::isRegularFile($generationPath . '/bypass.index');
     }
 
     /**

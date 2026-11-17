@@ -24,7 +24,7 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 네트워크 및 장치 일치는 일반 Sinkhole 범위와 마찬가지로 해당 인터페이스의 현재 서브넷을 사용합니다. 선택한 서브넷 밖의 클라이언트는 Bypass DNS 응답을 받지 않습니다.
 
-<img src={bypassProtection} alt="LAN이 선택되고 일반 DNS 리디렉션은 꺼져 있으며 암호화 DNS 및 터널 보호는 켜져 있고 Discovery가 Answer with no records로 설정되며 데모 Bypass List 세 개가 표시된 Bypass 탭" width={1024} height={1410} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="LAN이 선택되고 일반 DNS 리디렉션은 꺼져 있으며 암호화 DNS 및 터널 보호는 켜져 있고 Discovery가 Answer with no records로 설정되며 데모 예외 소스와 예외 대상이 하나씩 있고 데모 Bypass List 세 개가 표시된 Bypass 탭" width={1024} height={1599} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 일반 DNS 리디렉션 \{#redirect-plain-dns}
 
@@ -41,6 +41,15 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 - **Exempt Destinations**는 계속 DNS 트래픽을 수신하므로 다른 네트워크의 내부 리졸버를 지원합니다.
 
 각 예외에는 한 줄에 IPv4 주소, IPv6 주소, CIDR 네트워크 또는 기존 pfSense 호스트/네트워크 별칭 하나를 입력할 수 있습니다. 저장된 예외가 유효하지 않으면 수정하거나 제거할 때까지 모든 리디렉션 규칙이 일시 중지됩니다. 리디렉션된 클라이언트는 여전히 Resolver의 액세스 제어 설정에서 허용되어야 합니다.
+
+리디렉션 규칙은 **General** 탭에서 Sinkhole이 활성화되어 있고 DNS Resolver가 실행 중이면 항상 로드됩니다. Resolver의 Python 모듈에 의존하지 않으므로 pfBlockerNG 또는 다른 스크립트가 모듈을 소유하는 동안에도, 예를 들어 pfBlockerNG에서 옮겨 오는 중에도 계속 작동합니다. Redirect가 켜져 있지만 규칙이 로드되지 않은 동안에는 **Redirect** 아래의 **Warning** 행에 이유가 표시됩니다.
+
+- Sinkhole이 비활성화되어 있습니다.
+- DNS Resolver가 실행 중이 아닙니다.
+- 저장된 예외가 잘못되었습니다.
+- Sinkhole을 제거하는 중입니다.
+
+**Status**도 페이지 상단에 같은 경고를 표시합니다.
 
 ## 암호화 DNS 보호 \{#protect-encrypted-dns}
 
@@ -86,11 +95,24 @@ Discovery를 끄거나 Sinkhole을 제거하면 영역 줄이 삭제됩니다. �
 
 Tor 및 VPN 목록의 이름과 주소에는 암호화 DNS 공급자 목록과 동일한 DNS 및 방화벽 동작이 적용됩니다. 이러한 제어는 일반적인 대체 경로를 줄이지만 모든 암호화 터널이나 사용자 지정 터널을 식별하지는 않습니다.
 
+## 장치와 서버를 차단에서 제외 \{#exempt-devices-and-servers-from-the-blocks}
+
+**Block Exemptions**에는 Bypass 탭의 모든 방화벽 차단(**TLS and QUIC**, **Providers**, **Tor**, **Block listed VPN providers**, **Block standard VPN ports**)이 함께 사용하는 **Exempt Sources** 목록과 **Exempt Destinations** 목록이 하나씩 있습니다. 각 줄에는 IPv4 주소, IPv6 주소, CIDR 네트워크 또는 기존 pfSense 호스트/네트워크 별칭 하나를 입력하며, 리디렉션 예외와 같은 값을 받습니다. 각 목록에는 별칭을 최대 16개까지 넣을 수 있습니다.
+
+- **Exempt Sources**는 차단을 건너뜁니다. `1.1.1.1`로 DNS over TLS를 사용하는 NAS처럼 외부 DNS 서버에 연결해야 하는 클라이언트에 사용합니다.
+- **Exempt Destinations**는 선택한 인터페이스의 모든 클라이언트가 차단과 관계없이 계속 연결할 수 있는 대상입니다. 신뢰하는 공용 resolver 하나가 그 예입니다.
+
+예외는 그 자체로 경로를 열지 않습니다. Sinkhole은 pass 규칙을 추가하지 않습니다. 예외 트래픽은 Bypass 차단에 일치하지 않을 뿐이며, 통과 여부는 여전히 사용자의 방화벽 규칙이 결정합니다.
+
+예외는 방화벽 차단에만 적용됩니다. Bypass Lists의 공급자, Tor, VPN 이름은 예외 클라이언트에 대해서도 DNS에서 계속 차단되므로 `cloudflare-dns.com`처럼 이름으로 서버를 찾는 클라이언트는 그 이름도 **Allowed Domains**에 있어야 합니다. 포트 53의 일반 DNS는 대신 **Redirect**와 그 자체 예외를 따릅니다.
+
+이름이 바뀌거나 삭제된 별칭처럼 저장된 차단 예외가 잘못되면 Sinkhole은 예외 없이 모든 차단을 유지하고, 시스템 로그에 항목 하나를 기록하며, 수정하거나 제거할 때까지 **Invalid Saved Values**에 값을 표시합니다.
+
 ## 카탈로그에서 추가 \{#add-from-catalog}
 
 Bypass 탭에서 **Add from Catalog**를 열어 AdGuard Home 목록 레지스트리와 pfBlockerNG 피드 카탈로그의 DNS, IPv4 및 IPv6 섹션을 검색합니다. 결과에는 우회 피드만 표시되며 종류는 **Encrypted DNS**, **Tor** 또는 **VPN** 중 하나로 고정됩니다.
 
-소스 카탈로그는 카탈로그를 열거나 **Refresh**를 선택할 때만 가져옵니다. 결과를 추가하면 활성화된 Bypass List가 생성되며 일반 목록 업데이트 일정을 따릅니다.
+소스 카탈로그는 카탈로그를 열거나 **Refresh**를 선택할 때만 가져옵니다. 결과를 추가하면 활성화된 Bypass List가 생성되며, 해당하는 **Providers**, **Tor** 또는 **VPN** 보호 기능이 켜져 있는 동안에만 예약된 업데이트에 포함됩니다.
 
 각 카드의 **Contents** 줄에는 **Domains**, **IPv4 addresses** 또는 **IPv6 addresses**가 표시됩니다. pfBlockerNG IPv4 또는 IPv6 결과를 추가하면 Sinkhole은 저장된 이름에 ` (IPv4)` 또는 ` (IPv6)`를 붙이며, 도메인 결과는 카탈로그 이름을 그대로 유지합니다.
 
@@ -100,10 +122,10 @@ Bypass 탭에서 **Add from Catalog**를 열어 AdGuard Home 목록 레지스트
 
 각 소스는 한 줄에 하나의 항목을 허용합니다. 목록에는 도메인, IPv4 주소, IPv6 주소 및 CIDR을 함께 넣을 수 있으며 `#` 뒤의 텍스트는 주석입니다. 유효하지 않거나 너무 긴 줄은 건너뜁니다. 고정된 바이트 또는 허용 항목 제한을 초과하는 다운로드는 거부되고 마지막으로 정상인 복사본은 그대로 유지됩니다.
 
-Bypass Lists는 다른 목록과 동일한 제한형 다운로드 클라이언트를 사용하여 구성된 목록 일정에 따라 업데이트됩니다. 가져오기에 실패하면 마지막으로 정상인 저장 복사본이 유지되고 **Status → Bypass Lists**에는 각 행의 항목, 마지막 가져오기 및 최근 오류가 표시됩니다. Sinkhole은 Bypass List를 번들로 제공하거나 추천하지 않습니다.
+활성화된 Bypass List는 해당하는 **Providers**, **Tor** 또는 **VPN** 보호 기능이 켜져 있는 동안에만 다른 목록과 동일한 제한형 다운로드 클라이언트를 사용하여 구성된 목록 일정에 따라 업데이트됩니다. 가져오기에 실패하면 같은 URL에서 받은 마지막 정상 저장 복사본이 유지되고 **Status → Bypass Lists**에는 각 행의 항목, 마지막 가져오기 및 최근 오류가 표시됩니다. Sinkhole은 Bypass List를 번들로 제공하거나 추천하지 않습니다.
 
 ## 활성 상태 확인 \{#verify-the-active-state}
 
-저장한 후 **Status → Bypass**를 열어 의도한 각 보호 기능이 `On`이고 선택한 인터페이스가 올바르며 Discovery가 켜져 있을 때 **Discovery Zone**이 `Present`인지 확인합니다. 방화벽 보호 기능의 **Firewall rules loaded**와 **Firewall rules current**가 `Yes`인지 확인합니다. Bypass Lists 테이블에는 저장된 항목 수와 마지막 가져오기가 표시됩니다.
+저장한 후 **Status → Bypass**를 열어 의도한 각 보호 기능이 `On`이고 선택한 인터페이스가 올바르며 Discovery가 켜져 있을 때 **Discovery Zone**이 `Present`인지 확인합니다. 방화벽 보호 기능의 **Firewall Rules Loaded**와 **Firewall Rules Current**가 `Yes`인지 확인합니다. Bypass Lists 테이블에는 저장된 항목 수와 마지막 가져오기가 표시됩니다.
 
 일반 DNS 리디렉션은 Resolver 리스너 변경 후 기존의 2회 관찰 분 단위 조정을 유지합니다. `sinkhole/bypass` 앵커는 `sinkhole/ip`와 독립적으로 로드되므로 어느 기능을 비활성화해도 다른 기능에 영향을 주지 않습니다.

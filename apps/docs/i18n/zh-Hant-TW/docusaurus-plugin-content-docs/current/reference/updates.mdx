@@ -48,7 +48,7 @@ Sinkhole 可以檢查其 GitHub 版本、通過 pfSense 發出通知，並從 Ab
 
 ## 更新鎖定 \{#update-locking}
 
-套件檢查和自更新與 DNS 清單及 IP/國家或地區更新共享 `/var/run/sinkhole-update.lock`。如果清單更新正在進行，About 中的 **Update** 操作必須等到該作業完成後才能開始。
+套件檢查和自更新與 DNS、Bypass 和 IP/國家或地區更新、設定套用以及移除清理共享 `/var/run/sinkhole-update.lock`。它們不會等待該鎖：如果其他操作持有該鎖，檢查或 **Update** 操作會以 `Another package operation is already running.` 停止。
 
 該鎖可防止當前套件正在下載、解析、編譯或應用策略時套件檔案發生變化。Status 不再顯示更新執行後，請從 About 重試。
 

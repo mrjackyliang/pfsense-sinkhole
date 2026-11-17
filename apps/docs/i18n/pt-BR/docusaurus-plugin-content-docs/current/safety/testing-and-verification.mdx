@@ -54,7 +54,7 @@ Repita dentro da janela de repetição da regra para confirmar que o aviso é su
 Escolha uma interface de laboratório isolada e habilite uma proteção Bypass por vez. Após cada teste, confirme que um cliente equivalente em uma interface não selecionada permanece inalterado.
 
 1. Habilite **Redirect**, confirme que sua família de endereços tem um listener do Resolver e envie consultas DNS comuns pelas portas UDP e TCP 53 a outro destino. Confirme que o pfSense as recebe.
-2. Adicione uma exceção intencionalmente inválida apenas em uma configuração descartável e confirme que o redirecionamento passa para **Paused** em vez de carregar regras parciais. Restaure os dados válidos, aguarde as duas observações por minuto e confirme que **pfSense loaded rules** volta a `Yes`.
+2. Adicione uma exceção intencionalmente inválida apenas em uma configuração descartável e confirme que o redirecionamento passa para **Paused** em vez de carregar regras parciais. Restaure os dados válidos, aguarde as duas observações por minuto e confirme que **pfSense Loaded Rules** volta a `Yes`.
 3. Habilite **TLS and QUIC** e confirme que as portas TCP e UDP 853 para um destino de laboratório são bloqueadas, mas o tráfego para o firewall não.
 4. Adicione uma Bypass List desabilitada contendo apenas domínios, endereços e CIDRs inventados, comentários e dados inválidos. Habilite-a e sua proteção correspondente e confirme que nomes e endereços válidos são bloqueados, linhas inválidas são ignoradas e uma busca posterior com falha preserva a cópia salva.
 5. Confirme que consultas de teste do Firefox e Private Relay recebem `NXDOMAIN`. Confirme que o DDR retorna uma resposta `NOERROR` vazia no modo **Answer with no records**.
@@ -77,5 +77,5 @@ Antes da remoção, decida se **Keep Settings** deve preservar a configuração 
 
 ## Registrar o ambiente \{#record-the-environment}
 
-Para obter um registro de teste útil, capture a versão do Sinkhole, a edição e a versão do pfSense, a versão do FreeBSD, os recursos selecionados, o estado em Status e as linhas `Sinkhole:` sanitizadas do log do sistema. Atualmente, nenhuma versão do pfSense está listada como oficialmente testada; os testes de compatibilidade são realizados antes de cada versão do Sinkhole.
+Para obter um registro de teste útil, capture a versão do Sinkhole, a edição e a versão do pfSense, a versão do FreeBSD, os recursos selecionados, o estado em Status e as linhas `Sinkhole:` sanitizadas do log do sistema. A aba About e [Versões testadas](/docs/compatibility#tested-releases) listam as versões do pfSense nas quais cada versão do Sinkhole passou, de ponta a ponta, por instalação, atualização, um teste de bloqueio e remoção.
 

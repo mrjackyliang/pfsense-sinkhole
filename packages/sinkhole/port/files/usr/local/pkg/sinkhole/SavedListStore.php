@@ -74,6 +74,63 @@ final class SavedListStore
     }
 
     /**
+     * Saved List Store - Has Usable Copy.
+     *
+     * A copy counts only while its metadata names the configured URL, so a copy saved
+     * from a previous URL is never compiled after the URL changes.
+     *
+     * @param string $identifier - Stable list identifier.
+     * @param string $url        - Configured source URL.
+     *
+     * @return bool
+     *
+     * @since 1.2.0
+     */
+    public function hasUsableCopy(string $identifier, string $url): bool
+    {
+        if ($this->hasSavedCopy($identifier) === false) {
+            return false;
+        }
+
+        try {
+            $metadata = $this->metadata($identifier);
+        } catch (RuntimeException) {
+            return false;
+        }
+
+        return ($metadata['url'] ?? null) === $url;
+    }
+
+    /**
+     * Saved List Store - Discard Mismatched Copy.
+     *
+     * Removes a copy and its metadata when they came from another URL, so the list has
+     * no copy until its first successful download from the configured URL.
+     *
+     * @param string $identifier - Stable list identifier.
+     * @param string $url        - Configured source URL.
+     *
+     * @return bool
+     *
+     * @throws RuntimeException When a package-owned file cannot be removed.
+     *
+     * @since 1.2.0
+     */
+    public function discardMismatchedCopy(string $identifier, string $url): bool
+    {
+        if (
+            $this->hasSavedCopy($identifier) === false
+            || $this->hasUsableCopy($identifier, $url)
+        ) {
+            return false;
+        }
+
+        $this->remove($identifier);
+
+        return true;
+    }
+
+    /**
      * Saved List Store - Saved Copy Path.
      *
      * Returns the validated package-owned normalized filename for streaming reads.
@@ -172,8 +229,8 @@ final class SavedListStore
     /**
      * Saved List Store - Record Failure.
      *
-     * Updates attempt and error fields while retaining fetched time, count, and hash
-     * from the previous successful copy.
+     * Updates attempt and error fields while retaining the source URL, fetched time,
+     * count, and hash of the previous successful copy; the attempted URL is separate.
      *
      * @param string $identifier  - Stable list identifier.
      * @param string $url         - Validated source URL.
@@ -183,6 +240,7 @@ final class SavedListStore
      * @return void
      *
      * @since 1.0.0
+     * @since 1.2.0
      */
     public function recordFailure(
         string $identifier,
@@ -197,12 +255,13 @@ final class SavedListStore
                 'entries' => 0,
                 'sha256' => null,
                 'last_attempt' => $attemptedAt,
+                'last_attempt_url' => $url,
                 'last_error' => null,
             ],
             $this->metadata($identifier),
         );
-        $metadata['url'] = $url;
         $metadata['last_attempt'] = $attemptedAt;
+        $metadata['last_attempt_url'] = $url;
         $metadata['last_error'] = substr(str_replace(["\r", "\n"], ' ', $error), 0, 500);
 
         $this->writeMetadata($identifier, $metadata);

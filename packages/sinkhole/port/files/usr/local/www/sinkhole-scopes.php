@@ -365,13 +365,13 @@ if (is_string($actionMessage)) {
 			</table>
 	</div>
 </div>
-<p class="help-block"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('device_order_help'))?></p>
 <nav class="action-buttons">
 	<a href="sinkhole-scopes_edit.php?type=device" role="button" class="btn btn-success btn-sm">
 		<i class="fa-solid fa-plus icon-embed-btn"></i>
 		<?=htmlspecialchars(pfsensePackageSinkholeTranslate('add'))?>
 	</a>
 </nav>
+<?php print_info_box(htmlspecialchars(pfsensePackageSinkholeTranslate('device_order_help')), 'info', false); ?>
 
 <?php if ($invalidNetworks !== [] || $invalidDevices !== []): ?>
 <div class="panel panel-danger">

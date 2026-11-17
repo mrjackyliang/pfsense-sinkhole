@@ -26,7 +26,9 @@ Dla każdej włączonej listy DNS Sinkhole:
 4. Kompiluje zasady globalne, sieciowe, urządzeń, dozwolonych domen i alertów z lokalnych zapisanych danych.
 5. Wdraża generację w `/var/unbound`, aby już załadowany moduł Python mógł ją wykryć.
 
-Błąd pobierania, analizy lub walidacji rejestruje błąd bez zastępowania ostatniej prawidłowej kopii. DNS przez cały czas próby korzysta z wdrożonej lokalnej generacji.
+Błąd pobierania, analizy lub walidacji rejestruje błąd bez zastępowania ostatniej prawidłowej kopii, gdy adres URL listy się nie zmienił. DNS przez cały czas próby korzysta z wdrożonej lokalnej generacji.
+
+Po zmianie adresu URL listy następna aktualizacja, która ją pobiera, odrzuca kopię z poprzedniego adresu URL przed pobraniem nowej, więc nieudane pierwsze pobranie pozostawia tę listę bez zapisanej kopii. Wyłączona lista albo Bypass List z wyłączoną ochroną nie jest pobierana, więc zachowuje dane poprzedniej kopii do czasu ponownego włączenia.
 
 ## Wdrożenie i pamięci podręczne Resolver \{#deployment-and-resolver-caches}
 
@@ -50,7 +52,7 @@ Istniejąca kotwica `sinkhole/ip` może po udanej aktualizacji otrzymać aktuali
 
 Domyślna częstotliwość aktualizacji list to Daily. Harmonogramy Hourly, Every 6 hours, Daily i Weekly używają stabilnych losowych składników minut, aby zapora nie zmieniała czasu zadania przy każdym zapisaniu.
 
-Aktualizacje list DNS, IP/krajów, praca zastosowania związana z katalogiem i automatyczna aktualizacja pakietu są koordynowane przez `/var/run/sinkhole-update.lock`. Akcja Update pakietu czeka na zakończenie aktywnej aktualizacji listy, zamiast zmieniać zainstalowany pakiet w jej trakcie.
+Aktualizacje DNS, Bypass i IP/krajów, zastosowanie ustawień, sprawdzanie i automatyczna aktualizacja pakietu oraz porządkowanie przy usuwaniu są koordynowane przez `/var/run/sinkhole-update.lock`. Sprawdzenie pakietu ani akcja Update nie czekają: jeśli blokadę utrzymuje inna operacja, zatrzymują się z komunikatem `Another package operation is already running.` i można je ponowić po zakończeniu tej operacji.
 
 ## Odświeżanie katalogów jest oddzielne \{#catalog-refreshes-are-separate}
 

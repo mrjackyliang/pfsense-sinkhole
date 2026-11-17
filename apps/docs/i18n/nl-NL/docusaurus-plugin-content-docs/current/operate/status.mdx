@@ -1,7 +1,7 @@
 ---
 id: status
 title: Status
-description: Lees elk Sinkhole Status-paneel, onderscheid actieve, wachtende, gepauzeerde, geladen, ontbrekende en verouderde statussen en voer een handmatige lijstupdate uit.
+description: Lees elk Sinkhole Status-paneel, onderscheid actieve, wachtende, gepauzeerde, geladen, ontbrekende en verouderde statussen en volg een handmatige lijstupdate in de live Update Log.
 keywords:
   - sinkhole voor pfsense
   - status
@@ -24,18 +24,21 @@ Lees de status van opgeslagen lijsten, scopes, waarschuwingen, Bypass, IP, compi
 
 Open **Firewall → Sinkhole → Status** om deze panelen te bekijken:
 
-| Paneel                  | Wat het meldt                                                                                                                                               |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Summary                 | Compilatie, uitrol, generatie, bewerking, Resolver-eigenaar, algemene Sinkhole-status en **Update Now** onder het paneel.                                   |
-| Lists                   | DNS-lijst-URL, aantal opgeslagen vermeldingen, laatste geslaagde update en laatste fout.                                                                    |
-| Popular-List Catalogs   | Laatste ophaaltijd en laatste fout voor de catalogusbronnen van AdGuard Home en pfBlockerNG.                                                                |
-| Invalid Saved Rows      | Onjuist gevormde lijstrijen die beschikbaar blijven voor herstel; alleen getoond wanneer dergelijke rijen bestaan.                                          |
-| Scopes                  | Tijd en fout van de herbouw van de clienttoewijzing, gevolgd door afzonderlijke panelen Networks en Devices.                                                |
-| Alerts                  | Laatste uitvoering, gelezen of verouderde gebeurtenissen, verzonden of tegengehouden meldingen, verwijderde gebeurtenissen en laatste fout.                 |
-| Bypass                  | Elke beveiliging, interfaces, status van omleidingsregels, status en aantallen van het Bypass-anker, gevolgd door Bypass Lists en eventuele herstelpanelen. |
-| IP and Country Blocking | Beleidsselecties, aantallen tabellen en regels, updates, fouten en ankerstatus, gevolgd door een afzonderlijk paneel IP Lists.                              |
+| Paneel                  | Wat het meldt                                                                                                                                                             |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Summary                 | Gecompileerde namen ten opzichte van de limiet, compilatie, uitrol, generatie, bewerking, Resolver-eigenaar, algemene Sinkhole-status en **Update Now** onder het paneel. |
+| Update Log              | Elke stap van de meest recente lijstupdate, waarbij een lopende update live wordt gevolgd.                                                                                |
+| Lists                   | DNS-lijst-URL, aantal opgeslagen vermeldingen, laatste geslaagde update en laatste fout.                                                                                  |
+| Popular-List Catalogs   | Laatste ophaaltijd en laatste fout voor de catalogusbronnen van AdGuard Home en pfBlockerNG.                                                                              |
+| Invalid Saved Rows      | Onjuist gevormde lijstrijen die beschikbaar blijven voor herstel; alleen getoond wanneer dergelijke rijen bestaan.                                                        |
+| Scopes                  | Tijd en fout van de herbouw van de clienttoewijzing, gevolgd door afzonderlijke panelen Networks en Devices.                                                              |
+| Blocked Services        | Ophalen van het register, laatste fout en geselecteerde services per scope.                                                                                               |
+| SafeSearch              | Zoekmachines per scope en de adressen, laatste controle en fout van elke veilige host.                                                                                    |
+| Alerts                  | Laatste uitvoering, gelezen of verouderde gebeurtenissen, verzonden of tegengehouden meldingen, verwijderde gebeurtenissen en laatste fout.                               |
+| Bypass                  | Elke beveiliging, interfaces, status van omleidingsregels, status en aantallen van het Bypass-anker, gevolgd door Bypass Lists en eventuele herstelpanelen.               |
+| IP and Country Blocking | Beleidsselecties, aantallen tabellen en regels, updates, fouten en ankerstatus, gevolgd door een afzonderlijk paneel IP Lists.                                            |
 
-Uitgeschakelde lijst- en scoperijen worden gedimd weergegeven. Een bron met een fout kan nog steeds vermeldingen en een eerdere geslaagde update tonen, omdat de laatste geldige kopie actief blijft.
+Uitgeschakelde lijst- en scoperijen worden gedimd weergegeven. Een bron met een fout kan nog steeds vermeldingen en een eerdere geslaagde update tonen, omdat de laatste geldige kopie actief blijft. Nadat de URL van een lijst is gewijzigd, verwijdert de volgende update die de lijst downloadt de kopie van de vorige URL, zodat de rij geen vermeldingen toont totdat de eerste download van de nieuwe URL slaagt.
 
 <img src={listsScopesStatus} alt="Tabblad Status met updates van opgeslagen demolijsten, netwerksubnetten en huidige adressen van demoapparaten" width={1024} height={949} style={{maxWidth: '100%', height: 'auto'}} />
 
@@ -59,20 +62,21 @@ Wanneer Sinkhole bewust is uitgeschakeld, is **Deployment Needed** `No`, is **Lo
 
 ## Status van compilatie en uitrol \{#compile-and-deployment-state}
 
-| Veld                | Betekenis                                                                                                      |
-|---------------------|----------------------------------------------------------------------------------------------------------------|
-| Compile Needed      | Opgeslagen beleid is gewijzigd of de laatste compilatie is niet geslaagd.                                      |
-| Compiled Generation | Identificatie die door de meest recente geslaagde compilatie is geproduceerd.                                  |
-| Deployment Needed   | Gecompileerde inhoud is niet de voor Unbound uitgerolde inhoud, of de integratie is inactief.                  |
-| Deployed Generation | Identificatie in het momenteel uitgerolde runtimemanifest.                                                     |
-| Loaded Generation   | Identificatie waarvan de Unbound-module meldt dat deze is geladen.                                             |
-| Update Running      | Alleen getoond zolang een lijst- of IP-update het gedeelde updateslot bezit.                                   |
-| Removal in Progress | Alleen getoond zolang de permanente verwijderingsmarkering is ingesteld en de integratie wordt teruggetrokken. |
-| Python Script Owner | Huidige waarde van de enige `python_script`-positie van de Resolver, of `None`.                                |
+| Veld                             | Betekenis                                                                                                                                                                                      |
+|----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compiled Names                   | Namen in de uitgerolde DNS-blokkeerindex (lijsten en geblokkeerde services) plus namen in de Bypass-index, ten opzichte van de limiet van 10.000.000 namen.                                    |
+| Compile Needed                   | Opgeslagen beleid is gewijzigd of de laatste compilatie is niet geslaagd.                                                                                                                      |
+| Compiled Generation              | Identificatie die door de meest recente geslaagde compilatie is geproduceerd.                                                                                                                  |
+| Deployment Needed                | Gecompileerde inhoud is niet de voor Unbound uitgerolde inhoud, of de integratie is inactief.                                                                                                  |
+| Deployed Generation              | Identificatie in het momenteel uitgerolde runtimemanifest.                                                                                                                                     |
+| Loaded Generation                | Identificatie waarvan de Unbound-module meldt dat deze is geladen.                                                                                                                             |
+| Update Running                   | Alleen getoond zolang een actief proces de gedeelde updatevergrendeling bezit: een DNS-, Bypass- of IP-update, het toepassen van instellingen, een pakketcontrole of -update, of verwijdering. |
+| Removal in Progress              | Alleen getoond zolang de permanente verwijderingsmarkering is ingesteld en de integratie wordt teruggetrokken.                                                                                 |
+| DNS Resolver Python Script Owner | Huidige waarde van de enige `python_script`-positie van de Resolver, of `None`.                                                                                                                |
 
 De pagina toont een waarschuwingsvak wanneer compilatie of uitrol wacht, inclusief de vastgelegde reden. Overeenkomende identificaties voor gecompileerd, uitgerold en geladen beleid laten zien dat het opgeslagen beleid de actieve module heeft bereikt.
 
-<img src={summaryStatus} alt="Paneel Status Summary met overeenkomende gecompileerde, uitgerolde en geladen generaties en actieve Sinkhole" width={1024} height={854} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={summaryStatus} alt="Paneel Status Summary met gecompileerde namen ten opzichte van de limiet, overeenkomende gecompileerde, uitgerolde en geladen generaties, actieve Sinkhole en de Update Log van een voltooide handmatige update" width={1024} height={1244} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Status van scopes en waarschuwingen \{#scope-and-alert-state}
 
@@ -92,9 +96,9 @@ Het onafhankelijke firewallanker meldt:
 
 | Veld                    | Betekenis                                                                                                              |
 |-------------------------|------------------------------------------------------------------------------------------------------------------------|
-| Firewall rules loaded   | Of het anker `sinkhole/bypass` bestaat wanneer de huidige instellingen dit vereisen.                                   |
-| Firewall rules current  | Of de geladen digest, regels en tabellen overeenkomen met de huidige instellingen en de laatste geldige lijstgegevens. |
-| Firewall rule count     | Aantal actieve regels in het Bypass-anker.                                                                             |
+| Firewall Rules Loaded   | Of het anker `sinkhole/bypass` bestaat wanneer de huidige instellingen dit vereisen.                                   |
+| Firewall Rules Current  | Of de geladen digest, regels en tabellen overeenkomen met de huidige instellingen en de laatste geldige lijstgegevens. |
+| Firewall Rule Count     | Aantal actieve regels in het Bypass-anker.                                                                             |
 | IPv4/IPv6 table entries | Uiteindelijke aantallen provider-, Tor- en VPN-adressen nadat beschermde firewalladressen zijn verwijderd.             |
 
 De tabel **Bypass Lists** meldt voor elke rij het type, de ingeschakelde status, het aantal opgeslagen vermeldingen, de laatste ophaalactie en de laatste fout. Een mislukte ophaalactie kan daarom een fout tonen naast vermeldingen uit de behouden laatste geldige kopie.
@@ -107,7 +111,16 @@ De tabel **Bypass Lists** meldt voor elke rij het type, de ingeschakelde status,
 | On     | Redirect is ingeschakeld en elke opgeslagen uitzondering is geldig.                                                |
 | Paused | Minstens één opgeslagen bron- of bestemmingsuitzondering is ongeldig, zodat geen omleidingsregels worden gebruikt. |
 
-Het veld **pfSense loaded rules** heeft drie statussen:
+Zolang Redirect aan staat maar de regels niet zijn geladen, geeft een rode waarschuwing boven aan de pagina de reden:
+
+- Sinkhole is uitgeschakeld.
+- De DNS Resolver draait niet.
+- Een opgeslagen uitzondering is ongeldig.
+- Sinkhole wordt verwijderd.
+
+De regels zijn niet afhankelijk van de Python-module van de Resolver, dus pfBlockerNG of een ander script dat die bezet, stopt de omleiding nooit. Het tabblad **Bypass** toont dezelfde waarschuwing onder **Redirect**.
+
+Het veld **pfSense Loaded Rules** heeft drie statussen:
 
 | Status      | Betekenis                                                                                                              |
 |-------------|------------------------------------------------------------------------------------------------------------------------|
@@ -115,7 +128,7 @@ Het veld **pfSense loaded rules** heeft drie statussen:
 | No          | Het gewenste blok is niet geladen.                                                                                     |
 | Out of Date | Een Sinkhole-blok is geladen, maar de tekst komt niet overeen met de huidige instellingen of Resolver-luisteradressen. |
 
-Elk familiedoel is het geselecteerde luisteradres of een reden waarom geen regel kan worden gemaakt. **Last parse error** wordt alleen getoond zolang het huidige blok ontbreekt nadat pfSense het heeft geweigerd.
+Elk familiedoel is het geselecteerde luisteradres of een reden waarom geen regel kan worden gemaakt. **Last Parse Error** wordt alleen getoond zolang het huidige blok ontbreekt nadat pfSense het heeft geweigerd.
 
 ## IP- en landstatus \{#ip-and-country-state}
 
@@ -127,11 +140,39 @@ Aantallen tabelvermeldingen tonen de uiteindelijke samengevoegde IPv4- en IPv6-n
 
 **GeoLite2 Last Update** staat los van de meest recente lijstupdate.
 
-<img src={ipStatus} alt="Paneel Status IP and Country Blocking met tabelaantallen, updatestatus, een geladen anker en een demo-IP-lijstrij" width={1024} height={1062} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipStatus} alt="Paneel Status IP and Country Blocking met tabelaantallen, updatestatus, een geladen anker en twee demo-IP-lijstrijen" width={1024} height={1095} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Update Now uitvoeren \{#run-update-now}
 
-Als u **Update Now** onder Summary selecteert, wordt `/usr/local/sbin/sinkhole --manual` op de achtergrond gestart en keert de pagina onmiddellijk terug. De knop streamt geen uitvoer, dus **Update Running**, de rijen met DNS-/Bypass-/IP-lijsten, compilatievelden en laatste fouten geven het resultaat weer.
+Als u **Update Now** onder Summary selecteert, wordt `/usr/local/sbin/sinkhole --manual` op de achtergrond gestart en keert de pagina onmiddellijk terug. De **Update Log** volgt daarna de uitvoering, zodat u deze kunt bekijken zonder de pagina te vernieuwen.
 
 De handmatige taak gebruikt hetzelfde gedeelde updateslot als geplande lijstupdates en de automatische pakketupdate. Als een andere update het slot bezit, gaat de bestaande taak door en blijft wachtend toepassingswerk behouden.
+
+## Update Log \{#update-log}
+
+Het paneel **Update Log** onder Summary toont elke stap van de meest recente update, of deze nu gepland was, met **Update Now** is gestart of na een wijziging van de instellingen is toegepast. Zolang er nog geen update is uitgevoerd, staat er `No update has run yet.`
+
+Terwijl een update loopt, controleert de pagina elke 2 seconden op nieuwe regels:
+
+- Nieuwe regels worden onderaan toegevoegd en de weergave scrolt mee, tenzij u omhoog hebt gescrold om eerdere regels te lezen.
+- **Update Running** verschijnt in Summary en de velden voor compilatie, uitrol en generatie veranderen zodra de uitvoering die stap bereikt.
+- Het controleren stopt zodra de uitvoering is beëindigd, na een laatste controle op de afsluitende regel.
+
+Elke regel begint met de lokale tijd van de firewall. Een uitvoering meldt deze stappen:
+
+| Stap             | Wat het logboek toont                                                                                                                        |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Start            | `Update started` met de trigger: `manual`, `scheduled` of `settings change`.                                                                 |
+| Downloads        | Elke DNS-, Bypass- en IP-lijst op naam en host, gevolgd door de vermeldingen, overgeslagen regels en of de lijst is gewijzigd.               |
+| Bronwijzigingen  | Een lijst waarvan de URL is gewijzigd, en dat de kopie van de vorige URL is verwijderd.                                                      |
+| Fouten           | De lijst die is mislukt en de reden, met de vermelding of de laatste geldige kopie in gebruik blijft of dat er nog geen opgeslagen kopie is. |
+| GeoLite2         | Of de landgegevens zijn gedownload of de opgeslagen kopie opnieuw is gebruikt, met het aantal netwerken.                                     |
+| Compilatie       | De nieuwe generatie en het aantal namen, of dat de inhoud ongewijzigd is.                                                                    |
+| Uitrol           | Of de generatie de DNS Resolver heeft bereikt, en het herladen van de Resolver dat de cache wist.                                            |
+| Firewalltabellen | De IPv4- en IPv6-vermeldingen die in de Bypass- en IP-ankers zijn geladen.                                                                   |
+| Einde            | `Update finished` met de duur en totalen, of `Update failed` met de reden.                                                                   |
+
+Het logboek toont alleen de host van een lijst, nooit de volledige URL, het pad, de querystring of inloggegevens, en toont nooit de MaxMind-licentiesleutel. Het systeemlogboek behoudt zoals voorheen zijn eigen `Sinkhole:`-regels.
+
+Elke update vervangt het logboek van de vorige uitvoering, dat wordt bewaard in `/var/run/sinkhole-update.log` en is begrensd tot 256 KiB. Een uitvoering die de limiet bereikt, voegt één regel `Log truncated` toe en legt nog steeds vast hoe deze is geëindigd.
 

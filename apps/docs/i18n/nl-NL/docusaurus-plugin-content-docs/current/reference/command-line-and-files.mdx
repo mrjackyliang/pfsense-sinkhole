@@ -45,6 +45,7 @@ Gebruik het geïnstalleerde pad in automatisering, bijvoorbeeld `/usr/local/sbin
 | `state.json`                            | Permanente status van compilatie, uitrol, eerdere Resolver-instelling, schema en verwijdering.      |
 | `updates.json`                          | Status van de controle op de nieuwste release en ontdubbeling van meldingen.                        |
 | `update-status.json`                    | Voortgang van de losgekoppelde automatische pakketupdate.                                           |
+| `safesearch-targets.json`               | Laatste geldige adressen van veilige hosts voor SafeSearch.                                         |
 | `unbound/sinkhole/`                     | Optionele permanente spiegel van de huidige gecompileerde generatie voor herstel van de RAM-schijf. |
 | `unbound/sinkhole.d/`                   | Optionele permanente spiegel van de opslag voor gecompileerde generaties.                           |
 | `unbound/sinkhole-clients/clients.json` | Optionele permanente spiegel van de clienttoewijzing.                                               |
@@ -58,6 +59,7 @@ De spiegel onder `unbound/` wordt gebruikt wanneer pfSense `/var` op een RAM-sch
 | `sinkhole-alerts.json`               | Status van het herhaalvenster en de uurlimiet voor waarschuwingen. |
 | `sinkhole-catalog-adguard-home.json` | Gecachet lijstregister van AdGuard Home.                           |
 | `sinkhole-catalog-pfblockerng.json`  | Gecachete feedcatalogus van pfBlockerNG.                           |
+| `sinkhole-services-registry.json`    | Gecachet serviceregister van AdGuard Home.                         |
 | `sinkhole-block-v4.txt`              | Uiteindelijke samengevoegde en afgetrokken IPv4-blokkeertabel.     |
 | `sinkhole-block-v6.txt`              | Uiteindelijke samengevoegde en afgetrokken IPv6-blokkeertabel.     |
 | `sinkhole-bypass-v4.txt`             | Uiteindelijke IPv4-Bypass-tabel na aftrek van beschermde adressen. |
@@ -79,6 +81,7 @@ Cataloguscaches en gegenereerde IP-tabellen zijn reproduceerbare werkgegevens. D
 | `sinkhole-redirect-check.json`  | Eerste afwijkingsobservatie die door de omleidingscontrole met twee observaties wordt gebruikt. |
 | `sinkhole-status.json`          | Huidige status van update, compilatie, uitrol, clients en waarschuwingen.                       |
 | `sinkhole-status.json.lock`     | Coördinatievergrendeling voor het statusbestand.                                                |
+| `sinkhole-update.log`           | Stappen van de meest recente lijstupdate, getoond in de Update Log van Status.                  |
 | `sinkhole-ip-anchor.conf`       | Huidige gegenereerde regels voor het anker `sinkhole/ip`.                                       |
 | `sinkhole-ip-anchor.sha256`     | Samenvatting waarmee gegenereerd en geladen IP-beleid wordt vergeleken.                         |
 | `sinkhole-ip-status.json`       | Status van IP-lijsten, GeoLite2, tabellen en het anker.                                         |
@@ -89,17 +92,20 @@ Vergrendelingsbestanden coördineren taken; hun bestaan alleen bewijst niet dat 
 
 ## Resolver-runtime onder `/var/unbound` \{#resolver-runtime}
 
-| Pad                                  | Doel                                                                                                   |
-|--------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `sinkhole.py`                        | Beoordeelde Python-module die naar de runtimehoofdmap van Unbound wordt gekopieerd.                    |
-| `sinkhole/`                          | Manifest en gegevens van de actieve generatie die door de module worden gelezen.                       |
-| `sinkhole.d/`                        | Door root beheerde opslag voor gecompileerde generaties.                                               |
-| `sinkhole.d/<generation>/bypass.tsv` | Gecompileerde provider-, Tor- en VPN-namen voor Bypass-DNS-antwoorden.                                 |
-| `sinkhole-clients/clients.json`      | Huidige toewijzing van clientadres naar scope.                                                         |
-| `sinkhole-state/loaded`              | Generatie-ID die door de module als geladen wordt gemeld.                                              |
-| `sinkhole-state/events`              | Samengevoegde gebeurtenissen met geblokkeerde antwoorden die op verwerking van waarschuwingen wachten. |
-| `sinkhole-state/events.processing`   | Gebeurtenisbatch die momenteel door het waarschuwingsproces wordt beheerd.                             |
-| `sinkhole-state/events-dropped`      | Aantal gebeurtenissen dat is verwijderd nadat de begrensde wachtrij vol raakte.                        |
+| Pad                                     | Doel                                                                                                                                            |
+|-----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `sinkhole.py`                           | Beoordeelde Python-module die naar de runtimehoofdmap van Unbound wordt gekopieerd.                                                             |
+| `sinkhole/`                             | Manifest en gegevens van de actieve generatie die door de module worden gelezen.                                                                |
+| `sinkhole.d/`                           | Door root beheerde opslag voor gecompileerde generaties.                                                                                        |
+| `sinkhole.d/<generation>/domains.tsv`   | Gecompileerde namen uit geconfigureerde lijsten en geblokkeerde services met hun lijstlidmaatschappen, gesorteerd op naam.                      |
+| `sinkhole.d/<generation>/domains.index` | Geheugengekoppelde index van de namen uit geconfigureerde lijsten en geblokkeerde services die de module doorzoekt, ongeveer 18 bytes per naam. |
+| `sinkhole.d/<generation>/bypass.tsv`    | Gecompileerde provider-, Tor- en VPN-namen, gesorteerd op naam.                                                                                 |
+| `sinkhole.d/<generation>/bypass.index`  | Geheugengekoppelde index van de namen uit de Bypass List die de module doorzoekt voor Bypass-DNS-antwoorden.                                    |
+| `sinkhole-clients/clients.json`         | Huidige toewijzing van clientadres naar scope.                                                                                                  |
+| `sinkhole-state/loaded`                 | Generatie-ID die door de module als geladen wordt gemeld.                                                                                       |
+| `sinkhole-state/events`                 | Samengevoegde gebeurtenissen met geblokkeerde antwoorden die op verwerking van waarschuwingen wachten.                                          |
+| `sinkhole-state/events.processing`      | Gebeurtenisbatch die momenteel door het waarschuwingsproces wordt beheerd.                                                                      |
+| `sinkhole-state/events-dropped`         | Aantal gebeurtenissen dat is verwijderd nadat de begrensde wachtrij vol raakte.                                                                 |
 
 Deze bestanden zijn runtimemateriaal, geen configuratie. Sinkhole herstelt of genereert ze opnieuw via pakket-Sync en verwijdert ze wanneer het pakket wordt gedeïnstalleerd.
 

@@ -26,7 +26,9 @@ Sinkhole 將下載與 DNS 服務分離，因此遠程來源永遠不會位於 Re
 4. 從本地已儲存資料編譯全局、網路、設備、允許域名和警報策略。
 5. 在 `/var/unbound` 下部署一個代次，供已載入的 Python 模塊發現。
 
-下載、解析或驗證失敗會記錄錯誤，但不會替換最後有效副本。整個嘗試期間，DNS 會繼續使用已部署的本地代次。
+當清單的 URL 未更改時，下載、解析或驗證失敗會記錄錯誤，但不會替換最後有效副本。整個嘗試期間，DNS 會繼續使用已部署的本地代次。
+
+清單的 URL 更改後，下一次下載該清單的更新會在擷取新 URL 之前丟棄來自之前 URL 的副本，因此首次下載失敗時，該清單將沒有已儲存副本。已停用的清單或保護已關閉的 Bypass List 不會被下載，因此在重新啟用之前會保留之前副本的詳細資訊。
 
 ## 部署和 Resolver 快取 \{#deployment-and-resolver-caches}
 
@@ -50,7 +52,7 @@ Unbound 模塊會在查詢之間檢查新清單，並且只在引用的每個檔
 
 預設清單更新頻率為 Daily。Hourly、Every 6 hours、Daily 和 Weekly 計劃使用穩定的隨機分鐘組成部分，因此防火牆不會在每次儲存時改變作業時間。
 
-DNS 清單更新、IP/國家或地區更新、目錄相關應用工作和套件自更新通過 `/var/run/sinkhole-update.lock` 進行協調。套件 Update 操作會等待活動清單更新完成，而不會在其下方更改已安裝套件。
+DNS、Bypass 和 IP/國家或地區更新、設定套用、套件檢查和自更新以及移除清理通過 `/var/run/sinkhole-update.lock` 進行協調。套件檢查或 Update 操作不會等待：如果其他操作持有該鎖，它會以 `Another package operation is already running.` 停止，並可在該操作結束後重試。
 
 ## 目錄刷新相互獨立 \{#catalog-refreshes-are-separate}
 

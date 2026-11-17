@@ -60,11 +60,13 @@ Resultaten worden als kaarten weergegeven. Gebruik de besturingselementen voor z
 
 Elke kaart toont de lijstnaam, de beheerder of categorie, de broncatalogus, een beschrijving van twee regels, de startpagina en de status **Add** of **Added**. De kaarten tonen geen beoordelingen, badges of aanbevelingen. Als u **Add** selecteert, wordt een gewone lijstrij gemaakt waarvan de URL net als elke handmatig ingevoerde bron kan worden toegewezen.
 
+Nieuwe lijsten, ook lijsten die vanuit de catalogus zijn toegevoegd, beginnen met **Global** uitgevinkt, zodat ze niets blokkeren totdat u Global aanvinkt of ze in een scope selecteert.
+
 De regel **Contents** op elke kaart toont **Domains**. Bij het toevoegen van een catalogusresultaat blijft de catalogusnaam ongewijzigd.
 
 Cataloguskopieën worden één dag onder `/var/db` gecachet. Bij een mislukte vernieuwing blijft de laatste geldige cataloguskopie behouden en wordt de ophaalfout in Status getoond.
 
-<img src={catalogSearch} alt="Paneel Add from Catalog op het tabblad Lists met besturingselementen voor zoeken in de catalogus en de ophaalstatus" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Paneel Add from Catalog op het tabblad Lists met besturingselementen voor zoeken in de catalogus en de ophaalstatus" width={1024} height={920} style={{maxWidth: '100%', height: 'auto'}} />
 
 Feeds die zijn toegewezen aan bypass-beveiliging voor Encrypted DNS, Tor of VPN verschijnen hier niet. Ze zijn alleen beschikbaar via **Add from Catalog** op het tabblad Bypass.
 
@@ -76,7 +78,7 @@ Een globaal toegestaan domein wordt na apparaat- en netwerkregels gecontroleerd.
 
 ## De updatefrequentie kiezen \{#choose-the-update-frequency}
 
-De instelling **General → Update Frequency** beheert geplande DNS-lijstupdates en levert ook het updateschema wanneer IP-blokkering is ingeschakeld:
+De instelling **General → Update Frequency** beheert geplande DNS-lijstupdates zolang General is ingeschakeld. Hetzelfde schema voert IP-/landupdates uit zolang IP-blokkering is ingeschakeld, en een ingeschakelde Bypass List alleen zolang de bijbehorende beveiliging **Providers**, **Tor** of **VPN** aan staat:
 
 | Instelling    | Schema                                                              |
 |---------------|---------------------------------------------------------------------|

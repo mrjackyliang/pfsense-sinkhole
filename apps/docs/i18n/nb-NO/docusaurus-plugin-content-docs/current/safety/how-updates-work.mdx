@@ -26,7 +26,9 @@ For hver aktivert DNS-liste gjør Sinkhole følgende:
 4. Kompilerer global policy, nettverkspolicy, enhetspolicy, policy for tillatte domener og varslingspolicy fra lokalt lagrede data.
 5. Distribuerer en generasjon under `/var/unbound`, slik at Python-modulen som allerede er lastet, kan oppdage den.
 
-En feil under nedlasting, analyse eller validering registrerer en feil uten å erstatte den siste gyldige kopien. DNS fortsetter å bruke den distribuerte lokale generasjonen gjennom hele forsøket.
+En feil under nedlasting, analyse eller validering registrerer en feil uten å erstatte den siste gyldige kopien når URL-en for listen er uendret. DNS fortsetter å bruke den distribuerte lokale generasjonen gjennom hele forsøket.
+
+Når URL-en for en liste endres, forkaster den neste oppdateringen som laster den ned, kopien fra den forrige URL-en før den nye hentes, så en mislykket første nedlasting etterlater listen uten lagret kopi. En deaktivert liste, eller en Bypass List der beskyttelsen er av, lastes ikke ned og beholder derfor detaljene fra den forrige kopien til den aktiveres igjen.
 
 ## Distribusjon og Resolver-buffere \{#deployment-and-resolver-caches}
 
@@ -50,7 +52,7 @@ Et eksisterende `sinkhole/ip`-anker kan motta en ren tabelloppdatering med `pfct
 
 Standardfrekvensen for listeoppdatering er Daily. Tidsplanene Hourly, Every 6 hours, Daily og Weekly bruker stabile tilfeldige minuttkomponenter, slik at brannmuren ikke flytter kjøretidspunktet for jobben ved hver lagring.
 
-Oppdateringer av DNS-lister og IP/land, bruksarbeid knyttet til katalogen og automatisk pakkeoppdatering koordineres gjennom `/var/run/sinkhole-update.lock`. En pakkehandling Update venter på at en aktiv listeoppdatering skal fullføres i stedet for å endre den installerte pakken under den.
+DNS-, Bypass- og IP/land-oppdateringer, anvendelse av innstillinger, pakkekontroller og automatiske pakkeoppdateringer samt opprydding ved fjerning koordineres gjennom `/var/run/sinkhole-update.lock`. En pakkekontroll eller handlingen Update venter ikke: Hvis en annen operasjon holder låsen, stopper den med `Another package operation is already running.` og kan prøves på nytt når den operasjonen er ferdig.
 
 ## Katalogoppdateringer er separate \{#catalog-refreshes-are-separate}
 

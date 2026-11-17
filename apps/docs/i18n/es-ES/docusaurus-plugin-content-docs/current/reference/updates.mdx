@@ -48,7 +48,7 @@ Una lista de confianza instalada vacía significa que no se requiere firma, pero
 
 ## Bloqueo de actualizaciones \{#update-locking}
 
-La comprobación y la actualización automática del paquete comparten `/var/run/sinkhole-update.lock` con las actualizaciones de listas DNS y de IP/país. Si hay una actualización de listas en curso, la acción **Update** de About no puede empezar hasta que termine.
+La comprobación y la actualización automática del paquete comparten `/var/run/sinkhole-update.lock` con las actualizaciones DNS, de Bypass y de IP/país, las aplicaciones de la configuración y la limpieza de la eliminación. No esperan al bloqueo: si otra operación lo tiene, la comprobación o la acción **Update** se detiene con `Another package operation is already running.`
 
 El bloqueo impide que cambien los archivos del paquete mientras el paquete actual descarga, analiza, compila o aplica políticas. Vuelva a intentarlo desde About cuando Status ya no muestre una actualización en ejecución.
 

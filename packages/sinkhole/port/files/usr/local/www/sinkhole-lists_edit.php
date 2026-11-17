@@ -221,7 +221,7 @@ $globalInput = new Form_Checkbox(
     'list_global',
     pfsensePackageSinkholeTranslate('global'),
     pfsensePackageSinkholeTranslate('block_list_global_help'),
-    ($editing === null) ? true : $editing['global'],
+    ($editing === null) ? false : $editing['global'],
 );
 
 $nameInput->setHelp(pfsensePackageSinkholeTranslate('block_list_name_help'));

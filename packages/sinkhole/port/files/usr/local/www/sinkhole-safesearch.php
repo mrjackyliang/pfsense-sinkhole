@@ -250,7 +250,9 @@ print($engineForm);
 <?php endforeach; ?>
 			</tbody>
 		</table>
-		<p class="help-block"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch_unresolved_help'))?></p>
 	</div>
 </div>
-<?php include('foot.inc');
+<?php
+print_info_box(htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch_unresolved_help')), 'info', false);
+
+include('foot.inc');

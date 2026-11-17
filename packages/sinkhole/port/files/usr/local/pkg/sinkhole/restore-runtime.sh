@@ -224,7 +224,7 @@ restore_generation() {
     return 1
   fi
 
-  for data_file in manifest.json domains.tsv bypass.tsv allow.txt generation; do
+  for data_file in manifest.json domains.tsv domains.index bypass.tsv bypass.index allow.txt generation; do
     source_file="${source_generation}/${data_file}"
 
     if [ ! -f "${source_file}" ] || [ -L "${source_file}" ]; then
@@ -280,7 +280,7 @@ restore_generation() {
 
   chown -h "${root_user}:${root_group}" "${new_generation}"
 
-  for data_file in manifest.json domains.tsv bypass.tsv allow.txt generation; do
+  for data_file in manifest.json domains.tsv domains.index bypass.tsv bypass.index allow.txt generation; do
     install -m 0644 \
       "${source_generation}/${data_file}" \
       "${new_generation}/${data_file}"

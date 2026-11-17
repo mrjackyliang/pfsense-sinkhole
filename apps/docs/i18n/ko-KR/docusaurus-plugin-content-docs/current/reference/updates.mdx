@@ -48,7 +48,7 @@ Sinkhole은 GitHub 릴리스를 확인하고 pfSense를 통해 알림을 보내�
 
 ## 업데이트 잠금 \{#update-locking}
 
-패키지 확인과 자체 업데이트는 DNS 목록 및 IP/국가 업데이트와 `/var/run/sinkhole-update.lock`을 공유합니다. 목록 업데이트가 진행 중이면 해당 작업이 끝날 때까지 About의 **Update** 작업을 시작할 수 없습니다.
+패키지 확인과 자체 업데이트는 DNS, Bypass 및 IP/국가 업데이트, 설정 적용, 제거 정리 작업과 `/var/run/sinkhole-update.lock`을 공유합니다. 이 작업들은 잠금을 기다리지 않습니다. 다른 작업이 잠금을 보유하고 있으면 확인 또는 **Update** 작업이 `Another package operation is already running.`과 함께 중지됩니다.
 
 잠금은 현재 패키지가 정책을 다운로드, 구문 분석, 컴파일 또는 적용하는 동안 패키지 파일이 변경되지 않도록 합니다. Status에 업데이트 실행이 더 이상 표시되지 않으면 About에서 다시 시도합니다.
 

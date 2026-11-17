@@ -60,11 +60,13 @@ Los resultados aparecen como tarjetas. Use juntos los controles de búsqueda, fu
 
 Cada tarjeta muestra el nombre de la lista, su responsable o categoría, el catálogo de origen, una descripción de dos líneas, la página principal y el estado **Add** o **Added**. Las tarjetas no muestran puntuaciones, distintivos ni recomendaciones. Seleccionar **Add** crea una fila de lista ordinaria cuya URL puede asignarse como cualquier fuente introducida manualmente.
 
+Las listas nuevas, incluidas las añadidas desde el catálogo, empiezan con **Global** desmarcado, así que no bloquean nada hasta que marques Global o las selecciones en un ámbito.
+
 La línea **Contents** de cada tarjeta muestra **Domains**. Al añadir un resultado del catálogo, su nombre de catálogo se conserva sin cambios.
 
 Las copias de los catálogos se guardan en caché bajo `/var/db` durante un día. Una actualización fallida conserva la última copia válida del catálogo y muestra el error de obtención en Status.
 
-<img src={catalogSearch} alt="Panel Add from Catalog de la pestaña Lists con controles de búsqueda en el catálogo y estado de obtención" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Panel Add from Catalog de la pestaña Lists con controles de búsqueda en el catálogo y estado de obtención" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 Las fuentes asignadas a la protección de bypass de Encrypted DNS, Tor o VPN no aparecen acá. Solo están disponibles mediante **Add from Catalog** en la pestaña Bypass.
 
@@ -76,7 +78,7 @@ Un dominio permitido global se comprueba después de las reglas de dispositivo y
 
 ## Elegir la frecuencia de actualización \{#choose-the-update-frequency}
 
-La opción **General → Update Frequency** controla las actualizaciones programadas de listas DNS y también proporciona el horario de actualización cuando está activado el bloqueo IP:
+La opción **General → Update Frequency** controla las actualizaciones programadas de listas DNS mientras General esté activado. El mismo horario ejecuta las actualizaciones de IP/país mientras el bloqueo IP esté activado, y una Bypass List habilitada solo mientras su protección correspondiente **Providers**, **Tor** o **VPN** esté activada:
 
 | Opción        | Horario                                                                    |
 |---------------|----------------------------------------------------------------------------|

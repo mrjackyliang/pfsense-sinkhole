@@ -19,6 +19,7 @@ Trace a problem from the Status panel and system log to the specific list, scope
 ## Where to Look \{#where-to-look}
 
 - **Firewall → Sinkhole → Status** shows list, catalog, client-map, alert, Bypass, IP, compile, deployment, and Resolver state.
+- **Status → Update Log** shows each step of the most recent list update, including which list failed and why.
 - **Status → System Logs → System → General** shows operational lines beginning with `Sinkhole:`.
 - `/usr/local/sbin/sinkhole --help` prints the supported maintenance modes.
 
@@ -78,14 +79,30 @@ ISC lease times can be GMT or firewall-local depending on the interface's lease-
 
 A failed DNS, Bypass, or IP download, parse, or validation keeps the previous saved copy and records the error. DNS continues from the deployed local generation rather than waiting for the failed source.
 
+A copy saved from a list's previous URL is never kept. After you change a list's URL, the next update discards that copy and logs `source changed; discarding the copy from the previous URL.`, so the list contributes nothing and Status shows its error until the first download from the new URL succeeds.
+
+The [Update Log](/docs/operate/status#update-log) names the list that failed, its host, and the reason for the most recent run. It is recommended to select **Update Now** after fixing the source and watch the retry there.
+
 Catalogs are fetched only when search opens or refreshes, and a failed fetch keeps the cached last-good catalog. Confirm HTTPS connectivity, the source URL, and the Status error before forcing another refresh.
+
+## Compile Exceeds the Name Limit \{#compile-exceeds-the-name-limit}
+
+A compile that finds more than 10,000,000 unique names stops with an error such as `The compile found 10,412,331 unique names; the limit is 10,000,000.` The DNS-blocking index (lists and Blocked Services) and the Bypass index count together. A name listed by several lists counts once within an index, but a name in both indexes counts once in each.
+
+The previous generation stays active, and **Compile Needed** stays `Yes` until a compile succeeds. **Summary → Compiled Names** shows the deployed count against the limit.
+
+To bring the count under the limit:
+
+1. Disable or remove the largest list you don't need, or replace it with a smaller variant from the same publisher.
+2. Remove lists that are mostly contained in another enabled list.
+3. Select **Update Now** and confirm **Compile Needed** returns to `No`.
 
 ## Plain-DNS Redirect Is Paused or Missing \{#plain-dns-redirect-is-paused-or-missing}
 
 - **Paused** — Fix or remove every invalid exemption shown in the Bypass panel.
 - **No family address** — Add the family to the interface or accept that no family rule can be generated.
 - **Resolver does not listen** — Change **DNS Resolver → Network Interfaces** or remove that redirect selection.
-- **Rules missing or out of date** — Wait for two minute observations, then inspect **Last parse error** and system logs.
+- **Rules missing or out of date** — Wait for two minute observations, then inspect **Last Parse Error** and system logs.
 - **Queries are refused** — Add the client network to the Resolver's access-control configuration.
 
 The minute check doesn't reload the filter while pfSense's package lock is held or when pfSense already rejected the unchanged rule text. Changing the invalid configuration lets the next two observations reconcile it.
@@ -112,9 +129,11 @@ Events older than 10 minutes are stale, and a run stops sending after its 40-sec
 
 ## Memory Use Is High \{#memory-use-is-high}
 
-Measured testing with 300,000 names increased Unbound RSS from 41 MiB to 103 MiB, with peak policy memory around 157 bytes per name. Actual use depends on unique normalized names, scope assignments, and the running Resolver.
+The Unbound module doesn't hold compiled names in memory. It reads a memory-mapped index of about 18 bytes per name from the active generation, so its own memory stays at a few MiB with any list size up to the 10,000,000-name limit.
 
-It is recommended to compare Status entry counts with Unbound memory before and after adding a large source. Disabling an unused list keeps it out of active policy on the next compile.
+Index pages that queries read count toward Unbound's resident memory as file cache, which FreeBSD reclaims under pressure. A large Unbound RSS therefore usually comes from the Resolver's own message and RRset caches; compare it with **DNS Resolver → Advanced Settings** cache sizes before changing lists.
+
+Each generation also needs disk space for its compiled files, about 55 bytes per name, in `/var/unbound` and, on a RAM-disk system, in the persistent mirror. A deploy that doesn't fit stops with a `Not enough deployment space` error and keeps the previous generation.
 
 ## Report a Problem \{#report-a-problem}
 

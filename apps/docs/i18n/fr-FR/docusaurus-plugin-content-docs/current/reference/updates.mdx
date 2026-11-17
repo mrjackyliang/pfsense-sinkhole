@@ -48,7 +48,7 @@ Une liste de confiance installée vide signifie qu’aucune signature n’est ex
 
 ## Verrouillage des mises à jour \{#update-locking}
 
-Le contrôle du paquet et sa mise à jour automatique partagent `/var/run/sinkhole-update.lock` avec les mises à jour des listes DNS et du blocage IP/pays. Si une mise à jour de liste est en cours, l’action **Update** d’About ne peut commencer qu’après sa fin.
+Le contrôle du paquet et sa mise à jour automatique partagent `/var/run/sinkhole-update.lock` avec les mises à jour DNS, Bypass et IP/pays, les applications de réglages et le nettoyage lors de la suppression. Ils n’attendent pas le verrou : si une autre opération le détient, le contrôle ou l’action **Update** s’arrête avec `Another package operation is already running.`
 
 Le verrou empêche les fichiers du paquet de changer pendant que le paquet actuel télécharge, analyse, compile ou applique la politique. Réessayez depuis About lorsque Status n’affiche plus de mise à jour en cours.
 

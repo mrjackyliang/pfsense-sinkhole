@@ -31,12 +31,12 @@ Sinkhole refuse d’enregistrer **Enable** lorsque pfBlockerNG est installé et 
 
 1. Ouvrez **Lists** et ajoutez l’URL d’une source fiable, ou ouvrez **Add from Catalog** pour rechercher dans les deux catalogues à la demande.
 2. Donnez un nom local à la source et laissez **Enabled** sélectionné afin que Sinkhole la télécharge.
-3. Laissez **Global** sélectionné uniquement si la liste doit s’appliquer après toutes les règles d’appareil et de réseau.
+3. Sélectionnez **Global** uniquement si la liste doit s’appliquer après toutes les règles d’appareil et de réseau.
 4. Ajoutez, si nécessaire, des **Allowed Domains** globaux, un domaine par ligne, lorsqu’un faux positif connu doit être autorisé.
 
 Sinkhole ne recommande aucune source. [Listes et copies enregistrées](/docs/configure/lists) décrit les formats acceptés et la manière dont les résultats du catalogue deviennent des lignes de liste ordinaires.
 
-<img src={listsTab} alt="Onglet Lists affichant cinq listes de blocage de démonstration avec leurs colonnes Global et Used By, ainsi que deux domaines autorisés globaux" width={1024} height={996} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Onglet Lists affichant cinq listes de blocage de démonstration avec leurs colonnes Global et Used By, ainsi que deux domaines autorisés globaux" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Ajouter des portées facultatives \{#add-optional-scopes}
 
@@ -52,9 +52,9 @@ Un appareil hérite du réseau auquel il appartient actuellement, et ce réseau 
 1. Revenez à **General** et sélectionnez **Enable**.
 2. Choisissez **Update Frequency** pour les listes DNS activées et enregistrez.
 3. Ouvrez **Status** et sélectionnez **Update Now**.
-4. Attendez que **Update running** revienne à `No`.
+4. Suivez l’**Update Log** jusqu’à ce qu’il affiche `Update finished`.
 
-Le commutateur General active les mises à jour planifiées des listes DNS et l’intégration au DNS Resolver. Les Bypass Lists activées et la politique IP/par pays utilisent indépendamment la même planification de mise à jour ; chaque protection Bypass et IP reste désactivée jusqu’à son activation par un administrateur.
+Le commutateur General active les mises à jour planifiées des listes DNS et l’intégration au DNS Resolver. La politique IP/par pays utilise indépendamment la même planification de mise à jour, et une Bypass List activée n’y participe que tant que sa protection correspondante **Providers**, **Tor** ou **VPN** est activée ; chaque protection Bypass et IP reste désactivée jusqu’à son activation par un administrateur.
 
 ## Vérifier l’état actif \{#verify-the-active-state}
 

@@ -63,6 +63,8 @@ jobs:
 
       - name: "Check project"
         timeout-minutes: 15
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           npm run check -- --workspace pfsense-sinkhole-docs --workspace pfsense-pkg-sinkhole --exclude-workspace ./
         working-directory: "${{ env.ROOT_DIR }}"

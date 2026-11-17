@@ -48,7 +48,7 @@ Pusta zainstalowana lista zaufania oznacza, że podpis nie jest wymagany, ale we
 
 ## Blokada aktualizacji \{#update-locking}
 
-Kontrola pakietu i automatyczna aktualizacja współdzielą `/var/run/sinkhole-update.lock` z aktualizacjami list DNS i IP/krajów. Jeśli trwa aktualizacja listy, akcja **Update** w About nie może się rozpocząć do jej zakończenia.
+Kontrola pakietu i automatyczna aktualizacja współdzielą `/var/run/sinkhole-update.lock` z aktualizacjami DNS, Bypass i IP/krajów, zastosowaniem ustawień oraz porządkowaniem przy usuwaniu. Nie czekają na blokadę: jeśli utrzymuje ją inna operacja, kontrola lub akcja **Update** zatrzymuje się z komunikatem `Another package operation is already running.`
 
 Blokada uniemożliwia zmianę plików pakietu, gdy bieżący pakiet pobiera, analizuje, kompiluje lub stosuje zasady. Spróbuj ponownie z About, gdy Status nie pokazuje już trwającej aktualizacji.
 

@@ -60,11 +60,13 @@ Rezultati se prikazuju kao kartice. Zajedno koristite kontrole pretrage, izvora 
 
 Svaka kartica prikazuje naziv liste, njenog održavaoca ili kategoriju, izvorni katalog, opis u dva reda, početnu stranicu i stanje **Add** ili **Added**. Kartice ne prikazuju ocjene, značke ni preporuke. Odabir **Add** kreira obični red liste čiji se URL može dodijeliti kao i svaki ručno uneseni izvor.
 
+Nove liste, uključujući one dodane iz kataloga, počinju s neoznačenim **Global**, pa ništa ne blokiraju dok ne označite Global ili ih ne odaberete u nekom opsegu.
+
 Red **Contents** na svakoj kartici prikazuje **Domains**. Dodavanjem rezultata iz kataloga njegov naziv iz kataloga ostaje nepromijenjen.
 
 Kopije kataloga čuvaju se jedan dan u predmemoriji pod `/var/db`. Neuspjelo osvježavanje zadržava posljednju ispravnu kopiju kataloga i prikazuje grešku dohvatanja na Statusu.
 
-<img src={catalogSearch} alt="Panel Add from Catalog na kartici Lists prikazuje kontrole pretrage kataloga i stanje dohvatanja" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Panel Add from Catalog na kartici Lists prikazuje kontrole pretrage kataloga i stanje dohvatanja" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 Izvori dodijeljeni zaštiti od zaobilaženja Encrypted DNS, Tor ili VPN ne prikazuju se ovdje. Dostupni su samo kroz **Add from Catalog** na kartici Bypass.
 
@@ -76,7 +78,7 @@ Globalna dopuštena domena provjerava se nakon pravila uređaja i mreže. Zato n
 
 ## Odaberite učestalost ažuriranja \{#choose-the-update-frequency}
 
-Postavka **General → Update Frequency** upravlja zakazanim ažuriranjima DNS lista i određuje raspored ažuriranja kada je IP blokiranje omogućeno:
+Postavka **General → Update Frequency** upravlja zakazanim ažuriranjima DNS lista dok je General omogućen. Isti raspored pokreće IP/country ažuriranja dok je IP blokiranje omogućeno, a omogućenu Bypass listu samo dok je uključena njena odgovarajuća zaštita **Providers**, **Tor** ili **VPN**:
 
 | Postavka      | Raspored                                                    |
 |---------------|-------------------------------------------------------------|

@@ -25,6 +25,7 @@ use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Runtime\StateStore;
 use PfSense\Sinkhole\Runtime\Translator;
 use PfSense\Sinkhole\Runtime\UpdateLockRunner;
+use PfSense\Sinkhole\Runtime\UpdateLog;
 use PfSense\Sinkhole\Runtime\UpdateManager;
 use PfSense\Sinkhole\Runtime\Updater;
 
@@ -50,6 +51,7 @@ require_once('/usr/local/pkg/sinkhole/SavedListStore.php');
 require_once('/usr/local/pkg/sinkhole/StateStore.php');
 require_once('/usr/local/pkg/sinkhole/Updater.php');
 require_once('/usr/local/pkg/sinkhole/Translator.php');
+require_once('/usr/local/pkg/sinkhole/UpdateLog.php');
 require_once('/usr/local/pkg/sinkhole/UpdateManager.php');
 require_once('/usr/local/pkg/sinkhole/ValidationException.php');
 
@@ -404,6 +406,7 @@ function sinkholeMain(array $arguments): int
             $bypassStore,
         );
         $ipStore = new IpListStore($paths);
+        $updateLog = new UpdateLog($paths->updateLogFile);
         $ipUpdater = new IpUpdater(
             $adapter,
             $downloadClient,
@@ -412,6 +415,7 @@ function sinkholeMain(array $arguments): int
             $paths,
             new GeoLite2(),
             new IpStatusStore($paths->ipStatusFile),
+            $updateLog,
         );
         $bypassUpdater = new BypassUpdater(
             $adapter,
@@ -420,6 +424,7 @@ function sinkholeMain(array $arguments): int
             $bypassStore,
             $paths,
             $compiler,
+            $updateLog,
         );
         $updater = new Updater(
             $adapter,
@@ -431,23 +436,45 @@ function sinkholeMain(array $arguments): int
             $clientMap,
             $ipUpdater,
             $bypassUpdater,
+            $updateLog,
         );
         $manualRun = $manual;
+        $updateLogStarted = false;
+        $updateTrigger = ($manual) ? 'manual' : (($apply) ? 'apply' : 'scheduled');
         $runner = new UpdateLockRunner($lock, $stateStore);
         $runResult = $runner->run(
             $apply,
             static function (bool $runApply) use (
                 &$manualRun,
+                &$updateLogStarted,
+                $updateTrigger,
+                $updateLog,
                 $store,
                 $ipStore,
                 $bypassStore,
                 $updater,
             ): array {
-                $store->sweepTemporaryFiles();
-                $ipStore->sweepTemporaryFiles();
-                $bypassStore->sweepTemporaryFiles();
-                $result = $updater->run($manualRun, $runApply);
+                // The update lock is held here, so replacing the log cannot race another run.
+                if ($updateLogStarted) {
+                    $updateLog->line('Applying settings saved while the update ran.');
+                } else {
+                    $updateLog->begin($updateTrigger);
+                    $updateLogStarted = true;
+                }
+
+                try {
+                    $store->sweepTemporaryFiles();
+                    $ipStore->sweepTemporaryFiles();
+                    $bypassStore->sweepTemporaryFiles();
+                    $result = $updater->run($manualRun, $runApply);
+                } catch (Throwable $throwable) {
+                    $updateLog->fail($throwable->getMessage());
+
+                    throw $throwable;
+                }
+
                 $manualRun = false;
+                $updateLog->finish($result);
 
                 return $result;
             },

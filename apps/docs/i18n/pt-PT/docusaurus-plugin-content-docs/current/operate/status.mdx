@@ -1,7 +1,7 @@
 ---
 id: status
 title: Status
-description: Leia cada painel de Status do Sinkhole, diferencie estados ativos, pendentes, pausados, carregados, ausentes e desatualizados e execute uma atualização manual.
+description: Leia cada painel de Status do Sinkhole, diferencie estados ativos, pendentes, pausados, carregados, ausentes e desatualizados e acompanhe uma atualização manual de listas no Update Log em tempo real.
 keywords:
   - sinkhole for pfsense
   - status
@@ -24,18 +24,21 @@ Consulte o estado das listas guardadas, âmbitos, alertas, Bypass, IP, compilaç
 
 Abra **Firewall → Sinkhole → Status** para ver estes painéis:
 
-| Painel                  | O que informa                                                                                                                                            |
-|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Summary                 | Compilação, implementação, geração, operação, proprietário do Resolver, estado geral do Sinkhole e **Update Now** abaixo do painel.                      |
-| Lists                   | URL da lista DNS, contagem de entradas guardadas, última atualização bem-sucedida e último erro.                                                         |
-| Popular-List Catalogs   | Última busca e último erro das fontes de catálogo do AdGuard Home e do pfBlockerNG.                                                                      |
-| Invalid Saved Rows      | Linhas de lista malformadas que continuam disponíveis para reparação; apresentado apenas quando existem.                                                 |
-| Scopes                  | Hora e erro da reconstrução do mapa de clientes, seguidos por painéis separados de Networks e Devices.                                                   |
-| Alerts                  | Última execução, eventos lidos ou obsoletos, notificações enviadas ou retidas, eventos descartados e último erro.                                        |
-| Bypass                  | Cada proteção, interfaces, estado das regras de redirecionamento, estado e contagens da âncora Bypass, seguidos por Bypass Lists e painéis de reparação. |
-| IP and Country Blocking | Seleções de política, contagens de tabelas e regras, atualizações, erros e estado da âncora, seguidos por um painel IP Lists separado.                   |
+| Painel                  | O que informa                                                                                                                                                              |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Summary                 | Nomes compilados em relação ao limite, compilação, implementação, geração, operação, proprietário do Resolver, estado geral do Sinkhole e **Update Now** abaixo do painel. |
+| Update Log              | Cada passo da atualização de lista mais recente, acompanhando em tempo real uma atualização em curso.                                                                      |
+| Lists                   | URL da lista DNS, contagem de entradas guardadas, última atualização bem-sucedida e último erro.                                                                           |
+| Popular-List Catalogs   | Última busca e último erro das fontes de catálogo do AdGuard Home e do pfBlockerNG.                                                                                        |
+| Invalid Saved Rows      | Linhas de lista malformadas que continuam disponíveis para reparação; apresentado apenas quando existem.                                                                   |
+| Scopes                  | Hora e erro da reconstrução do mapa de clientes, seguidos por painéis separados de Networks e Devices.                                                                     |
+| Blocked Services        | Obtenção do registo, último erro e serviços selecionados por âmbito.                                                                                                       |
+| SafeSearch              | Motores por âmbito e os endereços, a última verificação e o erro de cada anfitrião seguro.                                                                                 |
+| Alerts                  | Última execução, eventos lidos ou obsoletos, notificações enviadas ou retidas, eventos descartados e último erro.                                                          |
+| Bypass                  | Cada proteção, interfaces, estado das regras de redirecionamento, estado e contagens da âncora Bypass, seguidos por Bypass Lists e painéis de reparação.                   |
+| IP and Country Blocking | Seleções de política, contagens de tabelas e regras, atualizações, erros e estado da âncora, seguidos por um painel IP Lists separado.                                     |
 
-Linhas de lista e âmbito desativadas aparecem esmaecidas. Uma fonte com erro ainda pode mostrar entradas e uma atualização bem-sucedida anterior porque a última cópia válida permanece ativa.
+Linhas de lista e âmbito desativadas aparecem esmaecidas. Uma fonte com erro ainda pode mostrar entradas e uma atualização bem-sucedida anterior porque a última cópia válida permanece ativa. Depois de a URL de uma lista mudar, a próxima atualização que a transferir descarta a cópia da URL anterior, pelo que a linha não mostra entradas até a primeira transferência a partir da nova URL ter êxito.
 
 <img src={listsScopesStatus} alt="Separador Status mostrando atualizações de uma lista de demonstração guardada, sub-redes e endereços atuais de um dispositivo de demonstração" width={1024} height={949} style={{maxWidth: '100%', height: 'auto'}} />
 
@@ -59,20 +62,21 @@ Quando o Sinkhole está desativado intencionalmente, **Deployment Needed** é `N
 
 ## Estado de compilação e implementação \{#compile-and-deployment-state}
 
-| Campo               | Significado                                                                                                     |
-|---------------------|-----------------------------------------------------------------------------------------------------------------|
-| Compile Needed      | A política guardada mudou ou a última compilação não foi concluída com sucesso.                                 |
-| Compiled Generation | Identificador produzido pela compilação bem-sucedida mais recente.                                              |
-| Deployment Needed   | O conteúdo compilado não é o conteúdo implementado no Unbound, ou a integração está inativa.                    |
-| Deployed Generation | Identificador no manifesto de execução implementado no momento.                                                 |
-| Loaded Generation   | Identificador que o módulo do Unbound informa ter carregado.                                                    |
-| Update Running      | Apresentado apenas enquanto uma atualização de lista ou IP mantém o lock partilhado.                            |
-| Removal in Progress | Apresentado apenas enquanto o marcador persistente de remoção está definido e a integração está a ser retirada. |
-| Python Script Owner | Valor atual do único espaço `python_script` do Resolver, ou `None`.                                             |
+| Campo                            | Significado                                                                                                                                                                                                        |
+|----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compiled Names                   | Nomes no índice de bloqueio de DNS implementado (listas e serviços bloqueados) mais os nomes no índice de Bypass, em relação ao limite de 10.000.000 de nomes.                                                     |
+| Compile Needed                   | A política guardada mudou ou a última compilação não foi concluída com sucesso.                                                                                                                                    |
+| Compiled Generation              | Identificador produzido pela compilação bem-sucedida mais recente.                                                                                                                                                 |
+| Deployment Needed                | O conteúdo compilado não é o conteúdo implementado no Unbound, ou a integração está inativa.                                                                                                                       |
+| Deployed Generation              | Identificador no manifesto de execução implementado no momento.                                                                                                                                                    |
+| Loaded Generation                | Identificador que o módulo do Unbound informa ter carregado.                                                                                                                                                       |
+| Update Running                   | Apresentado apenas enquanto um processo ativo mantém o lock de atualização partilhado: uma atualização de DNS, Bypass ou IP, uma aplicação de definições, uma verificação ou atualização do pacote ou uma remoção. |
+| Removal in Progress              | Apresentado apenas enquanto o marcador persistente de remoção está definido e a integração está a ser retirada.                                                                                                    |
+| DNS Resolver Python Script Owner | Valor atual do único espaço `python_script` do Resolver, ou `None`.                                                                                                                                                |
 
 A página apresenta uma caixa de aviso quando a compilação ou a implementação está pendente, incluindo o motivo registado. Identificadores iguais de compilação, implementação e carregamento mostram que a política guardada chegou ao módulo em execução.
 
-<img src={summaryStatus} alt="Painel Summary de Status mostrando gerações compilada, implementada e carregada iguais, com o Sinkhole ativo" width={1024} height={874} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={summaryStatus} alt="Painel Summary de Status mostrando os nomes compilados face ao limite, gerações compilada, implementada e carregada iguais, o Sinkhole ativo e o Update Log de uma atualização manual concluída" width={1024} height={1244} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Estado de âmbitos e alertas \{#scope-and-alert-state}
 
@@ -92,9 +96,9 @@ A âncora independente da firewall informa:
 
 | Campo                   | Significado                                                                                                              |
 |-------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| Firewall rules loaded   | Se a âncora `sinkhole/bypass` existe quando as definições atuais a exigem.                                               |
-| Firewall rules current  | Se o resumo, as regras e as tabelas carregados correspondem às definições atuais e aos últimos dados válidos das listas. |
-| Firewall rule count     | Número de regras ativas na âncora Bypass.                                                                                |
+| Firewall Rules Loaded   | Se a âncora `sinkhole/bypass` existe quando as definições atuais a exigem.                                               |
+| Firewall Rules Current  | Se o resumo, as regras e as tabelas carregados correspondem às definições atuais e aos últimos dados válidos das listas. |
+| Firewall Rule Count     | Número de regras ativas na âncora Bypass.                                                                                |
 | IPv4/IPv6 table entries | Contagens finais de endereços de fornecedores, Tor e VPN depois de remover os endereços protegidos da firewall.          |
 
 A tabela **Bypass Lists** informa o tipo, estado ativado, contagem de entradas guardadas, última obtenção e último erro de cada linha. Assim, uma obtenção falhada pode mostrar um erro junto com entradas da última cópia válida mantida.
@@ -107,7 +111,16 @@ A tabela **Bypass Lists** informa o tipo, estado ativado, contagem de entradas g
 | On     | Redirect está ativado e todas as exceções guardadas são válidas.                                     |
 | Paused | Pelo menos uma exceção guardada de origem ou destino é inválida, portanto nenhuma regra é utilizada. |
 
-O campo **pfSense loaded rules** tem três estados:
+Enquanto Redirect está ativado, mas as suas regras não estão carregadas, um aviso vermelho no topo da página indica o motivo:
+
+- O Sinkhole está desativado.
+- O DNS Resolver não está em execução.
+- Uma exceção guardada é inválida.
+- O Sinkhole está a ser removido.
+
+As regras não dependem do módulo Python do Resolver, pelo que o pfBlockerNG ou outro script que o ocupe nunca interrompe o redirecionamento. O separador **Bypass** mostra o mesmo aviso por baixo de **Redirect**.
+
+O campo **pfSense Loaded Rules** tem três estados:
 
 | Estado      | Significado                                                                                                              |
 |-------------|--------------------------------------------------------------------------------------------------------------------------|
@@ -115,7 +128,7 @@ O campo **pfSense loaded rules** tem três estados:
 | No          | O bloco desejado não está carregado.                                                                                     |
 | Out of Date | Um bloco do Sinkhole está carregado, mas seu texto não corresponde às configurações ou aos listeners atuais do Resolver. |
 
-Cada destino de família é o endereço de listener selecionado ou o motivo pelo qual nenhuma regra pode ser criada. **Last parse error** aparece apenas enquanto o bloco atual está ausente depois de o pfSense rejeitá-lo.
+Cada destino de família é o endereço de listener selecionado ou o motivo pelo qual nenhuma regra pode ser criada. **Last Parse Error** aparece apenas enquanto o bloco atual está ausente depois de o pfSense rejeitá-lo.
 
 ## Estado de IP e país \{#ip-and-country-state}
 
@@ -127,11 +140,39 @@ As contagens de entradas das tabelas mostram as redes IPv4 e IPv6 finais, depois
 
 **GeoLite2 Last Update** é independente da atualização de lista mais recente.
 
-<img src={ipStatus} alt="Painel IP and Country Blocking de Status mostrando contagens das tabelas, estado da atualização, uma âncora carregada e uma linha de lista IP de demonstração" width={1024} height={1082} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipStatus} alt="Painel IP and Country Blocking de Status mostrando contagens das tabelas, estado da atualização, uma âncora carregada e duas linhas de listas IP de demonstração" width={1024} height={1115} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Execute Update Now \{#run-update-now}
 
-Selecionar **Update Now** abaixo de Summary inicia `/usr/local/sbin/sinkhole --manual` em segundo plano e devolve imediatamente. O botão não transmite a saída, portanto **Update Running**, as linhas de listas DNS/Bypass/IP, os campos de compilação e os últimos erros fornecem o resultado.
+Selecionar **Update Now** abaixo de Summary inicia `/usr/local/sbin/sinkhole --manual` em segundo plano e devolve imediatamente. Em seguida, o **Update Log** acompanha a execução, para que a possa observar sem atualizar a página.
 
 O processo manual usa o mesmo lock de atualização partilhado que as atualizações agendadas de lista e a atualização automática do pacote. Se outra atualização mantiver o lock, o processo existente continuará e o trabalho de aplicação pendente será preservado.
+
+## Update Log \{#update-log}
+
+O painel **Update Log** abaixo de Summary mostra cada passo da atualização mais recente, quer tenha sido agendada, iniciada com **Update Now** ou aplicada após uma alteração das definições. Enquanto nenhuma atualização tiver sido executada, apresenta `No update has run yet.`
+
+Enquanto uma atualização está em curso, a página verifica se existem novas linhas a cada 2 segundos:
+
+- As novas linhas são adicionadas no fundo e a vista desloca-se com elas, a menos que tenha deslocado para cima para ler linhas anteriores.
+- **Update Running** aparece em Summary e os campos de compilação, implementação e geração mudam à medida que a execução chega a eles.
+- A verificação termina quando a execução acaba, após uma última verificação da linha de encerramento.
+
+Cada linha começa com a hora local da firewall. Uma execução informa estes passos:
+
+| Passo               | O que o registo mostra                                                                                                                  |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| Início              | `Update started` com o acionador: `manual`, `scheduled` ou `settings change`.                                                           |
+| Transferências      | Cada lista DNS, Bypass e IP por nome e anfitrião, seguida das respetivas entradas, linhas ignoradas e se mudou.                         |
+| Alterações de fonte | Uma lista cuja URL mudou, e que a cópia da respetiva URL anterior foi descartada.                                                       |
+| Falhas              | A lista que falhou e o motivo, indicando se a respetiva última cópia válida continua em uso ou se ainda não tem nenhuma cópia guardada. |
+| GeoLite2            | Se os dados de países foram transferidos ou a cópia guardada foi reutilizada, com a contagem de redes.                                  |
+| Compilação          | A nova geração e a respetiva contagem de nomes, ou que o conteúdo não mudou.                                                            |
+| Implementação       | Se a geração chegou ao DNS Resolver e o recarregamento do Resolver que limpa a respetiva cache.                                         |
+| Tabelas da firewall | As entradas IPv4 e IPv6 carregadas nas âncoras Bypass e IP.                                                                             |
+| Fim                 | `Update finished` com a duração e os totais, ou `Update failed` com o motivo.                                                           |
+
+O registo mostra apenas o anfitrião de uma lista, nunca o URL completo, o caminho, a query string ou as credenciais, e nunca mostra a chave de licença da MaxMind. O registo do sistema mantém as suas próprias linhas `Sinkhole:` como antes.
+
+Cada atualização substitui o registo da execução anterior, que é mantido em `/var/run/sinkhole-update.log` e limitado a 256 KiB. Uma execução que atinge o limite adiciona uma linha `Log truncated` e continua a registar como terminou.
 

@@ -60,11 +60,13 @@ Sinkhole 接受以下標準格式，並將有效名稱規範化為一個已儲�
 
 每張卡片顯示清單名稱、維護者或類別（以目前未作為分組依據的一項為準）、來源目錄、兩行說明、主頁以及 **Add** 或 **Added** 狀態。卡片不顯示評分、徽章或推薦。選擇 **Add** 會建立一個普通清單行，其 URL 可像任何手動輸入的來源一樣分配。
 
+新清單（包括從目錄新增的清單）一開始不會勾選 **Global**，因此在您勾選 Global 或在某個作用域中選取它們之前，不會封鎖任何內容。
+
 每張卡片的 **Contents** 行顯示 **Domains**。新增目錄結果時，其目錄名稱保持不變。
 
 目錄副本在 `/var/db` 下快取一天。刷新失敗時會保留最後一份有效目錄副本，並在 Status 上顯示獲取錯誤。
 
-<img src={catalogSearch} alt="Lists 分頁的 Add from Catalog 面板顯示目錄搜尋控制項和取得狀態" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Lists 分頁的 Add from Catalog 面板顯示目錄搜尋控制項和取得狀態" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 指派給 Encrypted DNS、Tor 或 VPN 繞過保護的來源不會顯示在此處。它們只會透過 Bypass 分頁上的 **Add from Catalog** 提供。
 
@@ -76,7 +78,7 @@ Sinkhole 接受以下標準格式，並將有效名稱規範化為一個已儲�
 
 ## 選擇更新頻率 \{#choose-the-update-frequency}
 
-**General → Update Frequency** 設定控制計劃 DNS 清單更新；啓用 IP 封鎖時，它也提供更新計劃：
+**General → Update Frequency** 設定在 General 啟用時控制排程 DNS 清單更新。啟用 IP 封鎖時，同一排程也會執行 IP/國家地區更新；已啟用的 Bypass List 只有在其對應的 **Providers**、**Tor** 或 **VPN** 保護開啟時才會依此排程更新：
 
 | 設定            | 計劃                     |
 |---------------|------------------------|

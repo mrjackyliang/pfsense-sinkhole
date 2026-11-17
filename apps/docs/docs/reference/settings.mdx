@@ -38,6 +38,8 @@ Scheduled times use stable randomized components. Hourly runs at one stable minu
 | Expired Answer Lifetime | Empty   | Seconds an expired cached answer may still be served; `0` means no limit.                        |
 | Expired Answer Wait     | Empty   | Milliseconds to wait for a fresh answer before serving an expired one; `0` answers at once.      |
 
+Rebind Exceptions accepts at most 100 domains. Expired Answer Lifetime accepts whole seconds from `0` through `31536000`, and Expired Answer Wait accepts whole milliseconds from `0` through `60000`.
+
 An empty field writes nothing and keeps the Resolver's default. [Resolver Settings](/docs/configure/resolver-settings) explains when the values apply.
 
 ## Package Updates \{#package-updates}
@@ -56,7 +58,7 @@ Each new version creates one local pfSense notice. **About → Check Now** runs 
 | Name            | Empty   | Local label used by assignments, alerts, and Status.                                  |
 | URL             | Empty   | HTTP or HTTPS source without embedded credentials.                                    |
 | Enabled         | On      | Includes the source in updates and compiled policy when assigned.                     |
-| Global          | On      | Applies the list to every client after device and network decisions.                  |
+| Global          | Off     | Applies the list to every client after device and network decisions.                  |
 | Allowed Domains | Empty   | One global allowed domain per line; each allows the exact domain and every subdomain. |
 
 **Add from Catalog** searches the AdGuard Home list registry and pfBlockerNG feed catalog on demand. Adding a result creates the same ordinary row as entering its URL manually; bypass feeds are excluded.
@@ -71,26 +73,26 @@ SafeSearch selections default to empty for every scope. Each scope can lock Goog
 
 ## Network Scopes \{#network-scopes}
 
-| Field           | Default | Description                                                                                                                         |
-|-----------------|---------|-------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | Empty   | Configured pfSense interface whose current IPv4 and IPv6 subnets identify the network.                                              |
-| Lists           | Empty   | Additional DNS lists that block clients in the network.                                                                             |
-| Allowed Domains | Empty   | One network exception per line; each allows the exact domain and every subdomain before that network's lists and all global policy. |
-| Enabled         | On      | Makes the row part of client matching and compiled policy.                                                                          |
+| Field           | Default | Description                                                                                                                                       |
+|-----------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface       | LAN     | Configured pfSense interface whose current IPv4 and IPv6 subnets identify the network. Without LAN, the first free non-WAN interface is selected. |
+| Lists           | Empty   | Additional DNS lists that block clients in the network.                                                                                           |
+| Allowed Domains | Empty   | One network exception per line; each allows the exact domain and every subdomain before that network's lists and all global policy.               |
+| Enabled         | On      | Makes the row part of client matching and compiled policy.                                                                                        |
 
 Each interface can appear only once. An unavailable saved interface remains visible for correction instead of being discarded.
 
 ## Device Scopes \{#device-scopes}
 
-| Field               | Default    | Description                                                                                                               |
-|---------------------|------------|---------------------------------------------------------------------------------------------------------------------------|
-| Name                | Empty      | Local label shown in policy and Status.                                                                                   |
-| Identified By       | IP address | Selects IP address, DHCP static mapping, or MAC address.                                                                  |
-| IP or MAC Address   | Empty      | Exact identifier when IP address or MAC address is selected.                                                              |
-| DHCP Static Mapping | Empty      | Existing mapping selected when that identification method is used.                                                        |
-| Lists               | Empty      | Additional DNS lists that block this device.                                                                              |
-| Allowed Domains     | Empty      | One device exception per line; each allows the exact domain and every subdomain before every network and global decision. |
-| Enabled             | On         | Makes the row part of client matching and compiled policy.                                                                |
+| Field                    | Default    | Description                                                                                                               |
+|--------------------------|------------|---------------------------------------------------------------------------------------------------------------------------|
+| Name                     | Empty      | Local label shown in policy and Status.                                                                                   |
+| Identified By            | IP address | Selects IP address, DHCP static mapping, or MAC address.                                                                  |
+| IP Address / MAC Address | Empty      | Exact identifier when IP address or MAC address is selected. Label follows the selected method.                           |
+| DHCP Static Mapping      | Empty      | Existing mapping selected when that identification method is used.                                                        |
+| Lists                    | Empty      | Additional DNS lists that block this device.                                                                              |
+| Allowed Domains          | Empty      | One device exception per line; each allows the exact domain and every subdomain before every network and global decision. |
+| Enabled                  | On         | Makes the row part of client matching and compiled policy.                                                                |
 
 Static mappings use their configured address plus current addresses observed for the mapping's MAC. A MAC row uses current ARP, NDP, and DHCP lease data.
 
@@ -110,22 +112,26 @@ The minute processor sends at most 20 messages per run and 60 messages per rule 
 
 ## Bypass Protection \{#bypass-protection}
 
-| Field               | Default | Description                                                                                         |
-|---------------------|---------|-----------------------------------------------------------------------------------------------------|
-| Apply to            | Empty   | Client-facing arrival interfaces shared by every Bypass protection.                                 |
-| Redirect            | Off     | Sends ordinary UDP and TCP port 53 traffic on selected interfaces to the firewall.                  |
-| Exempt Sources      | Empty   | One IP address, CIDR, alias, or `This Firewall` entry per line that bypasses plain-DNS redirect.    |
-| Exempt Destinations | Empty   | One destination IP address, CIDR, or alias per line that bypasses plain-DNS redirect.               |
-| TLS and QUIC        | Off     | Blocks TCP and UDP port 853 to destinations other than the firewall.                                |
-| Providers           | Off     | Blocks names and addresses from enabled **Encrypted DNS** Bypass Lists.                             |
-| Firefox             | Off     | Returns `NXDOMAIN` for Firefox's automatic DNS-over-HTTPS canary name and its subdomains.           |
-| Private Relay       | Off     | Returns `NXDOMAIN` for Apple's two Private Relay availability names.                                |
-| Discovery           | Off     | Leaves DDR untouched, advertises the firewall's DNS over TLS, or answers `NOERROR` with no records. |
-| Tor                 | Off     | Blocks names and addresses from enabled **Tor** Bypass Lists.                                       |
-| VPN providers       | Off     | Blocks names and addresses from enabled **VPN** Bypass Lists.                                       |
-| Standard VPN ports  | Off     | Blocks OpenVPN, WireGuard, IPsec UDP ports, and ESP to destinations other than the firewall.        |
+| Field                                  | Default | Description                                                                                                       |
+|----------------------------------------|---------|-------------------------------------------------------------------------------------------------------------------|
+| Apply to                               | Empty   | Client-facing arrival interfaces shared by every Bypass protection.                                               |
+| Redirect                               | Off     | Sends ordinary UDP and TCP port 53 traffic on selected interfaces to the firewall.                                |
+| Exempt Sources                         | Empty   | One IPv4 or IPv6 address, CIDR network, or existing host/network alias per line that bypasses plain-DNS redirect. |
+| Exempt Destinations                    | Empty   | One destination IP address, CIDR, or alias per line that bypasses plain-DNS redirect.                             |
+| TLS and QUIC                           | Off     | Blocks TCP and UDP port 853 to destinations other than the firewall.                                              |
+| Providers                              | Off     | Blocks names and addresses from enabled **Encrypted DNS** Bypass Lists.                                           |
+| Firefox                                | Off     | Returns `NXDOMAIN` for Firefox's automatic DNS-over-HTTPS canary name and its subdomains.                         |
+| Private Relay                          | Off     | Returns `NXDOMAIN` for Apple's two Private Relay availability names.                                              |
+| Discovery                              | Off     | Leaves DDR untouched, advertises the firewall's DNS over TLS, or answers `NOERROR` with no records.               |
+| Tor                                    | Off     | Blocks names and addresses from enabled **Tor** Bypass Lists.                                                     |
+| VPN (Block listed VPN providers)       | Off     | Blocks names and addresses from enabled **VPN** Bypass Lists.                                                     |
+| VPN (Block standard VPN ports)         | Off     | Blocks OpenVPN, WireGuard, IPsec UDP ports, and ESP to destinations other than the firewall.                      |
+| Block Exemptions → Exempt Sources      | Empty   | One IP address, CIDR, or alias per line whose traffic skips every Bypass firewall block.                          |
+| Block Exemptions → Exempt Destinations | Empty   | One destination IP address, CIDR, or alias per line that no Bypass firewall block stops.                          |
 
 Every saved redirect exemption must be valid before any redirect rules are used. IPv4 targets `127.0.0.1` only when the Resolver listens there and otherwise uses the interface address; IPv6 always uses the interface address. **Discovery → Advertise** requires the DNS Resolver's SSL/TLS service and certificate hostname.
+
+Block exemptions add no pass rule, so exempt traffic still meets your own firewall rules. Each list accepts at most 16 aliases. An invalid saved block exemption keeps every Bypass firewall block in place with no exemptions until it's fixed or removed.
 
 ### Bypass Lists \{#bypass-lists}
 
@@ -142,16 +148,16 @@ Bypass List input uses one entry per line and `#` comments. A failed fetch retai
 
 ## IP and Country Blocking \{#ip-and-country-blocking}
 
-| Field               | Default | Description                                                                                |
-|---------------------|---------|--------------------------------------------------------------------------------------------|
-| Enable              | Off     | Enables the independently loaded `sinkhole/ip` firewall anchor.                            |
-| Interfaces          | Empty   | Arrival interfaces where block rules apply.                                                |
-| Directions          | Empty   | Selects inbound source blocking, outbound destination blocking, or both.                   |
-| Countries           | Empty   | One GeoLite2 two-letter country code per line.                                             |
-| MaxMind Account ID  | Empty   | Account used to obtain the GeoLite2 Country archive.                                       |
-| MaxMind License Key | Unset   | Write-only key supplied by the administrator; leaving it blank preserves the stored value. |
-| Clear License Key   | Off     | Deletes the stored MaxMind key when saved.                                                 |
-| IP Allowlist        | Empty   | One IP address or CIDR per line subtracted from final block tables.                        |
+| Field               | Default | Description                                                                                                          |
+|---------------------|---------|----------------------------------------------------------------------------------------------------------------------|
+| Enable              | Off     | Enables the independently loaded `sinkhole/ip` firewall anchor.                                                      |
+| Interfaces          | Empty   | Arrival interfaces where block rules apply.                                                                          |
+| Directions          | Empty   | Selects inbound source blocking, outbound destination blocking, or both.                                             |
+| Countries           | Empty   | One GeoLite2 two-letter country code per line.                                                                       |
+| MaxMind Account ID  | Empty   | Account used to obtain the GeoLite2 Country archive.                                                                 |
+| MaxMind License Key | Unset   | Write-only key supplied by the administrator; leaving it blank preserves the stored value.                           |
+| Clear License Key   | Off     | Deletes the stored MaxMind key when saved.                                                                           |
+| IP Allowlist        | Empty   | One IPv4 or IPv6 address, CIDR network, or existing host/network alias per line, subtracted from final block tables. |
 
 Each IP-list row has a name, URL, IPv4/IPv6/Both family selection, and Enabled switch. Sinkhole also removes firewall-interface, gateway, and DNS addresses from final tables so its own rules don't block protected infrastructure.
 

@@ -24,7 +24,7 @@ Open **Firewall → Sinkhole → Bypass** and select **Apply to** interfaces bef
 
 Network and device matching uses those interfaces' current subnets, just like ordinary Sinkhole scopes. A client outside the selected subnets receives no Bypass DNS answer.
 
-<img src={bypassProtection} alt="Bypass tab showing LAN selected, plain-DNS redirect off, encrypted-DNS and tunnel protections on, Discovery set to Answer with no records, and three demo Bypass Lists" width={1024} height={1470} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass tab showing LAN selected, plain-DNS redirect off, encrypted-DNS and tunnel protections on, Discovery set to Answer with no records, one demo exempt source and exempt destination, and three demo Bypass Lists" width={1024} height={1659} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Redirect Plain DNS \{#redirect-plain-dns}
 
@@ -41,6 +41,15 @@ The redirect keeps its existing listener-aware targets and exemptions:
 - **Exempt Destinations** continue receiving DNS traffic, which supports an internal resolver on another network.
 
 Each exemption accepts one IPv4 address, IPv6 address, CIDR network, or existing pfSense host/network alias per line. An invalid saved exemption pauses all redirect rules until it is fixed or removed. Redirected clients still need access through the Resolver's access-control settings.
+
+The redirect rules load whenever Sinkhole is enabled on the General tab and the DNS Resolver is running. They don't depend on the Resolver's Python Module, so they keep working while pfBlockerNG or another script holds it, such as during a move from pfBlockerNG. While Redirect is on but its rules aren't loaded, a **Warning** row under **Redirect** gives the reason:
+
+- Sinkhole is disabled.
+- The DNS Resolver isn't running.
+- A saved exemption is invalid.
+- Sinkhole is being removed.
+
+**Status** shows the same warning at the top of the page.
 
 ## Protect Encrypted DNS \{#protect-encrypted-dns}
 
@@ -86,13 +95,26 @@ Turning Discovery off or removing Sinkhole removes the zone line. The same block
 
 Tor and VPN list names and addresses use the same DNS and firewall behavior as encrypted-DNS provider lists. These controls reduce common alternate paths, but they don't identify every encrypted or custom tunnel.
 
+## Exempt Devices and Servers from the Blocks \{#exempt-devices-and-servers-from-the-blocks}
+
+**Block Exemptions** holds one **Exempt Sources** list and one **Exempt Destinations** list that every firewall block on the Bypass tab shares: **TLS and QUIC**, **Providers**, **Tor**, **Block listed VPN providers**, and **Block standard VPN ports**. Each line takes one IPv4 address, IPv6 address, CIDR network, or existing pfSense host/network alias, the same values the redirect exemptions accept. Each list holds at most 16 aliases.
+
+- **Exempt Sources** skip the blocks. Use it for a client that must reach outside DNS servers, such as a NAS that uses DNS over TLS to `1.1.1.1`.
+- **Exempt Destinations** stay reachable past the blocks from every client on the selected interfaces, such as one public resolver you trust.
+
+An exemption never opens a path by itself. Sinkhole adds no pass rule: exempt traffic simply doesn't match the Bypass blocks and continues to your own firewall rules, which still decide whether it passes.
+
+Exemptions cover only the firewall blocks. Provider, Tor, and VPN names from Bypass Lists stay blocked in DNS for exempt clients, so a client that finds its server by name, such as `cloudflare-dns.com`, also needs that name in **Allowed Domains**. Plain DNS on port 53 follows **Redirect** and its own exemptions instead.
+
+If a saved block exemption becomes invalid, such as an alias that was renamed or deleted, Sinkhole keeps every block in place with no exemptions, writes one system log entry, and shows the value under **Invalid Saved Values** until it's fixed or removed.
+
 ## Add from Catalog \{#add-from-catalog}
 
 Open **Add from Catalog** on the Bypass tab to search the AdGuard Home list registry and the DNS, IPv4, and IPv6 sections of pfBlockerNG's feed catalog. Results are limited to bypass feeds and have a fixed **Encrypted DNS**, **Tor**, or **VPN** kind.
 
 Each card's **Contents** line says **Domains**, **IPv4 addresses**, or **IPv6 addresses**. When you add a pfBlockerNG IPv4 or IPv6 result, Sinkhole appends ` (IPv4)` or ` (IPv6)` to its saved name; domain results keep the plain catalog name.
 
-The source catalogs are fetched only when the catalog is opened or **Refresh** is selected. Adding a result creates an enabled Bypass List that follows the normal list-update schedule.
+The source catalogs are fetched only when the catalog is opened or **Refresh** is selected. Adding a result creates an enabled Bypass List; it joins scheduled updates only while its matching **Providers**, **Tor**, or **VPN** protection is on.
 
 ## Add Bypass Lists \{#add-bypass-lists}
 
@@ -100,10 +122,10 @@ Select **Add** beneath **Bypass Lists**, then enter a local name, kind, and HTTP
 
 Each source accepts one entry per line. A list can mix domains, IPv4 addresses, IPv6 addresses, and CIDRs; text after `#` is a comment. Invalid and overlong lines are skipped. A download that exceeds the fixed byte or accepted-entry limit is rejected, leaving the last good copy in place.
 
-Bypass Lists update on the configured list schedule with the same bounded download client as other lists. A failed fetch keeps the last good saved copy, and **Status → Bypass Lists** reports entries, last fetch, and the most recent error for each row. Sinkhole doesn't bundle or recommend a Bypass List.
+An enabled Bypass List updates on the configured list schedule, with the same bounded download client as other lists, only while its matching **Providers**, **Tor**, or **VPN** protection is on. A failed fetch keeps the last good saved copy from the same URL, and **Status → Bypass Lists** reports entries, last fetch, and the most recent error for each row. Sinkhole doesn't bundle or recommend a Bypass List.
 
 ## Verify the Active State \{#verify-the-active-state}
 
-After saving, open **Status → Bypass** and confirm each intended protection is `On`, the selected interfaces are correct, and **Discovery Zone** is `Present` when Discovery is on. Confirm **Firewall rules loaded** and **Firewall rules current** are `Yes` for firewall protections. The Bypass Lists table shows the saved entry count and last fetch.
+After saving, open **Status → Bypass** and confirm each intended protection is `On`, the selected interfaces are correct, and **Discovery Zone** is `Present` when Discovery is on. Confirm **Firewall Rules Loaded** and **Firewall Rules Current** are `Yes` for firewall protections. The Bypass Lists table shows the saved entry count and last fetch.
 
 The plain-DNS redirect retains its existing two-observation minute reconciliation after Resolver listener changes. The `sinkhole/bypass` anchor is loaded independently of `sinkhole/ip`, so disabling either feature doesn't disturb the other.

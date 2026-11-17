@@ -24,7 +24,7 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 网络和设备匹配与普通 Sinkhole 作用域一样，使用这些接口的当前子网。所选子网之外的客户端不会收到 Bypass DNS 响应。
 
-<img src={bypassProtection} alt="Bypass 选项卡，其中已选择 LAN、已关闭普通 DNS 重定向、已启用加密 DNS 和隧道保护、Discovery 设为 Answer with no records，并显示三个演示 Bypass Lists" width={1024} height={1410} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass 选项卡，其中已选择 LAN、已关闭普通 DNS 重定向、已启用加密 DNS 和隧道保护、Discovery 设为 Answer with no records，并显示一个演示豁免源和豁免目标以及三个演示 Bypass Lists" width={1024} height={1599} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 重定向普通 DNS \{#redirect-plain-dns}
 
@@ -41,6 +41,15 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 - **Exempt Destinations** 仍可接收 DNS 流量，从而支持其他网络上的内部解析器。
 
 每项豁免每行接受一个 IPv4 地址、IPv6 地址、CIDR 网络或现有 pfSense 主机/网络别名。无效的已保存豁免会暂停所有重定向规则，直到修复或删除该豁免。重定向的客户端仍需获得 Resolver 访问控制设置的允许。
+
+只要 Sinkhole 在 **General** 选项卡中已启用且 DNS Resolver 正在运行，重定向规则就会加载。它们不依赖 Resolver 的 Python 模块，因此在 pfBlockerNG 或其他脚本占用该模块时（例如从 pfBlockerNG 迁移期间）仍会继续工作。当 Redirect 已开启但其规则未加载时，**Redirect** 下方的 **Warning** 行会给出原因：
+
+- Sinkhole 已禁用。
+- DNS Resolver 未运行。
+- 某个已保存的豁免无效。
+- 正在移除 Sinkhole。
+
+**Status** 也会在页面顶部显示同样的警告。
 
 ## 保护加密 DNS \{#protect-encrypted-dns}
 
@@ -86,11 +95,24 @@ local-zone: "_dns.resolver.arpa." transparent
 
 Tor 和 VPN 列表中的名称和地址使用与加密 DNS 提供商列表相同的 DNS 和防火墙行为。这些控制可以减少常见的替代路径，但无法识别所有加密或自定义隧道。
 
+## 让设备和服务器免受拦截 \{#exempt-devices-and-servers-from-the-blocks}
+
+**Block Exemptions** 包含一个 **Exempt Sources** 列表和一个 **Exempt Destinations** 列表，由 Bypass 标签页上的所有防火墙拦截共用：**TLS and QUIC**、**Providers**、**Tor**、**Block listed VPN providers** 和 **Block standard VPN ports**。每行接受一个 IPv4 地址、IPv6 地址、CIDR 网络或现有 pfSense 主机/网络别名，与重定向豁免接受的值相同。每个列表最多包含 16 个别名。
+
+- **Exempt Sources** 会跳过这些拦截。可将其用于必须访问外部 DNS 服务器的客户端，例如通过 DNS over TLS 连接 `1.1.1.1` 的 NAS。
+- **Exempt Destinations** 对所选接口上的每个客户端始终可达，不受这些拦截影响，例如一个您信任的公共解析器。
+
+豁免本身绝不会打开任何路径。Sinkhole 不添加任何 pass 规则：豁免流量只是不匹配 Bypass 拦截，然后继续交给您自己的防火墙规则，由它们决定是否放行。
+
+豁免只覆盖防火墙拦截。对豁免客户端来说，Bypass Lists 中的提供商、Tor 和 VPN 名称在 DNS 中仍会被拦截，因此通过名称查找服务器的客户端（例如 `cloudflare-dns.com`）还需要将该名称加入 **Allowed Domains**。端口 53 上的普通 DNS 则遵循 **Redirect** 及其自身的豁免。
+
+如果已保存的拦截豁免变为无效，例如别名被重命名或删除，Sinkhole 会保留所有拦截且不应用任何豁免，写入一条系统日志，并在 **Invalid Saved Values** 中显示该值，直到它被修正或移除。
+
 ## 从目录添加 \{#add-from-catalog}
 
 在 Bypass 标签页打开 **Add from Catalog**，搜索 AdGuard Home 列表注册表以及 pfBlockerNG 订阅源目录的 DNS、IPv4 和 IPv6 部分。结果仅包含绕过订阅源，类型固定为 **Encrypted DNS**、**Tor** 或 **VPN**。
 
-仅在打开目录或选择 **Refresh** 时获取源目录。添加结果会创建一个已启用的 Bypass List，并遵循正常的列表更新计划。
+仅在打开目录或选择 **Refresh** 时获取源目录。添加结果会创建一个已启用的 Bypass List；仅当其对应的 **Providers**、**Tor** 或 **VPN** 保护开启时，它才会加入计划更新。
 
 每张卡片的 **Contents** 行显示 **Domains**、**IPv4 addresses** 或 **IPv6 addresses**。添加 pfBlockerNG IPv4 或 IPv6 结果时，Sinkhole 会在保存的名称后附加 ` (IPv4)` 或 ` (IPv6)`；域名结果保留未加后缀的目录名称。
 
@@ -100,10 +122,10 @@ Tor 和 VPN 列表中的名称和地址使用与加密 DNS 提供商列表相同
 
 每个来源每行接受一个条目。列表可混合域名、IPv4 地址、IPv6 地址和 CIDR；`#` 后面的文本是注释。无效和过长的行会被跳过。超过固定字节数或已接受条目数限制的下载会被拒绝，并保留最后的有效副本。
 
-Bypass Lists 使用与其他列表相同的受限下载客户端，按照配置的列表计划更新。获取失败时会保留最后的有效保存副本，**Status → Bypass Lists** 会报告每一行的条目数、上次获取时间和最新错误。Sinkhole 不捆绑或推荐任何 Bypass List。
+已启用的 Bypass List 仅在其对应的 **Providers**、**Tor** 或 **VPN** 保护开启时，才会使用与其他列表相同的受限下载客户端，按照配置的列表计划更新。获取失败时会保留来自同一 URL 的最后有效保存副本，**Status → Bypass Lists** 会报告每一行的条目数、上次获取时间和最新错误。Sinkhole 不捆绑或推荐任何 Bypass List。
 
 ## 验证活动状态 \{#verify-the-active-state}
 
-保存后，打开 **Status → Bypass**，确认每项预期保护均为 `On`、所选接口正确，并且 Discovery 开启时 **Discovery Zone** 为 `Present`。确认防火墙保护的 **Firewall rules loaded** 和 **Firewall rules current** 均为 `Yes`。Bypass Lists 表会显示已保存条目数和上次获取时间。
+保存后，打开 **Status → Bypass**，确认每项预期保护均为 `On`、所选接口正确，并且 Discovery 开启时 **Discovery Zone** 为 `Present`。确认防火墙保护的 **Firewall Rules Loaded** 和 **Firewall Rules Current** 均为 `Yes`。Bypass Lists 表会显示已保存条目数和上次获取时间。
 
 普通 DNS 重定向会在 Resolver 监听器更改后保留现有的两次观察分钟协调。`sinkhole/bypass` 锚点独立于 `sinkhole/ip` 加载，因此禁用任一功能都不会干扰另一个功能。

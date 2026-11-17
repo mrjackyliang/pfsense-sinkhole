@@ -64,7 +64,7 @@ pfsense-sinkhole/
     per-scope configuration, cache and data-URI presentation boundary,
     saved-list store, compiler, alert processor, client-map builder and source boundary,
     compiled/deployed digest, client-map, alert and catalog status, owed cache-clear and removal
-    lifecycle state, update/runtime/client/alert locking, platform adapter, GitHub release-update
+    lifecycle state, update/runtime/client/alert locking, the per-run Update Log, platform adapter, GitHub release-update
     manager and persistent check/status state, tested pfSense release registry, package translator,
     English source catalog, the byte-preserving managed Unbound Custom-options transformer,
     keyed validation exceptions, Unbound watcher and query-response module source, and the fixed
@@ -78,7 +78,8 @@ pfsense-sinkhole/
     the single-page blocked-service, operational-status and package-information views.
   - `files/usr/local/sbin/sinkhole` runs scheduled/manual full updates and selective
     background applies under the update lock, including refreshed pending-apply loops, durable
-    cache-clear handoffs, post-run client refreshes and per-run failure reporting. Its
+    cache-clear handoffs, post-run client refreshes and per-run failure reporting, and
+    replaces the Update Log at the start of each locked run. Its
     `--refresh-clients` mode rebuilds only local interface, neighbor, lease and static-mapping
     state under an independent nonblocking lock. Its `--alerts` mode rotates and validates
     block events, enforces repeat windows and calls the selected pfSense notification channels
@@ -162,6 +163,7 @@ separate interface/direction-scoped IP-list and MaxMind country blocking.
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/Translations.php`                  | Package-owned English source catalog and loader for the 17 complete pfSense-locale catalogs                                                                                                                                                | Any person-readable package wording or translation changes                            |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/UnboundCustomOptions.php`          | Pure byte-preserving reconciliation and status detection for the managed Discovery local-zone block                                                                                                                                        | Managed DNS Resolver Custom-options text or repair behavior changes                   |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/UpdateManager.php`                 | GitHub release checks, notice de-duplication, bounded asset download, digest/signature/package verification and self-install status                                                                                                        | Release-check, trust or self-update behavior changes                                  |
+| `packages/sinkhole/port/files/usr/local/pkg/sinkhole/UpdateLog.php`                     | Writes the bounded, secret-free per-run Update Log under the update lock and reads it from an offset for the Status poller                                                                                                                 | Update Log lines, limits, redaction or read behavior changes                          |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/Updater.php`                       | Full update, refreshed apply reruns, failure aggregation and cache-clear handoff                                                                                                                                                           | Download, deploy or cache-clear orchestration changes                                 |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/ValidationException.php`           | Carries a catalog key and arguments from domain validation while retaining English for logs                                                                                                                                                | User-visible domain validation changes                                                |
 | `packages/sinkhole/port/files/usr/local/pkg/sinkhole/sinkhole_unbound.py`               | Scoped sinkhole, Bypass NXDOMAIN/NODATA/SVCB answers, cache suppression, block-event queueing, MODDONE invalidation and watcher module                                                                                                     | DNS matching, Bypass answers, cache storage, events, expiry or callback changes       |
@@ -182,7 +184,7 @@ separate interface/direction-scoped IP-list and MaxMind country blocking.
 | `packages/sinkhole/port/files/usr/local/www/sinkhole-bypass_edit.php`                   | Bypass List add, edit and invalid-row repair form                                                                                                                                                                                          | Bypass List editor behavior changes                                                   |
 | `packages/sinkhole/port/files/usr/local/www/sinkhole-ip.php`                            | IP-list table/actions, catalog search, countries, credentials, interfaces, directions and allowlist                                                                                                                                        | IP list, catalog or page-wide settings behavior changes                               |
 | `packages/sinkhole/port/files/usr/local/www/sinkhole-ip_edit.php`                       | IP-list add, edit and invalid-row repair form                                                                                                                                                                                              | IP-list editor behavior changes                                                       |
-| `packages/sinkhole/port/files/usr/local/www/sinkhole-status.php`                        | Compile/deploy, runtime, catalog, alert, Bypass/redirect, IP anchor/table/GeoLite2 and update status                                                                                                                                       | Status reporting changes                                                              |
+| `packages/sinkhole/port/files/usr/local/www/sinkhole-status.php`                        | Compile/deploy, runtime, catalog, alert, Bypass/redirect, IP anchor/table/GeoLite2 and update status, plus the live Update Log and its read-only JSON poll                                                                                 | Status reporting changes                                                              |
 | `packages/sinkhole/port/files/usr/local/www/sinkhole-about.php`                         | Package identity, version, release-check/self-update section, links, tested releases and support                                                                                                                                           | About-page content or update controls change                                          |
 | `packages/sinkhole/port/files/usr/local/share/pfSense-pkg-Sinkhole/logo.svg`            | Installed About-page logo copied from the docs asset                                                                                                                                                                                       | Project logo changes                                                                  |
 | `packages/sinkhole/port/files/usr/local/share/pfSense-pkg-Sinkhole/release-signing.pub` | Installed Ed25519 release trust list; comments-only until CI appends a key                                                                                                                                                                 | Release trust rotation changes                                                        |
@@ -347,6 +349,18 @@ can replace the installed signing-key path.
 
 - A failed download, parse or alert never interrupts DNS and never removes working lists.
 - Failures go to the system log and to the package's status in the WebGUI.
+- Every locked list update also writes the Status page's Update Log, `/var/run/sinkhole-update.log`
+  (root-only `0600`). The first run of a command replaces the file atomically while it holds the
+  update lock; a pending apply rerun appends to it. Lines cover the trigger, each list's host,
+  counts and changed/unchanged/failed result, GeoLite2, compile, deploy, Resolver reload, Bypass
+  and IP table loads, and a closing finished/failed line with the duration. URLs reduce to their
+  host and the MaxMind license key is redacted. Progress stops at 252 KiB with one truncation line,
+  and the closing line still fits under the 256 KiB cap. Existing system-log lines are unchanged.
+- `sinkhole-status.php?update_log=1&offset=N&run=ID` is a GET-only JSON poll behind the Status
+  privilege. It returns `running`, `run`, `offset`, `size`, complete new lines in `text` (64 KiB
+  at most), `reset` when the run identifier changed or the offset is past the end, and the live
+  Summary cells. Invalid offsets or run identifiers return 400; the page polls every 2 seconds
+  while an update runs or right after Update Now, and stops after one final poll.
 - Settings are validated when saved and again when used.
 
 ## Project Guardrails
@@ -384,7 +398,7 @@ on.
   `config.xml` as text.
 - Install and upgrade hooks are repeatable and keep user settings and saved lists.
 - Removal stops schedules, restores the DNS Resolver and removes the files in
-  `/var/unbound`, plus Sinkhole's lock and status files under `/var/run`. Saved lists and
+  `/var/unbound`, plus Sinkhole's lock, status and Update Log files under `/var/run`. Saved lists and
   settings stay unless Keep Settings is off, as in pfBlockerNG, because pkg can run an
   upgrade as a removal followed by an install.
 - Saved lists survive DNS Resolver restarts and pfSense upgrades.
@@ -396,6 +410,34 @@ on.
 
 - DNS never waits for a list download. The Unbound module loads only local files when
   Unbound starts, and a failed download keeps the previous saved copy.
+  - A saved copy's metadata `url` is always the URL it was downloaded from; a failure records
+    the attempted URL separately (`last_attempt_url`). A copy whose `url` differs from the
+    list's configured URL is never used: block, Bypass and IP updates (manual, scheduled and
+    apply runs) discard it and log `source changed; discarding the copy from the previous
+    URL.`, and the compiler, Bypass tables and IP tables skip it even before an update runs.
+- One generation holds at most 10,000,000 unique names, block-list and Bypass names counted
+  together (`Compiler::MAXIMUM_UNIQUE_NAMES`, `MAXIMUM_UNIQUE_NAMES` in the module and
+  `BypassParser::MAXIMUM_ENTRIES`, which a test keeps equal). Above it the compile fails with
+  `The compile found N unique names; the limit is 10,000,000.` and the previous generation
+  stays active; Status shows **Compiled Names** against the limit.
+- Manifest schema 4 adds `domain_index` and `bypass_index`. Each generation's
+  `domains.index` / `bypass.index` holds fixed records sorted by key: the first 16 bytes of the
+  SHA-256 of the normalized name, then a 2-byte (or 4-byte when more than 65,536 pairs exist)
+  big-endian position in the manifest's `masks` table of distinct exact/subtree column pairs.
+  The compiler builds it from the sorted TSV through 256 leading-byte bucket files, so PHP never
+  holds more than one bucket, rejects duplicate keys and records the file's SHA-256.
+  - The module maps each index read-only instead of loading names. It checks the record size,
+    count, SHA-256 and a 4,096-point sorted sample, then builds a table of at most 65,537 bucket
+    boundaries; any failure leaves the generation unloaded, exactly as invalid data did before.
+    Lookups hash each candidate label suffix and scan its bucket, keeping exact, subtree,
+    allow, scope, Bypass and alert semantics unchanged; a 4,096-name cache per generation
+    absorbs repeated lookups within one query.
+  - Generations live in new directories, so a replaced mapping stays valid. The module retires
+    it on swap, closes it 30 seconds later from the watcher (or at `deinit`) and stashes with
+    `STASH_VERSION` 6. A schema-3 generation from 1.1.0 is refused until package Sync or the
+    next update recompiles it, which `runtimeGenerationMissing()` forces.
+  - `domains.tsv` and `bypass.tsv` stay in each generation for the added-name comparison and
+    boot restore; `restore-runtime.sh` requires both index files.
 - Sinkhole runs as an Unbound Python module, installed as `/var/unbound/sinkhole.py` through
   the DNS Resolver's Python settings (`unbound/python`, `python_order`, `python_script`).
   - It never takes that slot from another package's script, such as pfBlockerNG's
@@ -661,8 +703,15 @@ on.
     `/tmp/rules.debug` holds exactly the text the hook returns now; Status shows the kept
     parse error only while Sinkhole's block is missing, and says when the loaded block is
     out of date. Removal deletes any leftover error file after its final reload.
-  - The rules exist only while Sinkhole is active, meaning the DNS Resolver is enabled, is
-    running and runs Sinkhole's module. Otherwise the hook returns none.
+  - The rules exist while General Enable is on, the package isn't being removed, every
+    exemption is valid and the DNS Resolver process is running. They don't depend on the
+    Python Module, so pfBlockerNG or another script holding it never drops them. Bypass DNS
+    answers alone don't load them. The filter hook and the minute check share this one
+    decision through `redirectRuleText()`.
+  - While Redirect is on but its rules aren't loaded, Status (top-of-page danger box) and
+    the Bypass page (a Warning row under Redirect) show one reason from
+    `redirectInactiveReason()`: Sinkhole disabled, DNS Resolver not running, an invalid
+    saved exemption, or package removal.
   - pfSense's DNS Resolver page reloads no filter when the Resolver stops or changes its
     Network Interfaces. So while the redirect is on, a per-minute check reloads the filter
     when the loaded rules and the wanted rules have disagreed on two checks in a row. A
@@ -735,6 +784,13 @@ on.
     Its tables survive the main-ruleset cleanup. Disabling firewall protections flushes the
     Bypass anchor without touching `sinkhole/ip`, and disabling IP blocking never touches
     `sinkhole/bypass`.
+  - Block exemptions live in `exempt_sources` and `exempt_destinations` under
+    `installedpackages/sinkhole/bypass` (addresses, networks or at most 16 pfSense aliases). They
+    never pass traffic: the blocks move into nested, non-`quick` inline anchors whose negated
+    conditions must all match, so exempt traffic matches no Sinkhole rule and continues to the
+    administrator's rules. Literal exempt destinations are also subtracted from the provider
+    tables. An invalid saved exemption fails closed: every block applies without exemptions,
+    Status shows the value, and the changed anchor load logs it once.
   - Status reports every protection, whether the Discovery local-zone directive is present
     while Discovery is on, the Bypass anchor's loaded/current state, rule and table counts,
     and every Bypass List's entries, last fetch and error. Removal flushes the anchor, removes
@@ -786,7 +842,7 @@ on.
   English key must be added to all 17 catalogs in the same change. Per-key fallback to English
   remains a defensive runtime safeguard. Brand and product names (Sinkhole, pfSense, FreeBSD,
   GitHub Sponsors, PayPal) aren't translated.
-- System log lines stay in English, like pfSense's own.
+- System log and Update Log lines stay in English, like pfSense's own.
 - The docs site ships the same 18 locales, in the IPv6 Prefix Updater's locale order
   (`bs`, `zh-CN`, `zh-Hans-CN`, `zh-Hans-HK`, `zh-Hant-TW`, `nl-NL`, `en-US`, `fr-FR`,
   `de-DE`, `it-IT`, `ko-KR`, `nb-NO`, `pl-PL`, `pt-PT`, `pt-BR`, `ru-RU`, `es-ES`, `es-AR`).
@@ -920,8 +976,8 @@ on.
   and event-write failures that never escape into DNS.
 - **Boot restore** — `test-restore-runtime.sh` uses path, identity, logger and status overrides to verify
   that restoration preserves an existing Unbound root's mode, creates `sinkhole-state`,
-  restores the root-owned 0755/0644 schema-2 client map and schema-3 generation including
-  `bypass.tsv`, installs only readable fixed runtime files, logs exactly one outcome, atomically
+  restores the root-owned 0755/0644 schema-2 client map and schema-4 generation including
+  `bypass.tsv` and both name indexes, installs only readable fixed runtime files, logs exactly one outcome, atomically
   writes the matching timestamped status for success and each failure, ignores status-write
   failures without changing the restore result, retains each specific failure reason and removes
   temporary files after failure. On a
@@ -935,8 +991,13 @@ on.
   NODATA, schema-2 interface data, zero lists, internal queries, watcher reload after recompilation, a scoped block event
   and its exact device/network notification text. Docker temporary data stays under
   `~/Library/Caches/sinkhole-e2e/` for Colima compatibility.
-- **Measured lab and platform facts** — With 300,000 names, Unbound RSS rose from 41 MiB to
-  103 MiB and profiling measured peak policy memory at about 157 bytes per name. Unbound's
+- **Name-index measurements** — `scripts/measure-name-index.sh [names] [queries]` (not part of
+  `npm run check`) compiles synthetic lists with `tests/perf-compile.php` and compares the module
+  with the in-memory dictionary of `SINKHOLE_BASELINE_REF` (default `HEAD`) through
+  `tests/perf_name_index.py`. On an M1 Pro (Docker PHP 8.3, Python 3.15) 10,000,000 names
+  compiled in 100 s at a 17 MiB PHP peak into a 180 MB index; the module loaded it in 1.4 s with
+  0.4 MiB of Python allocations, against 16 s and 988 MB for the dictionary.
+- **Measured lab and platform facts** — Unbound's
   built-in `test.`, `invalid.`, `onion.` and `localhost.` local zones answer before Python
   modules; live-Unbound fixtures therefore use names under `example.com`, `example.net` or
   `example.org`, while unit-only fixtures may still use `.test` or `.invalid`.

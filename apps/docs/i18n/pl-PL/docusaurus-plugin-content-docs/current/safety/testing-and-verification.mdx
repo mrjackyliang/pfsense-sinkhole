@@ -54,7 +54,7 @@ Powtórz w oknie powtórzeń reguły, aby sprawdzić, czy powiadomienie jest tł
 Wybierz jeden odizolowany interfejs laboratoryjny i włączaj po jednym mechanizmie ochrony Bypass. Po każdym teście sprawdź, czy równoważny klient na niewybranym interfejsie pozostaje nienaruszony.
 
 1. Włącz **Redirect**, sprawdź, czy rodzina adresów ma nasłuchiwanie Resolver, i wyślij zwykłe zapytania UDP i TCP na porcie 53 do innego celu. Sprawdź, czy pfSense je odbiera.
-2. Dodaj celowo nieprawidłowy wyjątek tylko w konfiguracji jednorazowej i sprawdź, czy przekierowanie przechodzi w stan **Paused**, zamiast ładować częściowe reguły. Przywróć prawidłowe dane, poczekaj na dwie obserwacje minutowe i sprawdź, czy **pfSense loaded rules** powraca do `Yes`.
+2. Dodaj celowo nieprawidłowy wyjątek tylko w konfiguracji jednorazowej i sprawdź, czy przekierowanie przechodzi w stan **Paused**, zamiast ładować częściowe reguły. Przywróć prawidłowe dane, poczekaj na dwie obserwacje minutowe i sprawdź, czy **pfSense Loaded Rules** powraca do `Yes`.
 3. Włącz **TLS and QUIC**, a następnie sprawdź, czy port 853 TCP i UDP do celu laboratoryjnego jest blokowany, natomiast ruch do zapory nie.
 4. Dodaj wyłączoną Bypass List zawierającą tylko wymyślone domeny, adresy, CIDR-y, komentarze i nieprawidłowe dane. Włącz ją i odpowiadającą jej ochronę, a następnie sprawdź, czy prawidłowe nazwy i adresy są blokowane, nieprawidłowe wiersze pomijane, a późniejsze nieudane pobranie zachowuje zapisaną kopię.
 5. Sprawdź, czy zapytania testowe Firefox i Private Relay otrzymują `NXDOMAIN`. Sprawdź, czy DDR zwraca pustą odpowiedź `NOERROR` w trybie **Answer with no records**.
@@ -77,5 +77,5 @@ Przed usunięciem zdecyduj, czy **Keep Settings** ma zachować konfigurację i z
 
 ## Rejestrowanie środowiska \{#record-the-environment}
 
-W użytecznym rejestrze testu zapisz wersję Sinkhole, edycję i wydanie pfSense, wydanie FreeBSD, wybrane funkcje, stan Status oraz oczyszczone wiersze `Sinkhole:` z dziennika systemowego. Obecnie żadne wydanie pfSense nie jest wymienione jako oficjalnie przetestowane; testy zgodności są wykonywane przed każdym wydaniem Sinkhole.
+W użytecznym rejestrze testu zapisz wersję Sinkhole, edycję i wydanie pfSense, wydanie FreeBSD, wybrane funkcje, stan Status oraz oczyszczone wiersze `Sinkhole:` z dziennika systemowego. Karta About oraz [Przetestowane wydania](/docs/compatibility#tested-releases) wymieniają wydania pfSense, na których każda wersja Sinkhole przeszła od początku do końca instalację, aktualizację, test blokowania i usunięcie.
 

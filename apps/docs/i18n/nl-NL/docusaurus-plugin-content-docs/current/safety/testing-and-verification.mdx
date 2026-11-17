@@ -54,7 +54,7 @@ Herhaal dit binnen het herhaalvenster van de regel om te controleren of de meldi
 Kies één geïsoleerde labinterface en schakel telkens één Bypass-beveiliging in. Controleer na elke test of een gelijkwaardige client op een niet-geselecteerde interface onaangetast blijft.
 
 1. Schakel **Redirect** in, controleer of de adresfamilie een Resolver-luisteraar heeft en verzend gewone UDP- en TCP-poort 53-query's naar een andere bestemming. Controleer of pfSense ze ontvangt.
-2. Voeg alleen in een tijdelijke configuratie een bewust ongeldige uitzondering toe en controleer of omleiding **Paused** wordt in plaats van gedeeltelijke regels te laden. Herstel geldige gegevens, wacht op de twee observaties per minuut en controleer of **pfSense loaded rules** terugkeert naar `Yes`.
+2. Voeg alleen in een tijdelijke configuratie een bewust ongeldige uitzondering toe en controleer of omleiding **Paused** wordt in plaats van gedeeltelijke regels te laden. Herstel geldige gegevens, wacht op de twee observaties per minuut en controleer of **pfSense Loaded Rules** terugkeert naar `Yes`.
 3. Schakel **TLS and QUIC** in en controleer vervolgens of TCP- en UDP-poort 853 naar een labbestemming wordt geblokkeerd, terwijl verkeer naar de firewall niet wordt geblokkeerd.
 4. Voeg een uitgeschakelde Bypass List toe die alleen verzonnen domeinen, adressen, CIDR's, opmerkingen en ongeldige gegevens bevat. Schakel deze en de bijbehorende beveiliging in en controleer vervolgens of geldige namen en adressen worden geblokkeerd, ongeldige regels worden overgeslagen en een latere mislukte ophaalactie de opgeslagen kopie behoudt.
 5. Controleer of testquery's voor Firefox en Private Relay `NXDOMAIN` ontvangen. Controleer of DDR een leeg `NOERROR`-antwoord teruggeeft in de modus **Answer with no records**.
@@ -77,5 +77,5 @@ Bepaal vóór verwijdering of **Keep Settings** de configuratie en opgeslagen li
 
 ## De omgeving vastleggen \{#record-the-environment}
 
-Leg voor een bruikbaar testverslag de Sinkhole-versie, pfSense-editie en -release, FreeBSD-release, geselecteerde functies, Status-status en opgeschoonde `Sinkhole:`-regels uit het systeemlogboek vast. Er staat momenteel geen pfSense-release als officieel getest vermeld; compatibiliteitstests worden vóór elke Sinkhole-release uitgevoerd.
+Leg voor een bruikbaar testverslag de Sinkhole-versie, pfSense-editie en -release, FreeBSD-release, geselecteerde functies, Status-status en opgeschoonde `Sinkhole:`-regels uit het systeemlogboek vast. Het tabblad About en [Geteste releases](/docs/compatibility#tested-releases) vermelden de pfSense-releases waarop elke Sinkhole-versie de installatie, update, een blokkeertest en verwijdering van begin tot eind heeft doorstaan.
 

@@ -64,7 +64,7 @@ O bloqueio por país exige o ID de conta MaxMind e a chave de licença GeoLite2 
 - As configurações personalizadas de DNS encriptado e túneis ainda podem contornar a política baseada em DNS, pelo que o Sinkhole não promete proteção completa.
 - As zonas locais integradas `test.`, `invalid.`, `onion.` e `localhost.` do Unbound respondem antes dos módulos Python e não servem como testes reais de filtragem.
 - Um conflito de endereço de dispositivo é atribuído ao primeiro dispositivo na ordem da tabela, e Status informa o conflito.
-- Com 300.000 nomes nos testes medidos, o RSS do Unbound aumentou de 41 MiB para 103 MiB, e o pico de memória da política foi de cerca de 157 bytes por nome.
+- Uma geração comporta até 10.000.000 de nomes, contando em conjunto o índice de bloqueio de DNS (listas e serviços bloqueados) e o índice de Bypass. Os duplicados são unificados dentro de cada índice, mas um nome presente em ambos conta uma vez em cada um. O módulo do Unbound lê-os de um índice mapeado em memória de cerca de 18 bytes por nome em vez de os manter em memória, pelo que a respetiva memória se mantém em poucos MiB, por maiores que as listas fiquem.
 
 ## Idiomas \{#languages}
 

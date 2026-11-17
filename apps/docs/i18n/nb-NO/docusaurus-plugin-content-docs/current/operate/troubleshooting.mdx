@@ -19,6 +19,7 @@ Spor et problem fra Status-panelet og systemloggen til den bestemte listen, omfa
 ## Her finner du informasjon \{#where-to-look}
 
 - **Firewall → Sinkhole → Status** viser tilstanden for lister, kataloger, klientkart, varsler, Bypass, IP, kompilering, distribusjon og Resolver.
+- **Status → Update Log** viser hvert trinn i den siste listeoppdateringen, inkludert hvilken liste som mislyktes og hvorfor.
 - **Status → System Logs → System → General** viser driftslinjer som begynner med `Sinkhole:`.
 - `/usr/local/sbin/sinkhole --help` skriver ut de støttede vedlikeholdsmodusene.
 
@@ -78,14 +79,30 @@ ISC-leietider kan være GMT eller lokal tid på brannmuren, avhengig av innstill
 
 En mislykket DNS-, Bypass- eller IP-nedlasting, analyse eller validering beholder den forrige lagrede kopien og registrerer feilen. DNS fortsetter fra den distribuerte lokale generasjonen i stedet for å vente på kilden som mislyktes.
 
+En kopi som er lagret fra en tidligere URL for en liste, beholdes aldri. Etter at du endrer URL-en for en liste, forkaster neste oppdatering den kopien og logger `source changed; discarding the copy from the previous URL.`, så listen bidrar ikke med noe, og Status viser feilen til den første nedlastingen fra den nye URL-en lykkes.
+
+[Update Log](/docs/operate/status#update-log) viser listen som mislyktes, verten og årsaken for den siste kjøringen. Det anbefales å velge **Update Now** etter at du har rettet kilden, og følge det nye forsøket der.
+
 Kataloger hentes bare når søket åpnes eller oppdateres, og en mislykket henting beholder den bufrede siste gyldige katalogen. Bekreft HTTPS-tilkobling, kilde-URL og Status-feilen før du tvinger frem en ny oppdatering.
+
+## Kompileringen overskrider navnegrensen \{#compile-exceeds-the-name-limit}
+
+En kompilering som finner mer enn 10 000 000 unike navn, stopper med en feil som `The compile found 10,412,331 unique names; the limit is 10,000,000.` DNS-blokkeringsindeksen (lister og blokkerte tjenester) og Bypass-indeksen telles sammen. Et navn som finnes i flere lister, telles én gang innenfor en indeks, men et navn som finnes i begge indeksene, telles én gang i hver.
+
+Den forrige generasjonen forblir aktiv, og **Compile Needed** forblir `Yes` til en kompilering lykkes. **Summary → Compiled Names** viser det distribuerte antallet opp mot grensen.
+
+Slik får du antallet under grensen:
+
+1. Deaktiver eller fjern den største listen du ikke trenger, eller erstatt den med en mindre variant fra samme utgiver.
+2. Fjern lister som stort sett finnes i en annen aktivert liste.
+3. Velg **Update Now**, og bekreft at **Compile Needed** går tilbake til `No`.
 
 ## Omdirigering av vanlig DNS er satt på pause eller mangler \{#plain-dns-redirect-is-paused-or-missing}
 
 - **Paused** — Rett eller fjern alle ugyldige unntak som vises i panelet Bypass.
 - **No family address** — Legg til familien på grensesnittet, eller godta at ingen regel kan genereres for familien.
 - **Resolver does not listen** — Endre **DNS Resolver → Network Interfaces**, eller fjern dette omdirigeringsvalget.
-- **Rules missing or out of date** — Vent på to observasjoner per minutt, og undersøk deretter **Last parse error** og systemloggene.
+- **Rules missing or out of date** — Vent på to observasjoner per minutt, og undersøk deretter **Last Parse Error** og systemloggene.
 - **Queries are refused** — Legg til klientnettverket i konfigurasjonen for tilgangskontroll i Resolver.
 
 Minuttkontrollen laster ikke filteret på nytt mens pakkelåsen i pfSense holdes, eller når pfSense allerede har avvist den uendrede regelteksten. Når den ugyldige konfigurasjonen endres, kan de to neste observasjonene avstemme den.
@@ -112,9 +129,11 @@ Hendelser eldre enn 10 minutter er utdaterte, og en kjøring stopper sending ett
 
 ## Minnebruken er høy \{#memory-use-is-high}
 
-Målte tester med 300 000 navn økte Unbound RSS fra 41 MiB til 103 MiB, med toppminne for policyen på omtrent 157 byte per navn. Faktisk bruk avhenger av unike normaliserte navn, tilordninger til omfang og Resolver som kjører.
+Unbound-modulen holder ikke kompilerte navn i minnet. Den leser en minnetilordnet indeks på omtrent 18 byte per navn fra den aktive generasjonen, så modulens eget minne holder seg på noen få MiB med alle listestørrelser opp til grensen på 10 000 000 navn.
 
-Det anbefales å sammenligne antallet oppføringer i Status med Unbound-minnet før og etter at du legger til en stor kilde. Når en ubrukt liste deaktiveres, holdes den utenfor aktiv policy ved neste kompilering.
+Indekssider som spørringer leser, telles med i Unbounds residente minne som filbuffer, som FreeBSD tar tilbake ved minnepress. En stor Unbound RSS kommer derfor vanligvis fra Resolvers egne meldings- og RRset-buffere; sammenlign den med bufferstørrelsene under **DNS Resolver → Advanced Settings** før du endrer lister.
+
+Hver generasjon trenger også diskplass til de kompilerte filene, omtrent 55 byte per navn, i `/var/unbound` og, på et system med RAM-disk, i det vedvarende speilet. En distribusjon som ikke får plass, stopper med feilen `Not enough deployment space` og beholder den forrige generasjonen.
 
 ## Rapporter et problem \{#report-a-problem}
 

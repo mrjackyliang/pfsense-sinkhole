@@ -64,7 +64,7 @@ Landblokkering krever administratorens egen MaxMind-konto-ID og GeoLite2-lisensn
 - Egendefinerte konfigurasjoner for kryptert DNS og tunneler kan fortsatt omgå DNS-basert policy, så Sinkhole lover ikke fullstendig beskyttelse.
 - De innebygde lokale sonene `test.`, `invalid.`, `onion.` og `localhost.` i Unbound svarer før Python-moduler og er ikke nyttige for direkte filtreringstester.
 - En konflikt mellom enhetsadresser går til den første enheten i tabellrekkefølgen, og Status rapporterer konflikten.
-- Med 300 000 navn i målte tester økte Unbound RSS fra 41 MiB til 103 MiB, og toppminnet for policyen var omtrent 157 byte per navn.
+- Én generasjon rommer opptil 10 000 000 navn, der DNS-blokkeringsindeksen (lister og blokkerte tjenester) og Bypass-indeksen telles sammen. Duplikater slås sammen innenfor hver indeks, men et navn som finnes i begge, telles én gang i hver. Unbound-modulen leser dem fra en minnetilordnet indeks på omtrent 18 byte per navn i stedet for å holde dem i minnet, så modulens eget minne holder seg på noen få MiB uansett hvor store listene blir.
 
 ## Språk \{#languages}
 

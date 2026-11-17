@@ -96,6 +96,7 @@ const requiredFiles = [
   'port/files/usr/local/pkg/sinkhole/translations/es_ES.php',
   'port/files/usr/local/pkg/sinkhole/translations/es_AR.php',
   'port/files/usr/local/pkg/sinkhole/UnboundCustomOptions.php',
+  'port/files/usr/local/pkg/sinkhole/UpdateLog.php',
   'port/files/usr/local/pkg/sinkhole/UpdateManager.php',
   'port/files/usr/local/pkg/sinkhole/Updater.php',
   'port/files/usr/local/pkg/sinkhole/ValidationException.php',
@@ -401,6 +402,7 @@ for (const catalogFile of [
   'translations/es_ES.php',
   'translations/es_AR.php',
   'UnboundCustomOptions.php',
+  'UpdateLog.php',
   'UpdateManager.php',
 ]) {
   const plistPath = `pkg/sinkhole/${catalogFile}`;

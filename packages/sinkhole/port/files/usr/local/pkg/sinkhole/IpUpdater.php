@@ -21,6 +21,7 @@ require_once(__DIR__ . '/IpRuleConfiguration.php');
 require_once(__DIR__ . '/IpStatusStore.php');
 require_once(__DIR__ . '/PackagePaths.php');
 require_once(__DIR__ . '/PfSenseAdapter.php');
+require_once(__DIR__ . '/UpdateLog.php');
 
 /**
  * IP Updater.
@@ -46,7 +47,24 @@ final class IpUpdater
     /** @var int @since 1.0.0 */
     public const MAXIMUM_DOWNLOAD_BYTES = 67108864;
 
-    /** @since 1.0.0 */
+    /**
+     * IP Updater - Constructor.
+     *
+     * The optional update log receives per-list, GeoLite2 and table progress with
+     * the MaxMind license key redacted.
+     *
+     * @param PfSenseAdapter $adapter        - pfSense adapter.
+     * @param DownloadClient $downloadClient - Download client.
+     * @param IpParser       $parser         - IP list parser.
+     * @param IpListStore    $store          - IP list store.
+     * @param PackagePaths   $paths          - Package paths.
+     * @param GeoLite2       $geoLite2       - GeoLite2 importer.
+     * @param IpStatusStore  $statusStore    - IP status store.
+     * @param UpdateLog|null $updateLog      - Optional per-run progress log.
+     *
+     * @since 1.0.0
+     * @since 1.2.0
+     */
     public function __construct(
         private readonly PfSenseAdapter $adapter,
         private readonly DownloadClient $downloadClient,
@@ -55,6 +73,7 @@ final class IpUpdater
         private readonly PackagePaths $paths,
         private readonly GeoLite2 $geoLite2,
         private readonly IpStatusStore $statusStore,
+        private readonly ?UpdateLog $updateLog = null,
     ) {
     }
 
@@ -73,6 +92,10 @@ final class IpUpdater
 
         try {
             $configuration = $this->adapter->getIpConfiguration();
+
+            if (is_string($configuration['license_key'] ?? null)) {
+                $this->updateLog?->addSecret($configuration['license_key']);
+            }
 
             return $this->runConfigured($configuration, $apply);
         } catch (Throwable $throwable) {
@@ -158,8 +181,33 @@ final class IpUpdater
 
             $attempted++;
             $attemptedAt = gmdate('c');
+            $listLabel = 'IP list "' . (string) ($list['name'] ?? '') . '"';
+
+            try {
+                if ($this->store->discardMismatchedCopy($identifier, $list['url'])) {
+                    $this->updateLog?->line(
+                        $listLabel . ' source changed; discarding the copy from the previous URL.',
+                    );
+                    $this->adapter->log(
+                        'Discarded the saved copy of IP list ID ' . $identifier . ' from its previous URL.',
+                    );
+                }
+            } catch (Throwable $throwable) {
+                $this->adapter->log(
+                    'Unable to discard the previous-URL copy of IP list ID '
+                    . $identifier
+                    . ': '
+                    . $throwable->getMessage(),
+                );
+            }
+
+            $hadSavedCopy = $this->store->hasSavedCopy($identifier);
             $downloadPath = $this->store->createTemporaryFile('.download-');
             $normalizedPath = $this->store->createTemporaryFile('.normalized-');
+
+            $this->updateLog?->line(
+                'Downloading ' . $listLabel . ' from ' . UpdateLog::host($list['url']) . '.',
+            );
 
             try {
                 $download = $this->downloadClient->download(
@@ -202,6 +250,18 @@ final class IpUpdater
                     throw new RuntimeException('Unable to hash the normalized IP list.');
                 }
 
+                $listChanged = true;
+
+                try {
+                    if ($this->store->hasSavedCopy($identifier)) {
+                        $previousMetadata = $this->store->metadata($identifier);
+                        $listChanged = ($previousMetadata['sha256'] ?? null) !== $sha256;
+                    }
+                } catch (Throwable) {
+                    // Unreadable previous metadata only affects the Update Log wording.
+                    $listChanged = true;
+                }
+
                 $this->store->commitSuccessfulDownload($identifier, $normalizedPath, [
                     'url' => $list['url'],
                     'family' => $list['family'],
@@ -213,10 +273,24 @@ final class IpUpdater
                     'last_error' => null,
                 ]);
                 $updated++;
+
+                $this->updateLog?->line(sprintf(
+                    '%s: %s, %d skipped, %s.',
+                    $listLabel,
+                    UpdateLog::count((int) $parsed['accepted'], 'network', 'networks'),
+                    $parsed['skipped'],
+                    ($listChanged) ? 'changed' : 'unchanged',
+                ));
             } catch (Throwable $throwable) {
                 $failed++;
                 $safeError = $this->safeError($throwable->getMessage(), $configuration['license_key']);
                 $errors[] = $safeError;
+
+                $failureOutcome = ($hadSavedCopy)
+                    ? ' failed; keeping the last good copy: '
+                    : ' failed; it has no saved copy yet: ';
+
+                $this->updateLog?->line($listLabel . $failureOutcome . $safeError);
 
                 try {
                     $this->store->recordFailure(
@@ -247,7 +321,7 @@ final class IpUpdater
         $networks = [];
 
         foreach ($configuration['lists'] as $identifier => $list) {
-            if ($list['enabled']) {
+            if ($list['enabled'] && $this->store->hasUsableCopy($identifier, $list['url'])) {
                 $savedNetworks = $this->store->readNetworks($identifier);
                 $savedFamily = null;
                 $savedMetadata = [];
@@ -295,11 +369,23 @@ final class IpUpdater
                     throw new RuntimeException('The merged IP network count limit was exceeded.');
                 }
                 $skipped += $geoResult['skipped'];
+
+                $this->updateLog?->line(sprintf(
+                    'GeoLite2 Country: %d IPv4 and %d IPv6 networks for the selected countries (%d), %d skipped.',
+                    count($geoResult['ipv4']),
+                    count($geoResult['ipv6']),
+                    count($configuration['countries']),
+                    $geoResult['skipped'],
+                ));
             } catch (Throwable $throwable) {
                 $failed++;
                 $safeError = $this->safeError($throwable->getMessage(), $configuration['license_key']);
                 $errors[] = $safeError;
                 $this->adapter->log('GeoLite2 update failed: ' . $safeError);
+                $this->updateLog?->line(
+                    'GeoLite2 Country update failed; using the last good copy if one exists: '
+                    . $safeError,
+                );
 
                 if (FileSystem::isRegularFile($this->paths->geoLite2ArchiveFile)) {
                     try {
@@ -367,6 +453,12 @@ final class IpUpdater
             IpRuleConfiguration::TABLE_IPV6,
             $this->paths->ipTableIpv6File,
         );
+
+        $this->updateLog?->line(sprintf(
+            'Loaded the IP blocking rules with %d IPv4 and %d IPv6 table entries.',
+            count($ipv4),
+            count($ipv6),
+        ));
 
         $now = gmdate('c');
         $previous = $this->statusStore->read();
@@ -444,6 +536,12 @@ final class IpUpdater
             || time() - $fetchedAt >= self::GEOLITE2_REFRESH_SECONDS;
 
         if ($needsUpdate) {
+            $this->updateLog?->line(
+                'Downloading GeoLite2 Country data from '
+                . UpdateLog::host(self::GEOLITE2_ARCHIVE_URL)
+                . '.',
+            );
+
             $directory = dirname($this->paths->geoLite2ArchiveFile);
             FileSystem::ensureDirectory($directory, 0700);
             $archivePath = FileSystem::createTemporaryFile($directory, '.geolite2-', 0600);
@@ -513,6 +611,10 @@ final class IpUpdater
                 }
             }
         }
+
+        $this->updateLog?->line(
+            'GeoLite2 Country data is less than a week old; using the saved copy.',
+        );
 
         return $this->geoLite2->importArchive(
             $this->paths->geoLite2ArchiveFile,

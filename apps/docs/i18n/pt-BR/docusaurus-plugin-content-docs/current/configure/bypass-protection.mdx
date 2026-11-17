@@ -24,7 +24,7 @@ Abra **Firewall → Sinkhole → Bypass** e selecione as interfaces em **Apply t
 
 A correspondência de redes e dispositivos usa as sub-redes atuais dessas interfaces, assim como os escopos comuns do Sinkhole. Um cliente fora das sub-redes selecionadas não recebe nenhuma resposta DNS de Bypass.
 
-<img src={bypassProtection} alt="Guia Bypass com a LAN selecionada, redirecionamento de DNS comum desativado, proteções de DNS criptografado e túneis ativadas, Discovery definido como Answer with no records e três Bypass Lists de demonstração" width={1024} height={1490} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Guia Bypass com a LAN selecionada, redirecionamento de DNS comum desativado, proteções de DNS criptografado e túneis ativadas, Discovery definido como Answer with no records, uma origem e um destino isentos de demonstração e três Bypass Lists de demonstração" width={1024} height={1679} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Redirecione o DNS comum \{#redirect-plain-dns}
 
@@ -41,6 +41,15 @@ O redirecionamento mantém seus destinos dependentes do listener e suas exceçõ
 - **Exempt Destinations** continuam recebendo tráfego DNS, permitindo o uso de um resolver interno em outra rede.
 
 Cada exceção aceita um endereço IPv4, um endereço IPv6, uma rede CIDR ou um alias de host/rede existente no pfSense por linha. Uma exceção salva inválida pausa todas as regras de redirecionamento até ser corrigida ou removida. Os clientes redirecionados ainda precisam ser permitidos pelas configurações de controle de acesso do Resolver.
+
+As regras de redirecionamento são carregadas sempre que o Sinkhole está ativado na aba **General** e o DNS Resolver está em execução. Elas não dependem do módulo Python do Resolver, então continuam funcionando enquanto o pfBlockerNG ou outro script o ocupa, por exemplo durante uma migração do pfBlockerNG. Enquanto Redirect está ativado, mas suas regras não estão carregadas, uma linha **Warning** abaixo de **Redirect** informa o motivo:
+
+- O Sinkhole está desabilitado.
+- O DNS Resolver não está em execução.
+- Uma exceção salva é inválida.
+- O Sinkhole está sendo removido.
+
+**Status** mostra o mesmo aviso no topo da página.
 
 ## Proteja o DNS criptografado \{#protect-encrypted-dns}
 
@@ -86,11 +95,24 @@ Desativar o Discovery ou remover o Sinkhole exclui a linha da zona. O mesmo bloc
 
 Os nomes e endereços das listas de Tor e VPN usam o mesmo comportamento de DNS e firewall das listas de provedores de DNS criptografado. Esses controles reduzem caminhos alternativos comuns, mas não identificam todos os túneis criptografados ou personalizados.
 
+## Isentar dispositivos e servidores dos bloqueios \{#exempt-devices-and-servers-from-the-blocks}
+
+**Block Exemptions** tem uma lista **Exempt Sources** e uma lista **Exempt Destinations** compartilhadas por todos os bloqueios de firewall da aba Bypass: **TLS and QUIC**, **Providers**, **Tor**, **Block listed VPN providers** e **Block standard VPN ports**. Cada linha aceita um endereço IPv4, um endereço IPv6, uma rede CIDR ou um alias de host/rede existente do pfSense, os mesmos valores aceitos pelas exceções de redirecionamento. Cada lista aceita no máximo 16 aliases.
+
+- **Exempt Sources** escapam dos bloqueios. Use essa lista para um cliente que precisa alcançar servidores DNS externos, como um NAS que usa DNS over TLS para `1.1.1.1`.
+- **Exempt Destinations** continuam alcançáveis apesar dos bloqueios a partir de qualquer cliente nas interfaces selecionadas, como um resolver público em que você confia.
+
+Uma exceção nunca abre um caminho sozinha. O Sinkhole não adiciona nenhuma regra pass: o tráfego isento simplesmente não corresponde aos bloqueios do Bypass e segue para as suas próprias regras de firewall, que continuam decidindo se ele passa.
+
+As exceções cobrem apenas os bloqueios de firewall. Os nomes de provedores, Tor e VPN das Bypass Lists continuam bloqueados no DNS para clientes isentos, então um cliente que encontra o servidor pelo nome, como `cloudflare-dns.com`, também precisa desse nome em **Allowed Domains**. O DNS comum na porta 53 segue o **Redirect** e as exceções próprias dele.
+
+Se uma exceção de bloqueio salva ficar inválida, como um alias renomeado ou excluído, o Sinkhole mantém todos os bloqueios sem exceções, grava uma entrada no log do sistema e mostra o valor em **Invalid Saved Values** até que ele seja corrigido ou removido.
+
 ## Adicionar do catálogo \{#add-from-catalog}
 
 Abra **Add from Catalog** na guia Bypass para pesquisar no registro de listas do AdGuard Home e nas seções DNS, IPv4 e IPv6 do catálogo de feeds do pfBlockerNG. Os resultados são limitados a feeds de bypass e têm um tipo fixo: **Encrypted DNS**, **Tor** ou **VPN**.
 
-Os catálogos de origem são buscados somente quando você abre o catálogo ou seleciona **Refresh**. Adicionar um resultado cria uma Bypass List habilitada que segue a programação normal de atualização de listas.
+Os catálogos de origem são buscados somente quando você abre o catálogo ou seleciona **Refresh**. Adicionar um resultado cria uma Bypass List habilitada; ela só participa das atualizações programadas enquanto a proteção correspondente **Providers**, **Tor** ou **VPN** estiver ativa.
 
 A linha **Contents** de cada cartão mostra **Domains**, **IPv4 addresses** ou **IPv6 addresses**. Ao adicionar um resultado IPv4 ou IPv6 do pfBlockerNG, o Sinkhole acrescenta ` (IPv4)` ou ` (IPv6)` ao nome salvo; os resultados de domínios mantêm o nome simples do catálogo.
 
@@ -100,10 +122,10 @@ Selecione **Add** abaixo de **Bypass Lists** e informe um nome local, um tipo e 
 
 Cada fonte aceita uma entrada por linha. Uma lista pode misturar domínios, endereços IPv4, endereços IPv6 e CIDRs; o texto depois de `#` é um comentário. Linhas inválidas ou muito longas são ignoradas. Um download que exceda o limite fixo de bytes ou de entradas aceitas é rejeitado, preservando a última cópia válida.
 
-As Bypass Lists são atualizadas de acordo com a programação configurada de listas, usando o mesmo cliente de download limitado das demais listas. Uma busca com falha mantém a última cópia válida salva, e **Status → Bypass Lists** informa as entradas, a última busca e o erro mais recente de cada linha. O Sinkhole não inclui nem recomenda nenhuma Bypass List.
+Uma Bypass List habilitada é atualizada de acordo com a programação configurada de listas, usando o mesmo cliente de download limitado das demais listas, somente enquanto a proteção correspondente **Providers**, **Tor** ou **VPN** estiver ativa. Uma busca com falha mantém a última cópia válida salva da mesma URL, e **Status → Bypass Lists** informa as entradas, a última busca e o erro mais recente de cada linha. O Sinkhole não inclui nem recomenda nenhuma Bypass List.
 
 ## Verifique o estado ativo \{#verify-the-active-state}
 
-Depois de salvar, abra **Status → Bypass** e confirme se cada proteção pretendida está `On`, se as interfaces selecionadas estão corretas e se **Discovery Zone** está `Present` quando o Discovery está ativo. Confirme se **Firewall rules loaded** e **Firewall rules current** estão `Yes` para as proteções de firewall. A tabela Bypass Lists mostra a contagem de entradas salvas e a última busca.
+Depois de salvar, abra **Status → Bypass** e confirme se cada proteção pretendida está `On`, se as interfaces selecionadas estão corretas e se **Discovery Zone** está `Present` quando o Discovery está ativo. Confirme se **Firewall Rules Loaded** e **Firewall Rules Current** estão `Yes` para as proteções de firewall. A tabela Bypass Lists mostra a contagem de entradas salvas e a última busca.
 
 O redirecionamento de DNS comum mantém sua reconciliação por minuto existente com duas observações após alterações nos listeners do Resolver. A âncora `sinkhole/bypass` é carregada de forma independente de `sinkhole/ip`, portanto desativar um recurso não interfere no outro.

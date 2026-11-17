@@ -54,7 +54,7 @@ Wiederhole den Versuch innerhalb des Wiederholungsfensters der Regel und bestät
 Wähle eine isolierte Testschnittstelle und aktiviere jeweils einen Bypass-Schutz. Bestätige nach jedem Test, dass ein gleichwertiger Client an einer nicht ausgewählten Schnittstelle unberührt bleibt.
 
 1. Aktiviere **Redirect**, bestätige einen Resolver-Listener für seine Adressfamilie und sende gewöhnliche UDP- und TCP-Port-53-Abfragen an ein anderes Ziel. Bestätige, dass pfSense sie empfängt.
-2. Füge nur in einer wegwerfbaren Konfiguration absichtlich eine ungültige Ausnahme hinzu und bestätige, dass die Umleitung **Paused** wird, statt unvollständige Regeln zu laden. Stelle gültige Daten wieder her, warte zwei Minutenbeobachtungen ab und bestätige, dass **pfSense loaded rules** wieder `Yes` zeigt.
+2. Füge nur in einer wegwerfbaren Konfiguration absichtlich eine ungültige Ausnahme hinzu und bestätige, dass die Umleitung **Paused** wird, statt unvollständige Regeln zu laden. Stelle gültige Daten wieder her, warte zwei Minutenbeobachtungen ab und bestätige, dass **pfSense Loaded Rules** wieder `Yes` zeigt.
 3. Aktiviere **TLS and QUIC** und bestätige dann, dass TCP- und UDP-Port 853 zu einem Testziel blockiert werden, während Verkehr zur Firewall nicht blockiert wird.
 4. Füge eine deaktivierte Bypass List hinzu, die nur erfundene Domains, Adressen, CIDRs, Kommentare und ungültige Daten enthält. Aktiviere sie und den passenden Schutz und bestätige dann, dass gültige Namen und Adressen blockiert, ungültige Zeilen übersprungen und bei einem späteren fehlgeschlagenen Abruf die gespeicherte Kopie beibehalten werden.
 5. Bestätige, dass Testabfragen für Firefox und Private Relay `NXDOMAIN` erhalten. Bestätige, dass DDR im Modus **Answer with no records** eine leere `NOERROR`-Antwort zurückgibt.
@@ -77,4 +77,4 @@ Entscheide vor der Entfernung, ob **Keep Settings** Konfiguration und gespeicher
 
 ## Umgebung dokumentieren \{#record-the-environment}
 
-Erfasse für einen nützlichen Testbericht Sinkhole-Version, pfSense-Edition und -Version, FreeBSD-Version, ausgewählte Funktionen, Statuszustand und bereinigte `Sinkhole:`-Systemprotokollzeilen. Derzeit ist keine pfSense-Version als offiziell getestet aufgeführt; Kompatibilitätstests werden vor jedem Sinkhole-Release durchgeführt.
+Erfasse für einen nützlichen Testbericht Sinkhole-Version, pfSense-Edition und -Version, FreeBSD-Version, ausgewählte Funktionen, Statuszustand und bereinigte `Sinkhole:`-Systemprotokollzeilen. Der Tab About und [Getestete Versionen](/docs/compatibility#tested-releases) führen die pfSense-Versionen auf, auf denen jede Sinkhole-Version Installation, Aktualisierung, einen Blockierungstest und Entfernung durchgängig bestanden hat.

@@ -64,7 +64,7 @@ Country blocking requires the administrator's own MaxMind account ID and GeoLite
 - Custom encrypted-DNS and tunnel configurations can still bypass DNS-based policy, so Sinkhole doesn't promise complete protection.
 - Unbound's built-in `test.`, `invalid.`, `onion.`, and `localhost.` local zones answer before Python modules and aren't useful live filtering tests.
 - A device address conflict goes to the first device in table order, and Status reports the conflict.
-- With 300,000 names in measured testing, Unbound RSS rose from 41 MiB to 103 MiB and peak policy memory measured about 157 bytes per name.
+- One generation holds up to 10,000,000 names, counting the DNS-blocking index (lists and Blocked Services) and the Bypass index together. Duplicates collapse within each index, but a name in both counts once in each. The Unbound module reads them from a memory-mapped index of about 18 bytes per name instead of holding them in memory, so its own memory stays at a few MiB however large the lists grow.
 
 ## Languages \{#languages}
 

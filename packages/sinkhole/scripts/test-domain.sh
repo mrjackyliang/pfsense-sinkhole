@@ -31,6 +31,7 @@ run_php_tests() {
 	"${php_command}" ./tests/ip.php
 	"${php_command}" ./tests/bypass.php
 	"${php_command}" ./tests/updates.php
+	"${php_command}" ./tests/update-log.php
 }
 
 if command -v php >/dev/null 2>&1; then
@@ -67,7 +68,8 @@ if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
 			&& php ./tests/redirect.php \
 			&& php ./tests/ip.php \
 			&& php ./tests/bypass.php \
-			&& php ./tests/updates.php
+			&& php ./tests/updates.php \
+			&& php ./tests/update-log.php
 		'
 fi
 

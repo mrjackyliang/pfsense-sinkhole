@@ -64,7 +64,7 @@ Für die Länderblockierung sind die eigene MaxMind-Konto-ID und der GeoLite2-Li
 - Benutzerdefinierte Konfigurationen für verschlüsseltes DNS und Tunnel können DNS-basierte Richtlinien weiterhin umgehen, daher verspricht Sinkhole keinen vollständigen Schutz.
 - Die integrierten lokalen Zonen `test.`, `invalid.`, `onion.` und `localhost.` von Unbound antworten vor Python-Modulen und eignen sich nicht für Live-Filtertests.
 - Bei einem Konflikt um eine Geräteadresse gilt das erste Gerät in der Tabellenreihenfolge; Status meldet den Konflikt.
-- In Messungen mit 300.000 Namen stieg der RSS-Speicher von Unbound von 41 MiB auf 103 MiB, und der maximale Richtlinienspeicher lag bei ungefähr 157 Byte pro Name.
+- Eine Generation umfasst bis zu 10.000.000 Namen, wobei der DNS-Blockierungsindex (Listen und Blocked Services) und der Bypass-Index zusammen gezählt werden. Duplikate werden innerhalb jedes Index zusammengefasst, ein Name in beiden zählt aber in jedem einmal. Das Unbound-Modul liest sie aus einem speicherabgebildeten Index mit etwa 18 Byte pro Name, statt sie im Speicher zu halten, sodass sein eigener Speicher bei wenigen MiB bleibt, wie groß die Listen auch werden.
 
 ## Sprachen \{#languages}
 

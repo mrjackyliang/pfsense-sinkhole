@@ -64,7 +64,7 @@ Il blocco per paese richiede l’ID account MaxMind e la chiave di licenza GeoLi
 - Le configurazioni personalizzate di DNS cifrato e tunnel possono ancora aggirare i criteri basati sul DNS, quindi Sinkhole non promette una protezione completa.
 - Le zone locali integrate `test.`, `invalid.`, `onion.` e `localhost.` di Unbound rispondono prima dei moduli Python e non sono adatte ai test reali del filtraggio.
 - Un conflitto di indirizzo di un dispositivo viene assegnato al primo dispositivo nell’ordine della tabella e Status segnala il conflitto.
-- Nei test misurati con 300.000 nomi, l’RSS di Unbound è passato da 41 MiB a 103 MiB e il picco di memoria dei criteri è stato di circa 157 byte per nome.
+- Una generazione contiene fino a 10.000.000 di nomi, contando insieme l’indice di blocco DNS (liste e servizi bloccati) e l’indice Bypass. I duplicati vengono unificati all’interno di ciascun indice, ma un nome presente in entrambi conta una volta in ciascuno. Il modulo Unbound li legge da un indice mappato in memoria di circa 18 byte per nome invece di tenerli in memoria, quindi la sua memoria resta di pochi MiB per quanto crescano le liste.
 
 ## Lingue \{#languages}
 

@@ -42,7 +42,7 @@ pfSense 会在启动和每次 WAN 地址改变后调用软件包 Sync。Sinkhole
 
 ## Keep Settings \{#keep-settings}
 
-**General → Keep Settings** 默认选中。选中时，删除软件包会保留 Sinkhole 的 pfSense 配置和 `/cf/conf/sinkhole` 数据，以便重新安装后继续使用已保存列表和策略。
+**General → Keep Settings** 默认选中。选中时，删除软件包会保留 Sinkhole 的 pfSense 配置和 `/cf/conf/sinkhole` 数据（包括已保存的 DNS 和 IP 列表、SafeSearch 目标以及持久状态），以便重新安装后继续使用策略。删除仍会删除已保存的 Bypass List 副本和可选的持久 Unbound 镜像；重新安装时会重新下载或重新生成它们。
 
 此默认值也会保护在软件包管理器执行“先删除后安装”的升级过程中保留数据。只有在预期结果是完全删除配置和已保存数据时，才应取消选择。
 
@@ -56,7 +56,7 @@ pkg delete -f pfSense-pkg-Sinkhole
 
 删除会停止计划任务、阻止新的更新工作、恢复 Resolver 之前的 Python 设置、从 DNS Resolver 的 **Custom options** 中删除 Sinkhole 的托管 Discovery 块、删除 `/var/unbound` 运行时内容、清除临时锁和状态、撤销普通 DNS 重定向规则、清空 `sinkhole/bypass` 和 `sinkhole/ip` 锚点，并删除缓存的 Bypass Lists 和表文件。无论 **Keep Settings** 开启还是关闭，都会删除该托管 Discovery 块。它还会删除 `/usr/local` 下安装的软件包文件。
 
-启用 **Keep Settings** 时，会保留配置和持久化已保存列表以供重新安装。关闭时，会删除 Sinkhole 的所有设置和已保存数据，包括 `/cf/conf/sinkhole` 以及 pfSense 软件包配置中的整个 Sinkhole 分支。
+启用 **Keep Settings** 时，会保留配置以及已保存的 DNS 和 IP 列表以供重新安装，而 Bypass List 副本和持久 Unbound 镜像无论如何都会被删除。关闭时，会删除 Sinkhole 的所有设置和已保存数据，包括 `/cf/conf/sinkhole` 以及 pfSense 软件包配置中的整个 Sinkhole 分支。
 
 ## 验证删除 \{#verify-removal}
 

@@ -60,11 +60,13 @@ I risultati vengono mostrati come schede. Usa insieme i controlli di ricerca, fo
 
 Ogni scheda mostra nome della lista, responsabile o categoria, catalogo sorgente, descrizione su due righe, homepage e stato **Add** o **Added**. Le schede non mostrano valutazioni, badge o consigli. Selezionando **Add** viene creata una normale riga di lista il cui URL può essere assegnato come qualsiasi fonte inserita manualmente.
 
+Le nuove liste, comprese quelle aggiunte dal catalogo, partono con **Global** deselezionato, quindi non bloccano nulla finché non selezioni Global o non le selezioni in un ambito.
+
 La riga **Contents** di ogni scheda indica **Domains**. L'aggiunta di un risultato del catalogo ne mantiene invariato il nome.
 
 Le copie dei cataloghi vengono memorizzate nella cache in `/var/db` per un giorno. Un aggiornamento non riuscito mantiene l’ultima copia valida del catalogo e mostra l’errore di recupero in Status.
 
-<img src={catalogSearch} alt="Pannello Add from Catalog nella scheda Lists con controlli per la ricerca nel catalogo e stato di recupero" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Pannello Add from Catalog nella scheda Lists con controlli per la ricerca nel catalogo e stato di recupero" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 I feed assegnati alla protezione bypass per Encrypted DNS, Tor o VPN non vengono visualizzati qui. Sono disponibili solo tramite **Add from Catalog** nella scheda Bypass.
 
@@ -76,7 +78,7 @@ Un dominio consentito globale viene controllato dopo le regole di dispositivo e 
 
 ## Scegliere la frequenza di aggiornamento \{#choose-the-update-frequency}
 
-L’impostazione **General → Update Frequency** controlla gli aggiornamenti pianificati delle liste DNS e fornisce anche la pianificazione quando il blocco IP è abilitato:
+L’impostazione **General → Update Frequency** controlla gli aggiornamenti pianificati delle liste DNS mentre General è abilitato. La stessa pianificazione esegue gli aggiornamenti IP/paese mentre il blocco IP è abilitato, e quelli di una Bypass List abilitata solo mentre la protezione corrispondente **Providers**, **Tor** o **VPN** è attiva:
 
 | Impostazione  | Pianificazione                                                         |
 |---------------|------------------------------------------------------------------------|

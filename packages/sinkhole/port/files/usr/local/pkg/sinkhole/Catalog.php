@@ -955,7 +955,7 @@ final class Catalog
             self::addedListName($matchingEntry),
             $matchingEntry['url'],
             true,
-            true,
+            false,
         );
 
         return $lists;

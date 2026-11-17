@@ -45,6 +45,58 @@ final class BypassListStore
         return FileSystem::isRegularFile($this->paths->bypassListFile($identifier));
     }
 
+    /**
+     * Bypass List Store - Has Usable Copy.
+     *
+     * A copy counts only while its metadata names the configured URL, so DNS answers
+     * and firewall tables never use a copy saved from a previous URL.
+     *
+     * @param string $identifier - Stable list identifier.
+     * @param string $url        - Configured source URL.
+     *
+     * @return bool
+     *
+     * @since 1.2.0
+     */
+    public function hasUsableCopy(string $identifier, string $url): bool
+    {
+        if (!$this->hasSavedCopy($identifier)) {
+            return false;
+        }
+
+        try {
+            $metadata = $this->metadata($identifier);
+        } catch (RuntimeException) {
+            return false;
+        }
+
+        return ($metadata['url'] ?? null) === $url;
+    }
+
+    /**
+     * Bypass List Store - Discard Mismatched Copy.
+     *
+     * Removes a copy and its metadata when they came from another URL, so the list has
+     * no copy until its first successful download from the configured URL.
+     *
+     * @param string $identifier - Stable list identifier.
+     * @param string $url        - Configured source URL.
+     *
+     * @return bool
+     *
+     * @since 1.2.0
+     */
+    public function discardMismatchedCopy(string $identifier, string $url): bool
+    {
+        if (!$this->hasSavedCopy($identifier) || $this->hasUsableCopy($identifier, $url)) {
+            return false;
+        }
+
+        $this->remove($identifier);
+
+        return true;
+    }
+
     /** @since 1.0.0 */
     public function savedCopyPath(string $identifier): string
     {

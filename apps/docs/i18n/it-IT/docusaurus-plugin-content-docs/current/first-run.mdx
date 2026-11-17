@@ -31,12 +31,12 @@ Sinkhole rifiuta di salvare **Enable** mentre pfBlockerNG è installato e abilit
 
 1. Apri **Lists** e aggiungi l’URL di una fonte attendibile, oppure apri **Add from Catalog** per cercare nei due cataloghi su richiesta.
 2. Assegna un nome locale alla fonte e lascia **Enabled** selezionato affinché Sinkhole la scarichi.
-3. Lascia **Global** selezionato solo quando la lista deve essere applicata dopo tutte le regole di dispositivo e rete.
+3. Seleziona **Global** solo quando la lista deve essere applicata dopo tutte le regole di dispositivo e rete.
 4. Aggiungi eventuali **Allowed Domains** globali, un dominio per riga, quando occorre consentire un falso positivo noto.
 
 Sinkhole non consiglia alcuna fonte. [Liste e copie salvate](/docs/configure/lists) descrive i formati accettati e come i risultati del catalogo diventano normali righe di lista.
 
-<img src={listsTab} alt="Scheda Lists con cinque liste di blocco dimostrative, le colonne Global e Used By e due domini consentiti globali" width={1024} height={976} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Scheda Lists con cinque liste di blocco dimostrative, le colonne Global e Used By e due domini consentiti globali" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Aggiungere ambiti facoltativi \{#add-optional-scopes}
 
@@ -52,9 +52,9 @@ Un dispositivo eredita la rete in cui si trova e la rete eredita le liste global
 1. Torna a **General** e seleziona **Enable**.
 2. Scegli **Update Frequency** per le liste DNS abilitate e salva.
 3. Apri **Status** e seleziona **Update Now**.
-4. Attendi che **Update running** torni a `No`.
+4. Segui l’**Update Log** finché non mostra `Update finished`.
 
-L’interruttore General abilita gli aggiornamenti pianificati delle liste DNS e l’integrazione del DNS Resolver. Le Bypass Lists abilitate e i criteri IP/per paese usano in modo indipendente la stessa pianificazione degli aggiornamenti; ogni protezione Bypass e IP rimane disattivata finché un amministratore non la abilita.
+L’interruttore General abilita gli aggiornamenti pianificati delle liste DNS e l’integrazione del DNS Resolver. I criteri IP/per paese usano in modo indipendente la stessa pianificazione degli aggiornamenti, e una Bypass List abilitata vi partecipa solo mentre la protezione corrispondente **Providers**, **Tor** o **VPN** è attiva; ogni protezione Bypass e IP rimane disattivata finché un amministratore non la abilita.
 
 ## Verificare lo stato attivo \{#verify-the-active-state}
 

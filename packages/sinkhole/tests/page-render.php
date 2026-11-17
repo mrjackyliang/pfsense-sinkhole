@@ -53,6 +53,7 @@ function sinkholePageRenderPaths(string $root): PackagePaths
  *     globals: array<string, mixed>,
  *     runtime: string,
  *     update_state: array<string, mixed>|null,
+ *     update_log: string|null,
  *     expected_background_commands: list<string>,
  *     state: list<array{path: list<int|string>, expected?: mixed, expected_count?: int}>,
  *     expected: list<string>,
@@ -279,7 +280,9 @@ function sinkholePageRenderFixture(string $name): array
             'product_version' => '2.9.0-RELEASE',
         ],
         'runtime' => 'none',
+        'unbound_running' => true,
         'update_state' => null,
+        'update_log' => null,
         'expected_background_commands' => [],
         'state' => [],
         'expected' => [],
@@ -636,6 +639,7 @@ function sinkholePageRenderFixture(string $name): array
                 'class="disabled"',
                 "hideInput('redirect_exempt_sources'",
             ],
+            'unexpected' => ['Plain DNS Redirect is on, but'],
         ]);
     }
 
@@ -886,6 +890,43 @@ function sinkholePageRenderFixture(string $name): array
         ]);
     }
 
+    if ($name === 'bypass-block-exemptions') {
+        $bypassConfiguration = $configuration;
+        $bypassConfiguration['installedpackages']['sinkhole']['bypass']['exempt_sources'] = [
+            'item' => ['192.0.2.10', 'Invented_Missing_Block_Source'],
+        ];
+        $bypassConfiguration['installedpackages']['sinkhole']['bypass']['exempt_destinations'] = [
+            'item' => ['203.0.113.53'],
+        ];
+
+        return array_replace($base, [
+            'page' => 'sinkhole-bypass.php',
+            'configuration' => $bypassConfiguration,
+            'state' => [
+                [
+                    'path' => ['configuration', 'invalid_values'],
+                    'expected_count' => 0,
+                ],
+                [
+                    'path' => ['configuration', 'invalid_exemptions'],
+                    'expected_count' => 1,
+                ],
+                [
+                    'path' => ['configuration', 'invalid_exemptions', 0, 'field_key'],
+                    'expected' => 'block_exemptions',
+                ],
+            ],
+            'expected' => [
+                'Block Exemptions',
+                'name="block_exempt_sources"',
+                'name="block_exempt_destinations"',
+                'Invalid Saved Values',
+                'Invented_Missing_Block_Source',
+                '203.0.113.53',
+            ],
+        ]);
+    }
+
     if ($name === 'bypass-redirect-invalid-settings') {
         $redirectConfiguration = $configuration;
         $redirectConfiguration['installedpackages']['sinkhole']['redirect'] =
@@ -1130,8 +1171,20 @@ function sinkholePageRenderFixture(string $name): array
                     'expected' => false,
                 ],
             ],
-            'expected' => ['Inactive: Sinkhole is disabled.', 'Off', 'No'],
-            'unexpected' => ['Deployment pending:', 'Update Running', 'Removal in Progress'],
+            'expected' => [
+                'Inactive: Sinkhole is disabled.',
+                'Off',
+                'No',
+                '<div class="form-group hidden" id="sinkhole-update-running-row">',
+                'placeholder="No update has run yet."',
+                'data-running="0"',
+                'data-started="0"',
+            ],
+            'unexpected' => [
+                'Deployment pending:',
+                'Removal in Progress',
+                'Plain DNS Redirect is on, but',
+            ],
         ]);
     }
 
@@ -1199,8 +1252,48 @@ function sinkholePageRenderFixture(string $name): array
                 'Firewall Rules Current',
                 'Invented enabled device',
                 'fa-solid fa-arrows-rotate',
+                'Update Log',
+                '<div class="form-group hidden" id="sinkhole-update-running-row">',
+                '<span id="sinkhole-compiled-generation">page-render-generation</span>',
+                '<span id="sinkhole-loaded-generation">page-render-generation</span>',
+                'placeholder="No update has run yet."></textarea>',
+                'data-run=""',
             ],
-            'unexpected' => ['Update Running', 'Removal in Progress'],
+            'unexpected' => ['Removal in Progress', 'Plain DNS Redirect is on, but'],
+        ]);
+    }
+
+    if ($name === 'status-log') {
+        return array_replace($base, [
+            'page' => 'sinkhole-status.php',
+            'runtime' => 'active',
+            'update_log' => '2026-11-16 12:00:00 Update started (manual).' . "\n"
+                . '2026-11-16 12:00:01 Block list "</textarea><script>alert(1)</script>" failed;'
+                . ' keeping the last good copy: Invented transport failure.' . "\n"
+                . '2026-11-16 12:00:02 Update finished in 2.0 s: 1 attempted, 0 successful, 1 failed.'
+                . "\n"
+                . '2026-11-16 12:00:03 A partial line still being written',
+            'state' => [
+                [
+                    'path' => ['updateRunning'],
+                    'expected' => false,
+                ],
+                [
+                    'path' => ['updateLogState', 'reset'],
+                    'expected' => false,
+                ],
+            ],
+            'expected' => [
+                'Update started (manual).',
+                'Block list &quot;&lt;/textarea&gt;&lt;script&gt;alert(1)&lt;/script&gt;&quot; failed;',
+                'Update finished in 2.0 s: 1 attempted, 0 successful, 1 failed.' . "\n" . '</textarea>',
+                'data-running="0"',
+            ],
+            'unexpected' => [
+                '<script>alert(1)',
+                'A partial line still being written',
+                'data-run=""',
+            ],
         ]);
     }
 
@@ -1291,8 +1384,60 @@ function sinkholePageRenderFixture(string $name): array
                 'Discovery Zone',
                 'Missing',
                 'Update Running',
+                '<div class="form-group" id="sinkhole-update-running-row">',
+                'data-running="1"',
                 'Removal in Progress',
             ],
+        ]);
+    }
+
+    if (preg_match(
+        '/^(status|bypass)-redirect-inactive-(disabled|resolver_stopped|invalid_exemption|removing)$/',
+        $name,
+        $matches,
+    ) === 1) {
+        $inactivePage = $matches[1];
+        $inactiveReason = 'redirect_inactive_' . $matches[2];
+        $inactiveConfiguration = $configuration;
+        $inactiveConfiguration['unbound']['python_script'] = 'pfb_unbound';
+        $inactiveMessages = [
+            'redirect_inactive_disabled' => 'Plain DNS Redirect is on, but its rules are not loaded because Sinkhole is disabled.',
+            'redirect_inactive_resolver_stopped' => 'Plain DNS Redirect is on, but its rules are not loaded because the DNS Resolver is not running.',
+            'redirect_inactive_invalid_exemption' => 'Plain DNS Redirect is on, but its rules are not loaded because a saved exemption is invalid.',
+            'redirect_inactive_removing' => 'Plain DNS Redirect is on, but its rules are not loaded because Sinkhole is being removed.',
+        ];
+
+        if ($inactiveReason === 'redirect_inactive_disabled') {
+            $inactiveConfiguration['installedpackages']['sinkhole']['config'][0]['enabled'] = '';
+        }
+
+        if ($inactiveReason === 'redirect_inactive_invalid_exemption') {
+            $inactiveConfiguration['installedpackages']['sinkhole']['redirect']['exempt_sources'] = [
+                'item' => ['Invented_Missing_Source'],
+            ];
+        }
+
+        $expected = [$inactiveMessages[$inactiveReason]];
+
+        if ($inactivePage === 'bypass') {
+            $expected[] = '<span class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> '
+                . $inactiveMessages[$inactiveReason];
+        }
+
+        return array_replace($base, [
+            'page' => 'sinkhole-' . $inactivePage . '.php',
+            'configuration' => $inactiveConfiguration,
+            'runtime' => ($inactiveReason === 'redirect_inactive_removing') ? 'removing' : 'none',
+            'unbound_running' => $inactiveReason !== 'redirect_inactive_resolver_stopped',
+            'state' => [[
+                'path' => ['redirectInactiveReason'],
+                'expected' => $inactiveReason,
+            ]],
+            'expected' => $expected,
+            'unexpected' => array_values(array_diff_key(
+                $inactiveMessages,
+                [$inactiveReason => true],
+            )),
         ]);
     }
 
@@ -1585,6 +1730,8 @@ function sinkholePageRenderPrepareActiveRuntime(
         'allow_file' => 'allow.txt',
         'domain_count' => 0,
         'bypass_domain_count' => 0,
+        'domain_index' => ['file' => 'domains.index'],
+        'bypass_index' => ['file' => 'bypass.index'],
         'lists' => [],
         'scopes' => [
             'global' => ['lists' => [], 'allow' => 'allow.txt'],
@@ -1627,6 +1774,8 @@ function sinkholePageRenderPrepareActiveRuntime(
     sinkholePageRenderWriteFile($temporaryDirectory . '/generation', $generation . PHP_EOL);
     sinkholePageRenderWriteFile($temporaryDirectory . '/domains.tsv', '');
     sinkholePageRenderWriteFile($temporaryDirectory . '/bypass.tsv', '');
+    sinkholePageRenderWriteFile($temporaryDirectory . '/domains.index', '');
+    sinkholePageRenderWriteFile($temporaryDirectory . '/bypass.index', '');
     sinkholePageRenderWriteFile($temporaryDirectory . '/allow.txt', '');
     sinkholePageRenderWriteFile(
         $temporaryDirectory . '/manifest.json',
@@ -1679,6 +1828,12 @@ function sinkholePageRenderPrepareRuntime(
             $rulesPath,
             "# Sinkhole DNS redirect\n",
         );
+
+        return;
+    }
+
+    if ($runtime === 'removing') {
+        $stateStore->markRemoving();
 
         return;
     }
@@ -2225,6 +2380,7 @@ function sinkholePageRenderWorker(string $fixtureName): void
     global $sinkholeStubInterfaceAddresses;
     global $sinkholeStubInterfaces;
     global $sinkholeStubRealInterfaces;
+    global $sinkholeStubRunningProcesses;
     global $sinkholeStubUserPrivileges;
 
     $root = sinkholeTestTemporaryDirectory();
@@ -2238,6 +2394,7 @@ function sinkholePageRenderWorker(string $fixtureName): void
         require_once($packageDirectory . '/sinkhole.inc');
         $fixture = sinkholePageRenderFixture($fixtureName);
         sinkholeStubReset($fixture['configuration']);
+        $sinkholeStubRunningProcesses['unbound'] = $fixture['unbound_running'];
         $sinkholeStubUserPrivileges = $fixture['privileges'];
         $sinkholeStubGlobalValues = $fixture['globals'];
         $sinkholeStubInterfaces = ['lan' => 'LAN', 'opt1' => 'OPT1'];
@@ -2267,6 +2424,15 @@ function sinkholePageRenderWorker(string $fixtureName): void
             $stateStore,
             $sinkholePageRulesPath,
         );
+
+        if (is_string($fixture['update_log'])) {
+            if (!is_dir($paths->runtimeRootDirectory)) {
+                mkdir($paths->runtimeRootDirectory, 0700, true);
+            }
+
+            sinkholePageRenderWriteFile($paths->updateLogFile, $fixture['update_log']);
+        }
+
         $_GET = $fixture['get'];
         $_POST = $fixture['post'];
         $_SESSION = ['Username' => 'invented-operator'];
@@ -2423,11 +2589,21 @@ $fixtures = [
     'bypass-edit',
     'bypass-redirect-fields',
     'bypass-redirect-collections',
+    'bypass-block-exemptions',
     'bypass-redirect-invalid-settings',
+    'bypass-redirect-inactive-disabled',
+    'bypass-redirect-inactive-resolver_stopped',
+    'bypass-redirect-inactive-invalid_exemption',
+    'bypass-redirect-inactive-removing',
     'status-off',
     'status-on',
     'status-paused',
     'status-pending',
+    'status-log',
+    'status-redirect-inactive-disabled',
+    'status-redirect-inactive-resolver_stopped',
+    'status-redirect-inactive-invalid_exemption',
+    'status-redirect-inactive-removing',
     'about-ce',
     'about-plus',
     'about-untested',

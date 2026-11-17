@@ -60,11 +60,13 @@ Lists 탭에서 **Add from Catalog**를 선택하여 AdGuard Home 목록 레지�
 
 각 카드에는 목록 이름, 관리자 또는 카테고리, 출처 카탈로그, 두 줄 설명, 홈페이지 및 **Add** 또는 **Added** 상태가 표시됩니다. 카드에는 평가, 배지 또는 추천이 없습니다. **Add**를 선택하면 URL을 직접 입력한 출처와 동일하게 할당할 수 있는 일반 목록 행이 생성됩니다.
 
+카탈로그에서 추가한 목록을 포함한 새 목록은 **Global**이 선택 해제된 상태로 시작하므로, Global을 선택하거나 범위에서 선택하기 전까지는 아무것도 차단하지 않습니다.
+
 각 카드의 **Contents** 줄에는 **Domains**가 표시됩니다. 카탈로그 결과를 추가해도 카탈로그 이름은 변경되지 않습니다.
 
 카탈로그 사본은 `/var/db`에 하루 동안 캐시됩니다. 새로 고침에 실패하면 마지막 정상 카탈로그 사본을 유지하고 Status에 가져오기 오류를 표시합니다.
 
-<img src={catalogSearch} alt="카탈로그 검색 컨트롤과 가져오기 상태를 표시하는 Lists 탭의 Add from Catalog 패널" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="카탈로그 검색 컨트롤과 가져오기 상태를 표시하는 Lists 탭의 Add from Catalog 패널" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 Encrypted DNS, Tor 또는 VPN 우회 보호에 할당된 피드는 여기에 표시되지 않습니다. Bypass 탭의 **Add from Catalog**에서만 사용할 수 있습니다.
 
@@ -76,7 +78,7 @@ Encrypted DNS, Tor 또는 VPN 우회 보호에 할당된 피드는 여기에 표
 
 ## 업데이트 빈도 선택 \{#choose-the-update-frequency}
 
-**General → Update Frequency** 설정은 예약된 DNS 목록 업데이트를 제어하고 IP 차단이 활성화된 경우에도 업데이트 일정을 제공합니다.
+**General → Update Frequency** 설정은 General이 활성화된 동안 예약된 DNS 목록 업데이트를 제어합니다. 같은 일정으로 IP 차단이 활성화된 동안 IP/국가 업데이트를 실행하며, 활성화된 Bypass List는 해당하는 **Providers**, **Tor** 또는 **VPN** 보호 기능이 켜져 있는 동안에만 업데이트합니다.
 
 | 설정            | 일정                                    |
 |---------------|---------------------------------------|

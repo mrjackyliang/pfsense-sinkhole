@@ -45,6 +45,7 @@ W automatyzacji używaj zainstalowanej ścieżki, na przykład `/usr/local/sbin/
 | `state.json`                            | Trwały stan kompilacji, wdrożenia, poprzedniego ustawienia Resolver, harmonogramu i usuwania. |
 | `updates.json`                          | Stan kontroli najnowszego wydania i deduplikacji powiadomień.                                 |
 | `update-status.json`                    | Postęp odłączonej automatycznej aktualizacji pakietu.                                         |
+| `safesearch-targets.json`               | Ostatnie prawidłowe adresy bezpiecznych hostów dla SafeSearch.                                |
 | `unbound/sinkhole/`                     | Opcjonalne trwałe lustro bieżącej skompilowanej generacji do przywracania dysku RAM.          |
 | `unbound/sinkhole.d/`                   | Opcjonalne trwałe lustro magazynu skompilowanych generacji.                                   |
 | `unbound/sinkhole-clients/clients.json` | Opcjonalne trwałe lustro mapy klientów.                                                       |
@@ -58,6 +59,7 @@ Lustro `unbound/` jest używane, gdy pfSense przechowuje `/var` na dysku RAM. Sy
 | `sinkhole-alerts.json`               | Stan okna powtórzeń alertów i limitu godzinowego.          |
 | `sinkhole-catalog-adguard-home.json` | Buforowany rejestr list AdGuard Home.                      |
 | `sinkhole-catalog-pfblockerng.json`  | Buforowany katalog źródeł pfBlockerNG.                     |
+| `sinkhole-services-registry.json`    | Buforowany rejestr usług AdGuard Home.                     |
 | `sinkhole-block-v4.txt`              | Końcowa scalona i pomniejszona tabela blokowania IPv4.     |
 | `sinkhole-block-v6.txt`              | Końcowa scalona i pomniejszona tabela blokowania IPv6.     |
 | `sinkhole-bypass-v4.txt`             | Końcowa tabela Bypass IPv4 po odjęciu chronionych adresów. |
@@ -79,6 +81,7 @@ Pamięci podręczne katalogów i wygenerowane tabele IP są odtwarzalnymi danymi
 | `sinkhole-redirect-check.json`  | Pierwsza obserwacja rozbieżności używana przez dwuobserwacyjną kontrolę przekierowania. |
 | `sinkhole-status.json`          | Bieżący stan aktualizacji, kompilacji, wdrożenia, klientów i alertów.                   |
 | `sinkhole-status.json.lock`     | Blokada koordynująca plik stanu.                                                        |
+| `sinkhole-update.log`           | Kroki najnowszej aktualizacji list wyświetlane w Update Log na stronie Status.          |
 | `sinkhole-ip-anchor.conf`       | Bieżące wygenerowane reguły kotwicy `sinkhole/ip`.                                      |
 | `sinkhole-ip-anchor.sha256`     | Skrót używany do porównania wygenerowanych i załadowanych zasad IP.                     |
 | `sinkhole-ip-status.json`       | Stan list IP, GeoLite2, tabel i kotwicy.                                                |
@@ -89,17 +92,20 @@ Pliki blokad koordynują zadania; sama ich obecność nie dowodzi, że aktywny p
 
 ## Środowisko uruchomieniowe Resolver w `/var/unbound` \{#resolver-runtime}
 
-| Ścieżka                              | Przeznaczenie                                                                    |
-|--------------------------------------|----------------------------------------------------------------------------------|
-| `sinkhole.py`                        | Sprawdzony moduł Python kopiowany do głównego katalogu uruchomieniowego Unbound. |
-| `sinkhole/`                          | Manifest i dane aktywnej generacji odczytywane przez moduł.                      |
-| `sinkhole.d/`                        | Magazyn skompilowanych generacji należący do root.                               |
-| `sinkhole.d/<generation>/bypass.tsv` | Skompilowane nazwy dostawców, Tor i VPN dla odpowiedzi DNS Bypass.               |
-| `sinkhole-clients/clients.json`      | Bieżąca mapa adresu klienta na zakres.                                           |
-| `sinkhole-state/loaded`              | Identyfikator generacji zgłaszany przez moduł jako załadowany.                   |
-| `sinkhole-state/events`              | Scalane zdarzenia zablokowanych odpowiedzi oczekujące na przetwarzanie alertów.  |
-| `sinkhole-state/events.processing`   | Partia zdarzeń będąca obecnie własnością procesora alertów.                      |
-| `sinkhole-state/events-dropped`      | Liczba zdarzeń odrzuconych po zapełnieniu ograniczonej kolejki.                  |
+| Ścieżka                                 | Przeznaczenie                                                                                                                     |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `sinkhole.py`                           | Sprawdzony moduł Python kopiowany do głównego katalogu uruchomieniowego Unbound.                                                  |
+| `sinkhole/`                             | Manifest i dane aktywnej generacji odczytywane przez moduł.                                                                       |
+| `sinkhole.d/`                           | Magazyn skompilowanych generacji należący do root.                                                                                |
+| `sinkhole.d/<generation>/domains.tsv`   | Skompilowane nazwy ze skonfigurowanych list i zablokowanych usług wraz z przynależnością do list, posortowane według nazwy.       |
+| `sinkhole.d/<generation>/domains.index` | Indeks mapowany w pamięci nazw ze skonfigurowanych list i zablokowanych usług, który przeszukuje moduł, około 18 bajtów na nazwę. |
+| `sinkhole.d/<generation>/bypass.tsv`    | Skompilowane nazwy dostawców, Tor i VPN, posortowane według nazwy.                                                                |
+| `sinkhole.d/<generation>/bypass.index`  | Indeks mapowany w pamięci nazw z Bypass List, który moduł przeszukuje na potrzeby odpowiedzi DNS Bypass.                          |
+| `sinkhole-clients/clients.json`         | Bieżąca mapa adresu klienta na zakres.                                                                                            |
+| `sinkhole-state/loaded`                 | Identyfikator generacji zgłaszany przez moduł jako załadowany.                                                                    |
+| `sinkhole-state/events`                 | Scalane zdarzenia zablokowanych odpowiedzi oczekujące na przetwarzanie alertów.                                                   |
+| `sinkhole-state/events.processing`      | Partia zdarzeń będąca obecnie własnością procesora alertów.                                                                       |
+| `sinkhole-state/events-dropped`         | Liczba zdarzeń odrzuconych po zapełnieniu ograniczonej kolejki.                                                                   |
 
 Te pliki są materiałem środowiska uruchomieniowego, a nie konfiguracją. Sinkhole przywraca lub ponownie je generuje przez Sync pakietu i usuwa po odinstalowaniu pakietu.
 

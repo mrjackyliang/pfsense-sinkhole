@@ -1,5 +1,22 @@
 # pfsense-pkg-sinkhole
 
+## 1.2.0 - 2026-11-17
+
+### UPDATED
+- The Lists box on a network or device scope can be dragged taller to show more lists.
+- Add from Catalog is now a button next to Add under the Lists, IP and Bypass tables, replacing the mostly empty panel at the bottom of each page.
+- Block and Bypass names now load from a memory-mapped index, raising the limit from 2 million to 10 million unique names at about 18 bytes each, and Status shows Compiled Names against the limit.
+- New lists, including ones added from the catalog, start with Global unticked.
+
+### FIXED
+- DNS Redirect loads its rules whenever Sinkhole and the DNS Resolver are running, even while pfBlockerNG or another script holds the Resolver's Python Module, and Status and the Bypass tab warn when Redirect is on but not loaded.
+- Changing a list's URL now discards the copy saved from the old URL, even when the first download from the new URL fails.
+- The notes under the Safe Addresses and Devices tables now show as info boxes below the panel, like the rest of pfSense.
+
+### ADDED
+- An Update Log on the Status page that follows each update live, from downloads through deploy, with no refreshing.
+- Exempt Sources and Exempt Destinations for the Bypass blocks (TLS and QUIC, Providers, Tor, VPN providers, standard VPN ports), taking addresses, networks, or aliases.
+
 ## 1.1.0 - 2026-11-16
 
 ### UPDATED

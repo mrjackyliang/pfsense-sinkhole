@@ -19,6 +19,7 @@ Volg een probleem vanaf het Status-paneel en systeemlogboek naar de specifieke l
 ## Waar u moet zoeken \{#where-to-look}
 
 - **Firewall → Sinkhole → Status** toont de status van lijsten, catalogi, clienttoewijzing, waarschuwingen, Bypass, IP, compilatie, uitrol en de Resolver.
+- **Status → Update Log** toont elke stap van de meest recente lijstupdate, inclusief welke lijst is mislukt en waarom.
 - **Status → System Logs → System → General** toont operationele regels die beginnen met `Sinkhole:`.
 - `/usr/local/sbin/sinkhole --help` drukt de ondersteunde onderhoudsmodi af.
 
@@ -78,14 +79,30 @@ ISC-leasetijden kunnen GMT of de lokale tijd van de firewall gebruiken, afhankel
 
 Een mislukte DNS-, Bypass- of IP-download, -analyse of -validatie behoudt de vorige opgeslagen kopie en legt de fout vast. DNS blijft de uitgerolde lokale generatie gebruiken in plaats van op de mislukte bron te wachten.
 
+Een kopie die van de vorige URL van een lijst is opgeslagen, wordt nooit bewaard. Nadat u de URL van een lijst wijzigt, verwijdert de volgende update die kopie en logt `source changed; discarding the copy from the previous URL.`, zodat de lijst niets bijdraagt en Status de fout toont totdat de eerste download van de nieuwe URL slaagt.
+
+De [Update Log](/docs/operate/status#update-log) noemt voor de meest recente uitvoering de mislukte lijst, de host en de reden. Het wordt aanbevolen na het herstellen van de bron **Update Now** te selecteren en de nieuwe poging daar te volgen.
+
 Catalogi worden alleen opgehaald wanneer de zoekfunctie wordt geopend of vernieuwd, en bij een mislukte ophaalactie blijft de gecachete laatst geldige catalogus behouden. Controleer de HTTPS-connectiviteit, de bron-URL en de Status-fout voordat u nogmaals een vernieuwing afdwingt.
+
+## Compilatie overschrijdt de namenlimiet \{#compile-exceeds-the-name-limit}
+
+Een compilatie die meer dan 10.000.000 unieke namen vindt, stopt met een fout zoals `The compile found 10,412,331 unique names; the limit is 10,000,000.` De DNS-blokkeerindex (lijsten en geblokkeerde services) en de Bypass-index worden samen geteld. Een naam die in meerdere lijsten staat, telt binnen een index één keer, maar een naam die in beide indexen staat, telt in elke index één keer.
+
+De vorige generatie blijft actief en **Compile Needed** blijft `Yes` totdat een compilatie slaagt. **Summary → Compiled Names** toont het uitgerolde aantal ten opzichte van de limiet.
+
+Zo brengt u het aantal onder de limiet:
+
+1. Schakel de grootste lijst die u niet nodig hebt uit of verwijder deze, of vervang deze door een kleinere variant van dezelfde uitgever.
+2. Verwijder lijsten die grotendeels in een andere ingeschakelde lijst zijn opgenomen.
+3. Selecteer **Update Now** en controleer of **Compile Needed** terugkeert naar `No`.
 
 ## Omleiding van gewone DNS is gepauzeerd of ontbreekt \{#plain-dns-redirect-is-paused-or-missing}
 
 - **Paused** — Corrigeer of verwijder elke ongeldige uitzondering die in het paneel Bypass wordt getoond.
 - **No family address** — Voeg de familie aan de interface toe of accepteer dat voor die familie geen regel kan worden gegenereerd.
 - **Resolver does not listen** — Wijzig **DNS Resolver → Network Interfaces** of verwijder die omleidingsselectie.
-- **Rules missing or out of date** — Wacht op twee observaties per minuut en bekijk vervolgens **Last parse error** en de systeemlogboeken.
+- **Rules missing or out of date** — Wacht op twee observaties per minuut en bekijk vervolgens **Last Parse Error** en de systeemlogboeken.
 - **Queries are refused** — Voeg het clientnetwerk toe aan de configuratie voor toegangsbeheer van de Resolver.
 
 De controle per minuut herlaadt het filter niet zolang de pakketvergrendeling van pfSense wordt vastgehouden of wanneer pfSense de ongewijzigde regeltekst al heeft geweigerd. Als u de ongeldige configuratie wijzigt, kan deze bij de volgende twee observaties worden afgestemd.
@@ -112,9 +129,11 @@ Gebeurtenissen ouder dan 10 minuten zijn verouderd en een uitvoering stopt met v
 
 ## Geheugengebruik is hoog \{#memory-use-is-high}
 
-Bij gemeten tests met 300.000 namen steeg het RSS-gebruik van Unbound van 41 MiB naar 103 MiB, met een maximaal beleidsgeheugen van ongeveer 157 bytes per naam. Het werkelijke gebruik hangt af van unieke genormaliseerde namen, scopetoewijzingen en de actieve Resolver.
+De Unbound-module houdt gecompileerde namen niet in het geheugen. Ze leest een geheugengekoppelde index van ongeveer 18 bytes per naam uit de actieve generatie, zodat het eigen geheugen van de module op enkele MiB blijft bij elke lijstgrootte tot de limiet van 10.000.000 namen.
 
-Het wordt aanbevolen de aantallen Status-vermeldingen en het Unbound-geheugen vóór en na het toevoegen van een grote bron te vergelijken. Als u een ongebruikte lijst uitschakelt, blijft deze bij de volgende compilatie buiten het actieve beleid.
+Indexpagina's die query's lezen, tellen als bestandscache mee in het residente geheugen van Unbound, dat FreeBSD bij geheugendruk terugwint. Een groot RSS-gebruik van Unbound komt daarom meestal van de eigen bericht- en RRset-caches van de Resolver; vergelijk het met de cachegroottes onder **DNS Resolver → Advanced Settings** voordat u lijsten wijzigt.
+
+Elke generatie heeft ook schijfruimte nodig voor haar gecompileerde bestanden, ongeveer 55 bytes per naam, in `/var/unbound` en, op een systeem met RAM-schijf, in de persistente spiegel. Een uitrol die niet past, stopt met de fout `Not enough deployment space` en behoudt de vorige generatie.
 
 ## Een probleem melden \{#report-a-problem}
 

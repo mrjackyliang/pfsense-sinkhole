@@ -48,7 +48,7 @@ Bei einer leeren installierten Vertrauensliste ist keine Signatur erforderlich; 
 
 ## Aktualisierungssperre \{#update-locking}
 
-Paketprüfung und Selbstaktualisierung teilen `/var/run/sinkhole-update.lock` mit DNS-Listen- und IP-/Länderaktualisierungen. Wenn eine Listenaktualisierung läuft, kann die Aktion **Update** auf About erst beginnen, wenn dieser Auftrag abgeschlossen ist.
+Paketprüfung und Selbstaktualisierung teilen `/var/run/sinkhole-update.lock` mit DNS-, Bypass- und IP-/Länderaktualisierungen, dem Anwenden von Einstellungen und der Bereinigung bei der Entfernung. Sie warten nicht auf die Sperre: Hält ein anderer Vorgang sie, stoppt die Prüfung oder die Aktion **Update** mit `Another package operation is already running.`
 
 Die Sperre verhindert Änderungen an Paketdateien, während das aktuelle Paket Richtlinien herunterlädt, verarbeitet, kompiliert oder anwendet. Versuche es über About erneut, sobald Status keine laufende Aktualisierung mehr zeigt.
 

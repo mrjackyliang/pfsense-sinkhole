@@ -38,6 +38,8 @@ Geplande tijden gebruiken stabiele willekeurige componenten. Hourly wordt op é�
 | Expired Answer Lifetime | Empty     | Aantal seconden dat een verlopen gecachet antwoord nog mag worden geleverd; `0` betekent geen limiet.                           |
 | Expired Answer Wait     | Empty     | Aantal milliseconden dat op een vers antwoord wordt gewacht voordat een verlopen antwoord wordt geleverd; `0` antwoordt meteen. |
 
+Rebind Exceptions accepteert maximaal 100 domeinen. Expired Answer Lifetime accepteert hele seconden van `0` tot en met `31536000`, en Expired Answer Wait accepteert hele milliseconden van `0` tot en met `60000`.
+
 Een leeg veld schrijft niets en behoudt de standaardwaarde van de Resolver. [Resolver-instellingen](/docs/configure/resolver-settings) legt uit wanneer de waarden gelden.
 
 ## Package Updates \{#package-updates}
@@ -56,7 +58,7 @@ Elke nieuwe versie maakt één lokale pfSense-melding. **About → Check Now** v
 | Name            | Empty     | Lokaal label dat door toewijzingen, waarschuwingen en Status wordt gebruikt.                           |
 | URL             | Empty     | HTTP- of HTTPS-bron zonder ingesloten referenties.                                                     |
 | Enabled         | On        | Neemt de bron op in updates en gecompileerd beleid wanneer deze is toegewezen.                         |
-| Global          | On        | Past de lijst na apparaat- en netwerkbeslissingen op elke client toe.                                  |
+| Global          | Off       | Past de lijst na apparaat- en netwerkbeslissingen op elke client toe.                                  |
 | Allowed Domains | Empty     | Eén globaal toegestaan domein per regel; elke vermelding staat het exacte domein en elk subdomein toe. |
 
 **Add from Catalog** doorzoekt op aanvraag het lijstregister van AdGuard Home en de feedcatalogus van pfBlockerNG. Het toevoegen van een resultaat maakt dezelfde gewone rij als wanneer de URL handmatig wordt ingevoerd.
@@ -73,26 +75,26 @@ SafeSearch-selecties zijn standaard leeg voor elke scope. Elke scope kan Google,
 
 ## Network Scopes \{#network-scopes}
 
-| Veld            | Standaard | Beschrijving                                                                                                                                                |
-|-----------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | Empty     | Geconfigureerde pfSense-interface waarvan de huidige IPv4- en IPv6-subnetten het netwerk identificeren.                                                     |
-| Lists           | Empty     | Aanvullende DNS-lijsten die clients in het netwerk blokkeren.                                                                                               |
-| Allowed Domains | Empty     | Eén netwerkuitzondering per regel; elke uitzondering staat het exacte domein en elk subdomein toe vóór de lijsten van dat netwerk en al het globale beleid. |
-| Enabled         | On        | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                                                                       |
+| Veld            | Standaard | Beschrijving                                                                                                                                                              |
+|-----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface       | LAN       | Geconfigureerde pfSense-interface waarvan de huidige IPv4- en IPv6-subnetten het netwerk identificeren. Zonder LAN wordt de eerste vrije niet-WAN-interface geselecteerd. |
+| Lists           | Empty     | Aanvullende DNS-lijsten die clients in het netwerk blokkeren.                                                                                                             |
+| Allowed Domains | Empty     | Eén netwerkuitzondering per regel; elke uitzondering staat het exacte domein en elk subdomein toe vóór de lijsten van dat netwerk en al het globale beleid.               |
+| Enabled         | On        | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                                                                                     |
 
 Elke interface kan slechts eenmaal voorkomen. Een opgeslagen interface die niet beschikbaar is, blijft zichtbaar voor correctie in plaats van te worden verwijderd.
 
 ## Device Scopes \{#device-scopes}
 
-| Veld                | Standaard  | Beschrijving                                                                                                                                 |
-|---------------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| Name                | Empty      | Lokaal label dat in beleid en Status wordt weergegeven.                                                                                      |
-| Identified By       | IP address | Selecteert IP address, DHCP static mapping of MAC address.                                                                                   |
-| IP or MAC Address   | Empty      | Exacte identificatie wanneer IP address of MAC address is geselecteerd.                                                                      |
-| DHCP Static Mapping | Empty      | Bestaande toewijzing die wordt geselecteerd wanneer die identificatiemethode wordt gebruikt.                                                 |
-| Lists               | Empty      | Aanvullende DNS-lijsten die dit apparaat blokkeren.                                                                                          |
-| Allowed Domains     | Empty      | Eén apparaatuitzondering per regel; elke uitzondering staat het exacte domein en elk subdomein toe vóór elke netwerk- en globale beslissing. |
-| Enabled             | On         | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                                                        |
+| Veld                     | Standaard  | Beschrijving                                                                                                                                 |
+|--------------------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Name                     | Empty      | Lokaal label dat in beleid en Status wordt weergegeven.                                                                                      |
+| Identified By            | IP address | Selecteert IP address, DHCP static mapping of MAC address.                                                                                   |
+| IP Address / MAC Address | Empty      | Exacte identificatie wanneer IP address of MAC address is geselecteerd. Het label volgt de geselecteerde methode.                            |
+| DHCP Static Mapping      | Empty      | Bestaande toewijzing die wordt geselecteerd wanneer die identificatiemethode wordt gebruikt.                                                 |
+| Lists                    | Empty      | Aanvullende DNS-lijsten die dit apparaat blokkeren.                                                                                          |
+| Allowed Domains          | Empty      | Eén apparaatuitzondering per regel; elke uitzondering staat het exacte domein en elk subdomein toe vóór elke netwerk- en globale beslissing. |
+| Enabled                  | On         | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                                                        |
 
 Statische toewijzingen gebruiken hun geconfigureerde adres plus huidige adressen die voor het MAC-adres van de toewijzing zijn waargenomen. Een MAC-rij gebruikt actuele ARP-, NDP- en DHCP-leasegegevens.
 
@@ -112,22 +114,26 @@ Het proces per minuut verzendt maximaal 20 berichten per uitvoering en 60 berich
 
 ## Bypass-beveiliging \{#bypass-protection}
 
-| Veld                | Standaard | Beschrijving                                                                                              |
-|---------------------|-----------|-----------------------------------------------------------------------------------------------------------|
-| Apply to            | Empty     | Clientgerichte aankomstinterfaces die door elke Bypass-beveiliging worden gedeeld.                        |
-| Redirect            | Off       | Stuurt gewoon UDP- en TCP-poort 53-verkeer op geselecteerde interfaces naar de firewall.                  |
-| Exempt Sources      | Empty     | Eén IP-adres, CIDR, alias of vermelding `This Firewall` per regel die gewone DNS-omleiding omzeilt.       |
-| Exempt Destinations | Empty     | Eén IP-bestemmingsadres, CIDR of alias per regel die gewone DNS-omleiding omzeilt.                        |
-| TLS and QUIC        | Off       | Blokkeert TCP- en UDP-poort 853 naar andere bestemmingen dan de firewall.                                 |
-| Providers           | Off       | Blokkeert namen en adressen uit ingeschakelde **Encrypted DNS** Bypass Lists.                             |
-| Firefox             | Off       | Geeft `NXDOMAIN` terug voor Firefox' canarynaam voor automatische DNS-over-HTTPS en de subdomeinen ervan. |
-| Private Relay       | Off       | Geeft `NXDOMAIN` terug voor de twee beschikbaarheidsnamen van Apple Private Relay.                        |
-| Discovery           | Off       | Laat DDR ongemoeid, adverteert DNS over TLS van de firewall of antwoordt `NOERROR` zonder records.        |
-| Tor                 | Off       | Blokkeert namen en adressen uit ingeschakelde **Tor** Bypass Lists.                                       |
-| VPN providers       | Off       | Blokkeert namen en adressen uit ingeschakelde **VPN** Bypass Lists.                                       |
-| Standard VPN ports  | Off       | Blokkeert OpenVPN-, WireGuard- en IPsec-UDP-poorten en ESP naar andere bestemmingen dan de firewall.      |
+| Veld                                   | Standaard | Beschrijving                                                                                                      |
+|----------------------------------------|-----------|-------------------------------------------------------------------------------------------------------------------|
+| Apply to                               | Empty     | Clientgerichte aankomstinterfaces die door elke Bypass-beveiliging worden gedeeld.                                |
+| Redirect                               | Off       | Stuurt gewoon UDP- en TCP-poort 53-verkeer op geselecteerde interfaces naar de firewall.                          |
+| Exempt Sources                         | Empty     | Eén IPv4- of IPv6-adres, CIDR-netwerk of bestaande host-/netwerkalias per regel die gewone DNS-omleiding omzeilt. |
+| Exempt Destinations                    | Empty     | Eén IP-bestemmingsadres, CIDR of alias per regel die gewone DNS-omleiding omzeilt.                                |
+| TLS and QUIC                           | Off       | Blokkeert TCP- en UDP-poort 853 naar andere bestemmingen dan de firewall.                                         |
+| Providers                              | Off       | Blokkeert namen en adressen uit ingeschakelde **Encrypted DNS** Bypass Lists.                                     |
+| Firefox                                | Off       | Geeft `NXDOMAIN` terug voor Firefox' canarynaam voor automatische DNS-over-HTTPS en de subdomeinen ervan.         |
+| Private Relay                          | Off       | Geeft `NXDOMAIN` terug voor de twee beschikbaarheidsnamen van Apple Private Relay.                                |
+| Discovery                              | Off       | Laat DDR ongemoeid, adverteert DNS over TLS van de firewall of antwoordt `NOERROR` zonder records.                |
+| Tor                                    | Off       | Blokkeert namen en adressen uit ingeschakelde **Tor** Bypass Lists.                                               |
+| VPN (Block listed VPN providers)       | Off       | Blokkeert namen en adressen uit ingeschakelde **VPN** Bypass Lists.                                               |
+| VPN (Block standard VPN ports)         | Off       | Blokkeert OpenVPN-, WireGuard- en IPsec-UDP-poorten en ESP naar andere bestemmingen dan de firewall.              |
+| Block Exemptions → Exempt Sources      | Empty     | Eén IP-adres, CIDR of alias per regel waarvan het verkeer elke Bypass-firewallblokkade overslaat.                 |
+| Block Exemptions → Exempt Destinations | Empty     | Eén bestemmings-IP-adres, CIDR of alias per regel dat geen enkele Bypass-firewallblokkade tegenhoudt.             |
 
 Elke opgeslagen omleidingsuitzondering moet geldig zijn voordat omleidingsregels worden gebruikt. IPv4 gebruikt `127.0.0.1` alleen als doel wanneer de Resolver daar luistert en gebruikt anders het interfaceadres; IPv6 gebruikt altijd het interfaceadres. **Discovery → Advertise** vereist de SSL/TLS-service van de DNS Resolver en de hostnaam van het certificaat.
+
+Blokkeringsuitzonderingen voegen geen pass-regel toe, dus uitgezonderd verkeer passeert nog steeds je eigen firewallregels. Elke lijst accepteert maximaal 16 aliassen. Een ongeldige opgeslagen blokkeringsuitzondering laat elke Bypass-firewallblokkade zonder uitzonderingen staan totdat die is gecorrigeerd of verwijderd.
 
 ### Bypass Lists \{#bypass-lists}
 
@@ -144,16 +150,16 @@ Invoer voor een Bypass List gebruikt één vermelding per regel en `#`-opmerking
 
 ## IP and Country Blocking \{#ip-and-country-blocking}
 
-| Veld                | Standaard | Beschrijving                                                                                |
-|---------------------|-----------|---------------------------------------------------------------------------------------------|
-| Enable              | Off       | Schakelt het onafhankelijk geladen firewallanker `sinkhole/ip` in.                          |
-| Interfaces          | Empty     | Aankomstinterfaces waarop blokkeerregels worden toegepast.                                  |
-| Directions          | Empty     | Selecteert blokkering van inkomende bronnen, uitgaande bestemmingen of beide.               |
-| Countries           | Empty     | Eén GeoLite2-landcode van twee letters per regel.                                           |
-| MaxMind Account ID  | Empty     | Account waarmee het GeoLite2 Country-archief wordt opgehaald.                               |
-| MaxMind License Key | Unset     | Alleen-schrijfbare sleutel van de beheerder; leeg laten behoudt de opgeslagen waarde.       |
-| Clear License Key   | Off       | Verwijdert de opgeslagen MaxMind-sleutel wanneer de instellingen worden opgeslagen.         |
-| IP Allowlist        | Empty     | Eén IP-adres of CIDR per regel dat van de uiteindelijke blokkeertabellen wordt afgetrokken. |
+| Veld                | Standaard | Beschrijving                                                                                                                                 |
+|---------------------|-----------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Enable              | Off       | Schakelt het onafhankelijk geladen firewallanker `sinkhole/ip` in.                                                                           |
+| Interfaces          | Empty     | Aankomstinterfaces waarop blokkeerregels worden toegepast.                                                                                   |
+| Directions          | Empty     | Selecteert blokkering van inkomende bronnen, uitgaande bestemmingen of beide.                                                                |
+| Countries           | Empty     | Eén GeoLite2-landcode van twee letters per regel.                                                                                            |
+| MaxMind Account ID  | Empty     | Account waarmee het GeoLite2 Country-archief wordt opgehaald.                                                                                |
+| MaxMind License Key | Unset     | Alleen-schrijfbare sleutel van de beheerder; leeg laten behoudt de opgeslagen waarde.                                                        |
+| Clear License Key   | Off       | Verwijdert de opgeslagen MaxMind-sleutel wanneer de instellingen worden opgeslagen.                                                          |
+| IP Allowlist        | Empty     | Eén IPv4- of IPv6-adres, CIDR-netwerk of bestaande host-/netwerkalias per regel dat van de uiteindelijke blokkeertabellen wordt afgetrokken. |
 
 Elke IP-lijstrij heeft een naam, URL, selectie voor IPv4/IPv6/Both en een schakelaar Enabled. Sinkhole verwijdert ook firewallinterface-, gateway- en DNS-adressen uit de uiteindelijke tabellen, zodat de eigen regels geen beschermde infrastructuur blokkeren.
 

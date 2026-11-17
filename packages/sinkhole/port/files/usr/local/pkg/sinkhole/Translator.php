@@ -84,6 +84,7 @@ final class Translator
             'Plus' => 'edition_plus',
         ],
         'field' => [
+            'block_exemptions' => 'block_exemptions',
             'countries' => 'countries',
             'directions' => 'directions',
             'discovery' => 'discovery',
@@ -173,6 +174,12 @@ final class Translator
             'rejected' => 'redirect_check_rejected',
             'reloaded' => 'redirect_check_reloaded',
         ],
+        'redirect_inactive_reason' => [
+            'redirect_inactive_disabled' => 'redirect_inactive_disabled',
+            'redirect_inactive_invalid_exemption' => 'redirect_inactive_invalid_exemption',
+            'redirect_inactive_removing' => 'redirect_inactive_removing',
+            'redirect_inactive_resolver_stopped' => 'redirect_inactive_resolver_stopped',
+        ],
         'redirect_state' => [
             'off' => 'off',
             'on' => 'on',
@@ -259,6 +266,7 @@ final class Translator
             'bypass_boolean_value_invalid' => 'bypass_boolean_value_invalid',
             'bypass_discovery_tls_required' => 'bypass_discovery_tls_required',
             'bypass_discovery_value_invalid' => 'bypass_discovery_value_invalid',
+            'bypass_exemption_aliases_limit' => 'bypass_exemption_aliases_limit',
             'bypass_interface_required' => 'bypass_interface_required',
             'bypass_list_kind_invalid' => 'bypass_list_kind_invalid',
             'bypass_list_missing' => 'bypass_list_missing',

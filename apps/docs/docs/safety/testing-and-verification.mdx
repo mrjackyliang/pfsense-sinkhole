@@ -54,7 +54,7 @@ Repeat within the rule's repeat window to confirm the notice is suppressed. Remo
 Choose one isolated lab interface and enable one Bypass protection at a time. Confirm an equivalent client on an unselected interface remains untouched after every test.
 
 1. Enable **Redirect**, confirm its address family has a Resolver listener, and send ordinary UDP and TCP port 53 queries to another destination. Confirm pfSense receives them.
-2. Add an intentionally invalid exemption only on a disposable configuration and confirm redirect becomes **Paused** rather than loading partial rules. Restore valid data, wait for two minute observations, and confirm **pfSense loaded rules** returns to `Yes`.
+2. Add an intentionally invalid exemption only on a disposable configuration and confirm redirect becomes **Paused** rather than loading partial rules. Restore valid data, wait for two minute observations, and confirm **pfSense Loaded Rules** returns to `Yes`.
 3. Enable **TLS and QUIC**, then confirm TCP and UDP port 853 to a lab destination is blocked while traffic to the firewall isn't.
 4. Add a disabled Bypass List containing only invented domains, addresses, CIDRs, comments, and junk. Enable it and its matching protection, then confirm valid names and addresses are blocked, invalid lines are skipped, and a later failed fetch preserves the saved copy.
 5. Confirm Firefox and Private Relay test queries receive `NXDOMAIN`. Confirm DDR returns an empty `NOERROR` answer in **Answer with no records** mode.
@@ -77,4 +77,4 @@ Before removal, decide whether **Keep Settings** should preserve configuration a
 
 ## Record the Environment \{#record-the-environment}
 
-For a useful test record, capture the Sinkhole version, pfSense edition and release, FreeBSD release, selected features, Status state, and sanitized `Sinkhole:` system-log lines. No pfSense release is currently listed as officially tested; compatibility testing is performed before each Sinkhole release.
+For a useful test record, capture the Sinkhole version, pfSense edition and release, FreeBSD release, selected features, Status state, and sanitized `Sinkhole:` system-log lines. The About tab and [Tested Releases](/docs/compatibility#tested-releases) list the pfSense releases on which each Sinkhole version passed install, update, a blocking test, and removal end to end.

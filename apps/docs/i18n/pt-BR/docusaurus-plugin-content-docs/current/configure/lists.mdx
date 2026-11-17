@@ -60,11 +60,13 @@ Os resultados aparecem como cartões. Use juntos os controles de pesquisa, fonte
 
 Cada cartão mostra o nome da lista, seu mantenedor ou categoria, o catálogo de origem, uma descrição de duas linhas, a página inicial e o estado **Add** ou **Added**. Os cartões não mostram avaliações, distintivos nem recomendações. Selecionar **Add** cria uma linha de lista comum cuja URL pode ser atribuída como qualquer fonte inserida manualmente.
 
+Novas listas, inclusive as adicionadas do catálogo, começam com **Global** desmarcado, então não bloqueiam nada até você marcar Global ou selecioná-las em um escopo.
+
 A linha **Contents** de cada cartão mostra **Domains**. Ao adicionar um resultado do catálogo, o nome dele no catálogo permanece inalterado.
 
 As cópias dos catálogos ficam em cache em `/var/db` por um dia. Uma atualização com falha mantém a última cópia válida do catálogo e mostra o erro de busca em Status.
 
-<img src={catalogSearch} alt="Painel Add from Catalog da aba Lists com controles de pesquisa no catálogo e estado da busca" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Painel Add from Catalog da aba Lists com controles de pesquisa no catálogo e estado da busca" width={1024} height={920} style={{maxWidth: '100%', height: 'auto'}} />
 
 Os feeds atribuídos à proteção de bypass de Encrypted DNS, Tor ou VPN não aparecem aqui. Eles estão disponíveis somente por **Add from Catalog** na guia Bypass.
 
@@ -76,7 +78,7 @@ Um domínio permitido global é verificado depois das regras de dispositivo e re
 
 ## Escolha a frequência de atualização \{#choose-the-update-frequency}
 
-A configuração **General → Update Frequency** controla as atualizações agendadas das listas DNS e também define a programação de atualização quando o bloqueio por IP está ativado:
+A configuração **General → Update Frequency** controla as atualizações agendadas das listas DNS enquanto General está ativado. A mesma programação executa as atualizações de IP/país enquanto o bloqueio por IP está ativado e uma Bypass List habilitada somente enquanto a proteção correspondente **Providers**, **Tor** ou **VPN** estiver ativa:
 
 | Configuração  | Programação                                                    |
 |---------------|----------------------------------------------------------------|

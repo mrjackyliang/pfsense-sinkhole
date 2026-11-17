@@ -42,7 +42,7 @@ Takvo očuvanje ne predstavlja tvrdnju o kompatibilnosti s netestiranim izdanjem
 
 ## Keep Settings \{#keep-settings}
 
-**General → Keep Settings** je prema zadanim postavkama odabran. Kada je odabran, uklanjanje paketa čuva konfiguraciju Sinkholea u pfSenseu i podatke `/cf/conf/sinkhole`, tako da su sačuvane liste i pravila dostupni nakon ponovnog instaliranja.
+**General → Keep Settings** je prema zadanim postavkama odabran. Kada je odabran, uklanjanje paketa čuva konfiguraciju Sinkholea u pfSenseu i podatke `/cf/conf/sinkhole`, uključujući sačuvane DNS i IP liste, SafeSearch ciljeve i trajno stanje, tako da su pravila dostupna nakon ponovnog instaliranja. Uklanjanje i dalje briše sačuvane kopije Bypass lista i opcionalnu trajnu kopiju Unbounda; ponovno instaliranje ih preuzima ili ponovo generira.
 
 Ova zadana vrijednost također štiti podatke tokom nadogradnje upravitelja paketa koja izvršava uklanjanje praćeno instaliranjem. Poništite je samo kada želite potpuno brisanje konfiguracije i sačuvanih podataka.
 
@@ -56,7 +56,7 @@ pkg delete -f pfSense-pkg-Sinkhole
 
 Uklanjanje zaustavlja zakazane poslove, blokira nova ažuriranja, vraća prethodne Python postavke Resolvera, uklanja Sinkholeov upravljani Discovery blok iz **Custom options** DNS Resolvera, uklanja izvršni sadržaj `/var/unbound`, čisti privremena zaključavanja i stanje, povlači pravila preusmjeravanja običnog DNS-a, prazni sidra `sinkhole/bypass` i `sinkhole/ip` te uklanja Bypass keširane liste i datoteke tabela. Upravljani Discovery blok uklanja bez obzira na to da li je **Keep Settings** uključen ili isključen. Uklanja i datoteke paketa instalirane pod `/usr/local`.
 
-Kada je **Keep Settings** uključen, konfiguracija i trajno sačuvane liste ostaju za ponovno instaliranje. Kada je isključen, uklanjanje briše sve postavke i sačuvane podatke Sinkholea, uključujući `/cf/conf/sinkhole` i cijelu granu Sinkholea u konfiguraciji paketa pfSensea.
+Kada je **Keep Settings** uključen, konfiguracija i sačuvane DNS i IP liste ostaju za ponovno instaliranje, dok se kopije Bypass lista i trajna kopija Unbounda uklanjaju u svakom slučaju. Kada je isključen, uklanjanje briše sve postavke i sačuvane podatke Sinkholea, uključujući `/cf/conf/sinkhole` i cijelu granu Sinkholea u konfiguraciji paketa pfSensea.
 
 ## Provjerite uklanjanje \{#verify-removal}
 
