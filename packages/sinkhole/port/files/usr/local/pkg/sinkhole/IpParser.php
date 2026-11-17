@@ -135,8 +135,17 @@ final class IpParser
         }
 
         $line = trim($line);
-        $fields = preg_split('/\s+/', $line, 2);
-        $candidate = is_array($fields) ? $fields[0] : $line;
+
+        if (str_starts_with($line, '{')) {
+            // Spamhaus DROP feeds publish one JSON object per line with the network in "cidr".
+            $record = json_decode($line, true);
+            $candidate = (is_array($record) && is_string($record['cidr'] ?? null))
+                ? $record['cidr']
+                : '';
+        } else {
+            $fields = preg_split('/\s+/', $line, 2);
+            $candidate = is_array($fields) ? $fields[0] : $line;
+        }
 
         try {
             $network = IpNetwork::normalize($candidate);
@@ -166,6 +175,17 @@ final class IpParser
     {
         $line = trim($line);
 
-        return $line === '' || str_starts_with($line, '#') || str_starts_with($line, ';');
+        if ($line === '' || str_starts_with($line, '#') || str_starts_with($line, ';')) {
+            return true;
+        }
+
+        if (!str_starts_with($line, '{')) {
+            return false;
+        }
+
+        // A JSON feed's metadata record, such as Spamhaus's closing {"type":"metadata",...}, is not an entry.
+        $record = json_decode($line, true);
+
+        return is_array($record) && ($record['type'] ?? null) === 'metadata';
     }
 }

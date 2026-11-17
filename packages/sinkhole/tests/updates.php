@@ -538,6 +538,30 @@ PHP;
             sinkholeTestAssertContains($marker, $about, 'The About update section is missing ' . $marker . '.');
         }
     },
+    'running install settles once pfSense reports its version' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+        $statusPath = $directory . '/update-status.json';
+
+        try {
+            UpdateManager::queueSelfUpdate('1.2.0', $statusPath);
+
+            $runningStatus = UpdateManager::readStatusState($statusPath, '1.1.0');
+
+            sinkholeTestAssertSame('running', $runningStatus['state'] ?? null, 'An install must stay running until pfSense reports the new version.');
+
+            $settledStatus = UpdateManager::readStatusState($statusPath, 'v1.2.0');
+
+            sinkholeTestAssertSame('succeeded', $settledStatus['state'] ?? null, 'A running install must settle once pfSense reports its version.');
+            sinkholeTestAssertSame('1.2.0', $settledStatus['version'] ?? null, 'The settled status must keep the installed version.');
+            sinkholeTestAssertTrue(is_string($settledStatus['finished_at'] ?? null), 'The settled status must record when it finished.');
+
+            $savedStatus = UpdateManager::readStatusState($statusPath, '1.1.0');
+
+            sinkholeTestAssertSame('succeeded', $savedStatus['state'] ?? null, 'The settled status must be saved for later reads.');
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
     'update catalog declares every operator-visible state' => static function () use (
         $sinkholeUpdateCatalog,
     ): void {

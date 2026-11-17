@@ -243,6 +243,32 @@ sinkholeTestRun([
             sinkholeTestRemoveTemporaryDirectory($root);
         }
     },
+    'IP parser reads Spamhaus JSON lines and skips their metadata record' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+
+        try {
+            $input = $root . '/drop_v4.json';
+            $output = $root . '/output.txt';
+            file_put_contents(
+                $input,
+                '{"cidr":"1.10.16.0/20","sblid":"SBL256894","rir":"apnic"}' . "\n"
+                    . '{"cidr":"2001:db8:4000::/34","sblid":"SBL000002","rir":"ripencc"}' . "\n"
+                    . '{"sblid":"SBL000003","rir":"arin"}' . "\n"
+                    . '{"type":"metadata","timestamp":1794920204,"size":106056,"records":2}' . "\n",
+            );
+            $result = (new IpParser())->parseFile($input, $output);
+
+            sinkholeTestAssertSame(2, $result['accepted'], 'Each JSON record must contribute its cidr network.');
+            sinkholeTestAssertSame(1, $result['skipped'], 'A JSON record without a cidr must be skipped, and the metadata record must not count.');
+            sinkholeTestAssertSame(
+                "1.10.16.0/20\n2001:db8:4000::/34\n",
+                file_get_contents($output),
+                'JSON networks must be stored canonically.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
     'IP networks merge contained siblings and subtract allowlists' => static function (): void {
         sinkholeTestAssertSame(
             ['192.0.2.0/24', '2001:db8::/64'],

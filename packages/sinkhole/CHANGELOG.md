@@ -1,5 +1,11 @@
 # pfsense-pkg-sinkhole
 
+## 1.2.1 - 2026-11-17
+
+### FIXED
+- An update installed from the About tab now shows as installed once pfSense reports the new version, instead of spinning on "Installing version" when the install replaced the package before the update could finish.
+- IP lists published as one JSON object per line, such as the Spamhaus DROP feeds that the pfBlockerNG catalog now links to, load their networks from each "cidr" field instead of failing with "The download contains no valid IP networks."
+
 ## 1.2.0 - 2026-11-17
 
 ### UPDATED
