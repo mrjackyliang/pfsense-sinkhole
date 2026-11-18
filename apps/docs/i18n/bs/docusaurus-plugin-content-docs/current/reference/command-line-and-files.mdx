@@ -18,19 +18,22 @@ Koristite fiksnu naredbu `/usr/local/sbin/sinkhole` za dijagnostiku i iste nači
 
 ## Načini naredbe \{#command-modes}
 
-| Naredba                      | Ponašanje                                                                                      |
-|------------------------------|------------------------------------------------------------------------------------------------|
-| `sinkhole --update`          | Pokreće zakazani tok ažuriranja DNS, Bypass i omogućenih IP/državnih lista.                    |
-| `sinkhole --manual`          | Pokreće potpuno ručno ažuriranje koje koristi **Status → Update Now**.                         |
-| `sinkhole --apply`           | Primjenjuje sačuvanu konfiguraciju u pozadini i izvršava samo potrebna preuzimanja.            |
-| `sinkhole --refresh-clients` | Ponovo izgrađuje mrežne podmreže i adrese uređaja u mapi klijenata.                            |
-| `sinkhole --alerts`          | Čita događaje blokiranja i obrađuje odgovarajuća pravila upozorenja.                           |
-| `sinkhole --redirect-check`  | Usklađuje željena pravila preusmjeravanja običnog DNS-a i nezavisno učitana Bypass i IP sidra. |
-| `sinkhole --check-updates`   | Provjerava najnovije GitHub izdanje i usklađuje obavijest o ažuriranju.                        |
-| `sinkhole --self-update`     | Preuzima, provjerava, pregledava i instalira najnovije izdanje u redu.                         |
-| `sinkhole --help`            | Ispisuje podržani red upotrebe.                                                                |
+| Naredba                                | Ponašanje                                                                                        |
+|----------------------------------------|--------------------------------------------------------------------------------------------------|
+| `sinkhole --update`                    | Pokreće zakazani tok ažuriranja DNS, Bypass i omogućenih IP/državnih lista.                      |
+| `sinkhole --manual`                    | Pokreće potpuno ručno ažuriranje koje koristi **Status → Update Now**.                           |
+| `sinkhole --apply`                     | Primjenjuje sačuvanu konfiguraciju u pozadini i izvršava samo potrebna preuzimanja.              |
+| `sinkhole --refresh-clients`           | Ponovo izgrađuje mrežne podmreže i adrese uređaja u mapi klijenata.                              |
+| `sinkhole --alerts`                    | Čita događaje blokiranja i obrađuje odgovarajuća pravila upozorenja.                             |
+| `sinkhole --redirect-check`            | Usklađuje željena pravila preusmjeravanja običnog DNS-a i nezavisno učitana Bypass i IP sidra.   |
+| `sinkhole --check-updates`             | Provjerava najnovije GitHub izdanje i usklađuje zakazanu obavijest o ažuriranju.                 |
+| `sinkhole --check-updates --no-notice` | Provjerava izdanje bez obavijesti i bilježi noviju verziju kao prijavljenu.                      |
+| `sinkhole --self-update`               | Čeka pokrenuto ažuriranje lista, IP-a ili Bypass-a, zatim provjerava i instalira izdanje u redu. |
+| `sinkhole --help`                      | Ispisuje podržani red upotrebe.                                                                  |
 
-U automatizaciji koristite instaliranu putanju, na primjer `/usr/local/sbin/sinkhole --refresh-clients`. Načini se međusobno isključuju, a ažuriranje DNS/Bypass/IP lista ili samoažuriranje koje zatekne zauzeto zajedničko zaključavanje ažuriranja završava bez pokretanja konkurentne operacije.
+U automatizaciji koristite instaliranu putanju, na primjer `/usr/local/sbin/sinkhole --refresh-clients`. Načini se međusobno isključuju, a `--no-notice` vrijedi samo uz `--check-updates`.
+
+Provjere izdanja čekaju do 30 sekundi na zaključavanje izdanja i ne uzimaju zaključavanje zadatka paketa. Samoažuriranje prvo uzima zaključavanje izdanja, a zatim do 30 minuta čeka da pokrenuto ažuriranje DNS, Bypass ili IP lista oslobodi zaključavanje zadatka paketa.
 
 ## Trajne datoteke pod `/cf/conf/sinkhole` \{#persistent-files}
 
@@ -71,22 +74,23 @@ Predmemorije kataloga i generirane IP tabele ponovljivi su radni podaci. Stanje 
 
 ## Privremene datoteke pod `/var/run` \{#transient-files}
 
-| Putanja                         | Namjena                                                                           |
-|---------------------------------|-----------------------------------------------------------------------------------|
-| `sinkhole-update.lock`          | Zajedničko zaključavanje dugih ažuriranja lista, IP-a i paketa.                   |
-| `sinkhole-runtime.lock`         | Kratko zaključavanje kompajliranja, aktiviranja i integracije Resolvera.          |
-| `sinkhole-clients.lock`         | Zaključavanje osvježavanja mape klijenata.                                        |
-| `sinkhole-alerts.lock`          | Zaključavanje obrade upozorenja.                                                  |
-| `sinkhole-redirect-check.lock`  | Zaključavanje minutne provjere preusmjeravanja.                                   |
-| `sinkhole-redirect-check.json`  | Prvo opažanje nepodudaranja koje koristi provjera preusmjeravanja s dva opažanja. |
-| `sinkhole-status.json`          | Trenutno stanje ažuriranja, kompajliranja, postavljanja, klijenata i upozorenja.  |
-| `sinkhole-status.json.lock`     | Zaključavanje za usklađivanje datoteke stanja.                                    |
-| `sinkhole-update.log`           | Koraci posljednjeg ažuriranja lista, prikazani u Update Logu na Statusu.          |
-| `sinkhole-ip-anchor.conf`       | Trenutno generirana pravila za sidro `sinkhole/ip`.                               |
-| `sinkhole-ip-anchor.sha256`     | Sažetak za poređenje generiranih i učitanih IP pravila.                           |
-| `sinkhole-ip-status.json`       | Stanje IP lista, GeoLite2, tabela i sidra.                                        |
-| `sinkhole-bypass-anchor.conf`   | Trenutna generirana pravila za sidro `sinkhole/bypass`.                           |
-| `sinkhole-bypass-anchor.sha256` | Sažetak za poređenje generiranih i učitanih Bypass pravila.                       |
+| Putanja                         | Namjena                                                                              |
+|---------------------------------|--------------------------------------------------------------------------------------|
+| `sinkhole-update.lock`          | Zajedničko zaključavanje dugih zadataka lista, Bypass-a, IP-a i instaliranja paketa. |
+| `sinkhole-release.lock`         | Zaključavanje za usklađivanje provjera izdanja i samoažuriranja.                     |
+| `sinkhole-runtime.lock`         | Kratko zaključavanje kompajliranja, aktiviranja i integracije Resolvera.             |
+| `sinkhole-clients.lock`         | Zaključavanje osvježavanja mape klijenata.                                           |
+| `sinkhole-alerts.lock`          | Zaključavanje obrade upozorenja.                                                     |
+| `sinkhole-redirect-check.lock`  | Zaključavanje minutne provjere preusmjeravanja.                                      |
+| `sinkhole-redirect-check.json`  | Prvo opažanje nepodudaranja koje koristi provjera preusmjeravanja s dva opažanja.    |
+| `sinkhole-status.json`          | Trenutno stanje ažuriranja, kompajliranja, postavljanja, klijenata i upozorenja.     |
+| `sinkhole-status.json.lock`     | Zaključavanje za usklađivanje datoteke stanja.                                       |
+| `sinkhole-update.log`           | Koraci posljednjeg ažuriranja lista, prikazani u Update Logu na Statusu.             |
+| `sinkhole-ip-anchor.conf`       | Trenutno generirana pravila za sidro `sinkhole/ip`.                                  |
+| `sinkhole-ip-anchor.sha256`     | Sažetak za poređenje generiranih i učitanih IP pravila.                              |
+| `sinkhole-ip-status.json`       | Stanje IP lista, GeoLite2, tabela i sidra.                                           |
+| `sinkhole-bypass-anchor.conf`   | Trenutna generirana pravila za sidro `sinkhole/bypass`.                              |
+| `sinkhole-bypass-anchor.sha256` | Sažetak za poređenje generiranih i učitanih Bypass pravila.                          |
 
 Datoteke zaključavanja usklađuju poslove; samo njihovo postojanje ne dokazuje da ih aktivni proces drži. Provjerite Status i izlaz naredbe prije nego zaključavanje proglasite zastarjelim.
 

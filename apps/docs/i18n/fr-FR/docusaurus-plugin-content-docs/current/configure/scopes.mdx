@@ -1,10 +1,11 @@
 ---
 id: scopes
-title: Portées et domaines autorisés
-description: Attribuez listes et domaines autorisés aux portées globale, interface et appareil, puis suivez l’ordre exact du niveau le plus précis pour chaque requête DNS.
+title: Clients et blocage
+description: Définissez les réseaux et appareils dans Clients, choisissez dans Blocking les listes et domaines autorisés du contexte Global, de chaque réseau et de chaque appareil, puis suivez l’ordre exact du niveau le plus précis pour chaque requête DNS.
 keywords:
   - sinkhole for pfsense
-  - portées
+  - clients
+  - blocage
   - blocage vlan
   - politique appareil
   - domaines autorisés
@@ -17,44 +18,65 @@ tags:
 import deviceEditor from './_assets_/scopes-2.png';
 import scopesTab from './_assets_/scopes-1.png';
 
-Attribuez des listes et des domaines autorisés aux niveaux global, réseau et appareil afin que chaque client reçoive la politique prévue pour son emplacement actuel.
+Définissez chaque réseau et chaque appareil une seule fois dans **Clients**, puis choisissez ce que chacun bloque dans **Blocking**. Chaque client reçoit la politique prévue pour son emplacement actuel.
 
-## Pourquoi utiliser des portées ? \{#why-use-scopes}
+## Pourquoi utiliser des réseaux et des appareils ? \{#why-use-networks-and-devices}
 
 1. Donne à chaque interface pfSense ou VLAN sa propre politique tout en conservant des règles globales pour tous.
 2. Donne à un appareil une décision plus précise sans nécessiter un serveur DNS séparé.
 3. Permet aux domaines autorisés de corriger les faux positifs au niveau concerné sans retirer une liste entière.
 4. Sépare les adresses client des listes compilées afin que les changements DHCP, de voisinage ou d’interface ne rechargent pas Unbound.
 
-## Portée globale \{#global-scope}
+## Contextes \{#contexts}
 
-Une liste avec **Global** sélectionné s’applique à tous les clients après les décisions d’appareil et de réseau. Les domaines autorisés globaux sont saisis dans l’onglet **Lists** et permettent au domaine indiqué et à ses sous-domaines de traverser les listes globales.
+Blocking, Services, SafeSearch, Alerts, Bypass et IP partagent une deuxième rangée d’onglets sous les onglets principaux :
 
-Un client qui ne correspond à aucune portée réseau ou appareil activée reçoit uniquement ce niveau.
+| Onglet   | Ce que la page modifie                                                                                                            |
+|----------|-----------------------------------------------------------------------------------------------------------------------------------|
+| All      | Rien. Une table en lecture seule liste chaque contexte qui possède ses propres paramètres ; sélectionnez une ligne pour l’ouvrir. |
+| Global   | Les paramètres de tous les clients.                                                                                               |
+| Networks | Un réseau. Une rangée de puces de réseau permet de choisir lequel.                                                                |
+| Devices  | Un appareil. Une rangée de puces d’appareil permet de choisir lequel, et la zone de recherche filtre les puces par nom.           |
 
-## Portées réseau \{#network-scopes}
+Une bannière sous la rangée indique ce que vous modifiez, par exemple **Editing: Network: IOT · applies to clients on IOT** ou **Editing: Device: Tablet · this device only**. Chaque contexte n’affiche que ses propres paramètres ; rien de ce qui est hérité d’un contexte plus large n’apparaît dans son formulaire.
 
-Ouvrez **Firewall → Sinkhole → Scopes**, puis sélectionnez **Add** sous la table Networks. L’éditeur sélectionne par défaut LAN ou la première interface disponible autre que WAN, et omet les interfaces qui possèdent déjà une portée réseau. Un client appartient à ce réseau lorsque son adresse se trouve dans l’un des sous-réseaux IPv4 ou IPv6 actuels de l’interface.
+Le contexte sélectionné vous suit d’un onglet à l’autre jusqu’à ce que vous en choisissiez un autre. Un réseau ou un appareil désactivé reste modifiable, et un avertissement indique que ses paramètres ne s’appliquent à aucun client tant qu’il n’est pas réactivé.
 
-Chaque ligne réseau sélectionne des listes supplémentaires, des domaines autorisés et l’état d’activation de la portée. L’enregistrement revient à Scopes ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier. Un appareil qui change de réseau reçoit la politique du réseau auquel correspond son adresse actuelle.
+## Définir des réseaux \{#define-networks}
 
-<img src={scopesTab} alt="Onglet Scopes affichant une portée réseau LAN et trois appareils de démonstration identifiés par adresse IP ou MAC avec leurs adresses actuelles" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+Ouvrez **Firewall → Sinkhole → Clients**, puis sélectionnez **Add** sous la table Networks. L’éditeur sélectionne par défaut LAN ou la première interface disponible autre que WAN, et omet les interfaces qui possèdent déjà un réseau. Un client appartient à ce réseau lorsque son adresse se trouve dans l’un des sous-réseaux IPv4 ou IPv6 actuels de l’interface.
 
-## Portées appareil \{#device-scopes}
+Chaque ligne réseau comporte une interface et une case **Enabled**. L’enregistrement revient à Clients ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier. Un appareil qui change de réseau reçoit la politique du réseau auquel correspond son adresse actuelle.
 
-Sélectionnez **Add** sous la table Devices, indiquez un nom et choisissez une méthode d’identification. L’éditeur affiche uniquement le champ d’identifiant qui correspond à la méthode sélectionnée :
+<img src={scopesTab} alt="Onglet Clients affichant un réseau LAN et trois appareils de démonstration identifiés par adresse IP ou MAC avec leurs adresses actuelles" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-| Méthode             | Adresses utilisées pour l’appareil                                                              |
+## Définir des appareils \{#define-devices}
+
+Sélectionnez **Add** sous la table Devices, indiquez un nom et ajoutez une ou plusieurs lignes d’identifiant. Chaque ligne contient un type et la valeur correspondant à ce type :
+
+| Type d’identifiant  | Adresses utilisées pour l’appareil                                                              |
 |---------------------|-------------------------------------------------------------------------------------------------|
 | IP address          | L’adresse IPv4 ou IPv6 configurée.                                                              |
 | DHCP static mapping | Son adresse configurée ainsi que les adresses actuelles observées pour la MAC de l’association. |
 | MAC address         | Les adresses actuelles ARP, NDP et de baux DHCP pour cette MAC.                                 |
 
-La ligne de l’appareil sélectionne ses listes, ses domaines autorisés et son état d’activation. L’enregistrement revient à Scopes ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier. Une tâche en arrière-plan actualise les sous-réseaux et adresses d’appareil chaque minute tant que le blocage DNS comporte une portée réseau ou appareil activée, ou que la protection DNS de Bypass nécessite l’identification des clients. Le Sync du paquet lance la même actualisation uniquement dans cette condition.
+Utilisez **Add Identifier** et les boutons de corbeille pour gérer les lignes. Un appareil doit avoir au moins un identifiant. Toute adresse atteinte par l’un de ses identifiants correspond au même appareil et partage donc un seul ensemble de paramètres et un même état d’activation. L’enregistrement revient à Clients ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier. Une tâche en arrière-plan actualise les sous-réseaux et adresses d’appareil chaque minute tant que le blocage DNS comporte un réseau ou un appareil activé, ou que la protection DNS de Bypass nécessite l’identification des clients. Le Sync du paquet lance la même actualisation uniquement dans cette condition.
 
-Faites glisser le coin inférieur de la zone **Lists** pour l’agrandir lorsque vous avez beaucoup de listes.
+Supprimer un réseau ou un appareil dans Clients supprime aussi ses paramètres Blocking, Services, SafeSearch, Bypass et IP.
 
-<img src={deviceEditor} alt="Page Edit Device d’une tablette de démonstration identifiée par adresse IP, avec une liste sélectionnée et un domaine autorisé" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={deviceEditor} alt="Page Edit Device d’une tablette de démonstration identifiée par une adresse IP et une adresse MAC" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Choisir les listes et les domaines autorisés \{#choose-lists-and-allowed-domains}
+
+Ouvrez **Firewall → Sinkhole → Blocking** et choisissez un contexte :
+
+- **Global** sélectionne les listes qui s’appliquent à tous les clients après les décisions d’appareil et de réseau, et contient les domaines autorisés globaux.
+- **Networks** sélectionne les listes et domaines autorisés supplémentaires des clients du réseau choisi.
+- **Devices** sélectionne les listes et domaines autorisés supplémentaires de l’appareil choisi.
+
+Chaque contexte comporte une zone **Lists** et une zone **Allowed Domains** avec un domaine par ligne. Sélectionnez **Save** pour appliquer ce contexte. Faites glisser le coin inférieur de la zone **Lists** pour l’agrandir lorsque vous avez beaucoup de listes. Les listes elles-mêmes sont ajoutées et modifiées dans l’onglet [Lists](/docs/configure/lists).
+
+**All** affiche une ligne par contexte possédant des listes ou des domaines autorisés, avec les noms de ses listes et le nombre de domaines autorisés.
 
 ## Ordre de décision \{#decision-order}
 
@@ -67,7 +89,7 @@ Le niveau correspondant le plus précis décide de chaque requête dans cet ordr
 5. **Domaines autorisés globaux** — Autorise immédiatement lorsque l’exception globale correspond.
 6. **Listes globales** — Bloque lorsqu’une liste globale correspond.
 
-La requête est autorisée lorsqu’aucune étape ne décide. Les domaines autorisés d’un niveau remplacent les listes héritées de niveaux moins précis, mais pas les listes d’un niveau plus précis qui a déjà décidé.
+La requête est autorisée lorsqu’aucune étape ne décide. Un client qui ne correspond à aucun réseau ou appareil activé reçoit uniquement les étapes globales. Les domaines autorisés d’un niveau remplacent les listes héritées de niveaux moins précis, mais pas les listes d’un niveau plus précis qui a déjà décidé.
 
 ## Comportement des domaines autorisés \{#allowed-domain-behavior}
 
@@ -79,11 +101,11 @@ Chaque domaine autorisé s’applique au domaine exact et à tous ses sous-domai
 
 ## Conflits d’adresses \{#address-conflicts}
 
-Lorsque deux lignes d’appareil revendiquent la même adresse actuelle, le premier appareil dans l’ordre de la table l’emporte. **Status → Scopes** affiche l’adresse sous **Conflict** pour chaque ligne concernée afin de corriger l’ordre ou les identifiants.
+Plusieurs identifiants du même appareil peuvent atteindre la même adresse sans créer de conflit. Lorsque deux appareils différents revendiquent la même adresse actuelle, le premier appareil de la table Clients l’emporte. La table Clients et **Status → Clients** affichent l’adresse sous **Conflict** pour chaque ligne concernée afin de corriger l’ordre ou les identifiants.
 
-## Vérifier une portée \{#verify-a-scope}
+## Vérifier un réseau ou un appareil \{#verify-a-network-or-device}
 
 1. Exécutez `/usr/local/sbin/sinkhole --refresh-clients` ou attendez l’actualisation minute.
-2. Ouvrez **Status → Scopes** et vérifiez les sous-réseaux actuels du réseau et les adresses actuelles de l’appareil.
-3. Interrogez un nom depuis un client de cette portée et comparez le résultat à l’ordre de décision ci-dessus.
+2. Ouvrez **Status → Clients** et vérifiez les sous-réseaux actuels du réseau et les adresses actuelles de l’appareil.
+3. Interrogez un nom depuis un client de ce réseau ou de cet appareil et comparez le résultat à l’ordre de décision ci-dessus.
 4. Vérifiez l’absence de conflit d’adresse avant de vous fier au comportement propre à l’appareil.

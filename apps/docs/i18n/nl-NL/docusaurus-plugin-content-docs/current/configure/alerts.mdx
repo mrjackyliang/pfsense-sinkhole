@@ -27,20 +27,22 @@ Verzend alleen meldingen voor geblokkeerde antwoorden waarvan de lijst en client
 
 ## Een regel maken \{#create-a-rule}
 
-Open **Firewall → Sinkhole → Alerts**, selecteer **Add** onder de tabel met waarschuwingsregels en vul vervolgens **Add Alert Rule** op de bewerkingspagina in:
+Open **Firewall → Sinkhole → Alerts**. De [contextrij](/docs/configure/scopes#contexts) filtert de tabel: **Global** toont de regels voor **Everyone**, een netwerk of apparaat toont de regels die het kiezen, en **All** toont elke regel. Een regel kan nog steeds meerdere netwerken en apparaten tegelijk kiezen.
 
-| Veld                 | Beschrijving                                                                          |
-|----------------------|---------------------------------------------------------------------------------------|
-| Description          | Lokale regelnaam die in meldingstekst en samenvattingen wordt weergegeven.            |
-| Any block list       | Komt overeen met een blokkering uit elke lijst, niet alleen de gekozen lijsten.       |
-| Chosen block lists   | Lijsten die aan de regel kunnen voldoen wanneer **Any** is uitgeschakeld.             |
-| Everyone             | Komt overeen met elke client, niet alleen gekozen netwerken en apparaten.             |
-| Chosen networks      | Netwerkscopes die aan de regel kunnen voldoen wanneer **Everyone** is uitgeschakeld.  |
-| Chosen devices       | Apparaatscopes die aan de regel kunnen voldoen wanneer **Everyone** is uitgeschakeld. |
-| Repeat after         | Minuten voordat dezelfde regel, client, domein en lijst opnieuw kunnen melden.        |
-| WebGUI notice        | Voegt een lokale Sinkhole-melding toe aan pfSense.                                    |
-| Remote notifications | Gebruikt de externe services die in pfSense zijn geconfigureerd.                      |
-| Enabled              | Staat toe dat geblokkeerde antwoorden met deze regel overeenkomen.                    |
+Selecteer **Add** onder de tabel met waarschuwingsregels en vul vervolgens **Add Alert Rule** op de bewerkingspagina in:
+
+| Veld                 | Beschrijving                                                                                                                       |
+|----------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| Description          | Lokale regelnaam die in meldingstekst en samenvattingen wordt weergegeven.                                                         |
+| Any block list       | Komt overeen met een blokkering uit elke lijst, niet alleen de gekozen lijsten.                                                    |
+| Chosen block lists   | Lijsten die aan de regel kunnen voldoen wanneer **Any** is uitgeschakeld.                                                          |
+| Everyone             | Komt overeen met elke client, niet alleen gekozen netwerken en apparaten.                                                          |
+| Chosen networks      | Netwerken uit Clients die aan de regel kunnen voldoen wanneer **Everyone** is uitgeschakeld.                                       |
+| Chosen devices       | Apparaten uit Clients, weergegeven met alle identificaties, die aan de regel kunnen voldoen wanneer **Everyone** is uitgeschakeld. |
+| Repeat after         | Minuten voordat dezelfde regel, client, domein en lijst opnieuw kunnen melden.                                                     |
+| WebGUI notice        | Voegt een lokale Sinkhole-melding toe aan pfSense.                                                                                 |
+| Remote notifications | Gebruikt de externe services die in pfSense zijn geconfigureerd.                                                                   |
+| Enabled              | Staat toe dat geblokkeerde antwoorden met deze regel overeenkomen.                                                                 |
 
 Het veld voor gekozen lijsten is verborgen wanneer **Any block list** is geselecteerd, en de netwerk- en apparaatvelden zijn verborgen wanneer **Everyone** is geselecteerd. Na opslaan keert u terug naar Alerts; selecteer het potlood of dubbelklik op een rij om deze te bewerken.
 
@@ -75,7 +77,7 @@ De lokale meldingsfunctie van pfSense schrijft `New alert found: <message>` naar
 
 ## Een waarschuwing controleren \{#verify-an-alert}
 
-1. Controleer of de regel, de geselecteerde lijst en de geselecteerde clientscope zijn ingeschakeld.
+1. Controleer of de regel, de geselecteerde lijst en het geselecteerde netwerk of apparaat zijn ingeschakeld.
 2. Controleer in Status of de client momenteel aan het bedoelde netwerk of apparaat is gekoppeld.
 3. Vraag een naam op die door de geselecteerde lijst wordt geblokkeerd en controleer het geconfigureerde pfSense-kanaal.
 4. Als er geen tweede melding komt, vergelijkt u de poging met het herhaalvenster en de vaste limieten van de regel.

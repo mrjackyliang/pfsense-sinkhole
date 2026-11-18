@@ -7,7 +7,7 @@ keywords:
   - safesearch
   - bezpieczne wyszukiwanie
   - tryb ograniczony youtube
-  - zakres sieci
+  - filtrowanie w sieci
 tags:
   - configure
   - safesearch
@@ -22,17 +22,17 @@ Użyj **Firewall → Sinkhole → SafeSearch**, aby utrzymać wyszukiwarki w try
 
 1. Wymusza tryb bezpieczny na poziomie sieci, dzięki czemu niezalogowana przeglądarka, nowe urządzenie lub okno prywatne nadal otrzymują filtrowane wyniki.
 2. Obejmuje każdą krajową domenę Google, nie tylko `google.com`, więc przejście na `google.co.uk` nie pozwala tego obejść.
-3. Korzysta z tych samych zakresów co listy blokowania, więc VLAN dla dzieci może mieć SafeSearch, a reszta sieci nie.
+3. Korzysta z tych samych kontekstów Global, sieci i urządzeń co listy blokowania, więc VLAN dla dzieci może mieć SafeSearch, a reszta sieci nie.
 
-## Wybieranie zakresu i wyszukiwarek \{#choose-a-scope-and-engines}
+## Wybieranie kontekstu i wyszukiwarek \{#choose-a-context-and-engines}
 
-1. Wybierz **Global**, skonfigurowaną sieć lub skonfigurowane urządzenie w polu **Scope**.
+1. Wybierz **Global**, sieć lub urządzenie w [wierszu kontekstu](/docs/configure/scopes#contexts) pod kartami głównymi.
 2. Zaznacz każdą wyszukiwarkę do zablokowania i wybierz **Moderate** lub **Strict** dla YouTube.
 3. Wybierz **Save**.
 
-Sieć lub urządzenie musi istnieć na karcie **Scopes**, zanim pojawi się tutaj. Zapisanie od razu sprawdza każdy bezpieczny host i stosuje zmianę w tle.
+Sieć lub urządzenie musi istnieć na karcie **Clients**, zanim pojawi się w wierszu kontekstu. Zapisanie od razu sprawdza każdy bezpieczny host i stosuje zmianę w tle. **All** wymienia każdy kontekst, który wymusza co najmniej jedną wyszukiwarkę; wybierz wiersz, aby edytować ten kontekst.
 
-<img src={safesearchTab} alt="Karta SafeSearch dla zakresu tabletu demonstracyjnego z wymuszonym SafeSearch dla Google, Bing, DuckDuckGo i Brave Search, YouTube ustawionym na Strict oraz używanymi bezpiecznymi adresami" width={1024} height={1322} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={safesearchTab} alt="Karta SafeSearch dla tabletu demonstracyjnego z wymuszonym SafeSearch dla Google, Bing, DuckDuckGo i Brave Search, YouTube ustawionym na Strict oraz używanymi bezpiecznymi adresami" width={1024} height={1476} style={{maxWidth: '100%', height: 'auto'}} />
 
 | Wyszukiwarka | Obsługiwane nazwy                                                                      | Bezpieczny host                                                               |
 |--------------|----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
@@ -47,26 +47,26 @@ Sieć lub urządzenie musi istnieć na karcie **Scopes**, zanim pojawi się tuta
 | Pixabay      | `pixabay.com`, `www.pixabay.com`                                                       | `safesearch.pixabay.com`                                                      |
 | Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                        | Brak; Qwant jest blokowany                                                    |
 
-Qwant nie publikuje hosta SafeSearch, więc wybranie go blokuje Qwant w danym zakresie.
+Qwant nie publikuje hosta SafeSearch, więc wybranie go blokuje Qwant w tym kontekście.
 
-## Łączenie zakresów \{#how-scopes-combine}
+## Łączenie kontekstów \{#how-contexts-combine}
 
 Klient otrzymuje łącznie wszystkie wyszukiwarki wybrane dla **Global**, dla sieci, w której się znajduje, oraz dla swojego urządzenia. Gdy YouTube występuje z oboma poziomami, wygrywa **Strict**.
 
-SafeSearch działa po blokowaniu. Nazwa zablokowana dla klienta przez listę lub zablokowaną usługę pozostaje zablokowana, a dozwolone domeny nie wyłączają SafeSearch. Tak jak każdy klient bez zakresu, własne zapytania zapory otrzymują wyszukiwarki wybrane dla **Global**.
+SafeSearch działa po blokowaniu. Nazwa zablokowana dla klienta przez listę lub zablokowaną usługę pozostaje zablokowana, a dozwolone domeny nie wyłączają SafeSearch. Tak jak każdy klient spoza wszystkich sieci i urządzeń, własne zapytania zapory otrzymują wyszukiwarki wybrane dla **Global**.
 
 ## Jak działa odpowiedź \{#how-the-answer-works}
 
 Dla wybranej wyszukiwarki Sinkhole odpowiada na jej nazwę rekordem CNAME wskazującym bezpieczny host wraz z adresami tego hosta, czyli tą samą odpowiedzią, jaką daje ręcznie napisany widok Unbound. Inne typy rekordów, takie jak rekordy HTTPS, otrzymują tylko CNAME, więc przeglądarka nie może użyć wskazówek prowadzących z pominięciem bezpiecznego hosta.
 
-Sinkhole sprawdza adresy każdego bezpiecznego hosta przy zapisie i przy każdej aktualizacji list, a gdy zapytanie się nie powiedzie, zachowuje ostatnie prawidłowe adresy. Wyszukiwarka, której bezpieczny host nigdy nie zwrócił adresu, jest blokowana w swoich zakresach, dopóki zapytanie się nie powiedzie.
+Sinkhole sprawdza adresy każdego bezpiecznego hosta przy zapisie i przy każdej aktualizacji list, a gdy zapytanie się nie powiedzie, zachowuje ostatnie prawidłowe adresy. Wyszukiwarka, której bezpieczny host nigdy nie zwrócił adresu, jest blokowana w swoich kontekstach, dopóki zapytanie się nie powiedzie.
 
-Odpowiedzi SafeSearch nigdy nie trafiają do pamięci podręcznej Resolvera, więc odpowiedź dla jednego klienta nigdy nie dociera do klienta spoza zakresu.
+Odpowiedzi SafeSearch nigdy nie trafiają do pamięci podręcznej Resolvera, więc odpowiedź dla jednego klienta nigdy nie dociera do klienta spoza tego kontekstu.
 
 ## Weryfikacja SafeSearch \{#verify-safesearch}
 
 1. Otwórz **Status** i sprawdź, czy panel **SafeSearch** pokazuje każdy bezpieczny host z adresami i bez błędu.
-2. Z klienta w zakresie wyszukaj nazwę wyszukiwarki, na przykład `nslookup www.google.com`, i sprawdź, czy odpowiedź wskazuje bezpieczny host.
-3. Z klienta spoza zakresu sprawdź, czy to samo zapytanie zwraca zwykłą odpowiedź wyszukiwarki.
+2. Z klienta w tym kontekście wyszukaj nazwę wyszukiwarki, na przykład `nslookup www.google.com`, i sprawdź, czy odpowiedź wskazuje bezpieczny host.
+3. Z klienta spoza tego kontekstu sprawdź, czy to samo zapytanie zwraca zwykłą odpowiedź wyszukiwarki.
 
 Szyfrowany DNS wysyłany przez klienta w inne miejsce omija wszystkie zasady DNS, w tym SafeSearch. [Ochrona przed omijaniem](/docs/configure/bypass-protection) utrzymuje wybrane interfejsy na ścieżce DNS Sinkhole.

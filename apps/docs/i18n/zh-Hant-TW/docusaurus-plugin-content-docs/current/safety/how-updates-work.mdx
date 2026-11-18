@@ -52,7 +52,9 @@ Unbound 模塊會在查詢之間檢查新清單，並且只在引用的每個檔
 
 預設清單更新頻率為 Daily。Hourly、Every 6 hours、Daily 和 Weekly 計劃使用穩定的隨機分鐘組成部分，因此防火牆不會在每次儲存時改變作業時間。
 
-DNS、Bypass 和 IP/國家或地區更新、設定套用、套件檢查和自更新以及移除清理通過 `/var/run/sinkhole-update.lock` 進行協調。套件檢查或 Update 操作不會等待：如果其他操作持有該鎖，它會以 `Another package operation is already running.` 停止，並可在該操作結束後重試。
+DNS、Bypass 和 IP/國家或地區更新、設定套用、套件安裝以及移除清理透過 `/var/run/sinkhole-update.lock` 進行協調。版本檢查和自更新透過 `/var/run/sinkhole-release.lock` 單獨協調，檢查從不取得套件工作鎖。
+
+自更新先取得版本鎖，再取得套件工作鎖。它會等待正在執行的清單、IP 或 Bypass 更新最多 30 分鐘，同時 About 進度列顯示等待狀態。
 
 ## 目錄刷新相互獨立 \{#catalog-refreshes-are-separate}
 

@@ -52,7 +52,7 @@ En mode Python, le DNSBL de pfBlockerNG utilise le même emplacement de script P
 ## Prérequis réseau \{#network-requirements}
 
 - Les portées réseau utilisent les sous-réseaux IPv4 et IPv6 actuels des interfaces pfSense configurées.
-- Les appareils identifiés par adresse MAC ou association statique dépendent des données actuelles ARP, NDP, des baux DHCP, des associations statiques et des interfaces.
+- Chaque appareil peut avoir plusieurs adresses IP, adresses MAC et associations statiques. Les identifiants MAC et d’association statique dépendent des données actuelles ARP, NDP, des baux DHCP, des associations statiques et des interfaces.
 - La redirection du DNS en clair sous **Bypass** nécessite une famille d’adresses sur l’interface sélectionnée et une écoute correspondante du Resolver.
 - Les clients redirigés doivent toujours être autorisés par les paramètres de contrôle d’accès du Resolver.
 

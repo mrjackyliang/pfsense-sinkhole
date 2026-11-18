@@ -49,7 +49,7 @@ Sinkhole i pfBlockerNG nie mogą jednocześnie filtrować DNS. Sinkhole pozostaj
 ## Elementy pozostające pod kontrolą użytkownika \{#what-stays-under-your-control}
 
 - **Lists** — Dodaj zaufane źródła za pomocą adresu URL lub znajdź je przy użyciu neutralnego <Terminology title="Znajdź znane listy blokowania bez szukania adresów URL" to="/docs/reference/terminology#lists-and-scopes">wyszukiwania popularnych list</Terminology>. Sinkhole nie publikuje ani nie poleca żadnej listy.
-- **Scopes** — Wybierz listy globalne, listy dla jednego interfejsu pfSense lub VLAN-u oraz listy dla urządzenia identyfikowanego za pomocą adresu IP, statycznego mapowania DHCP lub adresu MAC.
+- **Clients and Blocking** — Zdefiniuj sieć dla jednego interfejsu pfSense lub VLAN-u oraz urządzenie identyfikowane przez co najmniej jeden adres IP, statyczne mapowanie DHCP lub adres MAC, a następnie wybierz listy dla Global, każdej sieci i każdego urządzenia.
 - **Allowed domains** — Zezwól na domenę i jej poddomeny na poziomie globalnym, sieciowym lub urządzenia bez usuwania całej listy.
 - **SafeSearch** — Wybierz, które wyszukiwarki są blokowane w trybie bezpiecznym w każdym zakresie i czy YouTube ma poziom Moderate czy Strict.
 - **Alerts** — Wybierz kombinacje list i klientów, które tworzą lokalne powiadomienia WebGUI lub korzystają ze skonfigurowanych zdalnych usług powiadomień pfSense.
@@ -71,7 +71,7 @@ Witryna dokumentacji udostępnia język angielski i pozostałe 17 wersji języko
 ## Następne kroki \{#next-steps}
 
 - **[Zainstaluj pakiet](/docs/installation)** — Zweryfikuj i zainstaluj stabilny pakiet wydania.
-- **[Skonfiguruj Sinkhole](/docs/first-run)** — Dodaj pierwszą listę, wybierz jej zakres i zweryfikuj aktywną generację.
-- **[Poznaj zakresy](/docs/configure/scopes)** — Zastosuj dokładną kolejność decyzji dla urządzenia, sieci i poziomu globalnego.
+- **[Skonfiguruj Sinkhole](/docs/first-run)** — Dodaj pierwszą listę, wybierz, gdzie ma blokować, i zweryfikuj aktywną generację.
+- **[Poznaj klientów i blokowanie](/docs/configure/scopes)** — Zastosuj dokładną kolejność decyzji dla urządzenia, sieci i poziomu globalnego.
 - **[Zapoznaj się z modelem bezpieczeństwa](/docs/safety/how-updates-work)** — Zobacz, jak zapisane kopie i niepodzielne wdrożenie utrzymują dostępność DNS.
 

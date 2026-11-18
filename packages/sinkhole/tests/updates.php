@@ -3,7 +3,10 @@
 declare(strict_types=1);
 
 use PfSense\Sinkhole\Runtime\FileLock;
+use PfSense\Sinkhole\Runtime\PackagePaths;
+use PfSense\Sinkhole\Runtime\ReleaseUpdateLockRunner;
 use PfSense\Sinkhole\Runtime\TestedReleases;
+use PfSense\Sinkhole\Runtime\Translator;
 use PfSense\Sinkhole\Runtime\UpdateManager;
 
 require_once(__DIR__ . '/TestSupport.php');
@@ -167,6 +170,155 @@ function sinkholeUpdateAssertFailure(callable $callback, string $message): void
 }
 
 /**
+ * Sinkhole Update Test - Hold Lock.
+ *
+ * A child process owns the advisory lock because FileLock deliberately shares
+ * nested handles inside one PHP process.
+ *
+ * @param string $path - Lock file path.
+ *
+ * @return array{process: resource, pipes: array<int, resource>}
+ *
+ * @since 1.3.0
+ */
+function sinkholeUpdateHoldLock(string $path): array
+{
+    $child = <<<'PHP'
+$handle = fopen($argv[1], 'c+b');
+flock($handle, LOCK_EX);
+fwrite(STDOUT, "ready\n");
+fflush(STDOUT);
+fgets(STDIN);
+flock($handle, LOCK_UN);
+fclose($handle);
+PHP;
+    $process = proc_open(
+        [PHP_BINARY, '-r', $child, $path],
+        [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ],
+        $pipes,
+    );
+
+    if (!is_resource($process) || trim((string) fgets($pipes[1])) !== 'ready') {
+        throw new RuntimeException('The concurrent lock fixture did not start.');
+    }
+
+    return [
+        'process' => $process,
+        'pipes' => $pipes,
+    ];
+}
+
+/**
+ * Sinkhole Update Test - Release Held Lock.
+ *
+ * Signals the child fixture and verifies that it relinquishes the advisory lock
+ * cleanly before the disposable test directory is removed.
+ *
+ * @param array{process: resource, pipes: array<int, resource>}|null $fixture - Lock fixture.
+ *
+ * @return void
+ *
+ * @since 1.3.0
+ */
+function sinkholeUpdateReleaseHeldLock(?array &$fixture): void
+{
+    if ($fixture === null) {
+        return;
+    }
+
+    $process = $fixture['process'];
+    $pipes = $fixture['pipes'];
+    $fixture = null;
+
+    fwrite($pipes[0], "release\n");
+    fclose($pipes[0]);
+    fclose($pipes[1]);
+    $childError = stream_get_contents($pipes[2]);
+    fclose($pipes[2]);
+    $exitCode = proc_close($process);
+
+    sinkholeTestAssertSame('', $childError, 'The concurrent lock fixture must not report an error.');
+    sinkholeTestAssertSame(0, $exitCode, 'The concurrent lock fixture must exit cleanly.');
+}
+
+/**
+ * Sinkhole Update Test - Run CLI.
+ *
+ * Rewrites only the installed package include prefix so argument validation can
+ * execute from the source tree without a pfSense installation.
+ *
+ * @param list<string> $arguments - CLI arguments after the executable name.
+ *
+ * @return array{exit_code: int, stdout: string, stderr: string}
+ *
+ * @since 1.3.0
+ */
+function sinkholeUpdateRunCli(array $arguments): array
+{
+    $sourcePath = __DIR__ . '/../port/files/usr/local/sbin/sinkhole';
+    $packageDirectory = realpath(__DIR__ . '/../port/files/usr/local/pkg/sinkhole');
+    $temporaryPath = tempnam(sys_get_temp_dir(), 'sinkhole-cli-');
+
+    if (!is_string($packageDirectory) || $temporaryPath === false) {
+        throw new RuntimeException('Unable to prepare the CLI fixture.');
+    }
+
+    $source = (string) file_get_contents($sourcePath);
+    $source = preg_replace('/\A#![^\n]*\n/', '', $source);
+
+    if (!is_string($source)) {
+        throw new RuntimeException('Unable to normalize the CLI fixture.');
+    }
+
+    $source = str_replace(
+        '/usr/local/pkg/sinkhole/',
+        $packageDirectory . '/',
+        $source,
+    );
+
+    if (file_put_contents($temporaryPath, $source) === false) {
+        @unlink($temporaryPath);
+
+        throw new RuntimeException('Unable to write the CLI fixture.');
+    }
+
+    try {
+        $process = proc_open(
+            array_merge([PHP_BINARY, $temporaryPath], $arguments),
+            [
+                0 => ['pipe', 'r'],
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ],
+            $pipes,
+        );
+
+        if (!is_resource($process)) {
+            throw new RuntimeException('Unable to start the CLI fixture.');
+        }
+
+        fclose($pipes[0]);
+        $standardOutput = stream_get_contents($pipes[1]);
+        $standardError = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exitCode = proc_close($process);
+
+        return [
+            'exit_code' => $exitCode,
+            'stdout' => is_string($standardOutput) ? $standardOutput : '',
+            'stderr' => is_string($standardError) ? $standardError : '',
+        ];
+    } finally {
+        @unlink($temporaryPath);
+    }
+}
+
+/**
  * Sinkhole Update Test - Find SSH Keygen.
  *
  * @return string|null
@@ -319,7 +471,7 @@ $cases = [
             'Network failures without an HTTP response must remain failures.',
         );
     },
-    'notices are emitted once per version and remote delivery is opt in' => static function (): void {
+    'manual checks suppress notices while scheduled checks emit each version once' => static function (): void {
         global $sinkholeUpdateClosedNotices;
         global $sinkholeUpdateNoticeTime;
         global $sinkholeUpdateNotices;
@@ -329,21 +481,42 @@ $cases = [
         $sinkholeUpdateClosedNotices = [];
         $sinkholeUpdateNoticeTime = 1_700_000_000;
         $sinkholeUpdateStoredNotices = [];
-        $state = UpdateManager::synchronizeNotice([], '2.0.0', '2.1.0', false);
+        $manualState = UpdateManager::synchronizeNotice(
+            [],
+            '2.0.0',
+            '2.1.0',
+            true,
+            false,
+        );
 
-        sinkholeTestAssertSame(1, count($sinkholeUpdateNotices), 'A new version must create one bell notice.');
+        sinkholeTestAssertSame(0, count($sinkholeUpdateNotices), 'A manual check must not file a notice.');
+        sinkholeTestAssertSame('2.1.0', $manualState['notified_version'], 'A manual check must remember the version as notified.');
+
+        $state = UpdateManager::synchronizeNotice(
+            $manualState,
+            '2.0.0',
+            '2.1.0',
+            false,
+            true,
+        );
+
+        sinkholeTestAssertSame(0, count($sinkholeUpdateNotices), 'A scheduled check must not announce a version already seen manually.');
+
+        $state = UpdateManager::synchronizeNotice($state, '2.0.0', '2.2.0', false, true);
+
+        sinkholeTestAssertSame(1, count($sinkholeUpdateNotices), 'A scheduled check must create one bell notice for a new version.');
         sinkholeTestAssertSame(true, $sinkholeUpdateNotices[0]['localOnly'], 'Remote delivery must be off by default.');
         sinkholeTestAssertSame(UpdateManager::ABOUT_PAGE, $sinkholeUpdateNotices[0]['url'], 'The notice must link to About.');
-        sinkholeTestAssertSame('2.1.0', $state['notified_version'], 'The noticed version must persist.');
+        sinkholeTestAssertSame('2.2.0', $state['notified_version'], 'The noticed version must persist.');
 
-        $state = UpdateManager::synchronizeNotice($state, '2.0.0', '2.1.0', true);
+        $state = UpdateManager::synchronizeNotice($state, '2.0.0', '2.2.0', true, true);
         sinkholeTestAssertSame(1, count($sinkholeUpdateNotices), 'The same version must not create another notice.');
 
-        $state = UpdateManager::synchronizeNotice($state, '2.0.0', '2.2.0', true);
+        $state = UpdateManager::synchronizeNotice($state, '2.0.0', '2.3.0', true, true);
         sinkholeTestAssertSame(2, count($sinkholeUpdateNotices), 'A later version must create one notice.');
         sinkholeTestAssertSame(false, $sinkholeUpdateNotices[1]['localOnly'], 'The explicit opt-in must enable remote delivery.');
 
-        UpdateManager::synchronizeNotice($state, '2.2.0', '2.2.0', true);
+        UpdateManager::synchronizeNotice($state, '2.3.0', '2.3.0', true, true);
         sinkholeTestAssertSame([UpdateManager::NOTICE_ID], $sinkholeUpdateClosedNotices, 'A current installation must close the notice.');
     },
     'release assets enforce URLs digests checksums and size caps' => static function (): void {
@@ -513,6 +686,144 @@ $cases = [
             sinkholeTestRemoveTemporaryDirectory($root);
         }
     },
+    'release checks ignore a package task lock' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+        $releasePath = $root . '/release.lock';
+        $packagePath = $root . '/update.lock';
+        $fixture = null;
+
+        try {
+            $fixture = sinkholeUpdateHoldLock($packagePath);
+            $operationRan = false;
+            $runner = new ReleaseUpdateLockRunner(
+                new FileLock($releasePath),
+                null,
+                $root . '/update-status.json',
+                0,
+                0,
+            );
+            $result = $runner->run(
+                false,
+                static function () use (&$operationRan): array {
+                    $operationRan = true;
+
+                    return ['latest_version' => '2.1.0'];
+                },
+            );
+
+            sinkholeTestAssertSame(true, $result['completed'], 'A check must run while the package task lock is held.');
+            sinkholeTestAssertSame(true, $operationRan, 'The release-check callback must execute.');
+            sinkholeTestAssertSame('2.1.0', $result['state']['latest_version'] ?? null, 'The check result must pass through the lock runner.');
+        } finally {
+            sinkholeUpdateReleaseHeldLock($fixture);
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'release checks report a busy release operation' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+        $releasePath = $root . '/release.lock';
+        $fixture = null;
+
+        try {
+            $fixture = sinkholeUpdateHoldLock($releasePath);
+            $runner = new ReleaseUpdateLockRunner(
+                new FileLock($releasePath),
+                null,
+                $root . '/update-status.json',
+                0,
+                0,
+            );
+            $result = $runner->run(
+                false,
+                static function (): array {
+                    throw new RuntimeException('A busy release lock must skip the check.');
+                },
+            );
+
+            sinkholeTestAssertSame(false, $result['completed'], 'A busy release lock must skip the operation.');
+            sinkholeTestAssertSame(
+                Translator::translate('release_operation_running'),
+                $result['message'],
+                'A busy release lock must use its dedicated translated message.',
+            );
+        } finally {
+            sinkholeUpdateReleaseHeldLock($fixture);
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'self-update waits for a package task and fails after the injected timeout' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+        $releasePath = $root . '/release.lock';
+        $packagePath = $root . '/update.lock';
+        $statusPath = $root . '/update-status.json';
+        $fixture = null;
+
+        try {
+            UpdateManager::queueSelfUpdate('2.1.0', $statusPath);
+            UpdateManager::markQueuedSelfUpdateWaiting(
+                Translator::translate('update_waiting_for_task'),
+                $statusPath,
+            );
+            $waitingStatus = UpdateManager::readStatusState($statusPath, '2.0.0');
+
+            sinkholeTestAssertSame('running', $waitingStatus['state'] ?? null, 'The package-lock wait must remain in progress.');
+            sinkholeTestAssertSame(
+                Translator::translate('update_waiting_for_task'),
+                $waitingStatus['message'] ?? null,
+                'The About progress line must explain the package-task wait.',
+            );
+
+            UpdateManager::queueSelfUpdate('2.1.0', $statusPath);
+            $queuedStatus = UpdateManager::readStatusState($statusPath, '2.0.0');
+            $fixture = sinkholeUpdateHoldLock($packagePath);
+            $runner = new ReleaseUpdateLockRunner(
+                new FileLock($releasePath),
+                new FileLock($packagePath),
+                $statusPath,
+                0,
+                1,
+            );
+            $startedAt = microtime(true);
+            $result = $runner->run(
+                true,
+                static function (): array {
+                    throw new RuntimeException('A timed-out package lock must skip self-update.');
+                },
+            );
+            $elapsed = microtime(true) - $startedAt;
+            $status = UpdateManager::readStatusState($statusPath, '2.0.0');
+
+            sinkholeTestAssertTrue($elapsed >= 0.9, 'Self-update must wait for the injected package-lock timeout.');
+            sinkholeTestAssertSame(false, $result['completed'], 'A busy package task must prevent installation.');
+            sinkholeTestAssertSame(
+                Translator::translate('update_task_still_running'),
+                $result['message'],
+                'A package-lock timeout must use its dedicated translated message.',
+            );
+            sinkholeTestAssertSame('failed', $status['state'] ?? null, 'The queued job must fail after the wait expires.');
+            sinkholeTestAssertSame($result['message'], $status['message'] ?? null, 'The failed job must expose the timeout message.');
+            sinkholeTestAssertSame('2.1.0', $status['version'] ?? null, 'The failed job must preserve its queued version.');
+            sinkholeTestAssertSame($queuedStatus['started_at'] ?? null, $status['started_at'] ?? null, 'Waiting must preserve the queued start time.');
+        } finally {
+            sinkholeUpdateReleaseHeldLock($fixture);
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    '--no-notice without --check-updates is a usage error' => static function (): void {
+        $result = sinkholeUpdateRunCli(['--no-notice']);
+
+        sinkholeTestAssertSame(64, $result['exit_code'], 'The notice flag alone must return the usage-error exit code.');
+        sinkholeTestAssertSame('', $result['stdout'], 'The invalid notice flag must not write normal output.');
+        sinkholeTestAssertSame(
+            Translator::translate('cli_options_mutually_exclusive') . PHP_EOL,
+            $result['stderr'],
+            'The invalid notice flag must use the existing usage error.',
+        );
+
+        $selfUpdateResult = sinkholeUpdateRunCli(['--self-update', '--no-notice']);
+
+        sinkholeTestAssertSame(64, $selfUpdateResult['exit_code'], 'The notice flag must be rejected with self-update.');
+    },
     'package lock prevents concurrent update operations' => static function (): void {
         $root = sinkholeTestTemporaryDirectory();
         $path = $root . '/update.lock';
@@ -585,17 +896,22 @@ PHP;
 
         sinkholeTestAssertTrue(str_starts_with($cli, "#!/usr/local/bin/php\n"), 'The CLI shebang must not pass -f to PHP.');
         sinkholeTestAssertContains("case '--check-updates'", $cli, 'The CLI must expose release checks.');
+        sinkholeTestAssertContains("case '--no-notice'", $cli, 'The CLI must expose notice-free manual checks.');
         sinkholeTestAssertContains("case '--self-update'", $cli, 'The CLI must expose self-update.');
         sinkholeTestAssertContains('NOVA_PFSENSE_UPDATE_RELEASES_API', $cli, 'Tests must be able to override the API.');
         sinkholeTestAssertContains('NOVA_PFSENSE_UPDATE_DOWNLOAD_PREFIX', $cli, 'Tests must be able to override the download prefix.');
         sinkholeTestAssertSame(false, str_contains($cli, 'NOVA_PFSENSE_UPDATE_SIGNING'), 'The signing key path must never be environment-controlled.');
-        sinkholeTestAssertContains('new FileLock($paths->updateLockFile)', $cli, 'Release work must use the package lock.');
+        sinkholeTestAssertContains('new FileLock($paths->releaseLockFile)', $cli, 'Release work must use the release lock.');
+        sinkholeTestAssertContains('$selfUpdate ? new FileLock($paths->updateLockFile) : null', $cli, 'Only self-update may construct the package task lock.');
+        sinkholeTestAssertContains('$manager->check($remoteNotifications, $fileNotice)', $cli, 'The check must receive its explicit notice choice.');
         sinkholeTestAssertContains("'add',\n                '-f'", $selfUpdate, 'Self-update must install with pkg add -f.');
         sinkholeTestAssertTrue(strpos($selfUpdate, '$this->verifyReleaseSignature(') < strpos($selfUpdate, '$this->verifyPackageMetadata('), 'Signature verification must precede pkg query -F.');
         sinkholeTestAssertContains('UpdateManager::installedVersion()', $about, 'The About page must read the installed version through the update manager.');
         sinkholeTestAssertContains("getUserEntry((string) (\$_SESSION['Username'] ?? ''))", $about, 'The About page must resolve the logged-in pfSense user.');
         sinkholeTestAssertContains("'page-firewall-sinkhole-general'", $about, 'Update actions must require the General settings privilege.');
         sinkholeTestAssertContains("userHasPrivilege(\$currentUser, 'page-all')", $about, 'Update actions must permit page-all administrators.');
+        sinkholeTestAssertContains('PackagePaths::MANUAL_UPDATE_CHECK_COMMAND', $about, 'The About page must use the notice-free check command.');
+        sinkholeTestAssertContains("'release_operation_running'", $about, 'The About page must recognize a busy release lock.');
         sinkholeTestAssertContains("config_get_path('installedpackages/package', [])", $manager, 'The update manager must read the installed package version first.');
         sinkholeTestAssertContains("parse_xml_config_pkg(\$packageInfoPath, 'pfsensepkgs')", $manager, 'The update manager must fall back to the installed info.xml version.');
 
@@ -614,6 +930,12 @@ PHP;
         ] as $marker) {
             sinkholeTestAssertContains($marker, $about, 'The About update section is missing ' . $marker . '.');
         }
+
+        sinkholeTestAssertSame(
+            PackagePaths::UPDATE_CHECK_COMMAND . ' --no-notice',
+            PackagePaths::MANUAL_UPDATE_CHECK_COMMAND,
+            'The manual command must extend the scheduled check without changing cron.',
+        );
     },
     'running install settles once pfSense reports its version' => static function (): void {
         $directory = sinkholeTestTemporaryDirectory();
@@ -643,6 +965,26 @@ PHP;
         $sinkholeUpdateCatalog,
     ): void {
         $catalog = $sinkholeUpdateCatalog['en_US'] ?? [];
+        $newKeys = [
+            'release_operation_running',
+            'update_waiting_for_task',
+            'update_task_still_running',
+        ];
+
+        foreach ($sinkholeUpdateCatalog as $locale => $localeCatalog) {
+            foreach ($newKeys as $key) {
+                sinkholeTestAssertTrue(
+                    isset($localeCatalog[$key]),
+                    'The ' . $locale . ' catalog is missing ' . $key . '.',
+                );
+            }
+
+            sinkholeTestAssertContains(
+                '--no-notice',
+                $localeCatalog['cli_usage'] ?? '',
+                'The ' . $locale . ' CLI usage must include --no-notice.',
+            );
+        }
 
         foreach ([
             'check_now',
@@ -651,6 +993,9 @@ PHP;
             'updates_not_checked',
             'no_public_release',
             'another_package_operation_running',
+            'release_operation_running',
+            'update_waiting_for_task',
+            'update_task_still_running',
             'package_update_privilege_required',
             'release_signature_invalid',
             'signature_asset_missing',

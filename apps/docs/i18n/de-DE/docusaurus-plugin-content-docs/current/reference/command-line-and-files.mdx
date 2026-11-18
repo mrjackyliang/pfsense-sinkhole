@@ -18,19 +18,22 @@ Verwende den festen Befehl `/usr/local/sbin/sinkhole` für Diagnosen und dieselb
 
 ## Befehlsmodi \{#command-modes}
 
-| Befehl                       | Verhalten                                                                                                 |
-|------------------------------|-----------------------------------------------------------------------------------------------------------|
-| `sinkhole --update`          | Führt den geplanten Aktualisierungspfad für DNS-, Bypass- und aktivierte IP-/Länderlisten aus.            |
-| `sinkhole --manual`          | Führt die vollständige manuelle Aktualisierung von **Status → Update Now** aus.                           |
-| `sinkhole --apply`           | Wendet gespeicherte Konfiguration im Hintergrund an und führt nur die dafür erforderlichen Downloads aus. |
-| `sinkhole --refresh-clients` | Baut Netzwerk-Subnetze und Geräteadressen in der Client-Map neu auf.                                      |
-| `sinkhole --alerts`          | Liest Blockierungsereignisse und verarbeitet passende Alarmregeln.                                        |
-| `sinkhole --redirect-check`  | Gleicht gewünschte Plain-DNS-Umleitungsregeln und die unabhängig geladenen Bypass- und IP-Anker ab.       |
-| `sinkhole --check-updates`   | Prüft das neueste GitHub-Release und synchronisiert den Aktualisierungshinweis.                           |
-| `sinkhole --self-update`     | Lädt das neueste vorgemerkte Release herunter, überprüft und untersucht es und installiert es.            |
-| `sinkhole --help`            | Gibt die unterstützte Aufrufsyntax aus.                                                                   |
+| Befehl                                 | Verhalten                                                                                                    |
+|----------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `sinkhole --update`                    | Führt den geplanten Aktualisierungspfad für DNS-, Bypass- und aktivierte IP-/Länderlisten aus.               |
+| `sinkhole --manual`                    | Führt die vollständige manuelle Aktualisierung von **Status → Update Now** aus.                              |
+| `sinkhole --apply`                     | Wendet gespeicherte Konfiguration im Hintergrund an und führt nur die dafür erforderlichen Downloads aus.    |
+| `sinkhole --refresh-clients`           | Baut Netzwerk-Subnetze und Geräteadressen in der Client-Map neu auf.                                         |
+| `sinkhole --alerts`                    | Liest Blockierungsereignisse und verarbeitet passende Alarmregeln.                                           |
+| `sinkhole --redirect-check`            | Gleicht gewünschte Plain-DNS-Umleitungsregeln und die unabhängig geladenen Bypass- und IP-Anker ab.          |
+| `sinkhole --check-updates`             | Prüft das neueste GitHub-Release und synchronisiert den geplanten Aktualisierungshinweis.                    |
+| `sinkhole --check-updates --no-notice` | Prüft das Release ohne Hinweis und speichert eine neuere Version als gemeldet.                               |
+| `sinkhole --self-update`               | Wartet auf eine Listen-, IP- oder Bypass-Aktualisierung, prüft und installiert dann das vorgemerkte Release. |
+| `sinkhole --help`                      | Gibt die unterstützte Aufrufsyntax aus.                                                                      |
 
-Verwende in Automatisierungen den installierten Pfad, zum Beispiel `/usr/local/sbin/sinkhole --refresh-clients`. Die Modi schließen einander aus; eine DNS-/Bypass-/IP-Listenaktualisierung oder Selbstaktualisierung, die eine bereits gehaltene gemeinsame Aktualisierungssperre vorfindet, beendet sich, ohne einen konkurrierenden Vorgang zu starten.
+Verwende in Automatisierungen den installierten Pfad, zum Beispiel `/usr/local/sbin/sinkhole --refresh-clients`. Die Modi schließen einander aus, und `--no-notice` ist nur zusammen mit `--check-updates` gültig.
+
+Release-Prüfungen warten bis zu 30 Sekunden auf die Release-Sperre und nehmen die Sperre für Paketaufgaben nicht in Anspruch. Die Selbstaktualisierung nimmt zuerst die Release-Sperre und wartet danach bis zu 30 Minuten darauf, dass eine laufende DNS-, Bypass- oder IP-Listenaktualisierung die Sperre für Paketaufgaben freigibt.
 
 ## Persistente Dateien unter `/cf/conf/sinkhole` \{#persistent-files}
 
@@ -71,22 +74,23 @@ Katalog-Caches und erzeugte IP-Tabellen sind reproduzierbare Arbeitsdaten. Der A
 
 ## Flüchtige Dateien unter `/var/run` \{#transient-files}
 
-| Pfad                            | Zweck                                                                                    |
-|---------------------------------|------------------------------------------------------------------------------------------|
-| `sinkhole-update.lock`          | Gemeinsame Sperre für lang laufende Listen-, IP- und Paketaktualisierungen.              |
-| `sinkhole-runtime.lock`         | Kurze Sperre für Kompilierung, Aktivierung und Resolver-Integration.                     |
-| `sinkhole-clients.lock`         | Sperre für die Aktualisierung der Client-Map.                                            |
-| `sinkhole-alerts.lock`          | Sperre für die Alarmverarbeitung.                                                        |
-| `sinkhole-redirect-check.lock`  | Sperre für die minütliche Umleitungsprüfung.                                             |
-| `sinkhole-redirect-check.json`  | Erste Abweichungsbeobachtung der zweistufigen Umleitungsprüfung.                         |
-| `sinkhole-status.json`          | Aktueller Zustand von Aktualisierung, Kompilierung, Bereitstellung, Clients und Alarmen. |
-| `sinkhole-status.json.lock`     | Koordinationssperre der Statusdatei.                                                     |
-| `sinkhole-update.log`           | Schritte der letzten Listenaktualisierung, angezeigt im Update Log von Status.           |
-| `sinkhole-ip-anchor.conf`       | Aktuell erzeugte Regeln für den Anker `sinkhole/ip`.                                     |
-| `sinkhole-ip-anchor.sha256`     | Digest zum Vergleich erzeugter und geladener IP-Richtlinien.                             |
-| `sinkhole-ip-status.json`       | Zustand von IP-Listen, GeoLite2, Tabellen und Anker.                                     |
-| `sinkhole-bypass-anchor.conf`   | Aktuell erzeugte Regeln für den Anker `sinkhole/bypass`.                                 |
-| `sinkhole-bypass-anchor.sha256` | Digest zum Vergleich erzeugter und geladener Bypass-Richtlinien.                         |
+| Pfad                            | Zweck                                                                                     |
+|---------------------------------|-------------------------------------------------------------------------------------------|
+| `sinkhole-update.lock`          | Gemeinsame Sperre für lang laufende Listen-, Bypass-, IP- und Paketinstallationsaufgaben. |
+| `sinkhole-release.lock`         | Koordinationssperre für Release-Prüfungen und Selbstaktualisierung.                       |
+| `sinkhole-runtime.lock`         | Kurze Sperre für Kompilierung, Aktivierung und Resolver-Integration.                      |
+| `sinkhole-clients.lock`         | Sperre für die Aktualisierung der Client-Map.                                             |
+| `sinkhole-alerts.lock`          | Sperre für die Alarmverarbeitung.                                                         |
+| `sinkhole-redirect-check.lock`  | Sperre für die minütliche Umleitungsprüfung.                                              |
+| `sinkhole-redirect-check.json`  | Erste Abweichungsbeobachtung der zweistufigen Umleitungsprüfung.                          |
+| `sinkhole-status.json`          | Aktueller Zustand von Aktualisierung, Kompilierung, Bereitstellung, Clients und Alarmen.  |
+| `sinkhole-status.json.lock`     | Koordinationssperre der Statusdatei.                                                      |
+| `sinkhole-update.log`           | Schritte der letzten Listenaktualisierung, angezeigt im Update Log von Status.            |
+| `sinkhole-ip-anchor.conf`       | Aktuell erzeugte Regeln für den Anker `sinkhole/ip`.                                      |
+| `sinkhole-ip-anchor.sha256`     | Digest zum Vergleich erzeugter und geladener IP-Richtlinien.                              |
+| `sinkhole-ip-status.json`       | Zustand von IP-Listen, GeoLite2, Tabellen und Anker.                                      |
+| `sinkhole-bypass-anchor.conf`   | Aktuell erzeugte Regeln für den Anker `sinkhole/bypass`.                                  |
+| `sinkhole-bypass-anchor.sha256` | Digest zum Vergleich erzeugter und geladener Bypass-Richtlinien.                          |
 
 Das Vorhandensein einer Sperrdatei allein beweist nicht, dass ein laufender Prozess sie hält. Prüfe Status und Befehlsausgabe, bevor du sie als veraltet behandelst.
 

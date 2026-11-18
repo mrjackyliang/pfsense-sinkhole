@@ -35,9 +35,31 @@ Otvorite **Firewall → Sinkhole → IP** i odaberite **Enable** tek nakon odabi
 | Inbound    | Blokira pakete koji stižu s navedene izvorne adrese, obično na WAN-u.                     |
 | Outbound   | Blokira pakete koji stižu prema navedenoj odredišnoj adresi, obično na mrežama klijenata. |
 
-Sidro sadrži pravila `block drop in quick` i nema pravila propuštanja. Sinkhole ga navodi na ranom položaju pravila paketa u pfSenseu, tako da se blokiranja izvršavaju prije običnih pravila pass-quick. Stranica prvo prikazuje panele IP lista i kataloga, a nakon njih postavke IP adresa i država za cijelu stranicu s dugmetom **Save** ispod panela.
+Sidro sadrži pravila `block drop in quick` i nema pravila propuštanja. Sinkhole ga navodi na ranom položaju pravila paketa u pfSenseu, tako da se blokiranja izvršavaju prije običnih pravila pass-quick. U opsegu **Global** stranica prvo prikazuje panele IP lista i kataloga, a nakon njih postavke IP adresa i država s dugmetom **Save** ispod panela.
 
-<img src={ipTab} alt="Kartica IP prikazuje dvije demonstracijske IP liste s dugmadima za dodavanje i dodavanje iz kataloga te blokiranje IP adresa i zemalja uključeno na LAN-u u oba smjera" width={1024} height={1372} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Kartica IP prikazuje dvije demonstracijske IP liste s dugmadima za dodavanje i dodavanje iz kataloga te blokiranje IP adresa i zemalja uključeno na LAN-u u oba smjera" width={1024} height={1631} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Postavite blokiranje po mreži i uređaju \{#set-blocking-per-network-and-device}
+
+Red ispod kartica određuje šta uređujete: **All**, **Global**, jednu mrežu ili jedan uređaj. Red ispod njega navodi klijente na koje se te postavke primjenjuju. Svaki izbor prikazuje samo vlastite postavke; postavke šireg izbora nikad se ne prikazuju.
+
+Klijent slijedi najspecifičnije postavke koje postoje: prvo postavke svog uređaja, zatim svoje mreže, pa postavke opsega Global. Mreža ili uređaj koji je isključen na kartici Clients preskače se.
+
+Samo **Global** sadrži:
+
+- **Interfaces**, gdje se primjenjuje blokiranje opsega Global.
+- **MaxMind Account ID** i **MaxMind License Key**.
+- Izvore IP lista, **Add from Catalog** i ažuriranja lista.
+
+Global i svaka mreža ili uređaj sadrže **Enable**, **Directions**, **IP Lists** (izvore koji se tu koriste), **Countries** i **IP Allowlist**. Za mrežu ili uređaj, **Outbound** sprječava klijente te mreže ili uređaja da dođu do navedenog odredišta, a **Inbound** sprječava navedeni izvor da dođe do tih klijenata. Države u mreži ili uređaju koriste MaxMind račun opsega Global.
+
+Mreža ili uređaj bez vlastitih postavki prikazuje jedan red, npr. "Nije postavljeno za ovu mrežu; primjenjuje se Globalno.", iznad praznog obrasca. Uređaj tu navodi svoju mrežu kada ta mreža ima vlastite postavke. Spremanjem obrasca postavke se kreiraju, a **Remove settings for this network** ili **Remove settings for this device** ih briše, tako da se ponovo primjenjuju šire postavke. Brisanjem mreže ili uređaja na kartici Clients brišu se i njihove postavke.
+
+**All** navodi Global i svaku mrežu i uređaj s vlastitim postavkama, zajedno s njihovim smjerovima, državama i brojem IP lista. Odaberite red da ga uredite.
+
+Kada se Sinkhole nadogradi na 1.3.0, postojeće postavke ostaju u opsegu Global i kopiraju se u svaku mrežu i uređaj. Od tada je svaka kopija nezavisna. Kopija se uključuje samo ako je interfejs mreže, ili interfejs nekog od identifikatora uređaja, bio odabran u polju **Interfaces**; svaka druga kopija sačuva se isključena, tako da se ne blokira nijedan klijent koji ranije nije bio blokiran.
+
+Svaka mreža ili uređaj s uključenim postavkama dobija vlastitu tabelu klijenata u sidru `sinkhole/ip`. Adrese uređaja uklanjaju se iz tabele njegove mreže i iz tabele opsega Global, a podmreže mreže iz tabele opsega Global, tako da klijenta blokiraju samo njegove najspecifičnije postavke.
 
 ## Dodajte IP liste \{#add-ip-lists}
 

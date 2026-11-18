@@ -2447,23 +2447,41 @@ sinkholeTestRun([
                 devices: [
                     $firstDevice => [
                         'id' => $firstDevice,
-                        'identifier_type' => ScopeConfiguration::DEVICE_STATIC_MAPPING,
-                        'identifier' => '00:11:22:33:44:55',
-                        'interface' => 'lan',
+                        'identifiers' => [
+                            [
+                                'type' => ScopeConfiguration::DEVICE_IP,
+                                'value' => '192.0.2.20',
+                                'interface' => '',
+                            ],
+                            [
+                                'type' => ScopeConfiguration::DEVICE_MAC,
+                                'value' => '00-11-22-33-44-55',
+                                'interface' => '',
+                            ],
+                            [
+                                'type' => ScopeConfiguration::DEVICE_STATIC_MAPPING,
+                                'value' => '00:11:22:33:44:55',
+                                'interface' => 'lan',
+                            ],
+                        ],
                         'enabled' => true,
                     ],
                     $secondDevice => [
                         'id' => $secondDevice,
-                        'identifier_type' => ScopeConfiguration::DEVICE_MAC,
-                        'identifier' => '00-11-22-33-44-55',
-                        'interface' => '',
+                        'identifiers' => [[
+                            'type' => ScopeConfiguration::DEVICE_MAC,
+                            'value' => '00-11-22-33-44-55',
+                            'interface' => '',
+                        ]],
                         'enabled' => true,
                     ],
                     $ipDevice => [
                         'id' => $ipDevice,
-                        'identifier_type' => ScopeConfiguration::DEVICE_IP,
-                        'identifier' => '::ffff:198.51.100.9',
-                        'interface' => '',
+                        'identifiers' => [[
+                            'type' => ScopeConfiguration::DEVICE_IP,
+                            'value' => '::ffff:198.51.100.9',
+                            'interface' => '',
+                        ]],
                         'enabled' => true,
                     ],
                 ],
@@ -2579,6 +2597,11 @@ sinkholeTestRun([
                 'An active lease must join the static mapping device.',
             );
             sinkholeTestAssertSame(
+                $firstDevice,
+                $map['devices']['192.0.2.20'],
+                'An IP identifier must resolve to the same device as its MAC and static mapping.',
+            );
+            sinkholeTestAssertSame(
                 $ipDevice,
                 $map['devices']['198.51.100.9'],
                 'IPv4-mapped device identifiers must normalize to IPv4.',
@@ -2589,6 +2612,16 @@ sinkholeTestRun([
                 'Expired leases and incomplete neighbors must be dropped.',
             );
             sinkholeTestAssertSame(3, count($map['conflicts']), 'Each shared address must conflict.');
+            sinkholeTestAssertSame(
+                false,
+                in_array('192.0.2.20', array_column($map['conflicts'], 'address'), true),
+                'Addresses reached through two identifiers of one device must not conflict.',
+            );
+            sinkholeTestAssertSame(
+                [$firstDevice, $secondDevice],
+                $map['conflicts'][0]['devices'],
+                'A shared address claimed by two devices must still report both owners.',
+            );
             sinkholeTestAssertSame(1, count($source->logs), 'A changed conflict set logs once.');
             sinkholeTestAssertSame(
                 file_get_contents($paths->runtimeClientMapFile),
@@ -2664,9 +2697,11 @@ sinkholeTestRun([
                 ) {
                     $devices[$identifier] = [
                         'id' => $identifier,
-                        'identifier_type' => ScopeConfiguration::DEVICE_MAC,
-                        'identifier' => $mac,
-                        'interface' => '',
+                        'identifiers' => [[
+                            'type' => ScopeConfiguration::DEVICE_MAC,
+                            'value' => $mac,
+                            'interface' => '',
+                        ]],
                         'enabled' => true,
                     ];
                 }

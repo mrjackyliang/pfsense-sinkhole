@@ -49,7 +49,7 @@ Sinkhole and pfBlockerNG can't filter DNS at the same time. Sinkhole stays inact
 ## What Stays Under Your Control \{#what-stays-under-your-control}
 
 - **Lists** — Add sources you trust by URL or find them with the neutral <Terminology title="Find well-known block lists without hunting for URLs" to="/docs/reference/terminology#lists-and-scopes">popular-list search</Terminology>. Sinkhole publishes and recommends no list.
-- **Scopes** — Choose global lists, lists for one pfSense interface or VLAN, and lists for a device identified by IP address, DHCP static mapping, or MAC address.
+- **Clients and Blocking** — Define a network for one pfSense interface or VLAN and a device identified by one or more IP addresses, DHCP static mappings, and MAC addresses, then choose the lists of Global, each network, and each device.
 - **Allowed domains** — Let a domain and its subdomains through at the global, network, or device level without dropping a complete list.
 - **SafeSearch** — Choose which search engines are locked into their safe modes for each scope, and whether YouTube is Moderate or Strict.
 - **Alerts** — Choose the list and client combinations that create local WebGUI notices or use pfSense's configured remote notification services.
@@ -71,6 +71,6 @@ The documentation site provides English and the other 17 pfSense locales. Transl
 ## Next Steps \{#next-steps}
 
 - **[Install the Package](/docs/installation)** — Verify and install the stable release package.
-- **[Set Up Sinkhole](/docs/first-run)** — Add a first list, choose its scope, and verify the active generation.
-- **[Understand Scopes](/docs/configure/scopes)** — Follow the exact device, network, and global decision order.
+- **[Set Up Sinkhole](/docs/first-run)** — Add a first list, choose where it blocks, and verify the active generation.
+- **[Understand Clients and Blocking](/docs/configure/scopes)** — Follow the exact device, network, and global decision order.
 - **[Review the Safety Model](/docs/safety/how-updates-work)** — See how saved copies and atomic deployment keep DNS available.

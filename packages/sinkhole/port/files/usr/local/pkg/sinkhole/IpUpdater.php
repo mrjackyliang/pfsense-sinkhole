@@ -85,6 +85,7 @@ final class IpUpdater
      * @return array{status: string, attempted: int, updated: int, failed: int, ipv4: int, ipv6: int, skipped: int}
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public function run(bool $apply = false): array
     {
@@ -92,12 +93,17 @@ final class IpUpdater
 
         try {
             $configuration = $this->adapter->getIpConfiguration();
+            $contextConfigurations = $this->adapter->getIpContextConfigurations();
 
             if (is_string($configuration['license_key'] ?? null)) {
                 $this->updateLog?->addSecret($configuration['license_key']);
             }
 
-            return $this->runConfigured($configuration, $apply);
+            return $this->runConfigured(
+                $configuration,
+                $contextConfigurations,
+                $apply,
+            );
         } catch (Throwable $throwable) {
             $licenseKey = is_string($configuration['license_key'] ?? null)
                 ? $configuration['license_key']
@@ -124,20 +130,31 @@ final class IpUpdater
      * IP Updater - Run Configured.
      *
      * @param array $configuration - Validated IP settings partition.
+     * @param array<string, array> $contextConfigurations - Exact active-context settings.
      * @param bool $apply - Whether this is a configuration apply handoff.
      *
      * @return array{status: string, attempted: int, updated: int, failed: int, ipv4: int, ipv6: int, skipped: int}
      *
      * @since 1.0.0
+     * @since 1.3.0
      * @private
      */
-    private function runConfigured(array $configuration, bool $apply): array
-    {
+    private function runConfigured(
+        array $configuration,
+        array $contextConfigurations,
+        bool $apply,
+    ): array {
         if ($this->adapter->updateShouldStop()) {
             return $this->stoppedResult();
         }
 
-        if ($configuration['enabled'] === false) {
+        $enabledConfigurations = array_filter(
+            $contextConfigurations,
+            static fn(array $contextConfiguration): bool =>
+                ($contextConfiguration['enabled'] ?? false) === true,
+        );
+
+        if ($enabledConfigurations === []) {
             $this->adapter->applyIpAnchor();
             $this->statusStore->write(['state' => 'disabled']);
 
@@ -152,8 +169,12 @@ final class IpUpdater
             ];
         }
 
-        if ($configuration['invalid_values'] !== []) {
-            throw new RuntimeException('IP blocking settings contain values that need repair.');
+        foreach ($enabledConfigurations as $contextConfiguration) {
+            if (($contextConfiguration['invalid_values'] ?? []) !== []) {
+                throw new RuntimeException(
+                    'IP blocking settings contain values that need repair.',
+                );
+            }
         }
 
         $attempted = 0;
@@ -318,7 +339,7 @@ final class IpUpdater
         }
 
         $this->store->removeUnconfigured(array_keys($configuration['lists']));
-        $networks = [];
+        $listNetworks = [];
 
         foreach ($configuration['lists'] as $identifier => $list) {
             if ($list['enabled'] && $this->store->hasUsableCopy($identifier, $list['url'])) {
@@ -348,11 +369,7 @@ final class IpUpdater
                     ));
                 }
 
-                $networks = array_merge($networks, $savedNetworks);
-
-                if (count($networks) > IpNetwork::MAXIMUM_NETWORKS) {
-                    throw new RuntimeException('The merged IP network count limit was exceeded.');
-                }
+                $listNetworks[$identifier] = $savedNetworks;
             }
         }
 
@@ -360,21 +377,37 @@ final class IpUpdater
             return $this->stoppedResult($attempted, $updated, $failed, $skipped);
         }
 
-        if ($configuration['countries'] !== []) {
-            try {
-                $geoResult = $this->countryNetworks($configuration);
-                $networks = array_merge($networks, $geoResult['ipv4'], $geoResult['ipv6']);
+        $selectedCountries = [];
 
-                if (count($networks) > IpNetwork::MAXIMUM_NETWORKS) {
-                    throw new RuntimeException('The merged IP network count limit was exceeded.');
+        foreach ($enabledConfigurations as $contextConfiguration) {
+            foreach ($contextConfiguration['countries'] ?? [] as $country) {
+                if (is_string($country)) {
+                    $selectedCountries[$country] = true;
                 }
+            }
+        }
+
+        if ($selectedCountries !== []) {
+            if (
+                ($configuration['account_id'] ?? '') === ''
+                || ($configuration['license_key_set'] ?? false) !== true
+            ) {
+                throw new RuntimeException(
+                    'MaxMind credentials are required by an enabled IP context.',
+                );
+            }
+
+            try {
+                $countryConfiguration = $configuration;
+                $countryConfiguration['countries'] = array_keys($selectedCountries);
+                $geoResult = $this->countryNetworks($countryConfiguration);
                 $skipped += $geoResult['skipped'];
 
                 $this->updateLog?->line(sprintf(
                     'GeoLite2 Country: %d IPv4 and %d IPv6 networks for the selected countries (%d), %d skipped.',
                     count($geoResult['ipv4']),
                     count($geoResult['ipv6']),
-                    count($configuration['countries']),
+                    count($selectedCountries),
                     $geoResult['skipped'],
                 ));
             } catch (Throwable $throwable) {
@@ -389,20 +422,10 @@ final class IpUpdater
 
                 if (FileSystem::isRegularFile($this->paths->geoLite2ArchiveFile)) {
                     try {
-                        $geoResult = $this->geoLite2->importArchive(
+                        $this->geoLite2->importArchive(
                             $this->paths->geoLite2ArchiveFile,
-                            $configuration['countries'],
+                            array_keys($selectedCountries),
                         );
-                        $networks = array_merge(
-                            $networks,
-                            $geoResult['ipv4'],
-                            $geoResult['ipv6'],
-                        );
-
-                        if (count($networks) > IpNetwork::MAXIMUM_NETWORKS) {
-                            throw new RuntimeException('The merged IP network count limit was exceeded.');
-                        }
-                        $skipped += $geoResult['skipped'];
                     } catch (Throwable) {
                         $this->adapter->log('The last-good GeoLite2 archive could not be imported.');
                     }
@@ -414,50 +437,105 @@ final class IpUpdater
             return $this->stoppedResult($attempted, $updated, $failed, $skipped);
         }
 
-        $blocked = IpNetwork::merge($networks);
-        $allowed = $this->adapter->ipAllowlistNetworks($configuration['allowlist']);
-        $allowed = array_merge(
-            $allowed,
-            $this->adapter->ipProtectedAddresses($configuration['interfaces']),
+        $protectedNetworks = $this->adapter->ipProtectedAddresses(
+            $configuration['interfaces'] ?? [],
         );
-        $blocked = IpNetwork::subtract($blocked, $allowed);
-        $ipv4 = array_values(array_filter(
-            $blocked,
-            static fn(string $network): bool => IpNetwork::family($network) === 'ipv4',
-        ));
-        $ipv6 = array_values(array_filter(
-            $blocked,
-            static fn(string $network): bool => IpNetwork::family($network) === 'ipv6',
-        ));
+        $ipv4Count = 0;
+        $ipv6Count = 0;
+        $blockTables = [];
 
-        if ($this->adapter->updateShouldStop()) {
-            return $this->stoppedResult($attempted, $updated, $failed, $skipped);
+        foreach ($enabledConfigurations as $context => $contextConfiguration) {
+            if ($this->adapter->updateShouldStop()) {
+                return $this->stoppedResult($attempted, $updated, $failed, $skipped);
+            }
+
+            $networks = [];
+
+            foreach ($contextConfiguration['list_ids'] ?? [] as $identifier) {
+                if (isset($listNetworks[$identifier])) {
+                    $networks = array_merge($networks, $listNetworks[$identifier]);
+                }
+
+                if (count($networks) > IpNetwork::MAXIMUM_NETWORKS) {
+                    throw new RuntimeException('The merged IP network count limit was exceeded.');
+                }
+            }
+
+            if (
+                ($contextConfiguration['countries'] ?? []) !== []
+                && FileSystem::isRegularFile($this->paths->geoLite2ArchiveFile)
+            ) {
+                $contextCountries = $this->geoLite2->importArchive(
+                    $this->paths->geoLite2ArchiveFile,
+                    $contextConfiguration['countries'],
+                );
+                $networks = array_merge(
+                    $networks,
+                    $contextCountries['ipv4'],
+                    $contextCountries['ipv6'],
+                );
+            }
+
+            if (count($networks) > IpNetwork::MAXIMUM_NETWORKS) {
+                throw new RuntimeException('The merged IP network count limit was exceeded.');
+            }
+
+            $blocked = IpNetwork::merge($networks);
+            $allowed = $this->adapter->ipAllowlistNetworks(
+                $contextConfiguration['allowlist'] ?? [],
+            );
+            $blocked = IpNetwork::subtract(
+                $blocked,
+                array_merge($allowed, $protectedNetworks),
+            );
+            $ipv4 = array_values(array_filter(
+                $blocked,
+                static fn(string $network): bool => IpNetwork::family($network) === 'ipv4',
+            ));
+            $ipv6 = array_values(array_filter(
+                $blocked,
+                static fn(string $network): bool => IpNetwork::family($network) === 'ipv6',
+            ));
+            $tables = IpRuleConfiguration::contextTables(
+                $context,
+                $this->paths->ipTableIpv4File,
+                $this->paths->ipTableIpv6File,
+            );
+
+            foreach ([
+                'ipv4' => $ipv4,
+                'ipv6' => $ipv6,
+            ] as $family => $familyNetworks) {
+                AtomicFile::write(
+                    $tables[$family]['block_file'],
+                    ($familyNetworks === [])
+                        ? ''
+                        : implode(PHP_EOL, $familyNetworks) . PHP_EOL,
+                    0600,
+                );
+                $blockTables[] = [
+                    'table' => $tables[$family]['block_table'],
+                    'file' => $tables[$family]['block_file'],
+                ];
+            }
+
+            $ipv4Count += count($ipv4);
+            $ipv6Count += count($ipv6);
         }
 
-        AtomicFile::write(
-            $this->paths->ipTableIpv4File,
-            ($ipv4 === []) ? '' : implode(PHP_EOL, $ipv4) . PHP_EOL,
-            0600,
-        );
-        AtomicFile::write(
-            $this->paths->ipTableIpv6File,
-            ($ipv6 === []) ? '' : implode(PHP_EOL, $ipv6) . PHP_EOL,
-            0600,
-        );
         $this->adapter->applyIpAnchor();
-        $this->adapter->replaceIpTable(
-            IpRuleConfiguration::TABLE_IPV4,
-            $this->paths->ipTableIpv4File,
-        );
-        $this->adapter->replaceIpTable(
-            IpRuleConfiguration::TABLE_IPV6,
-            $this->paths->ipTableIpv6File,
-        );
+
+        foreach ($blockTables as $blockTable) {
+            $this->adapter->replaceIpTable(
+                $blockTable['table'],
+                $blockTable['file'],
+            );
+        }
 
         $this->updateLog?->line(sprintf(
-            'Loaded the IP blocking rules with %d IPv4 and %d IPv6 table entries.',
-            count($ipv4),
-            count($ipv6),
+            'Loaded the IP blocking rules with %d IPv4 and %d IPv6 context table entries.',
+            $ipv4Count,
+            $ipv6Count,
         ));
 
         $now = gmdate('c');
@@ -467,8 +545,8 @@ final class IpUpdater
             'state' => $status,
             'last_attempt' => $now,
             'last_success' => ($failed === 0) ? $now : ($previous['last_success'] ?? null),
-            'ipv4_entries' => count($ipv4),
-            'ipv6_entries' => count($ipv6),
+            'ipv4_entries' => $ipv4Count,
+            'ipv6_entries' => $ipv6Count,
             'skipped_lines' => $skipped,
             'lists_attempted' => $attempted,
             'lists_failed' => $failed,
@@ -482,8 +560,8 @@ final class IpUpdater
             'attempted' => $attempted,
             'updated' => $updated,
             'failed' => $failed,
-            'ipv4' => count($ipv4),
-            'ipv6' => count($ipv6),
+            'ipv4' => $ipv4Count,
+            'ipv6' => $ipv6Count,
             'skipped' => $skipped,
         ];
     }

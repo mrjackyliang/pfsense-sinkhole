@@ -52,7 +52,9 @@ Een bestaand `sinkhole/ip`-anker kan na een geslaagde update alleen een tabelupd
 
 De standaardfrequentie voor lijstupdates is Daily. De schema's Hourly, Every 6 hours, Daily en Weekly gebruiken stabiele willekeurige minuutcomponenten, zodat de firewall het taakmoment niet bij elke opslag verplaatst.
 
-DNS-, Bypass- en IP-/landupdates, het toepassen van instellingen, pakketcontroles en automatische pakketupdates, en het opruimen bij verwijdering worden gecoördineerd via `/var/run/sinkhole-update.lock`. Een pakketcontrole of de actie Update wacht niet: als een andere bewerking de vergrendeling bezit, stopt deze met `Another package operation is already running.` en kan deze opnieuw worden geprobeerd zodra die bewerking is voltooid.
+DNS-, Bypass- en IP-/landupdates, het toepassen van instellingen, pakketinstallatie en het opruimen bij verwijdering worden gecoördineerd via `/var/run/sinkhole-update.lock`. Releasecontroles en automatische pakketupdates worden afzonderlijk gecoördineerd via `/var/run/sinkhole-release.lock`, en controles nemen nooit de vergrendeling voor pakkettaken.
+
+Automatisch bijwerken neemt de releasevergrendeling vóór de vergrendeling voor pakkettaken. Het wacht maximaal 30 minuten op een actieve lijst-, IP- of Bypass-update terwijl de voortgangsregel in About de wachttijd toont.
 
 ## Catalogusvernieuwingen staan los \{#catalog-refreshes-are-separate}
 

@@ -17,10 +17,12 @@ declare(strict_types=1);
 use PfSense\Sinkhole\Domain\BypassConfiguration;
 use PfSense\Sinkhole\Domain\ListConfiguration;
 use PfSense\Sinkhole\Domain\ValidationException;
+use PfSense\Sinkhole\Runtime\Context;
 
 require_once('guiconfig.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
 require_once('/usr/local/pkg/sinkhole/BypassConfiguration.php');
+require_once('/usr/local/pkg/sinkhole/Context.php');
 require_once('/usr/local/pkg/sinkhole/ListConfiguration.php');
 
 /**
@@ -65,6 +67,12 @@ function sinkholeBypassEditorRedirectRecord(array $configuration): array
         'exempt_destinations' => $configuration['exempt_destinations'],
     ];
 }
+
+$scopeConfiguration = pfsensePackageSinkholeGetScopeConfiguration();
+$networks = $scopeConfiguration['networks'];
+$devices = $scopeConfiguration['devices'];
+
+Context::remember(Context::GLOBAL);
 
 $configuration = pfsensePackageSinkholeGetBypassConfiguration();
 $redirect = pfsensePackageSinkholeGetRedirectConfiguration();
@@ -169,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_bypass_list'])) 
             ),
             sinkholeBypassEditorRedirectRecord($redirect),
         );
-        header('Location: sinkhole-bypass.php?saved=1');
+        header('Location: sinkhole-bypass.php?context=global&saved=1');
         exit;
     } catch (Throwable $throwable) {
         $actionMessage = pfsensePackageSinkholeThrowableMessage($throwable);
@@ -198,7 +206,7 @@ $pgtitle = [
 $pglinks = [
     '',
     '/pkg_edit.php?xml=sinkhole.xml&id=0',
-    '/sinkhole-bypass.php',
+    '/sinkhole-bypass.php?context=global',
     '@self',
 ];
 
@@ -209,6 +217,8 @@ if (is_string($actionMessage)) {
 }
 
 display_top_tabs(pfsensePackageSinkholeTabs('bypass'));
+
+print(Context::renderRow('sinkhole-bypass.php', Context::GLOBAL, $networks, $devices, true));
 
 $button = new Form_Button(
     'save_bypass_list',

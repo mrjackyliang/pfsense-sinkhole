@@ -40,7 +40,9 @@ Po pełnym przywróceniu konfiguracji na tej samej zaporze pfSense może zgłosi
 
 Wydana kompilacja zapisuje również w `config.xml` jedno zadanie odzyskiwania przypięte sumą kontrolną. Na nowej zaporze bez plików Sinkhole odłączone zadanie czeka na zakończenie synchronizacji pakietów pfSense, weryfikuje i instaluje dokładną wersję, która je utworzyła, a gdy Sinkhole jest już obecny, kończy działanie bez zmian co 15 minut.
 
-Keep Settings zachowuje to zadanie odzyskiwania podczas celowego odinstalowania. Wyłącz Keep Settings przed usunięciem Sinkhole, jeśli ma pozostać odinstalowany.
+Zadanie przechowuje w `/cf/conf/sinkhole/restore-heal` zweryfikowaną sumą kontrolną kopię tego wydania, pochodzącą z własnego pobrania lub z aktualizacji zainstalowanej przez **About**, dzięki czemu przywrócenie na tej samej zaporze może ponownie zainstalować Sinkhole bez dostępu do Internetu. Jednocześnie działa tylko jedno uruchomienie; uruchomienie rozpoczęte, gdy inne nadal pobiera lub instaluje, natychmiast się kończy. Każdy krok jest zapisywany w dzienniku systemowym pod nazwą `sinkhole-restore-heal`: `deferred`, gdy pfSense nadal przywraca pakiety, następnie `cache` lub `fetch`, `install` i `installed`, albo `fetch-failed`, `checksum-failed`, `cache-failed` lub `install-failed`, gdy krok zakończy się niepowodzeniem.
+
+Celowe odinstalowanie usuwa zadanie odzyskiwania i jego kopię z pamięci podręcznej niezależnie od tego, czy **Keep Settings** jest włączone, czy wyłączone; zachowuje je tylko usunięcie podczas przywracania konfiguracji.
 
 ## Dlaczego uaktualnienie pfSense zachowuje Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
@@ -70,7 +72,7 @@ Gdy **Keep Settings** jest włączone, konfiguracja oraz zapisane listy DNS i IP
 
 1. Sprawdź, czy **Firewall → Sinkhole** nie jest już dostępne.
 2. Sprawdź, czy skrypt Python i kolejność DNS Resolver odpowiadają wartościom sprzed Sinkhole.
-3. Jeśli Keep Settings było wyłączone, sprawdź, czy nie pozostały wpisy cron Sinkhole. W każdym przypadku sprawdź, czy nie pozostał blok przekierowania zwykłego DNS, kotwica `sinkhole/bypass` ani kotwica `sinkhole/ip`.
+3. Sprawdź, czy nie pozostały żadne wpisy cron Sinkhole, w tym zadanie odzyskiwania `sinkhole-restore-heal`, ani żaden blok przekierowania zwykłego DNS, żadna kotwica `sinkhole/bypass` ani żadna kotwica `sinkhole/ip`.
 4. Jeśli Keep Settings było wyłączone, sprawdź, czy `/cf/conf/sinkhole` nie istnieje.
 
 Jeśli aktualizacja była aktywna, znacznik usuwania żąda jej zatrzymania pomiędzy ograniczonymi etapami, zanim trwałe dane zostaną zmienione. Usuwanie rejestruje pierwszy błąd czyszczenia, nadal próbując wykonać pozostałe niezależne kroki.

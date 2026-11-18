@@ -31,21 +31,21 @@ Sinkhole weigert **Enable** op te slaan zolang pfBlockerNG is geïnstalleerd en 
 
 1. Open **Lists** en voeg de URL toe van een bron die u vertrouwt, of open **Add from Catalog** om de twee catalogi op aanvraag te doorzoeken.
 2. Geef de bron een lokale naam en laat **Enabled** geselecteerd, zodat Sinkhole deze downloadt.
-3. Selecteer **Global** alleen wanneer de lijst na elke apparaat- en netwerkregel moet worden toegepast.
-4. Voeg eventuele globale **Allowed Domains** toe, één domein per regel, wanneer een bekende fout-positieve blokkering moet worden doorgelaten.
+3. Open **Blocking**, blijf op **Global** en selecteer de lijst alleen wanneer deze na elke apparaat- en netwerkregel moet worden toegepast.
+4. Voeg op dezelfde pagina eventuele globale **Allowed Domains** toe, één domein per regel, wanneer een bekende fout-positieve blokkering moet worden doorgelaten.
 
 Sinkhole beveelt geen enkele bron aan. [Lijsten en opgeslagen kopieën](/docs/configure/lists) beschrijft de geaccepteerde indelingen en hoe catalogusresultaten gewone lijstrijen worden.
 
-<img src={listsTab} alt="Tabblad Lists met vijf demoblokkeerlijsten, hun kolommen Global en Used By, en twee globaal toegestane domeinen" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Tabblad Lists met vijf demoblokkeerlijsten en hun kolom Used By" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-## Optionele scopes toevoegen \{#add-optional-scopes}
+## Optionele netwerken en apparaten toevoegen \{#add-optional-networks-and-devices}
 
-Open **Scopes** wanneer een netwerk of apparaat aanvullend beleid naast het globale niveau nodig heeft:
+Open **Clients** wanneer een netwerk of apparaat aanvullend beleid naast het Global-niveau nodig heeft:
 
-- Voeg een **Network** toe voor één geconfigureerde pfSense-interface en selecteer vervolgens de lijsten en toegestane domeinen.
-- Voeg een **Device** toe op basis van IP-adres, statische DHCP-toewijzing of MAC-adres en selecteer vervolgens de lijsten en toegestane domeinen.
+- Voeg een **Network** toe voor één geconfigureerde pfSense-interface.
+- Voeg een **Device** toe met een of meer IP-adressen, statische DHCP-toewijzingen of MAC-adressen.
 
-Een apparaat erft het netwerk waarop het zich momenteel bevindt, en het netwerk erft globale lijsten. [Scopes en toegestane domeinen](/docs/configure/scopes) toont de beslisvolgorde die bepaalt of een naam wordt doorgelaten of geblokkeerd.
+Open daarna **Blocking**, kies het netwerk of apparaat in de contextrij en selecteer de lijsten en toegestane domeinen ervan. Een apparaat erft het netwerk waarop het zich momenteel bevindt, en het netwerk erft Global-lijsten. [Clients en blokkeren](/docs/configure/scopes) toont de beslisvolgorde die bepaalt of een naam wordt doorgelaten of geblokkeerd.
 
 ## Inschakelen en bijwerken \{#enable-and-update}
 

@@ -18,19 +18,22 @@ Bruk den faste kommandoen `/usr/local/sbin/sinkhole` for diagnostikk og de samme
 
 ## Kommandomoduser \{#command-modes}
 
-| Kommando                     | Virkemåte                                                                                              |
-|------------------------------|--------------------------------------------------------------------------------------------------------|
-| `sinkhole --update`          | Kjører den planlagte oppdateringsbanen for DNS-, Bypass- og aktiverte IP-/landlister.                  |
-| `sinkhole --manual`          | Kjører den fullstendige manuelle oppdateringen som brukes av **Status → Update Now**.                  |
-| `sinkhole --apply`           | Bruker lagret konfigurasjon i bakgrunnen og utfører bare nødvendig nedlastingsarbeid.                  |
-| `sinkhole --refresh-clients` | Bygger nettverksdelnett og enhetsadresser i klientkartet på nytt.                                      |
-| `sinkhole --alerts`          | Leser blokkeringshendelser og behandler samsvarende varslingsregler.                                   |
-| `sinkhole --redirect-check`  | Avstemmer ønskede regler for omdirigering av vanlig DNS og de uavhengig lastede Bypass- og IP-ankrene. |
-| `sinkhole --check-updates`   | Kontrollerer den nyeste GitHub-utgivelsen og synkroniserer oppdateringsvarselet.                       |
-| `sinkhole --self-update`     | Laster ned, verifiserer, undersøker og installerer den nyeste utgivelsen som ligger i kø.              |
-| `sinkhole --help`            | Skriver ut den støttede brukslinjen.                                                                   |
+| Kommando                               | Virkemåte                                                                                              |
+|----------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `sinkhole --update`                    | Kjører den planlagte oppdateringsbanen for DNS-, Bypass- og aktiverte IP-/landlister.                  |
+| `sinkhole --manual`                    | Kjører den fullstendige manuelle oppdateringen som brukes av **Status → Update Now**.                  |
+| `sinkhole --apply`                     | Bruker lagret konfigurasjon i bakgrunnen og utfører bare nødvendig nedlastingsarbeid.                  |
+| `sinkhole --refresh-clients`           | Bygger nettverksdelnett og enhetsadresser i klientkartet på nytt.                                      |
+| `sinkhole --alerts`                    | Leser blokkeringshendelser og behandler samsvarende varslingsregler.                                   |
+| `sinkhole --redirect-check`            | Avstemmer ønskede regler for omdirigering av vanlig DNS og de uavhengig lastede Bypass- og IP-ankrene. |
+| `sinkhole --check-updates`             | Kontrollerer den nyeste GitHub-utgivelsen og synkroniserer det planlagte oppdateringsvarselet.         |
+| `sinkhole --check-updates --no-notice` | Kontrollerer utgivelsen uten varsel og registrerer en nyere versjon som varslet.                       |
+| `sinkhole --self-update`               | Venter på en liste-, IP- eller Bypass-oppdatering, og verifiserer og installerer så utgivelsen i kø.   |
+| `sinkhole --help`                      | Skriver ut den støttede brukslinjen.                                                                   |
 
-Bruk den installerte banen i automatisering, for eksempel `/usr/local/sbin/sinkhole --refresh-clients`. Modusene utelukker hverandre. En DNS-/Bypass-/IP-listeoppdatering eller automatisk oppdatering som finner den delte oppdateringslåsen allerede holdt, avsluttes uten å starte en konkurrerende operasjon.
+Bruk den installerte banen i automatisering, for eksempel `/usr/local/sbin/sinkhole --refresh-clients`. Modusene utelukker hverandre, og `--no-notice` er bare gyldig sammen med `--check-updates`.
+
+Utgivelseskontroller venter i opptil 30 sekunder på utgivelseslåsen og tar ikke låsen for pakkeoppgaver. Automatisk oppdatering tar utgivelseslåsen først og venter deretter i opptil 30 minutter på at en aktiv DNS-, Bypass- eller IP-listeoppdatering skal frigjøre låsen for pakkeoppgaver.
 
 ## Vedvarende filer under `/cf/conf/sinkhole` \{#persistent-files}
 
@@ -73,7 +76,8 @@ Katalogbuffere og genererte IP-tabeller er reproduserbare arbeidsdata. Varslings
 
 | Bane                            | Formål                                                                                  |
 |---------------------------------|-----------------------------------------------------------------------------------------|
-| `sinkhole-update.lock`          | Delt langvarig lås for liste-, IP- og pakkeoppdateringer.                               |
+| `sinkhole-update.lock`          | Delt langvarig lås for liste-, Bypass-, IP- og pakkeinstallasjonsoppgaver.              |
+| `sinkhole-release.lock`         | Koordineringslås for utgivelseskontroller og automatisk oppdatering.                    |
 | `sinkhole-runtime.lock`         | Kort lås for kompilering, aktivering og Resolver-integrasjon.                           |
 | `sinkhole-clients.lock`         | Lås for oppdatering av klientkartet.                                                    |
 | `sinkhole-alerts.lock`          | Lås for behandling av varsler.                                                          |

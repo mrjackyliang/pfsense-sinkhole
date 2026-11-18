@@ -59,8 +59,8 @@ Un nom de requête autorisé reste autorisé. Cela empêche une cible CNAME moin
 
 ## SafeSearch ne s’applique pas \{#safesearch-does-not-apply}
 
-1. Vérifiez que la portée réseau ou appareil du client est activée dans **Scopes** et que le moteur est coché pour cette portée ou pour Global dans **SafeSearch**.
-2. Consultez **Status → SafeSearch** pour les adresses de l’hôte sécurisé et la dernière erreur. Un hôte sans adresse maintient son moteur bloqué pour la portée jusqu’à ce qu’une résolution réussisse.
+1. Vérifiez que le réseau ou l’appareil du client est activé dans **Clients** et que le moteur est coché pour ce réseau ou cet appareil, ou pour Global, dans **SafeSearch**.
+2. Consultez **Status → SafeSearch** pour les adresses de l’hôte sécurisé et la dernière erreur. Un hôte sans adresse maintient son moteur bloqué pour ce contexte jusqu’à ce qu’une résolution réussisse.
 3. Vérifiez que **Compile Needed** et **Deployment Needed** valent `No` après l’enregistrement.
 4. Vérifiez que le client n’utilise pas de DNS chiffré ni un autre résolveur ; la [protection contre le contournement](/docs/configure/bypass-protection) maintient les interfaces sélectionnées sur le chemin DNS de Sinkhole.
 
@@ -68,10 +68,10 @@ Un navigateur peut garder en cache l’adresse habituelle d’un moteur pendant 
 
 ## Un appareil reçoit la mauvaise politique \{#a-device-gets-the-wrong-policy}
 
-- Exécutez `/usr/local/sbin/sinkhole --refresh-clients` et examinez **Status → Scopes**.
-- Vérifiez que la ligne réseau affiche les sous-réseaux actuels de l’interface et que la ligne de l’appareil affiche ses adresses actuelles.
+- Exécutez `/usr/local/sbin/sinkhole --refresh-clients` et examinez **Status → Clients**.
+- Vérifiez que la ligne réseau affiche les sous-réseaux actuels de l’interface et que la ligne de l’appareil affiche tous les identifiants configurés et leurs adresses actuelles.
 - Résolvez toute valeur **Conflict**, car le premier appareil dans l’ordre de la table l’emporte pour une adresse partagée.
-- Pour une association statique, vérifiez son adresse configurée et les adresses actuelles observées pour sa MAC.
+- Pour chaque identifiant d’association statique, vérifiez son adresse configurée et les adresses actuelles observées pour sa MAC. Les adresses trouvées par deux identifiants du même appareil ne sont pas des conflits.
 
 Les heures de fin de bail ISC peuvent être en GMT ou dans l’heure locale du pare-feu selon le réglage de l’interface, tandis que celles de Kea sont déjà locales. Sinkhole respecte cette sémantique pfSense lorsqu’il détermine si un bail est actuel.
 

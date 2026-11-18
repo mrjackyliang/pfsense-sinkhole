@@ -52,7 +52,7 @@ No modo Python, o DNSBL do pfBlockerNG usa o mesmo espaço para script Python qu
 ## Requisitos de rede \{#network-requirements}
 
 - Os âmbitos de rede usam as sub-redes IPv4 e IPv6 atuais das interfaces configuradas do pfSense.
-- Dispositivos identificados por endereço MAC ou mapeamento estático dependem dos dados atuais de ARP, NDP, concessões DHCP, mapeamentos estáticos e interfaces.
+- Cada dispositivo pode ter vários endereços IP, endereços MAC e mapeamentos estáticos. Os identificadores de MAC e de mapeamento estático dependem dos dados atuais de ARP, NDP, concessões DHCP, mapeamentos estáticos e interfaces.
 - O redirecionamento de DNS comum em **Bypass** exige uma família de endereços na interface selecionada e um listener correspondente no Resolver.
 - Os clientes redirecionados ainda precisam ser permitidos pelas configurações de controlo de acesso do Resolver.
 

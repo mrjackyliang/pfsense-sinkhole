@@ -30,7 +30,7 @@ To je radilo, ali svako ponovno pokretanje ili učitavanje zaštitnog zida znač
 
 Sinkhole radi kao Python modul unutar DNS Resolvera u pfSenseu i na blokirani naziv odgovara adresama `0.0.0.0` i `::`.
 
-- **Liste za svaki opseg** — globalne liste važe za sve. Mrežni opseg dodaje liste za jedan interfejs ili VLAN, a opseg uređaja dodaje liste za jedan uređaj, prepoznat po IP adresi, DHCP statičkom mapiranju ili MAC adresi.
+- **Liste za svaki opseg** — globalne liste važe za sve. Mrežni opseg dodaje liste za jedan interfejs ili VLAN, a opseg uređaja dodaje jedan zajednički skup lista za uređaj prepoznat po jednoj ili više IP adresa, DHCP statičkih mapiranja i MAC adresa.
 - **Dozvoljene domene na svakom nivou** — lažno pozitivan rezultat ispravlja se tamo gdje je važno, bez izbacivanja cijele liste.
 - **Sačuvane kopije svake liste** — DNS odgovara iz posljednjih ispravnih podataka odmah nakon ponovnog pokretanja DNS Resolvera ili sistema, uključujući instalacije na RAM disku. Neuspjelo preuzimanje zadržava prethodnu kopiju.
 - **Upozorenja koja birate** — pfSense obavještenje stiže samo za liste, mreže i uređaje koje odabere pravilo upozorenja, jednom po uređaju i domeni.

@@ -52,7 +52,7 @@ I Python-modus bruker pfBlockerNG DNSBL den samme plassen for Python-skript som 
 ## Nettverkskrav \{#network-requirements}
 
 - Nettverksomfang bruker gjeldende IPv4- og IPv6-delnett for konfigurerte pfSense-grensesnitt.
-- Enheter som identifiseres med MAC-adresse eller statisk tilordning, er avhengige av gjeldende data for ARP, NDP, DHCP-leie, statisk tilordning og grensesnitt.
+- Hver enhet kan ha flere IP-adresser, MAC-adresser og statiske tilordninger. MAC- og statiske tilordningsidentifikatorer er avhengige av gjeldende data for ARP, NDP, DHCP-leie, statisk tilordning og grensesnitt.
 - Omdirigering av vanlig DNS under **Bypass** krever en adressefamilie på det valgte grensesnittet og en samsvarende lytter i Resolver.
 - Omdirigerte klienter må fortsatt tillates av innstillingene for tilgangskontroll i Resolver.
 

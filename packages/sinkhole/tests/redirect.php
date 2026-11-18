@@ -24,6 +24,7 @@ require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole.inc');
  * @return PackagePaths
  *
  * @since 1.0.0
+ * @since 1.3.0
  */
 function sinkholeRedirectTestPaths(string $root): PackagePaths
 {
@@ -32,6 +33,7 @@ function sinkholeRedirectTestPaths(string $root): PackagePaths
         'runtime_root_directory' => $root . '/runtime',
         'module_source_file' => $root . '/sinkhole_unbound.py',
         'update_lock_file' => $root . '/sinkhole-update.lock',
+        'release_lock_file' => $root . '/sinkhole-release.lock',
         'runtime_lock_file' => $root . '/sinkhole-runtime.lock',
         'client_lock_file' => $root . '/sinkhole-clients.lock',
         'alert_lock_file' => $root . '/sinkhole-alerts.lock',

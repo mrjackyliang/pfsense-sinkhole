@@ -52,7 +52,9 @@ Istniejąca kotwica `sinkhole/ip` może po udanej aktualizacji otrzymać aktuali
 
 Domyślna częstotliwość aktualizacji list to Daily. Harmonogramy Hourly, Every 6 hours, Daily i Weekly używają stabilnych losowych składników minut, aby zapora nie zmieniała czasu zadania przy każdym zapisaniu.
 
-Aktualizacje DNS, Bypass i IP/krajów, zastosowanie ustawień, sprawdzanie i automatyczna aktualizacja pakietu oraz porządkowanie przy usuwaniu są koordynowane przez `/var/run/sinkhole-update.lock`. Sprawdzenie pakietu ani akcja Update nie czekają: jeśli blokadę utrzymuje inna operacja, zatrzymują się z komunikatem `Another package operation is already running.` i można je ponowić po zakończeniu tej operacji.
+Aktualizacje DNS, Bypass i IP/krajów, zastosowanie ustawień, instalacja pakietu oraz porządkowanie przy usuwaniu są koordynowane przez `/var/run/sinkhole-update.lock`. Kontrole wydań i automatyczne aktualizacje są koordynowane oddzielnie przez `/var/run/sinkhole-release.lock`, a kontrole nigdy nie zajmują blokady zadań pakietu.
+
+Automatyczna aktualizacja zajmuje blokadę wydania przed blokadą zadań pakietu. Czeka do 30 minut na trwającą aktualizację list, IP lub Bypass, a wiersz postępu w About pokazuje oczekiwanie.
 
 ## Odświeżanie katalogów jest oddzielne \{#catalog-refreshes-are-separate}
 

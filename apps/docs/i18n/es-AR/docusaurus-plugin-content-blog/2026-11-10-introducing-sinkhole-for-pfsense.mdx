@@ -30,7 +30,7 @@ Esa configuración funcionaba, pero cada reinicio o recarga del firewall signifi
 
 Sinkhole corre como módulo Python dentro del DNS Resolver de pfSense y responde a un nombre bloqueado con `0.0.0.0` y `::`.
 
-- **Listas para cada ámbito** — Las listas globales se aplican a todos. Un ámbito de red agrega listas para una interfaz o VLAN, y un ámbito de dispositivo agrega listas para un dispositivo, identificado por dirección IP, asignación estática de DHCP o dirección MAC.
+- **Listas para cada ámbito** — Las listas globales se aplican a todos. Un ámbito de red agrega listas para una interfaz o VLAN, y un ámbito de dispositivo agrega un conjunto compartido de listas para un dispositivo identificado por una o varias direcciones IP, asignaciones estáticas de DHCP y direcciones MAC.
 - **Dominios permitidos en cada nivel** — Un falso positivo se corrige donde importa, sin descartar una lista entera.
 - **Copias guardadas de cada lista** — El DNS responde con los últimos datos válidos apenas se reinicia el DNS Resolver o el equipo, también en instalaciones con disco RAM. Una descarga fallida conserva la copia anterior.
 - **Alertas que vos elegís** — Llega una notificación de pfSense solo para las listas, redes y dispositivos que selecciona una regla de alerta, una vez por dispositivo y dominio.

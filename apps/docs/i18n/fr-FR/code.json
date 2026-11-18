@@ -102,19 +102,19 @@
     "message": "Pages de Sinkhole"
   },
   "home.showcase.scopes.label": {
-    "message": "Portées"
+    "message": "Clients et blocage"
   },
   "home.showcase.scopes.heading": {
     "message": "Des règles différentes pour chaque réseau et appareil"
   },
   "home.showcase.scopes.description": {
-    "message": "Donnez à un réseau ou à un seul appareil ses propres listes et domaines autorisés. Chaque requête DNS suit la portée la plus spécifique qui lui correspond."
+    "message": "Définissez chaque réseau et chaque appareil une seule fois dans Clients, puis attribuez-leur leurs propres listes et domaines autorisés dans Blocage. Chaque requête DNS suit la correspondance la plus spécifique : d’abord l’appareil, puis son réseau, puis les paramètres globaux."
   },
   "home.showcase.scopes.link": {
-    "message": "Configurer les portées"
+    "message": "Configurer les clients et le blocage"
   },
   "home.showcase.scopes.alt": {
-    "message": "Page Portées de Sinkhole avec une portée réseau LAN et trois portées d’appareil"
+    "message": "Page Clients de Sinkhole avec un réseau LAN et trois appareils"
   },
   "home.showcase.services.heading": {
     "message": "Bloquez un service entier en un clic"
@@ -135,16 +135,16 @@
     "message": "Sachez ce qui est chargé et ce qui est obsolète"
   },
   "home.showcase.status.description": {
-    "message": "État affiche chaque liste avec son nombre d’entrées et sa dernière mise à jour, ainsi que les portées, réseaux et appareils que Sinkhole applique en ce moment."
+    "message": "État affiche chaque liste avec son nombre d’entrées et sa dernière mise à jour, ainsi que les réseaux et appareils que Sinkhole applique en ce moment."
   },
   "home.showcase.status.link": {
     "message": "Découvrir la page État"
   },
   "home.showcase.status.alt": {
-    "message": "Page État de Sinkhole avec les panneaux des listes, portées, réseaux et appareils"
+    "message": "Page État de Sinkhole avec les panneaux des listes, réseaux et appareils"
   },
   "home.showcase.scopes.title": {
-    "message": "pfSense.home.arpa - Pare-feu: Sinkhole: Portées"
+    "message": "pfSense.home.arpa - Pare-feu: Sinkhole: Clients"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Pare-feu: Sinkhole: Services"

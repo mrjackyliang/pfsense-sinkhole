@@ -64,6 +64,8 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Compiler.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Context.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/CurlDownloadClient.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/DomainParser.php \
@@ -99,6 +101,8 @@ do-install:
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/PlatformAdapter.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/RedirectConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/RestoreHeal.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/SafeSearchConfiguration.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
@@ -170,9 +174,15 @@ do-install:
 		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-alerts_edit.php \
 		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-blocking.php \
+		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-bypass.php \
 		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-bypass_edit.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-clients.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-clients_edit.php \
 		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/sinkhole-lists.php \
 		${STAGEDIR}${PREFIX}/www

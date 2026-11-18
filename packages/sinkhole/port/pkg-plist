@@ -15,6 +15,7 @@ pkg/sinkhole/CatalogPresentation.php
 pkg/sinkhole/ClientMap.php
 pkg/sinkhole/ClientSource.php
 pkg/sinkhole/Compiler.php
+pkg/sinkhole/Context.php
 pkg/sinkhole/CurlDownloadClient.php
 pkg/sinkhole/DomainParser.php
 pkg/sinkhole/DownloadClient.php
@@ -33,6 +34,7 @@ pkg/sinkhole/PackagePaths.php
 pkg/sinkhole/PfSenseAdapter.php
 pkg/sinkhole/PlatformAdapter.php
 pkg/sinkhole/RedirectConfiguration.php
+pkg/sinkhole/RestoreHeal.php
 pkg/sinkhole/SafeSearchConfiguration.php
 pkg/sinkhole/SafeSearchEngines.php
 pkg/sinkhole/SafeSearchTargets.php
@@ -76,8 +78,11 @@ www/css/sinkhole.css
 www/sinkhole-about.php
 www/sinkhole-alerts.php
 www/sinkhole-alerts_edit.php
+www/sinkhole-blocking.php
 www/sinkhole-bypass.php
 www/sinkhole-bypass_edit.php
+www/sinkhole-clients.php
+www/sinkhole-clients_edit.php
 www/sinkhole-lists.php
 www/sinkhole-lists_edit.php
 www/sinkhole-services.php

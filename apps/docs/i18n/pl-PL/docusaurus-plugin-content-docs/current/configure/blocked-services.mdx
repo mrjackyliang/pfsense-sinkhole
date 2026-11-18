@@ -6,8 +6,8 @@ keywords:
   - sinkhole for pfsense
   - zablokowane usługi
   - blokowanie usług
-  - zakres sieci
-  - zakres urządzenia
+  - blokowanie w sieci
+  - blokowanie na urządzeniu
 tags:
   - configure
   - services
@@ -18,15 +18,17 @@ import servicesTab from './_assets_/blocked-services-1.png';
 
 Użyj **Firewall → Sinkhole → Services**, gdy chcesz zablokować całą markę bez wybierania i utrzymywania oddzielnego adresu URL listy.
 
-## Wybieranie zakresu \{#choose-a-scope}
+## Wybieranie kontekstu \{#choose-a-context}
 
-Wybierz **Global**, skonfigurowaną sieć lub skonfigurowane urządzenie. Wyszukaj usługę, zawęź kafelki za pomocą znacznika grupy, włącz lub wyłącz usługi, a następnie wybierz **Save** pod kartami usług.
+Wybierz **Global**, sieć lub urządzenie w [wierszu kontekstu](/docs/configure/scopes#contexts) pod kartami głównymi; strona pokazuje tylko własny wybór tego kontekstu. Wyszukaj usługę, zawęź kafelki za pomocą znacznika grupy, włącz lub wyłącz usługi, a następnie wybierz **Save** pod kartami usług.
 
-Wybór jest kompilowany na istniejącym poziomie zakresu. Dozwolone domeny urządzenia nadal mają pierwszeństwo przed regułami usług urządzenia, dozwolone domeny sieci nadal mają pierwszeństwo przed regułami usług sieci, a globalne dozwolone domeny nadal mają pierwszeństwo przed globalnymi regułami usług.
+**All** wymienia każdy kontekst, który blokuje co najmniej jedną usługę, wraz z nazwami usług; wybierz wiersz, aby edytować ten kontekst.
+
+Wybór jest kompilowany na istniejącym poziomie tego kontekstu. Dozwolone domeny urządzenia nadal mają pierwszeństwo przed regułami usług urządzenia, dozwolone domeny sieci nadal mają pierwszeństwo przed regułami usług sieci, a globalne dozwolone domeny nadal mają pierwszeństwo przed globalnymi regułami usług.
 
 Usługi objęte dedykowaną ochroną Bypass nie są wyświetlane w siatce, licznikach grup ani wynikach wyszukiwania. Private Relay konfiguruje się tylko na karcie Bypass.
 
-<img src={servicesTab} alt="Karta Services przefiltrowana do grupy Gaming dla zakresu urządzenia demonstracyjnego, z czterema wybranymi usługami" width={1024} height={1288} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={servicesTab} alt="Karta Services przefiltrowana do grupy Gaming dla urządzenia demonstracyjnego, z czterema wybranymi usługami" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Rejestr i naprawa \{#registry-and-repair}
 
@@ -34,5 +36,5 @@ Sinkhole pobiera rejestr usług AdGuard Home tylko po otwarciu tej strony lub wy
 
 Logo usług są renderowane jako izolowane obrazy data URI. Brakujące lub zbyt duże logo korzystają z obrazu ogólnego. Jeśli zapisana usługa zniknie z nowszego rejestru, Sinkhole zachowuje jej identyfikator i pokazuje ją w **Needs Repair**; wyłącz ją i zapisz, aby usunąć ten wybór.
 
-Karta **Status** pokazuje czas pobrania rejestru, ostatni błąd i liczbę zablokowanych usług wybranych dla każdego skonfigurowanego zakresu.
+Karta **Status** pokazuje czas pobrania rejestru, ostatni błąd i liczbę zablokowanych usług wybranych dla Global oraz każdej sieci i każdego urządzenia.
 

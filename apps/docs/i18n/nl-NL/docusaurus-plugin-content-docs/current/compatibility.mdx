@@ -52,7 +52,7 @@ In Python-modus gebruikt pfBlockerNG DNSBL dezelfde Python-scriptpositie als Sin
 ## Netwerkvereisten \{#network-requirements}
 
 - Netwerkscopes gebruiken de huidige IPv4- en IPv6-subnetten van geconfigureerde pfSense-interfaces.
-- Apparaten die via een MAC-adres of statische toewijzing worden geïdentificeerd, zijn afhankelijk van actuele ARP-, NDP-, DHCP-lease-, statische-toewijzings- en interfacegegevens.
+- Elk apparaat kan meerdere IP-adressen, MAC-adressen en statische toewijzingen hebben. MAC- en statische-toewijzingsidentificaties zijn afhankelijk van actuele ARP-, NDP-, DHCP-lease-, statische-toewijzings- en interfacegegevens.
 - Voor de omleiding van gewone DNS onder **Bypass** moet de geselecteerde interface een adresfamilie hebben en moet de Resolver daarop luisteren.
 - Omgeleide clients moeten nog steeds door de instellingen voor toegangsbeheer van de Resolver worden toegestaan.
 

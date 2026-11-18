@@ -52,7 +52,9 @@ IP 및 국가 차단이 활성화되면 동일한 예약 또는 수동 업데이
 
 기본 목록 업데이트 빈도는 Daily입니다. Hourly, Every 6 hours, Daily, Weekly 일정은 안정적으로 임의 지정된 분 값을 사용하므로 저장할 때마다 방화벽의 작업 시간이 변경되지 않습니다.
 
-DNS, Bypass 및 IP/국가 업데이트, 설정 적용, 패키지 확인과 자체 업데이트, 제거 정리 작업은 `/var/run/sinkhole-update.lock`을 통해 조정됩니다. 패키지 확인이나 Update 작업은 기다리지 않습니다. 다른 작업이 잠금을 보유하고 있으면 `Another package operation is already running.`과 함께 중지되며, 해당 작업이 끝난 후 다시 시도할 수 있습니다.
+DNS, Bypass 및 IP/국가 업데이트, 설정 적용, 패키지 설치와 제거 정리 작업은 `/var/run/sinkhole-update.lock`을 통해 조정됩니다. 릴리스 확인과 자체 업데이트는 `/var/run/sinkhole-release.lock`을 통해 별도로 조정되며 확인 작업은 패키지 작업 잠금을 사용하지 않습니다.
+
+자체 업데이트는 패키지 작업 잠금보다 릴리스 잠금을 먼저 획득합니다. 목록, IP 또는 Bypass 업데이트가 끝날 때까지 최대 30분 동안 기다리며 About 진행 표시줄에 대기 상태를 표시합니다.
 
 ## 카탈로그 새로 고침은 별도 수행 \{#catalog-refreshes-are-separate}
 

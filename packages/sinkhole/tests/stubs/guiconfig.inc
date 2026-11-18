@@ -367,6 +367,9 @@ class Form_Checkbox extends Form_Input
     /** @since 1.0.0 */
     private bool $checked;
 
+    /** @since 1.3.0 */
+    private bool $radio = false;
+
     /** @since 1.0.0 */
     public function __construct(
         mixed $name,
@@ -381,13 +384,27 @@ class Form_Checkbox extends Form_Input
         $this->classes = [];
     }
 
+    /**
+     * Renders the control as a radio button, as pfSense's Form_Checkbox does.
+     *
+     * @return static
+     *
+     * @since 1.3.0
+     */
+    public function displayAsRadio(): static
+    {
+        $this->radio = true;
+
+        return $this;
+    }
+
     /** @since 1.0.0 */
     protected function renderControl(): string
     {
         $attributes = [
             'name' => $this->name,
             'id' => $this->getId(),
-            'type' => 'checkbox',
+            'type' => $this->radio ? 'radio' : 'checkbox',
             'value' => $this->value,
             'checked' => $this->checked ? 'checked' : null,
         ];

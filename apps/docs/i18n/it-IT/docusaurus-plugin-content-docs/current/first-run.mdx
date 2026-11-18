@@ -31,21 +31,21 @@ Sinkhole rifiuta di salvare **Enable** mentre pfBlockerNG è installato e abilit
 
 1. Apri **Lists** e aggiungi l’URL di una fonte attendibile, oppure apri **Add from Catalog** per cercare nei due cataloghi su richiesta.
 2. Assegna un nome locale alla fonte e lascia **Enabled** selezionato affinché Sinkhole la scarichi.
-3. Seleziona **Global** solo quando la lista deve essere applicata dopo tutte le regole di dispositivo e rete.
-4. Aggiungi eventuali **Allowed Domains** globali, un dominio per riga, quando occorre consentire un falso positivo noto.
+3. Apri **Blocking**, resta su **Global** e seleziona la lista solo quando deve essere applicata dopo tutte le regole di dispositivo e rete.
+4. Aggiungi eventuali **Allowed Domains** globali nella stessa pagina, un dominio per riga, quando occorre consentire un falso positivo noto.
 
 Sinkhole non consiglia alcuna fonte. [Liste e copie salvate](/docs/configure/lists) descrive i formati accettati e come i risultati del catalogo diventano normali righe di lista.
 
-<img src={listsTab} alt="Scheda Lists con cinque liste di blocco dimostrative, le colonne Global e Used By e due domini consentiti globali" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Scheda Lists con cinque liste di blocco dimostrative e la colonna Used By" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-## Aggiungere ambiti facoltativi \{#add-optional-scopes}
+## Aggiungere reti e dispositivi facoltativi \{#add-optional-networks-and-devices}
 
-Apri **Scopes** quando una rete o un dispositivo richiede criteri aggiuntivi rispetto al livello globale:
+Apri **Clients** quando una rete o un dispositivo richiede criteri aggiuntivi rispetto al livello Global:
 
-- Aggiungi un **Network** per un’interfaccia pfSense configurata, quindi selezionane le liste e i domini consentiti.
-- Aggiungi un **Device** tramite indirizzo IP, mapping DHCP statico o indirizzo MAC, quindi selezionane le liste e i domini consentiti.
+- Aggiungi un **Network** per un’interfaccia pfSense configurata.
+- Aggiungi un **Device** con uno o più indirizzi IP, mapping DHCP statici o indirizzi MAC.
 
-Un dispositivo eredita la rete in cui si trova e la rete eredita le liste globali. [Ambiti e domini consentiti](/docs/configure/scopes) mostra l’ordine decisionale che determina se un nome viene consentito o bloccato.
+Quindi apri **Blocking**, scegli la rete o il dispositivo nella riga dei contesti e selezionane le liste e i domini consentiti. Un dispositivo eredita la rete in cui si trova e la rete eredita le liste Global. [Client e blocco](/docs/configure/scopes) mostra l’ordine decisionale che determina se un nome viene consentito o bloccato.
 
 ## Abilitare e aggiornare \{#enable-and-update}
 

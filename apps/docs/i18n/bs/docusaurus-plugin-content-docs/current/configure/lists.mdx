@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Liste i sačuvane kopije
-description: Dodajte DNS liste URL-om ili iz kataloga, koristite formate hosts, domena i adblock pravila, upravljajte globalnim pravilima i čuvajte posljednje ispravne kopije.
+description: Dodajte DNS liste URL-om ili iz kataloga, koristite formate hosts, domena i adblock pravila i čuvajte posljednje ispravne kopije.
 keywords:
   - sinkhole for pfsense
   - liste za blokiranje
@@ -21,7 +21,7 @@ Dodajte izvore lista kojima vjerujete i dopustite Sinkholeu da na zaštitnom zid
 ## Zašto koristiti sačuvane liste? \{#why-use-saved-lists}
 
 1. Održava DNS nezavisnim od hosta liste, tako da sporo ili neuspjelo preuzimanje ne prekida razrješavanje naziva.
-2. Svaki izvor preuzima jednom, pa ista sačuvana kopija može služiti globalnim, mrežnim i uređajskim opsezima.
+2. Svaki izvor preuzima jednom, pa ista sačuvana kopija može služiti za Global, svaku mrežu i svaki uređaj.
 3. Čuva prethodnu važeću kopiju kada novo preuzimanje ili parsiranje ne uspije, tako da neispravan unos ne zamijeni pravila koja rade.
 4. Ažurira liste u pozadini, pa ponovno pokretanje ili učitavanje Resolvera nikada ne čeka mrežu.
 
@@ -29,14 +29,15 @@ Dodajte izvore lista kojima vjerujete i dopustite Sinkholeu da na zaštitnom zid
 
 Otvorite **Firewall → Sinkhole → Lists**, odaberite **Add** ispod tabele lista za blokiranje, a zatim popunite **Add Block List** na stranici uređivača:
 
-| Polje   | Opis                                                               |
-|---------|--------------------------------------------------------------------|
-| Name    | Lokalna oznaka prikazana u dodjelama, upozorenjima i Statusu.      |
-| URL     | HTTP ili HTTPS izvor bez ugrađenih vjerodajnica.                   |
-| Enabled | Preuzima izvor i čini ga dostupnim dodijeljenim opsezima.          |
-| Global  | Primjenjuje izvor na svakog klijenta nakon odluka uređaja i mreže. |
+| Polje   | Opis                                                             |
+|---------|------------------------------------------------------------------|
+| Name    | Lokalna oznaka prikazana na karticama Blocking, Alerts i Status. |
+| URL     | HTTP ili HTTPS izvor bez ugrađenih vjerodajnica.                 |
+| Enabled | Preuzima izvor kako bi ga Blocking mogao koristiti.              |
 
 Spremanje vraća na karticu Lists i pokreće isti provjereni put primjene u pozadini. Odaberite olovku u redu ili dvaput kliknite red da biste ga uredili. Onemogućeni red ostaje konfiguriran, ali je prigušen u tabeli i ne koriste ga program za ažuriranje ni kompajlirana pravila.
+
+Lists je samo upravitelj lista. Koje se liste primjenjuju na Global, mrežu ili uređaj bira se na kartici [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), a kolona **Used By** broji Global i svaku mrežu i uređaj koji odabire tu listu.
 
 ## Prihvaćeni DNS formati \{#accepted-dns-formats}
 
@@ -60,7 +61,7 @@ Rezultati se prikazuju kao kartice. Zajedno koristite kontrole pretrage, izvora 
 
 Svaka kartica prikazuje naziv liste, njenog održavaoca ili kategoriju, izvorni katalog, opis u dva reda, početnu stranicu i stanje **Add** ili **Added**. Kartice ne prikazuju ocjene, značke ni preporuke. Odabir **Add** kreira obični red liste čiji se URL može dodijeliti kao i svaki ručno uneseni izvor.
 
-Nove liste, uključujući one dodane iz kataloga, počinju s neoznačenim **Global**, pa ništa ne blokiraju dok ne označite Global ili ih ne odaberete u nekom opsegu.
+Nove liste, uključujući one dodane iz kataloga, ništa ne blokiraju dok ih na kartici Blocking ne odaberete za Global, mrežu ili uređaj.
 
 Red **Contents** na svakoj kartici prikazuje **Domains**. Dodavanjem rezultata iz kataloga njegov naziv iz kataloga ostaje nepromijenjen.
 
@@ -72,7 +73,7 @@ Izvori dodijeljeni zaštiti od zaobilaženja Encrypted DNS, Tor ili VPN ne prika
 
 ## Postavite globalne dopuštene domene \{#set-global-allowed-domains}
 
-Odjeljak **Allowed Domains** ispod panela lista i kataloga definira globalne izuzetke. Svaki red dopušta toj domeni i njenim poddomenama prolazak kroz naslijeđene globalne liste. Odaberite **Save** ispod tog odjeljka kako biste primijenili postavku za cijelu stranicu.
+Globalni izuzeci nalaze se na **Blocking → Global** u okviru **Allowed Domains**. Svaki red dopušta toj domeni i njenim poddomenama prolazak kroz globalne liste. Odaberite **Save** da ih primijenite.
 
 Globalna dopuštena domena provjerava se nakon pravila uređaja i mreže. Zato ne može nadjačati listu koja je već blokirala upit na određenijem nivou uređaja ili mreže.
 

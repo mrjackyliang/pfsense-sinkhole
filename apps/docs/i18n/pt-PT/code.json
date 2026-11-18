@@ -105,19 +105,19 @@
     "message": "Páginas do Sinkhole"
   },
   "home.showcase.scopes.label": {
-    "message": "Âmbitos"
+    "message": "Clientes e bloqueio"
   },
   "home.showcase.scopes.heading": {
     "message": "Regras diferentes para cada rede e dispositivo"
   },
   "home.showcase.scopes.description": {
-    "message": "Dê a uma rede ou a um único dispositivo as suas próprias listas e domínios permitidos. Cada consulta DNS segue o âmbito mais específico que lhe corresponde."
+    "message": "Defina cada rede e cada dispositivo uma vez em Clientes e depois atribua a cada um as suas próprias listas e domínios permitidos em Bloqueio. Cada consulta DNS segue a correspondência mais específica: primeiro o dispositivo, depois a respetiva rede e, por fim, as definições globais."
   },
   "home.showcase.scopes.link": {
-    "message": "Configurar âmbitos"
+    "message": "Configurar clientes e bloqueio"
   },
   "home.showcase.scopes.alt": {
-    "message": "Página Âmbitos do Sinkhole com um âmbito de rede LAN e três âmbitos de dispositivo"
+    "message": "Página Clientes do Sinkhole com uma rede LAN e três dispositivos"
   },
   "home.showcase.services.label": {
     "message": "Serviços"
@@ -141,16 +141,16 @@
     "message": "Saiba o que está carregado e o que está desatualizado"
   },
   "home.showcase.status.description": {
-    "message": "Estado mostra cada lista com o número de entradas e a última atualização, além dos âmbitos, redes e dispositivos que o Sinkhole está a aplicar neste momento."
+    "message": "Estado mostra cada lista com o número de entradas e a última atualização, além das redes e dispositivos que o Sinkhole está a aplicar neste momento."
   },
   "home.showcase.status.link": {
     "message": "Conhecer a página Estado"
   },
   "home.showcase.status.alt": {
-    "message": "Página Estado do Sinkhole com os painéis de listas, âmbitos, redes e dispositivos"
+    "message": "Página Estado do Sinkhole com os painéis de listas, redes e dispositivos"
   },
   "home.showcase.scopes.title": {
-    "message": "pfSense.home.arpa - Firewall: Sinkhole: Âmbitos"
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: Clientes"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Firewall: Sinkhole: Serviços"

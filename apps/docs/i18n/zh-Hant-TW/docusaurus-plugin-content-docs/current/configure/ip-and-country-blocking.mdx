@@ -35,9 +35,31 @@ import ipTab from './_assets_/ip-and-country-blocking-1.png';
 | Inbound    | 封鎖來自所列源地址的資料包，通常用於 WAN。   |
 | Outbound   | 封鎖發往所列目標地址的資料包，通常用於用戶端網路。 |
 
-錨點包含 `block drop in quick` 規則，不包含 pass 規則。Sinkhole 通過 pfSense 的早期套件規則位置引用它，讓封鎖在普通 pass-quick 規則前執行。該頁面先顯示 IP 清單和目錄面板，再顯示頁面級 IP 和國家/地區設定，並在面板下方提供 **Save**。
+錨點包含 `block drop in quick` 規則，不包含 pass 規則。Sinkhole 通過 pfSense 的早期套件規則位置引用它，讓封鎖在普通 pass-quick 規則前執行。在 **Global** 中，該頁面先顯示 IP 清單和目錄面板，再顯示 IP 和國家/地區設定，並在面板下方提供 **Save**。
 
-<img src={ipTab} alt="IP 選項卡顯示兩個演示 IP 清單、新增和從目錄新增按鈕，以及在 LAN 上雙向啟用的 IP 和國家封鎖" width={1024} height={1385} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="IP 選項卡顯示兩個演示 IP 清單、新增和從目錄新增按鈕，以及在 LAN 上雙向啟用的 IP 和國家封鎖" width={1024} height={1644} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 依網路和裝置設定封鎖 \{#set-blocking-per-network-and-device}
+
+分頁下方的一列決定您要編輯的內容：**All**、**Global**、某個網路或某個裝置。其下方的一行列出這些設定適用的用戶端。每個選項只顯示自己的設定；絕不會顯示範圍更廣選項的設定。
+
+用戶端遵循現有設定中最具體的一項：先是其裝置的設定，然後是其網路的設定，最後是 Global 的設定。在 Clients 分頁上已關閉的網路或裝置會被略過。
+
+只有 **Global** 包含：
+
+- **Interfaces**，即 Global 的封鎖生效的位置。
+- **MaxMind Account ID** 和 **MaxMind License Key**。
+- IP 清單來源、**Add from Catalog** 和清單更新。
+
+Global 以及每個網路或裝置都包含 **Enable**、**Directions**、**IP Lists**（在該處使用的來源）、**Countries** 和 **IP Allowlist**。對於網路或裝置，**Outbound** 封鎖其用戶端連線到所列目標，**Inbound** 封鎖所列來源連線到其用戶端。網路或裝置中的國家/地區使用 Global 的 MaxMind 帳戶。
+
+沒有自身設定的網路或裝置會在空白表單上方顯示一行，例如「此網路未單獨設定，將使用全域。」如果裝置所屬網路有自身設定，裝置會在此處註明該網路。儲存表單即可建立設定，**Remove settings for this network** 或 **Remove settings for this device** 會刪除設定，讓範圍更廣的設定重新生效。在 Clients 分頁上刪除網路或裝置也會刪除其設定。
+
+**All** 列出 Global 以及每個有自身設定的網路和裝置，並顯示其方向、國家/地區和 IP 清單數量。選取某列即可編輯。
+
+將 Sinkhole 升級到 1.3.0 時，現有設定會保留在 Global 中，並複製到每個網路和裝置。此後每份副本彼此獨立。只有當網路的介面，或裝置某個識別碼的介面，已在 **Interfaces** 中選取時，該副本才會開啟；其他副本均以關閉狀態儲存，因此先前未被封鎖的用戶端不會因此被封鎖。
+
+每個已開啟設定的網路或裝置都會在 `sinkhole/ip` 錨點中取得自己的用戶端表。裝置的地址會從其網路的表和 Global 的表中移除，網路的子網路會從 Global 的表中移除，因此用戶端只會被其最具體的設定封鎖。
 
 ## 新增 IP 清單 \{#add-ip-lists}
 

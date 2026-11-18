@@ -793,6 +793,7 @@ final class Compiler
      * @return array{configuration: array, lists: array<string, array>, manifest: array}
      *
      * @since 1.0.0
+     * @since 1.3.0
      * @private
      */
     private function normalizeBypassConfiguration(mixed $value): array
@@ -813,8 +814,8 @@ final class Compiler
             $reasonKey = is_array($firstInvalid) && is_string($firstInvalid['reason_key'] ?? null)
                 ? $firstInvalid['reason_key']
                 : 'saved_bypass_settings_invalid';
-            $configurationWarning = 'Bypass protection is inactive because its saved settings '
-                . 'need repair (' . $reasonKey . ').';
+            $configurationWarning = 'Global Bypass protection is inactive because its saved '
+                . 'settings need repair (' . $reasonKey . ').';
 
             foreach (BypassConfiguration::BOOLEAN_FIELDS as $field) {
                 $configuration[$field] = false;
@@ -825,6 +826,9 @@ final class Compiler
             $configuration['enabled'] = false;
             $configuration['dns_enabled'] = false;
             $configuration['firewall_enabled'] = false;
+            $configuration['global_enabled'] = false;
+            $configuration['global_dns_enabled'] = false;
+            $configuration['global_firewall_enabled'] = false;
         }
 
         $interfaces = [];
@@ -840,58 +844,193 @@ final class Compiler
 
         $interfaces = array_keys($interfaces);
         sort($interfaces, SORT_STRING);
-        $discovery = is_string($configuration['discovery'] ?? null)
-            && in_array($configuration['discovery'], BypassConfiguration::DISCOVERY_MODES, true)
-                ? $configuration['discovery']
-                : BypassConfiguration::DISCOVERY_OFF;
         $hostname = '';
+        $candidate = is_string($configuration['discovery_hostname'] ?? null)
+            ? $configuration['discovery_hostname']
+            : '';
+        $normalizedHostname = DomainParser::normalizeDomain($candidate) ?? '';
+        $advertisementAvailable = $normalizedHostname !== ''
+            && $normalizedHostname === strtolower(rtrim($candidate, '.'))
+            && ($configuration['discovery_port'] ?? null) === 853;
 
-        if ($discovery === BypassConfiguration::DISCOVERY_ADVERTISE) {
-            $candidate = is_string($configuration['discovery_hostname'] ?? null)
-                ? $configuration['discovery_hostname']
-                : '';
-            $hostname = DomainParser::normalizeDomain($candidate) ?? '';
+        if ($advertisementAvailable) {
+            $hostname = $normalizedHostname;
+        }
+
+        $globalEnabled = ($configuration['global_enabled'] ?? $configuration['enabled'] ?? false) === true;
+        $globalPolicy = $this->bypassPolicyManifest(
+            $configuration,
+            $globalEnabled,
+            $advertisementAvailable,
+            $configurationWarning,
+        );
+        $globalPolicy['interfaces'] = $interfaces;
+        $networkPolicies = [];
+        $devicePolicies = [];
+
+        foreach (is_array($configuration['contexts'] ?? null) ? $configuration['contexts'] : [] as $contextKey => $contextConfiguration) {
+            if (
+                !is_string($contextKey)
+                || !is_array($contextConfiguration)
+                || ($contextConfiguration['enabled'] ?? false) !== true
+                || ($contextConfiguration['invalid_values'] ?? []) !== []
+            ) {
+                continue;
+            }
+
+            $parts = explode(':', $contextKey, 2);
 
             if (
-                $hostname === ''
-                || $hostname !== strtolower(rtrim($candidate, '.'))
-                || ($configuration['discovery_port'] ?? null) !== 853
+                count($parts) !== 2
+                || !in_array($parts[0], ['network', 'device'], true)
+                || preg_match('/^[a-f0-9]{32}$/D', $parts[1]) !== 1
             ) {
-                $configurationWarning = 'Bypass Discovery is inactive because DNS Resolver '
-                    . 'SSL/TLS is not enabled on port 853 with a valid certificate hostname.';
-                $configuration['discovery'] = BypassConfiguration::DISCOVERY_OFF;
-                $discovery = BypassConfiguration::DISCOVERY_OFF;
-                $hostname = '';
+                continue;
+            }
+
+            $policy = $this->bypassPolicyManifest(
+                $contextConfiguration,
+                true,
+                $advertisementAvailable,
+                $configurationWarning,
+            );
+
+            if ($parts[0] === 'network') {
+                $networkPolicies[$parts[1]] = $policy;
+            } else {
+                $devicePolicies[$parts[1]] = $policy;
             }
         }
 
-        $configuration['dns_enabled'] = BypassConfiguration::dnsEnabled($configuration);
-        $configuration['firewall_enabled'] = BypassConfiguration::firewallEnabled($configuration);
-        $configuration['enabled'] = $configuration['dns_enabled']
-            || $configuration['firewall_enabled'];
+        ksort($networkPolicies, SORT_STRING);
+        ksort($devicePolicies, SORT_STRING);
+        $sourceLists = is_array($configuration['lists'] ?? null)
+            ? $configuration['lists']
+            : [];
+        ksort($sourceLists, SORT_STRING);
+        $usedSources = [];
+        $selectSources = static function (array &$policy, array $selection) use (
+            $sourceLists,
+            &$usedSources,
+        ): void {
+            $effective = [];
+
+            foreach ($selection as $identifier) {
+                $list = is_string($identifier) ? ($sourceLists[$identifier] ?? null) : null;
+
+                if (
+                    !is_array($list)
+                    || ($list['enabled'] ?? false) !== true
+                    || !is_string($list['kind'] ?? null)
+                    || !BypassConfiguration::kindEnabled($policy, $list['kind'])
+                ) {
+                    continue;
+                }
+
+                $effective[$identifier] = true;
+                $usedSources[$identifier] = true;
+            }
+
+            $policy['lists'] = array_keys($effective);
+            sort($policy['lists'], SORT_STRING);
+        };
+        $selectSources($globalPolicy, array_keys($sourceLists));
+
+        foreach ($networkPolicies as $identifier => &$policy) {
+            $context = $configuration['contexts']['network:' . $identifier] ?? [];
+            $selectSources(
+                $policy,
+                is_array($context['selected_lists'] ?? null) ? $context['selected_lists'] : [],
+            );
+        }
+        unset($policy);
+
+        foreach ($devicePolicies as $identifier => &$policy) {
+            $context = $configuration['contexts']['device:' . $identifier] ?? [];
+            $selectSources(
+                $policy,
+                is_array($context['selected_lists'] ?? null) ? $context['selected_lists'] : [],
+            );
+        }
+        unset($policy);
+
+        $manifestLists = [];
+        $compiledLists = [];
+        $bit = 0;
+
+        $usedSourceIdentifiers = array_keys($usedSources);
+        sort($usedSourceIdentifiers, SORT_STRING);
+
+        foreach ($usedSourceIdentifiers as $identifier) {
+            $list = $sourceLists[$identifier];
+            $manifestLists[$identifier] = [
+                'bit' => $bit,
+                'kind' => $list['kind'],
+            ];
+            $compiledLists[$identifier] = [...$list, 'bit' => $bit];
+            $bit++;
+        }
 
         $this->recordBypassConfigurationWarning($configurationWarning);
 
         $manifest = [
-            'interfaces' => $interfaces,
-            'block_encrypted_dns' => ($configuration['block_encrypted_dns'] ?? false) === true,
-            'disable_firefox_doh' => ($configuration['disable_firefox_doh'] ?? false) === true,
-            'disable_private_relay' => ($configuration['disable_private_relay'] ?? false) === true,
-            'discovery' => $discovery,
+            'lists' => (object) $manifestLists,
+            'global' => $globalPolicy,
+            'networks' => (object) $networkPolicies,
+            'devices' => (object) $devicePolicies,
             'discovery_hostname' => $hostname,
-            'discovery_port' => ($discovery === BypassConfiguration::DISCOVERY_ADVERTISE)
-                ? 853
-                : 0,
-            'block_tor' => ($configuration['block_tor'] ?? false) === true,
-            'block_vpn' => ($configuration['block_vpn'] ?? false) === true,
+            'discovery_port' => ($hostname === '') ? 0 : 853,
         ];
 
         return [
             'configuration' => $configuration,
-            'lists' => is_array($configuration['lists'] ?? null)
-                ? $configuration['lists']
-                : [],
+            'lists' => $compiledLists,
             'manifest' => $manifest,
+        ];
+    }
+
+    /**
+     * Compiler - Bypass Policy Manifest.
+     *
+     * @param array $configuration - One normalized context policy.
+     * @param bool $enabled - Whether this context owns effective settings.
+     * @param bool $advertisementAvailable - Whether Resolver TLS can be advertised.
+     * @param string|null $warning - Mutable compiler warning.
+     *
+     * @return array
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function bypassPolicyManifest(
+        array $configuration,
+        bool $enabled,
+        bool $advertisementAvailable,
+        ?string &$warning,
+    ): array {
+        $discovery = is_string($configuration['discovery'] ?? null)
+            && in_array($configuration['discovery'], BypassConfiguration::DISCOVERY_MODES, true)
+                ? $configuration['discovery']
+                : BypassConfiguration::DISCOVERY_OFF;
+
+        if ($enabled && $discovery === BypassConfiguration::DISCOVERY_ADVERTISE && !$advertisementAvailable) {
+            $warning = 'Bypass Discovery is inactive because DNS Resolver SSL/TLS is not '
+                . 'enabled on port 853 with a valid certificate hostname.';
+            $discovery = BypassConfiguration::DISCOVERY_OFF;
+        }
+
+        return [
+            'enabled' => $enabled,
+            'block_encrypted_dns' => $enabled
+                && ($configuration['block_encrypted_dns'] ?? false) === true,
+            'disable_firefox_doh' => $enabled
+                && ($configuration['disable_firefox_doh'] ?? false) === true,
+            'disable_private_relay' => $enabled
+                && ($configuration['disable_private_relay'] ?? false) === true,
+            'discovery' => $enabled ? $discovery : BypassConfiguration::DISCOVERY_OFF,
+            'block_tor' => $enabled && ($configuration['block_tor'] ?? false) === true,
+            'block_vpn' => $enabled && ($configuration['block_vpn'] ?? false) === true,
+            'lists' => [],
         ];
     }
 
@@ -927,6 +1066,7 @@ final class Compiler
      * @return int
      *
      * @since 1.0.0
+     * @since 1.3.0
      * @private
      */
     private function compileBypassDomains(
@@ -942,12 +1082,7 @@ final class Compiler
         foreach ($lists as $identifier => $list) {
             if (
                 !is_array($list)
-                || ($list['enabled'] ?? false) !== true
-                || !is_string($list['kind'] ?? null)
-                || !BypassConfiguration::kindEnabled(
-                    $bypass['configuration'],
-                    $list['kind'],
-                )
+                || !is_int($list['bit'] ?? null)
                 || !is_string($list['url'] ?? null)
                 || $this->bypassStore === null
                 || !$this->bypassStore->hasUsableCopy((string) $identifier, $list['url'])
@@ -977,7 +1112,7 @@ final class Compiler
                         . "\t"
                         . $entry['semantic']
                         . "\t"
-                        . $list['kind'];
+                        . $list['bit'];
 
                     if (count($records) >= self::CHUNK_RECORD_LIMIT) {
                         $chunkPaths[] = $this->writeChunk($chunkDirectory, $records);
@@ -997,24 +1132,36 @@ final class Compiler
             $chunkPaths[] = $this->writeChunk($chunkDirectory, $records);
         }
 
-        return $this->mergeBypassChunks($chunkPaths, $outputPath);
+        return $this->mergeBypassChunks(
+            $chunkPaths,
+            $outputPath,
+            array_map(
+                static fn (array $list): int => (int) $list['bit'],
+                array_values($lists),
+            ),
+        );
     }
 
     /**
      * Compiler - Merge Bypass Chunks.
      *
-     * Writes one sorted row per name with exact and subtree kind columns.
+     * Writes one sorted row per name with exact and subtree source-bit columns.
      *
      * @param list<string> $chunkPaths - Sorted Bypass chunk paths.
      * @param string $outputPath - Bypass data path.
+     * @param list<int> $sourceBits - Valid compiled source bits.
      *
      * @return int
      *
      * @since 1.0.0
+     * @since 1.3.0
      * @private
      */
-    private function mergeBypassChunks(array $chunkPaths, string $outputPath): int
-    {
+    private function mergeBypassChunks(
+        array $chunkPaths,
+        string $outputPath,
+        array $sourceBits,
+    ): int {
         $previousMask = umask(0177);
 
         try {
@@ -1031,8 +1178,9 @@ final class Compiler
         $currentRecords = [];
         $domainCount = 0;
         $currentDomain = null;
-        $exactKinds = [];
-        $subtreeKinds = [];
+        $exactBits = [];
+        $subtreeBits = [];
+        $validBits = array_fill_keys($sourceBits, true);
 
         try {
             foreach ($chunkPaths as $index => $chunkPath) {
@@ -1070,7 +1218,6 @@ final class Compiler
                 if (
                     count($fields) !== 3
                     || DomainParser::normalizeDomain($fields[0]) !== $fields[0]
-                    || !in_array($fields[2], BypassConfiguration::KINDS, true)
                 ) {
                     throw new RuntimeException('A Bypass compiler record is invalid.');
                 }
@@ -1079,20 +1226,28 @@ final class Compiler
                     $this->writeBypassDomainRow(
                         $output,
                         $currentDomain,
-                        $exactKinds,
-                        $subtreeKinds,
+                        $exactBits,
+                        $subtreeBits,
                     );
                     $domainCount++;
-                    $exactKinds = [];
-                    $subtreeKinds = [];
+                    $exactBits = [];
+                    $subtreeBits = [];
                 }
 
                 $currentDomain = $fields[0];
 
+                if (
+                    ctype_digit($fields[2]) === false
+                    || !isset($validBits[(int) $fields[2]])
+                    || (string) ((int) $fields[2]) !== $fields[2]
+                ) {
+                    throw new RuntimeException('A Bypass compiler source bit is invalid.');
+                }
+
                 if ($fields[1] === DomainParser::EXACT) {
-                    $exactKinds[$fields[2]] = true;
+                    $exactBits[$fields[2]] = true;
                 } elseif ($fields[1] === DomainParser::SUBTREE) {
-                    $subtreeKinds[$fields[2]] = true;
+                    $subtreeBits[$fields[2]] = true;
                 } else {
                     throw new RuntimeException('A Bypass compiler semantic is invalid.');
                 }
@@ -1110,8 +1265,8 @@ final class Compiler
                 $this->writeBypassDomainRow(
                     $output,
                     $currentDomain,
-                    $exactKinds,
-                    $subtreeKinds,
+                    $exactBits,
+                    $subtreeBits,
                 );
                 $domainCount++;
             }
@@ -1130,17 +1285,20 @@ final class Compiler
         return $domainCount;
     }
 
-    /** @since 1.0.0 */
+    /**
+     * @since 1.0.0
+     * @since 1.3.0
+     */
     private function writeBypassDomainRow(
         mixed $handle,
         string $domain,
-        array $exactKinds,
-        array $subtreeKinds,
+        array $exactBits,
+        array $subtreeBits,
     ): void {
-        $exact = array_keys($exactKinds);
-        $subtree = array_keys($subtreeKinds);
-        sort($exact, SORT_STRING);
-        sort($subtree, SORT_STRING);
+        $exact = array_keys($exactBits);
+        $subtree = array_keys($subtreeBits);
+        sort($exact, SORT_NUMERIC);
+        sort($subtree, SORT_NUMERIC);
         $row = implode("\t", [$domain, implode(',', $exact), implode(',', $subtree)])
             . PHP_EOL;
 

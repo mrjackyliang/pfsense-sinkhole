@@ -52,7 +52,7 @@ W trybie Python pfBlockerNG DNSBL używa tego samego miejsca na skrypt Python co
 ## Wymagania sieciowe \{#network-requirements}
 
 - Zakresy sieciowe używają bieżących podsieci IPv4 i IPv6 skonfigurowanych interfejsów pfSense.
-- Urządzenia identyfikowane według adresu MAC lub statycznego mapowania zależą od bieżących danych ARP, NDP, dzierżaw DHCP, mapowań statycznych i interfejsów.
+- Każde urządzenie może mieć wiele adresów IP, adresów MAC i mapowań statycznych. Identyfikatory MAC i mapowań statycznych zależą od bieżących danych ARP, NDP, dzierżaw DHCP, mapowań statycznych i interfejsów.
 - Przekierowanie zwykłego DNS w **Bypass** wymaga rodziny adresów na wybranym interfejsie i pasującego nasłuchiwania Resolver.
 - Przekierowani klienci nadal muszą być dozwoleni w ustawieniach kontroli dostępu Resolver.
 

@@ -35,9 +35,31 @@ Abra **Firewall → Sinkhole → IP** e selecione **Enable** apenas depois de es
 | Inbound      | Bloqueia pacotes que chegam de um endereço de origem listado, normalmente em uma WAN.            |
 | Outbound     | Bloqueia pacotes que chegam com destino a um endereço listado, normalmente em redes de clientes. |
 
-A âncora contém regras `block drop in quick` e nenhuma regra pass. O Sinkhole faz referência a ela pela posição inicial das regras de pacote do pfSense, para que os bloqueios sejam executados antes das regras pass-quick comuns. A página mostra primeiro os painéis de listas de IP e catálogo, seguidos das configurações de IP e país de toda a página, com **Save** abaixo do painel.
+A âncora contém regras `block drop in quick` e nenhuma regra pass. O Sinkhole faz referência a ela pela posição inicial das regras de pacote do pfSense, para que os bloqueios sejam executados antes das regras pass-quick comuns. Em **Global**, a página mostra primeiro os painéis de listas de IP e catálogo, seguidos das definições de IP e país, com **Save** abaixo do painel.
 
-<img src={ipTab} alt="Separador IP mostrando duas listas de IP de demonstração, os botões para adicionar e adicionar a partir do catálogo, e o bloqueio de IP e países ativado na LAN nos dois sentidos" width={1024} height={1389} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Separador IP mostrando duas listas de IP de demonstração, os botões para adicionar e adicionar a partir do catálogo, e o bloqueio de IP e países ativado na LAN nos dois sentidos" width={1024} height={1648} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Defina o bloqueio por rede e dispositivo \{#set-blocking-per-network-and-device}
+
+A linha de opções abaixo dos separadores define o que edita: **All**, **Global**, uma rede ou um dispositivo. O texto abaixo dela indica os clientes aos quais essas definições se aplicam. Cada opção mostra apenas as suas próprias definições; as definições de uma opção mais abrangente nunca são mostradas.
+
+Um cliente segue as definições mais específicas que existam: primeiro as do seu dispositivo, depois as da sua rede e, por fim, as de Global. Uma rede ou um dispositivo desativado no separador Clients é ignorado.
+
+Apenas **Global** contém:
+
+- **Interfaces**, onde se aplica o bloqueio de Global.
+- **MaxMind Account ID** e **MaxMind License Key**.
+- As fontes de listas de IP, **Add from Catalog** e as atualizações das listas.
+
+Global e cada rede ou dispositivo contêm **Enable**, **Directions**, **IP Lists** (as fontes utilizadas aí), **Countries** e **IP Allowlist**. Numa rede ou num dispositivo, **Outbound** impede que os respetivos clientes alcancem um destino listado, e **Inbound** impede que uma origem listada alcance os respetivos clientes. Os países de uma rede ou de um dispositivo utilizam a conta MaxMind de Global.
+
+Uma rede ou um dispositivo sem definições próprias mostra uma linha, como "Não definido para esta rede; aplica-se Global.", acima de um formulário vazio. Um dispositivo indica aí a sua rede quando essa rede tem definições próprias. Guardar o formulário cria as definições, e **Remove settings for this network** ou **Remove settings for this device** elimina-as, para que as definições mais abrangentes voltem a aplicar-se. Eliminar uma rede ou um dispositivo no separador Clients também elimina as respetivas definições.
+
+**All** lista Global e todas as redes e dispositivos com definições próprias, juntamente com as respetivas direções, países e número de listas de IP. Selecione uma linha para a editar.
+
+Quando o Sinkhole é atualizado para a versão 1.3.0, as definições existentes permanecem em Global e são copiadas para todas as redes e dispositivos. A partir daí, cada cópia é independente. Uma cópia só é ativada quando a interface da rede, ou uma interface de um dos identificadores do dispositivo, estava selecionada em **Interfaces**; todas as outras cópias são guardadas desativadas, para que nenhum cliente que não era bloqueado antes passe a ser bloqueado.
+
+Cada rede ou dispositivo com definições ativadas recebe a sua própria tabela de clientes na âncora `sinkhole/ip`. Os endereços de um dispositivo são removidos da tabela da sua rede e da tabela de Global, e as sub-redes de uma rede são removidas da tabela de Global, para que um cliente seja bloqueado apenas pelas suas definições mais específicas.
 
 ## Adicione listas de IP \{#add-ip-lists}
 

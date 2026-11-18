@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Liste e copie salvate
-description: Aggiungi liste DNS tramite URL o catalogo, usa formati hosts, di domini e adblock, controlla i criteri globali e conserva copie valide in caso di errore.
+description: Aggiungi liste DNS tramite URL o catalogo, usa formati hosts, di domini e adblock e conserva copie valide in caso di errore.
 keywords:
   - sinkhole for pfsense
   - liste di blocco
@@ -21,7 +21,7 @@ Aggiungi fonti di liste attendibili e lascia che Sinkhole conservi sul firewall 
 ## Perché usare liste salvate? \{#why-use-saved-lists}
 
 1. Mantiene il DNS indipendente dall’host di una lista, così un download lento o non riuscito non interrompe la risoluzione dei nomi.
-2. Scarica ogni fonte una sola volta, così la stessa copia salvata può servire gli ambiti globali, di rete e di dispositivo.
+2. Scarica ogni fonte una sola volta, così la stessa copia salvata può servire Global, ogni rete e ogni dispositivo.
 3. Conserva la precedente copia valida quando un nuovo download o l’analisi non riescono, così un input errato non sostituisce criteri funzionanti.
 4. Aggiorna le liste in background, così un riavvio o un ricaricamento del Resolver non attende mai la rete.
 
@@ -29,14 +29,15 @@ Aggiungi fonti di liste attendibili e lascia che Sinkhole conservi sul firewall 
 
 Apri **Firewall → Sinkhole → Lists**, seleziona **Add** sotto la tabella delle liste di blocco, quindi completa **Add Block List** nella pagina dell’editor:
 
-| Campo   | Descrizione                                                                 |
-|---------|-----------------------------------------------------------------------------|
-| Name    | Etichetta locale visualizzata nelle assegnazioni, negli avvisi e in Status. |
-| URL     | Fonte HTTP o HTTPS senza credenziali incorporate.                           |
-| Enabled | Scarica la fonte e la rende disponibile agli ambiti assegnati.              |
-| Global  | Applica la fonte a ogni client dopo le decisioni di dispositivo e rete.     |
+| Campo   | Descrizione                                                 |
+|---------|-------------------------------------------------------------|
+| Name    | Etichetta locale visualizzata in Blocking, Alerts e Status. |
+| URL     | Fonte HTTP o HTTPS senza credenziali incorporate.           |
+| Enabled | Scarica la fonte così che Blocking possa usarla.            |
 
 Il salvataggio riporta alla scheda Lists e avvia lo stesso percorso di applicazione convalidato in background. Seleziona la matita di una riga o fai doppio clic sulla riga per modificarla. Una riga disabilitata rimane configurata, ma appare attenuata nella tabella e non viene usata dall’aggiornamento o dai criteri compilati.
+
+Lists è solo il gestore delle liste. Le liste che si applicano a Global, a una rete o a un dispositivo si scelgono in [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), e la colonna **Used By** conta Global più ogni rete e dispositivo che seleziona la lista.
 
 ## Formati DNS accettati \{#accepted-dns-formats}
 
@@ -60,7 +61,7 @@ I risultati vengono mostrati come schede. Usa insieme i controlli di ricerca, fo
 
 Ogni scheda mostra nome della lista, responsabile o categoria, catalogo sorgente, descrizione su due righe, homepage e stato **Add** o **Added**. Le schede non mostrano valutazioni, badge o consigli. Selezionando **Add** viene creata una normale riga di lista il cui URL può essere assegnato come qualsiasi fonte inserita manualmente.
 
-Le nuove liste, comprese quelle aggiunte dal catalogo, partono con **Global** deselezionato, quindi non bloccano nulla finché non selezioni Global o non le selezioni in un ambito.
+Le nuove liste, comprese quelle aggiunte dal catalogo, non bloccano nulla finché non le selezioni per Global, una rete o un dispositivo in Blocking.
 
 La riga **Contents** di ogni scheda indica **Domains**. L'aggiunta di un risultato del catalogo ne mantiene invariato il nome.
 
@@ -72,7 +73,7 @@ I feed assegnati alla protezione bypass per Encrypted DNS, Tor o VPN non vengono
 
 ## Impostare i domini consentiti globali \{#set-global-allowed-domains}
 
-La sezione **Allowed Domains** sotto i pannelli delle liste e dei cataloghi definisce le eccezioni globali. Ogni riga consente a quel dominio e ai relativi sottodomini di attraversare le liste globali ereditate. Seleziona **Save** sotto questa sezione per applicare l’impostazione dell’intera pagina.
+Le eccezioni globali si trovano in **Blocking → Global**, nel riquadro **Allowed Domains**. Ogni riga consente a quel dominio e ai relativi sottodomini di attraversare le liste globali. Seleziona **Save** per applicarle.
 
 Un dominio consentito globale viene controllato dopo le regole di dispositivo e rete. Non può quindi ignorare una lista che ha già bloccato la query a un livello di dispositivo o rete più specifico.
 

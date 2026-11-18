@@ -18,12 +18,14 @@ use PfSense\Sinkhole\Domain\ServiceConfiguration;
 use PfSense\Sinkhole\Domain\ServiceRegistry;
 use PfSense\Sinkhole\Runtime\CurlDownloadClient;
 use PfSense\Sinkhole\Runtime\Compiler;
+use PfSense\Sinkhole\Runtime\Context;
 use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Runtime\ServiceRegistryCache;
 use PfSense\Sinkhole\Web\ServicePresentation;
 
 require_once('guiconfig.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
+require_once('/usr/local/pkg/sinkhole/Context.php');
 require_once('/usr/local/pkg/sinkhole/CurlDownloadClient.php');
 require_once('/usr/local/pkg/sinkhole/ServiceConfiguration.php');
 require_once('/usr/local/pkg/sinkhole/ServicePresentation.php');
@@ -31,32 +33,13 @@ require_once('/usr/local/pkg/sinkhole/ServiceRegistry.php');
 require_once('/usr/local/pkg/sinkhole/ServiceRegistryCache.php');
 
 $adapter = pfsensePackageSinkholeAdapter();
-$interfaces = $adapter->getConfiguredInterfaces();
 $scopeConfiguration = pfsensePackageSinkholeGetScopeConfiguration();
+$networks = $scopeConfiguration['networks'];
+$devices = $scopeConfiguration['devices'];
 $serviceConfiguration = pfsensePackageSinkholeGetBlockedServices();
-$scopeOptions = [
-    'global' => pfsensePackageSinkholeTranslate('global'),
-];
-
-foreach ($scopeConfiguration['networks'] as $identifier => $network) {
-    $scopeOptions['network:' . $identifier] = pfsensePackageSinkholeTranslate(
-        'service_network_scope',
-        [$interfaces[$network['interface']] ?? $network['interface']],
-    );
-}
-
-foreach ($scopeConfiguration['devices'] as $identifier => $device) {
-    $scopeOptions['device:' . $identifier] = pfsensePackageSinkholeTranslate(
-        'service_device_scope',
-        [$device['name']],
-    );
-}
-
-$selectedScope = (string) ($_POST['service_scope'] ?? $_GET['service_scope'] ?? 'global');
-
-if (!isset($scopeOptions[$selectedScope])) {
-    $selectedScope = 'global';
-}
+$context = Context::current($networks, $devices, true);
+Context::remember($context);
+$selectedScope = ($context === Context::ALL) ? Context::GLOBAL : $context;
 
 $serviceQuery = ServiceRegistry::normalizeSearchQuery((string) (
     $_POST['service_query'] ?? $_GET['service_query'] ?? ''
@@ -73,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $registryLoad = $registryCache->load(true);
             $actionMessage = pfsensePackageSinkholeTranslate('service_registry_refresh_finished');
             $actionClass = ($registryLoad['status']['last_error'] === '') ? 'success' : 'warning';
-        } elseif (isset($_POST['save_services'])) {
+        } elseif (isset($_POST['save_services']) && $context !== Context::ALL) {
             $currentSelection = ServiceConfiguration::scopeSelection(
                 $serviceConfiguration,
                 $selectedScope,
@@ -200,10 +183,50 @@ $registryLastError = $registryLoad['status']['last_error'] === ''
     ? pfsensePackageSinkholeTranslate('none')
     : $registryLoad['status']['last_error'];
 $stateParameters = [
-    'service_scope' => $selectedScope,
+    'context' => $context,
     'service_query' => $serviceQuery,
     'service_group' => $serviceGroup,
 ];
+$overviewRows = [];
+
+if ($context === Context::ALL) {
+    $overviewSelections = [Context::GLOBAL => ServiceConfiguration::scopeSelection($serviceConfiguration, Context::GLOBAL)];
+
+    foreach (array_keys($networks) as $networkIdentifier) {
+        $overviewSelections['network:' . $networkIdentifier] = ServiceConfiguration::scopeSelection(
+            $serviceConfiguration,
+            'network:' . $networkIdentifier,
+        );
+    }
+
+    foreach (array_keys($devices) as $deviceIdentifier) {
+        $overviewSelections['device:' . $deviceIdentifier] = ServiceConfiguration::scopeSelection(
+            $serviceConfiguration,
+            'device:' . $deviceIdentifier,
+        );
+    }
+
+    foreach ($overviewSelections as $overviewKey => $overviewServices) {
+        if ($overviewServices === []) {
+            continue;
+        }
+
+        $overviewNames = [];
+
+        foreach ($overviewServices as $overviewService) {
+            $overviewNames[] = is_string($registry['services'][$overviewService]['name'] ?? null)
+                ? $registry['services'][$overviewService]['name']
+                : $overviewService;
+        }
+
+        $overviewRows[] = [
+            'key' => $overviewKey,
+            'label' => Context::label($overviewKey, $networks, $devices),
+            'services' => implode(', ', $overviewNames),
+        ];
+    }
+}
+
 $pgtitle = [gettext('Firewall'), 'Sinkhole', pfsensePackageSinkholeTranslate('services')];
 $pglinks = ['', '/pkg_edit.php?xml=sinkhole.xml&id=0', '@self'];
 
@@ -213,12 +236,38 @@ include('head.inc');
 <?php
 
 display_top_tabs(pfsensePackageSinkholeTabs('services'));
+print(Context::renderRow('sinkhole-services.php', $context, $networks, $devices, true));
 
 if (is_string($actionMessage)) {
     print_info_box(htmlspecialchars($actionMessage), $actionClass, false);
 }
+
+if ($context === Context::ALL) {
 ?>
+<div class="panel panel-default">
+	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('blocked_services'))?></h2></div>
+	<div class="panel-body table-responsive">
+		<table class="table table-striped table-hover table-condensed">
+			<thead><tr>
+				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('context_column'))?></th>
+				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('services'))?></th>
+			</tr></thead>
+			<tbody>
+<?php if ($overviewRows === []): ?>
+				<tr><td colspan="2" class="text-muted"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('context_overview_empty'))?></td></tr>
+<?php endif; ?>
+<?php foreach ($overviewRows as $overviewRow): ?>
+				<tr>
+					<td><a href="<?=htmlspecialchars(Context::link('sinkhole-services.php', $overviewRow['key']))?>"><?=htmlspecialchars($overviewRow['label'])?></a></td>
+					<td><?=htmlspecialchars($overviewRow['services'])?></td>
+				</tr>
+<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
+</div>
 <?php
+} else {
 $serviceSearchButton = new Form_Button(
     'search_services',
     pfsensePackageSinkholeTranslate('search'),
@@ -241,24 +290,15 @@ $serviceFilterSection = new Form_Section(
     pfsensePackageSinkholeTranslate('blocked_services'),
 );
 $serviceFilterGroup = new Form_Group(pfsensePackageSinkholeTranslate('search'));
-$serviceScopeInput = new Form_Select(
-    'service_scope',
-    null,
-    $selectedScope,
-    $scopeOptions,
-);
-$serviceScopeInput->setWidth(4);
-$serviceScopeInput->setHelp(pfsensePackageSinkholeTranslate('scope'));
 $serviceQueryInput = new Form_Input('service_query', null, 'text', $serviceQuery);
 $serviceQueryInput->setAttribute('maxlength', ServiceRegistry::MAXIMUM_SEARCH_BYTES);
-$serviceQueryInput->setWidth(3);
+$serviceQueryInput->setWidth(5);
 $serviceQueryInput->setHelp(pfsensePackageSinkholeTranslate('search'));
 $serviceButtonInput = new Form_StaticText(
     '',
     (string) $serviceSearchButton . ' ' . (string) $serviceRefreshButton,
 );
-$serviceButtonInput->setWidth(3);
-$serviceFilterGroup->add($serviceScopeInput);
+$serviceButtonInput->setWidth(5);
 $serviceFilterGroup->add($serviceQueryInput);
 $serviceFilterGroup->add($serviceButtonInput);
 $serviceFilterGroup->setHelp(pfsensePackageSinkholeTranslate('blocked_services_help'));
@@ -313,10 +353,11 @@ $serviceFilterForm->addGlobal(new Form_Input(
     'hidden',
     $serviceGroup,
 ));
+$serviceFilterForm->addGlobal(new Form_Input('context', null, 'hidden', $context));
 print($serviceFilterForm);
 ?>
 <form id="sinkhole-services-refresh-form" method="post" action="sinkhole-services.php">
-	<input type="hidden" name="service_scope" value="<?=htmlspecialchars($selectedScope, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
+	<input type="hidden" name="context" value="<?=htmlspecialchars($context, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
 	<input type="hidden" name="service_query" value="<?=htmlspecialchars($serviceQuery, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
 	<input type="hidden" name="service_group" value="<?=htmlspecialchars($serviceGroup, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
 </form>
@@ -331,12 +372,7 @@ $saveServicesButton = new Form_Button(
 $saveServicesButton->addClass('btn-primary', 'btn-sm');
 $serviceSelectionForm = new Form($saveServicesButton);
 $serviceSelectionForm->setAction('sinkhole-services.php');
-$serviceSelectionForm->addGlobal(new Form_Input(
-    'service_scope',
-    null,
-    'hidden',
-    $selectedScope,
-));
+$serviceSelectionForm->addGlobal(new Form_Input('context', null, 'hidden', $context));
 $serviceSelectionForm->addGlobal(new Form_Input(
     'service_query',
     null,
@@ -405,6 +441,7 @@ if ($serviceGroups === []) {
     }
 }
 print($serviceSelectionForm);
+}
 ?>
 <div class="panel panel-default">
 	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('service_registry_status'))?></h2></div>

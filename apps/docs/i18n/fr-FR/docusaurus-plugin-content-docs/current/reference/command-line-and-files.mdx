@@ -18,19 +18,22 @@ Utilisez la commande fixe `/usr/local/sbin/sinkhole` pour les diagnostics et les
 
 ## Modes de commande \{#command-modes}
 
-| Commande                     | Comportement                                                                                                        |
-|------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| `sinkhole --update`          | Exécute le chemin planifié de mise à jour des listes DNS, Bypass et IP/pays activées.                               |
-| `sinkhole --manual`          | Exécute la mise à jour manuelle complète utilisée par **Status → Update Now**.                                      |
-| `sinkhole --apply`           | Applique la configuration enregistrée en arrière-plan et effectue uniquement les téléchargements nécessaires.       |
-| `sinkhole --refresh-clients` | Reconstruit les sous-réseaux et les adresses d’appareil dans la carte des clients.                                  |
-| `sinkhole --alerts`          | Lit les événements de blocage et traite les règles d’alerte correspondantes.                                        |
-| `sinkhole --redirect-check`  | Rapproche les règles souhaitées de redirection du DNS ordinaire et les ancres Bypass et IP chargées indépendamment. |
-| `sinkhole --check-updates`   | Vérifie la dernière version GitHub et synchronise l’avis de mise à jour.                                            |
-| `sinkhole --self-update`     | Télécharge, vérifie, inspecte et installe la dernière version mise en attente.                                      |
-| `sinkhole --help`            | Affiche la ligne d’utilisation prise en charge.                                                                     |
+| Commande                               | Comportement                                                                                                        |
+|----------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| `sinkhole --update`                    | Exécute le chemin planifié de mise à jour des listes DNS, Bypass et IP/pays activées.                               |
+| `sinkhole --manual`                    | Exécute la mise à jour manuelle complète utilisée par **Status → Update Now**.                                      |
+| `sinkhole --apply`                     | Applique la configuration enregistrée en arrière-plan et effectue uniquement les téléchargements nécessaires.       |
+| `sinkhole --refresh-clients`           | Reconstruit les sous-réseaux et les adresses d’appareil dans la carte des clients.                                  |
+| `sinkhole --alerts`                    | Lit les événements de blocage et traite les règles d’alerte correspondantes.                                        |
+| `sinkhole --redirect-check`            | Rapproche les règles souhaitées de redirection du DNS ordinaire et les ancres Bypass et IP chargées indépendamment. |
+| `sinkhole --check-updates`             | Vérifie la dernière version GitHub et synchronise l’avis de mise à jour planifié.                                   |
+| `sinkhole --check-updates --no-notice` | Vérifie la version sans déposer d’avis et enregistre une version plus récente comme signalée.                       |
+| `sinkhole --self-update`               | Attend une mise à jour de listes, IP ou Bypass, puis vérifie et installe la version en attente.                     |
+| `sinkhole --help`                      | Affiche la ligne d’utilisation prise en charge.                                                                     |
 
-Utilisez le chemin installé dans les automatisations, par exemple `/usr/local/sbin/sinkhole --refresh-clients`. Les modes s’excluent mutuellement ; une mise à jour de listes DNS/Bypass/IP ou du paquet qui trouve le verrou partagé déjà détenu s’arrête sans lancer une opération concurrente.
+Utilisez le chemin installé dans les automatisations, par exemple `/usr/local/sbin/sinkhole --refresh-clients`. Les modes s’excluent mutuellement et `--no-notice` est valable uniquement avec `--check-updates`.
+
+Les contrôles de version attendent jusqu’à 30 secondes le verrou de version et ne prennent pas le verrou des tâches du paquet. La mise à jour automatique prend d’abord le verrou de version, puis attend jusqu’à 30 minutes qu’une mise à jour de listes DNS, Bypass ou IP libère le verrou des tâches du paquet.
 
 ## Fichiers persistants sous `/cf/conf/sinkhole` \{#persistent-files}
 
@@ -73,7 +76,8 @@ Les caches de catalogue et les tables IP générées sont des données de travai
 
 | Chemin                          | Fonction                                                                                     |
 |---------------------------------|----------------------------------------------------------------------------------------------|
-| `sinkhole-update.lock`          | Verrou partagé des mises à jour longues de listes, d’IP et de paquet.                        |
+| `sinkhole-update.lock`          | Verrou partagé des longues tâches de listes, Bypass, IP et d’installation du paquet.         |
+| `sinkhole-release.lock`         | Verrou de coordination des contrôles de version et de la mise à jour automatique.            |
 | `sinkhole-runtime.lock`         | Verrou court de compilation, d’activation et d’intégration au Resolver.                      |
 | `sinkhole-clients.lock`         | Verrou d’actualisation de la carte des clients.                                              |
 | `sinkhole-alerts.lock`          | Verrou de traitement des alertes.                                                            |

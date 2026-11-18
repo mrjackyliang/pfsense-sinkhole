@@ -101,15 +101,22 @@ function sinkholeAlertTestPrepareManifest(PackagePaths $paths): void
             ],
         ],
         'bypass' => [
-            'interfaces' => [],
-            'block_encrypted_dns' => false,
-            'disable_firefox_doh' => false,
-            'disable_private_relay' => false,
-            'discovery' => 'off',
+            'lists' => [],
+            'global' => [
+                'enabled' => false,
+                'block_encrypted_dns' => false,
+                'disable_firefox_doh' => false,
+                'disable_private_relay' => false,
+                'discovery' => 'off',
+                'block_tor' => false,
+                'block_vpn' => false,
+                'lists' => [],
+                'interfaces' => [],
+            ],
+            'networks' => [],
+            'devices' => [],
             'discovery_hostname' => '',
             'discovery_port' => 0,
-            'block_tor' => false,
-            'block_vpn' => false,
         ],
     ];
     file_put_contents(
@@ -217,13 +224,22 @@ function sinkholeAlertTestNetworks(): array
     ];
 }
 
-/** @return array<string, array> @since 1.0.0 */
+/**
+ * @return array<string, array>
+ *
+ * @since 1.0.0
+ * @since 1.3.0
+ */
 function sinkholeAlertTestDevices(): array
 {
     return [
         SINKHOLE_ALERT_TEST_DEVICE => [
             'id' => SINKHOLE_ALERT_TEST_DEVICE,
             'name' => 'Kitchen Phone',
+            'identifiers' => [
+                ['type' => 'ip', 'value' => '192.0.2.50', 'interface' => ''],
+                ['type' => 'mac', 'value' => '00:11:22:33:44:55', 'interface' => ''],
+            ],
         ],
     ];
 }
@@ -324,7 +340,8 @@ sinkholeTestRun([
                 static fn(): string => 'sinkhole-test-notice',
             );
             $result = sinkholeAlertTestRun($processor);
-            $message = 'Sinkhole blocked blocked.example.test for Kitchen Phone on LAN '
+            $message = 'Sinkhole blocked blocked.example.test for Kitchen Phone — '
+                . 'IP Address: 192.0.2.50, MAC Address: 00:11:22:33:44:55 on LAN '
                 . '(list Café List, rule Jacky’s Rule).';
             sinkholeTestAssertSame(
                 [[

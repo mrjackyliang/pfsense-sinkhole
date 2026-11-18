@@ -17,40 +17,23 @@ declare(strict_types=1);
 use PfSense\Sinkhole\Domain\SafeSearchConfiguration;
 use PfSense\Sinkhole\Domain\SafeSearchEngines;
 use PfSense\Sinkhole\Runtime\Compiler;
+use PfSense\Sinkhole\Runtime\Context;
 use PfSense\Sinkhole\Runtime\SavedListStore;
 
 require_once('guiconfig.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
+require_once('/usr/local/pkg/sinkhole/Context.php');
 require_once('/usr/local/pkg/sinkhole/SafeSearchConfiguration.php');
 require_once('/usr/local/pkg/sinkhole/SafeSearchEngines.php');
 
 $adapter = pfsensePackageSinkholeAdapter();
-$interfaces = $adapter->getConfiguredInterfaces();
 $scopeConfiguration = pfsensePackageSinkholeGetScopeConfiguration();
+$networks = $scopeConfiguration['networks'];
+$devices = $scopeConfiguration['devices'];
 $safeSearchConfiguration = pfsensePackageSinkholeGetSafeSearch();
-$scopeOptions = [
-    'global' => pfsensePackageSinkholeTranslate('global'),
-];
-
-foreach ($scopeConfiguration['networks'] as $identifier => $network) {
-    $scopeOptions['network:' . $identifier] = pfsensePackageSinkholeTranslate(
-        'service_network_scope',
-        [$interfaces[$network['interface']] ?? $network['interface']],
-    );
-}
-
-foreach ($scopeConfiguration['devices'] as $identifier => $device) {
-    $scopeOptions['device:' . $identifier] = pfsensePackageSinkholeTranslate(
-        'service_device_scope',
-        [$device['name']],
-    );
-}
-
-$selectedScope = (string) ($_POST['safesearch_scope'] ?? $_GET['safesearch_scope'] ?? 'global');
-
-if (!isset($scopeOptions[$selectedScope])) {
-    $selectedScope = 'global';
-}
+$context = Context::current($networks, $devices, true);
+Context::remember($context);
+$selectedScope = ($context === Context::ALL) ? Context::GLOBAL : $context;
 
 $engineNames = [
     'google' => 'Google',
@@ -67,7 +50,7 @@ $engineNames = [
 $actionMessage = null;
 $actionClass = 'info';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_safesearch'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_safesearch']) && $context !== Context::ALL) {
     try {
         $posted = is_array($_POST['engines'] ?? null) ? $_POST['engines'] : [];
 
@@ -128,27 +111,74 @@ include('head.inc');
 <?php
 
 display_top_tabs(pfsensePackageSinkholeTabs('safesearch'));
+print(Context::renderRow('sinkhole-safesearch.php', $context, $networks, $devices, true));
 
 if (is_string($actionMessage)) {
     print_info_box(htmlspecialchars($actionMessage), $actionClass, false);
 }
 
-$scopeForm = new Form(false);
-$scopeForm->setMethod('get');
-$scopeForm->setAction('sinkhole-safesearch.php');
-$scopeSection = new Form_Section(pfsensePackageSinkholeTranslate('safesearch'));
-$scopeInput = new Form_Select(
-    'safesearch_scope',
-    pfsensePackageSinkholeTranslate('scope'),
-    $selectedScope,
-    $scopeOptions,
-);
-$scopeInput->setOnchange('this.form.submit()');
-$scopeInput->setHelp(pfsensePackageSinkholeTranslate('safesearch_help'));
-$scopeSection->addInput($scopeInput);
-$scopeForm->add($scopeSection);
-print($scopeForm);
+if ($context === Context::ALL) {
+    $overviewSelections = [Context::GLOBAL => SafeSearchConfiguration::scopeSelection($safeSearchConfiguration, Context::GLOBAL)];
 
+    foreach (array_keys($networks) as $networkIdentifier) {
+        $overviewSelections['network:' . $networkIdentifier] = SafeSearchConfiguration::scopeSelection(
+            $safeSearchConfiguration,
+            'network:' . $networkIdentifier,
+        );
+    }
+
+    foreach (array_keys($devices) as $deviceIdentifier) {
+        $overviewSelections['device:' . $deviceIdentifier] = SafeSearchConfiguration::scopeSelection(
+            $safeSearchConfiguration,
+            'device:' . $deviceIdentifier,
+        );
+    }
+
+    $choiceNames = $engineNames + [
+        SafeSearchEngines::YOUTUBE_MODERATE => $engineNames['youtube'] . ' (' . pfsensePackageSinkholeTranslate('safesearch_moderate') . ')',
+        SafeSearchEngines::YOUTUBE_STRICT => $engineNames['youtube'] . ' (' . pfsensePackageSinkholeTranslate('safesearch_strict') . ')',
+    ];
+    $overviewRows = [];
+
+    foreach ($overviewSelections as $overviewKey => $overviewChoices) {
+        if ($overviewChoices === []) {
+            continue;
+        }
+
+        $overviewRows[] = [
+            'key' => $overviewKey,
+            'label' => Context::label($overviewKey, $networks, $devices),
+            'engines' => implode(', ', array_map(
+                static fn(string $choice): string => $choiceNames[$choice] ?? $choice,
+                $overviewChoices,
+            )),
+        ];
+    }
+?>
+<div class="panel panel-default">
+	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch_engines'))?></h2></div>
+	<div class="panel-body table-responsive">
+		<table class="table table-striped table-hover table-condensed">
+			<thead><tr>
+				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('context_column'))?></th>
+				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch_engines'))?></th>
+			</tr></thead>
+			<tbody>
+<?php if ($overviewRows === []): ?>
+				<tr><td colspan="2" class="text-muted"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('context_overview_empty'))?></td></tr>
+<?php endif; ?>
+<?php foreach ($overviewRows as $overviewRow): ?>
+				<tr>
+					<td><a href="<?=htmlspecialchars(Context::link('sinkhole-safesearch.php', $overviewRow['key']))?>"><?=htmlspecialchars($overviewRow['label'])?></a></td>
+					<td><?=htmlspecialchars($overviewRow['engines'])?></td>
+				</tr>
+<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
+</div>
+<?php
+} else {
 $saveButton = new Form_Button(
     'save_safesearch',
     pfsensePackageSinkholeTranslate('save'),
@@ -158,12 +188,15 @@ $saveButton = new Form_Button(
 $saveButton->addClass('btn-primary', 'btn-sm');
 $engineForm = new Form($saveButton);
 $engineForm->setAction('sinkhole-safesearch.php');
-$engineForm->addGlobal(new Form_Input('safesearch_scope', null, 'hidden', $selectedScope));
-$engineSection = new Form_Section(sprintf(
-    '%s: %s',
-    pfsensePackageSinkholeTranslate('safesearch_engines'),
-    $scopeOptions[$selectedScope],
-));
+$engineForm->addGlobal(new Form_Input('context', null, 'hidden', $context));
+$engineSection = new Form_Section(pfsensePackageSinkholeTranslate('safesearch_engines'));
+$engineHelp = new Form_StaticText(
+    '',
+    '<span class="help-block">'
+        . htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch_help'))
+        . '</span>',
+);
+$engineSection->addInput($engineHelp);
 
 foreach ($engineNames as $engine => $engineName) {
     if ($engine === 'youtube') {
@@ -220,6 +253,7 @@ foreach ($engineNames as $engine => $engineName) {
 
 $engineForm->add($engineSection);
 print($engineForm);
+}
 ?>
 <div class="panel panel-default">
 	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('safesearch_addresses'))?></h2></div>

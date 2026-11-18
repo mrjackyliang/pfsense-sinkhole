@@ -31,7 +31,7 @@ import summaryStatus from './_assets_/status-2.png';
 | Lists                   | DNS 清單 URL、已儲存項目數、上次成功更新和上次錯誤。                                                |
 | Popular-List Catalogs   | AdGuard Home 和 pfBlockerNG 目錄來源的上次獲取時間和上次錯誤。                                  |
 | Invalid Saved Rows      | 仍可修復的格式錯誤清單行；僅在存在這些行時顯示。                                                      |
-| Scopes                  | 用戶端映射重建時間和錯誤，隨後是獨立的 Networks 和 Devices 面板。                                    |
+| Clients                 | 用戶端映射重建時間和錯誤，隨後是獨立的 Networks 和 Devices 面板。                                    |
 | Blocked Services        | 登錄擷取、上次錯誤，以及每個作用域所選的服務。                                                       |
 | SafeSearch              | 每個作用域的搜尋引擎，以及每個安全主機的地址、上次檢查時間和錯誤。                                             |
 | Alerts                  | 上次執行、已讀取或過期事件、已發送或暫緩通知、已丟棄事件和上次錯誤。                                            |
@@ -70,7 +70,7 @@ Summary 中最後一行 **Sinkhole** 是最快的 Resolver 集成檢查：
 | Deployment Needed                | 已編譯內容不是為 Unbound 部署的內容，或集成處於非活動狀態。                                     |
 | Deployed Generation              | 當前已部署執行時清單中的識別碼。                                                       |
 | Loaded Generation                | Unbound 模塊報告已載入的識別碼。                                                   |
-| Update Running                   | 僅當某個執行中的處理程序持有共享更新鎖時顯示：DNS、Bypass 或 IP 更新、設定套用、套件檢查或更新，或移除。            |
+| Update Running                   | 僅當某個執行中的處理程序持有共享套件工作鎖時顯示：DNS、Bypass 或 IP 更新、設定套用、套件安裝或移除。              |
 | Removal in Progress              | 僅當設定了持久刪除標記並正在撤銷整合時顯示。                                                 |
 | DNS Resolver Python Script Owner | Resolver 唯一 `python_script` 插槽的當前值，或 `None`。                           |
 
@@ -80,7 +80,7 @@ Summary 中最後一行 **Sinkhole** 是最快的 Resolver 集成檢查：
 
 ## 作用域和警報狀態 \{#scope-and-alert-state}
 
-Scopes 摘要報告用戶端映射重建狀態。獨立的 **Networks** 和 **Devices** 面板報告每個介面的當前 CIDR 和每個設備的當前地址。衝突會指出由多個設備聲明的地址；按表格順序出現的第一個設備擁有該地址的策略。
+Clients 摘要報告用戶端映射重建狀態。獨立的 **Networks** 和 **Devices** 面板報告每個介面的當前 CIDR，以及每個設備所有已配置的識別碼和當前位址。衝突會指出由多個設備聲明的位址；按表格順序出現的第一個設備擁有該位址的策略。同一設備的兩個識別碼可以找到同一位址而不會產生衝突。
 
 **Alerts** 面板只描述最近一次每分鐘任務。**Notifications held back** 包括上限或未讀通知抑制，**Events dropped by module** 則表示有界記憶體或磁盤事件隊列已滿。
 

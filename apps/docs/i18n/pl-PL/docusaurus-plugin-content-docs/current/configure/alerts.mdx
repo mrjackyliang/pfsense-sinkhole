@@ -27,20 +27,22 @@ Wysyłaj powiadomienia tylko dla zablokowanych odpowiedzi, których lista i klie
 
 ## Tworzenie reguły \{#create-a-rule}
 
-Otwórz **Firewall → Sinkhole → Alerts**, wybierz **Add** pod tabelą reguł alertów, a następnie wypełnij **Add Alert Rule** na stronie edytora:
+Otwórz **Firewall → Sinkhole → Alerts**. [Wiersz kontekstu](/docs/configure/scopes#contexts) filtruje tabelę: **Global** wymienia reguły dla **Everyone**, sieć lub urządzenie wymienia reguły, które je wybierają, a **All** wymienia wszystkie reguły. Reguła nadal może wybrać kilka sieci i urządzeń jednocześnie.
 
-| Pole                 | Opis                                                                                      |
-|----------------------|-------------------------------------------------------------------------------------------|
-| Description          | Lokalna nazwa reguły wyświetlana w tekście powiadomienia i podsumowaniach.                |
-| Any block list       | Dopasowuje blokadę z dowolnej listy, a nie tylko z wybranych list.                        |
-| Chosen block lists   | Listy, które mogą spełnić regułę, gdy **Any** jest wyłączone.                             |
-| Everyone             | Dopasowuje każdego klienta, a nie tylko wybrane sieci i urządzenia.                       |
-| Chosen networks      | Zakresy sieci, które mogą spełnić regułę, gdy **Everyone** jest wyłączone.                |
-| Chosen devices       | Zakresy urządzeń, które mogą spełnić regułę, gdy **Everyone** jest wyłączone.             |
-| Repeat after         | Liczba minut, po których ta sama reguła, klient, domena i lista mogą ponownie powiadomić. |
-| WebGUI notice        | Dodaje lokalne powiadomienie Sinkhole w pfSense.                                          |
-| Remote notifications | Używa usług zdalnych skonfigurowanych w pfSense.                                          |
-| Enabled              | Umożliwia dopasowanie zablokowanych odpowiedzi do tej reguły.                             |
+Wybierz **Add** pod tabelą reguł alertów, a następnie wypełnij **Add Alert Rule** na stronie edytora:
+
+| Pole                 | Opis                                                                                                                             |
+|----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| Description          | Lokalna nazwa reguły wyświetlana w tekście powiadomienia i podsumowaniach.                                                       |
+| Any block list       | Dopasowuje blokadę z dowolnej listy, a nie tylko z wybranych list.                                                               |
+| Chosen block lists   | Listy, które mogą spełnić regułę, gdy **Any** jest wyłączone.                                                                    |
+| Everyone             | Dopasowuje każdego klienta, a nie tylko wybrane sieci i urządzenia.                                                              |
+| Chosen networks      | Sieci z karty Clients, które mogą spełnić regułę, gdy **Everyone** jest wyłączone.                                               |
+| Chosen devices       | Urządzenia z karty Clients, pokazane ze wszystkimi identyfikatorami, które mogą spełnić regułę, gdy **Everyone** jest wyłączone. |
+| Repeat after         | Liczba minut, po których ta sama reguła, klient, domena i lista mogą ponownie powiadomić.                                        |
+| WebGUI notice        | Dodaje lokalne powiadomienie Sinkhole w pfSense.                                                                                 |
+| Remote notifications | Używa usług zdalnych skonfigurowanych w pfSense.                                                                                 |
+| Enabled              | Umożliwia dopasowanie zablokowanych odpowiedzi do tej reguły.                                                                    |
 
 Pole wybranych list jest ukryte, gdy zaznaczono **Any block list**, a pola sieci i urządzeń są ukryte, gdy zaznaczono **Everyone**. Zapisanie powoduje powrót do Alerts; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować.
 
@@ -75,7 +77,7 @@ Lokalna funkcja powiadomień pfSense zapisuje `New alert found: <message>` w dzi
 
 ## Weryfikacja alertu \{#verify-an-alert}
 
-1. Sprawdź, czy reguła, wybrana lista i wybrany zakres klienta są włączone.
+1. Sprawdź, czy reguła, wybrana lista oraz wybrana sieć lub wybrane urządzenie są włączone.
 2. Sprawdź w Status, czy klient jest obecnie przypisany do zamierzonej sieci lub urządzenia.
 3. Wykonaj zapytanie o nazwę blokowaną przez wybraną listę i sprawdź skonfigurowany kanał pfSense.
 4. Jeśli drugie powiadomienie nie nadejdzie, porównaj próbę z oknem powtórzeń i stałymi limitami reguły.

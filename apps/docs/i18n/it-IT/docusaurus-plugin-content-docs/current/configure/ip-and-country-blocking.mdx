@@ -35,9 +35,31 @@ Apri **Firewall → Sinkhole → IP** e seleziona **Enable** solo dopo aver scel
 | Inbound      | Blocca i pacchetti in arrivo da un indirizzo sorgente elencato, generalmente su una WAN.                  |
 | Outbound     | Blocca i pacchetti in arrivo verso un indirizzo di destinazione elencato, generalmente sulle reti client. |
 
-L’anchor contiene regole `block drop in quick` e nessuna regola pass. Sinkhole lo richiama tramite la posizione anticipata delle regole di pacchetto di pfSense, così i blocchi vengono eseguiti prima delle normali regole pass-quick. La pagina mostra prima i pannelli delle liste IP e dei cataloghi, seguiti dalle impostazioni IP e per paese dell’intera pagina con **Save** sotto il pannello.
+L’anchor contiene regole `block drop in quick` e nessuna regola pass. Sinkhole lo richiama tramite la posizione anticipata delle regole di pacchetto di pfSense, così i blocchi vengono eseguiti prima delle normali regole pass-quick. In **Global**, la pagina mostra prima i pannelli delle liste IP e dei cataloghi, seguiti dalle impostazioni IP e per paese con **Save** sotto il pannello.
 
-<img src={ipTab} alt="Scheda IP con due liste IP dimostrative, i pulsanti per aggiungere e aggiungere dal catalogo, e il blocco IP e per paese attivo su LAN in entrambe le direzioni" width={1024} height={1389} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Scheda IP con due liste IP dimostrative, i pulsanti per aggiungere e aggiungere dal catalogo, e il blocco IP e per paese attivo su LAN in entrambe le direzioni" width={1024} height={1648} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Impostare il blocco per rete e dispositivo \{#set-blocking-per-network-and-device}
+
+La riga sotto le schede sceglie cosa modifichi: **All**, **Global**, una rete o un dispositivo. La riga sottostante indica i client a cui si applicano quelle impostazioni. Ogni scelta mostra solo le proprie impostazioni; le impostazioni di una scelta più ampia non vengono mai mostrate.
+
+Un client segue le impostazioni più specifiche esistenti: prima quelle del suo dispositivo, poi quelle della sua rete, poi quelle di Global. Una rete o un dispositivo disattivato nella scheda Clients viene saltato.
+
+Solo **Global** contiene:
+
+- **Interfaces**, dove si applica il blocco di Global.
+- **MaxMind Account ID** e **MaxMind License Key**.
+- Le sorgenti delle liste IP, **Add from Catalog** e gli aggiornamenti delle liste.
+
+Global e ogni rete o dispositivo contengono **Enable**, **Directions**, **IP Lists** (le sorgenti usate lì), **Countries** e **IP Allowlist**. Per una rete o un dispositivo, **Outbound** impedisce ai suoi client di raggiungere una destinazione elencata e **Inbound** impedisce a una sorgente elencata di raggiungere i suoi client. I paesi di una rete o di un dispositivo usano l’account MaxMind di Global.
+
+Una rete o un dispositivo senza impostazioni proprie mostra una riga, come "Non impostato per questa rete; si applica Globale.", sopra un modulo vuoto. Un dispositivo vi indica la sua rete quando quella rete ha impostazioni proprie. Il salvataggio del modulo crea le impostazioni, e **Remove settings for this network** o **Remove settings for this device** le elimina, così si applicano di nuovo le impostazioni più ampie. Eliminando una rete o un dispositivo nella scheda Clients si eliminano anche le sue impostazioni.
+
+**All** elenca Global e ogni rete e dispositivo con impostazioni proprie, con le relative direzioni, i paesi e il numero di liste IP. Seleziona una riga per modificarla.
+
+Quando Sinkhole viene aggiornato alla 1.3.0, le impostazioni esistenti restano in Global e vengono copiate in ogni rete e dispositivo. Da quel momento ogni copia è indipendente. Una copia viene attivata solo se l’interfaccia della rete, o un’interfaccia di uno degli identificatori del dispositivo, era selezionata in **Interfaces**; ogni altra copia viene salvata disattivata, così nessun client viene bloccato se non lo era già prima.
+
+Ogni rete o dispositivo con impostazioni attive ottiene una propria tabella dei client nell’anchor `sinkhole/ip`. Gli indirizzi di un dispositivo vengono rimossi dalla tabella della sua rete e da quella di Global, e le sottoreti di una rete da quella di Global, così un client viene bloccato solo dalle sue impostazioni più specifiche.
 
 ## Aggiungere liste IP \{#add-ip-lists}
 

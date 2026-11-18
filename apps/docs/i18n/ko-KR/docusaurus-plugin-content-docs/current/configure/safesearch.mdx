@@ -7,7 +7,7 @@ keywords:
   - safesearch
   - 세이프서치
   - youtube 제한 모드
-  - 네트워크 범위
+  - 네트워크 필터링
 tags:
   - configure
   - safesearch
@@ -22,17 +22,17 @@ import safesearchTab from './_assets_/safesearch-1.png';
 
 1. 네트워크에서 안전 모드를 고정하므로 로그아웃한 브라우저, 새 장치 또는 시크릿 창에서도 필터링된 결과를 받습니다.
 2. `google.com`뿐 아니라 모든 Google 국가 도메인을 다루므로 `google.co.uk`로 바꿔도 우회할 수 없습니다.
-3. 차단 목록과 같은 범위를 따르므로 나머지 네트워크는 그대로 두고 자녀용 VLAN에만 SafeSearch를 적용할 수 있습니다.
+3. 차단 목록과 같은 Global, 네트워크 및 장치 컨텍스트를 사용하므로 나머지 네트워크는 그대로 두고 자녀용 VLAN에만 SafeSearch를 적용할 수 있습니다.
 
-## 범위와 엔진 선택 \{#choose-a-scope-and-engines}
+## 컨텍스트와 엔진 선택 \{#choose-a-context-and-engines}
 
-1. **Scope**에서 **Global**, 구성된 네트워크 또는 구성된 장치를 선택합니다.
+1. 기본 탭 아래의 [컨텍스트 행](/docs/configure/scopes#contexts)에서 **Global**, 네트워크 또는 장치를 선택합니다.
 2. 고정할 각 엔진을 체크하고 YouTube에는 **Moderate** 또는 **Strict**를 선택합니다.
 3. **Save**를 선택합니다.
 
-네트워크나 장치는 **Scopes**에 먼저 있어야 여기에 표시됩니다. 저장하면 각 안전 호스트를 즉시 조회하고 변경 사항을 백그라운드에서 적용합니다.
+네트워크나 장치는 **Clients**에 먼저 있어야 컨텍스트 행에 표시됩니다. 저장하면 각 안전 호스트를 즉시 조회하고 변경 사항을 백그라운드에서 적용합니다. **All**은 엔진을 하나 이상 고정하는 모든 컨텍스트를 나열합니다. 행을 선택하면 해당 컨텍스트를 편집합니다.
 
-<img src={safesearchTab} alt="Google, Bing, DuckDuckGo, Brave Search에 SafeSearch가 고정되고 YouTube가 Strict로 설정된 데모 태블릿 범위와 사용 중인 안전 주소를 보여 주는 SafeSearch 탭" width={1024} height={1322} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={safesearchTab} alt="Google, Bing, DuckDuckGo, Brave Search에 SafeSearch가 고정되고 YouTube가 Strict로 설정된 데모 태블릿과 사용 중인 안전 주소를 보여 주는 SafeSearch 탭" width={1024} height={1476} style={{maxWidth: '100%', height: 'auto'}} />
 
 | 엔진           | 응답하는 이름                                                                 | 안전 호스트                                                                     |
 |--------------|-------------------------------------------------------------------------|----------------------------------------------------------------------------|
@@ -47,26 +47,26 @@ import safesearchTab from './_assets_/safesearch-1.png';
 | Pixabay      | `pixabay.com`, `www.pixabay.com`                                        | `safesearch.pixabay.com`                                                   |
 | Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`         | 없음. Qwant는 차단됩니다                                                           |
 
-Qwant는 SafeSearch 호스트를 공개하지 않으므로 Qwant를 선택하면 해당 범위에서 Qwant가 차단됩니다.
+Qwant는 SafeSearch 호스트를 공개하지 않으므로 Qwant를 선택하면 해당 컨텍스트에서 Qwant가 차단됩니다.
 
-## 범위가 결합되는 방식 \{#how-scopes-combine}
+## 컨텍스트가 결합되는 방식 \{#how-contexts-combine}
 
 클라이언트는 **Global**, 자신이 속한 네트워크, 자신의 장치에 대해 선택된 모든 엔진을 합쳐서 받습니다. YouTube가 두 수준으로 모두 지정되면 **Strict**가 우선합니다.
 
-SafeSearch는 차단 이후에 적용됩니다. 목록이나 차단된 서비스가 해당 클라이언트에 대해 차단한 이름은 계속 차단되며, 허용 도메인은 SafeSearch를 끄지 않습니다. 범위가 없는 다른 클라이언트와 마찬가지로, 방화벽 자체의 조회는 **Global**에 선택된 엔진을 받습니다.
+SafeSearch는 차단 이후에 적용됩니다. 목록이나 차단된 서비스가 해당 클라이언트에 대해 차단한 이름은 계속 차단되며, 허용 도메인은 SafeSearch를 끄지 않습니다. 어떤 네트워크나 장치에도 속하지 않는 클라이언트와 마찬가지로, 방화벽 자체의 조회는 **Global**에 선택된 엔진을 받습니다.
 
 ## 응답 작동 방식 \{#how-the-answer-works}
 
 선택한 엔진에 대해 Sinkhole은 엔진 이름에 안전 호스트를 가리키는 CNAME과 안전 호스트의 주소로 응답하며, 이는 직접 작성한 Unbound 뷰가 주는 응답과 같습니다. HTTPS 레코드 같은 다른 레코드 유형은 CNAME만 받으므로 브라우저가 안전 호스트를 우회하는 힌트를 사용할 수 없습니다.
 
-Sinkhole은 저장할 때와 목록을 업데이트할 때마다 각 안전 호스트의 주소를 조회하며, 조회에 실패하면 마지막 정상 주소를 유지합니다. 안전 호스트가 한 번도 주소를 반환하지 않은 엔진은 조회가 성공할 때까지 해당 범위에서 차단됩니다.
+Sinkhole은 저장할 때와 목록을 업데이트할 때마다 각 안전 호스트의 주소를 조회하며, 조회에 실패하면 마지막 정상 주소를 유지합니다. 안전 호스트가 한 번도 주소를 반환하지 않은 엔진은 조회가 성공할 때까지 해당 컨텍스트에서 차단됩니다.
 
-SafeSearch 응답은 Resolver 캐시에 저장되지 않으므로 한 클라이언트의 응답이 범위 밖의 클라이언트에게 전달되지 않습니다.
+SafeSearch 응답은 Resolver 캐시에 저장되지 않으므로 한 클라이언트의 응답이 해당 컨텍스트 밖의 클라이언트에게 전달되지 않습니다.
 
 ## SafeSearch 확인 \{#verify-safesearch}
 
 1. **Status**를 열고 **SafeSearch** 패널에 각 안전 호스트가 주소와 함께 오류 없이 표시되는지 확인합니다.
-2. 범위 안의 클라이언트에서 `nslookup www.google.com`처럼 엔진 이름을 조회하고 응답에 안전 호스트가 표시되는지 확인합니다.
-3. 범위 밖의 클라이언트에서 같은 조회가 엔진의 일반 응답을 반환하는지 확인합니다.
+2. 컨텍스트 안의 클라이언트에서 `nslookup www.google.com`처럼 엔진 이름을 조회하고 응답에 안전 호스트가 표시되는지 확인합니다.
+3. 컨텍스트 밖의 클라이언트에서 같은 조회가 엔진의 일반 응답을 반환하는지 확인합니다.
 
 클라이언트가 다른 곳으로 보내는 암호화 DNS는 SafeSearch를 포함한 모든 DNS 정책을 건너뜁니다. [우회 방지](/docs/configure/bypass-protection)는 선택한 인터페이스를 Sinkhole의 DNS 경로에 유지합니다.

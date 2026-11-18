@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Lists and Saved Copies
-description: Add DNS lists by URL or catalog, use hosts, domain, and adblock-style formats, control global policy, and keep last-good copies through failures.
+description: Add DNS lists by URL or catalog, use hosts, domain, and adblock-style formats, and keep last-good copies through failures.
 keywords:
   - sinkhole for pfsense
   - block lists
@@ -21,7 +21,7 @@ Add list sources you trust and let Sinkhole keep normalized, last-good copies on
 ## Why Use Saved Lists? \{#why-use-saved-lists}
 
 1. Keeps DNS independent from a list host so a slow or failed download doesn't interrupt name resolution.
-2. Downloads each source once so the same saved copy can serve global, network, and device scopes.
+2. Downloads each source once so the same saved copy can serve Global, every network, and every device.
 3. Preserves the previous valid copy when a new download or parse fails so broken input doesn't replace working policy.
 4. Updates lists in the background so a Resolver restart or reload never waits for the network.
 
@@ -29,14 +29,15 @@ Add list sources you trust and let Sinkhole keep normalized, last-good copies on
 
 Open **Firewall → Sinkhole → Lists**, select **Add** below the block-list table, then complete **Add Block List** on the editor page:
 
-| Field   | Description                                                            |
-|---------|------------------------------------------------------------------------|
-| Name    | Local label shown in assignments, alerts, and Status.                  |
-| URL     | HTTP or HTTPS source without embedded credentials.                     |
-| Enabled | Downloads the source and makes it available to assigned scopes.        |
-| Global  | Applies the source to every client after device and network decisions. |
+| Field   | Description                                        |
+|---------|----------------------------------------------------|
+| Name    | Local label shown on Blocking, Alerts, and Status. |
+| URL     | HTTP or HTTPS source without embedded credentials. |
+| Enabled | Downloads the source so Blocking can use it.       |
 
 Saving returns to the Lists tab and starts the same validated background apply path. Select a row's pencil or double-click the row to edit it. A disabled row remains configured but is muted in the table and isn't used by the updater or compiled policy.
+
+Lists is only the list manager. Which lists apply to Global, a network, or a device is chosen on [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), and the **Used By** column counts Global plus every network and device that selects the list.
 
 ## Accepted DNS Formats \{#accepted-dns-formats}
 
@@ -64,7 +65,7 @@ Results appear as cards. Use the search, source, and maintainer controls togethe
 
 Each card shows the list name, its maintainer or category, source catalog, a two-line description, homepage, and **Add** or **Added** state. The cards don't show ratings, badges, or recommendations. Selecting **Add** creates an ordinary list row whose URL can be assigned like any manually entered source.
 
-New lists, including ones added from the catalog, start with **Global** unticked, so they block nothing until you tick Global or select them in a scope.
+New lists, including ones added from the catalog, block nothing until you select them for Global, a network, or a device on Blocking.
 
 Each card's **Contents** line says **Domains**. Adding a catalog result keeps its catalog name unchanged.
 
@@ -74,7 +75,7 @@ Catalog copies are cached under `/var/db` for one day. A failed refresh keeps th
 
 ## Set Global Allowed Domains \{#set-global-allowed-domains}
 
-The **Allowed Domains** section below the list and catalog panels defines global exceptions. Each line allows that domain and its subdomains through inherited global lists. Select **Save** beneath that section to apply the page-wide setting.
+Global exceptions live on **Blocking → Global** in the **Allowed Domains** box. Each line allows that domain and its subdomains through global lists. Select **Save** to apply them.
 
 A global allowed domain is checked after device and network rules. It therefore can't override a list that already blocked the query at a more specific device or network level.
 

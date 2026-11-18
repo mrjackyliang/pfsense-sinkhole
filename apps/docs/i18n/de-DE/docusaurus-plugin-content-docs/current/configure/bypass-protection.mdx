@@ -20,11 +20,37 @@ Halte DNS-Abfragen ausgewählter Client-Schnittstellen auf Pfaden, die Sinkhole 
 
 ## Schnittstellen auswählen \{#choose-the-interfaces}
 
-Öffne **Firewall → Sinkhole → Bypass** und wähle unter **Apply to** Schnittstellen aus, bevor du einen Schutz aktivierst. Diese eine Auswahl gilt für jede Einstellung auf der Seite. Die Schutzfunktionen prüfen nur Datenverkehr, der von Clients an diesen Schnittstellen eintrifft; sie wirken sich weder auf die Abfragen der Firewall selbst noch auf ausgehenden Datenverkehr aus.
+Öffne **Firewall → Sinkhole → Bypass** und wähle unter **Apply to** Schnittstellen aus, bevor du einen Schutz aktivierst. Diese Auswahl gehört zu **Global** und legt fest, wo die Einstellungen von Global gelten. Die Schutzfunktionen prüfen nur Datenverkehr, der von Clients an diesen Schnittstellen eintrifft; sie wirken sich weder auf die Abfragen der Firewall selbst noch auf ausgehenden Datenverkehr aus.
 
 Die Netzwerk- und Gerätezuordnung verwendet die aktuellen Subnetze dieser Schnittstellen, genau wie gewöhnliche Sinkhole-Scopes. Ein Client außerhalb der ausgewählten Subnetze erhält keine Bypass-DNS-Antwort.
 
-<img src={bypassProtection} alt="Bypass-Registerkarte mit ausgewähltem LAN, ausgeschalteter Umleitung für gewöhnliches DNS, aktivierten Schutzfunktionen für verschlüsseltes DNS und Tunnel, auf Answer with no records gesetzter Discovery, je einer ausgenommenen Demo-Quelle und Demo-Zieladresse und drei Demo-Bypass-Listen" width={1024} height={1679} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass-Registerkarte mit ausgewähltem LAN, ausgeschalteter Umleitung für gewöhnliches DNS, aktivierten Schutzfunktionen für verschlüsseltes DNS und Tunnel, auf Answer with no records gesetzter Discovery, je einer ausgenommenen Demo-Quelle und Demo-Zieladresse und drei Demo-Bypass-Listen" width={1024} height={1784} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Schutzfunktionen pro Netzwerk und Gerät festlegen \{#set-protections-per-network-and-device}
+
+Die Zeile unter den Tabs legt fest, was du bearbeitest: **All**, **Global**, ein Netzwerk oder ein Gerät. Die Zeile darunter nennt die Clients, für die diese Einstellungen gelten. Jede Auswahl zeigt nur ihre eigenen Einstellungen; Einstellungen einer umfassenderen Auswahl werden nie angezeigt.
+
+Ein Client folgt den spezifischsten vorhandenen Einstellungen: zuerst denen seines Geräts, dann denen seines Netzwerks, dann denen von Global. Ein Netzwerk oder Gerät, das auf dem Clients-Tab ausgeschaltet ist, wird übersprungen.
+
+Nur **Global** enthält:
+
+- Die Schnittstellen unter **Apply to**.
+- Die **Plain DNS**-Umleitung und ihre Ausnahmen.
+- Bypass-List-Quellen, **Add from Catalog** und Listenaktualisierungen.
+
+Ein Netzwerk oder Gerät enthält:
+
+- **Enable**, das seine Schutzfunktionen einschaltet.
+- **Bypass Lists**, die aktivierten Quellen, die es verwendet.
+- Die Einstellungen für verschlüsseltes DNS, **Discovery**, die Tunnelsperren und **Block Exemptions**.
+
+Ein Netzwerk oder Gerät ohne eigene Einstellungen zeigt über einem leeren Formular eine Zeile wie „Für dieses Netzwerk nicht festgelegt; es gilt Global.“ an. Ein Gerät nennt dort sein Netzwerk, wenn dieses Netzwerk eigene Einstellungen hat. Beim Speichern des Formulars werden die Einstellungen angelegt, und **Remove settings for this network** oder **Remove settings for this device** löscht sie, sodass wieder die umfassenderen Einstellungen gelten. Wenn du ein Netzwerk oder Gerät auf dem Clients-Tab löschst, werden auch seine Einstellungen gelöscht.
+
+**All** listet Global und jedes Netzwerk und Gerät mit eigenen Einstellungen auf, zusammen mit den eingeschalteten Schutzfunktionen. Wähle eine Zeile aus, um sie zu bearbeiten.
+
+Beim Upgrade von Sinkhole auf 1.3.0 bleiben die vorhandenen Einstellungen in Global und werden in jedes Netzwerk und Gerät kopiert. Jede Kopie ist ab dann unabhängig. Eine Kopie wird nur eingeschaltet, wenn die Schnittstelle des Netzwerks oder eine Schnittstelle eines der Geräte-Identifikatoren unter **Apply to** ausgewählt war; jede andere Kopie wird ausgeschaltet gespeichert, sodass kein Client gefiltert wird, der vorher nicht gefiltert wurde.
+
+Jedes Netzwerk oder Gerät mit eingeschalteten Einstellungen erhält eine eigene Client-Tabelle im Anker `sinkhole/bypass`. Die Adressen eines Geräts werden aus der Tabelle seines Netzwerks und aus der von Global entfernt, die Subnetze eines Netzwerks aus der von Global, sodass ein Client nur durch seine spezifischsten Einstellungen blockiert wird. Sinkhole fügt dafür keine Pass-Regeln hinzu.
 
 ## Gewöhnliches DNS umleiten \{#redirect-plain-dns}
 

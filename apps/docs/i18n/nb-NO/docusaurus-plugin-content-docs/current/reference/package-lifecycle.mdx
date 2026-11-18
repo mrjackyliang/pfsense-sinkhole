@@ -40,7 +40,9 @@ Etter en full konfigurasjonsgjenoppretting på samme brannmur kan pfSense si at 
 
 En utgitt versjon lagrer også én kontrollsumfestet gjenopprettingsjobb i `config.xml`. På en ny brannmur uten Sinkhole-filer venter den frakoblede jobben til pfSense-pakkesynkroniseringen er ferdig, verifiserer og installerer nøyaktig versjonen som opprettet den, og avslutter ellers uten endringer hvert 15. minutt når Sinkhole finnes.
 
-Keep Settings bevarer denne gjenopprettingsjobben ved en tilsiktet avinstallering. Slå av Keep Settings før Sinkhole fjernes hvis det skal forbli avinstallert.
+Jobben oppbevarer en kontrollsumverifisert kopi av denne utgivelsen under `/cf/conf/sinkhole/restore-heal`, enten fra sin egen nedlasting eller fra en oppdatering installert via **About**, slik at en gjenoppretting på den samme brannmuren kan installere Sinkhole på nytt uten internettilgang. Bare én kjøring utføres om gangen; en kjøring som starter mens en annen fortsatt laster ned eller installerer, avsluttes umiddelbart. Hvert trinn logges i systemloggen under `sinkhole-restore-heal`: `deferred` mens pfSense fortsatt gjenoppretter pakker, deretter `cache` eller `fetch`, `install` og `installed`, eller `fetch-failed`, `checksum-failed`, `cache-failed` eller `install-failed` når et trinn mislykkes.
+
+En tilsiktet avinstallering fjerner gjenopprettingsjobben og den bufrede kopien uansett om **Keep Settings** er på eller av; bare fjerning under en konfigurasjonsgjenoppretting bevarer dem.
 
 ## Derfor beholder en pfSense-oppgradering Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
@@ -70,7 +72,7 @@ Når **Keep Settings** er på, beholdes konfigurasjonen og de lagrede DNS- og IP
 
 1. Bekreft at **Firewall → Sinkhole** ikke lenger finnes.
 2. Bekreft at Python-skriptet og rekkefølgen i DNS Resolver samsvarer med verdiene som var angitt før Sinkhole.
-3. Hvis Keep Settings var avslått, bekrefter du at ingen Sinkhole-oppføringer i cron gjenstår. Bekreft i alle tilfeller at ingen blokk for omdirigering av vanlig DNS, `sinkhole/bypass`-anker eller `sinkhole/ip`-anker gjenstår.
+3. Bekreft at ingen Sinkhole-oppføringer i cron gjenstår, inkludert gjenopprettingsjobben `sinkhole-restore-heal`, og at ingen blokk for omdirigering av vanlig DNS, `sinkhole/bypass`-anker eller `sinkhole/ip`-anker gjenstår.
 4. Hvis Keep Settings var avslått, bekrefter du at `/cf/conf/sinkhole` ikke finnes.
 
 Hvis en oppdatering var aktiv, ber fjerningsmarkøren den stoppe mellom avgrensede trinn før vedvarende data berøres. Fjerningen registrerer den første oppryddingsfeilen, samtidig som den fortsatt prøver de gjenværende uavhengige oppryddingstrinnene.

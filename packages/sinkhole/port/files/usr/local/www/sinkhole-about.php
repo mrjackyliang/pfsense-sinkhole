@@ -86,14 +86,20 @@ if (
     if (isset($_POST['check_updates'])) {
         $actionOutputLines = [];
 
-        exec(PackagePaths::UPDATE_CHECK_COMMAND . ' 2>&1', $actionOutputLines, $returnCode);
+        exec(
+            PackagePaths::MANUAL_UPDATE_CHECK_COMMAND . ' 2>&1',
+            $actionOutputLines,
+            $returnCode,
+        );
         $actionOutput = implode(PHP_EOL, $actionOutputLines);
+        $lockMessages = [
+            pfsensePackageSinkholeTranslate('another_package_operation_running'),
+            pfsensePackageSinkholeTranslate('release_operation_running'),
+        ];
 
         if (
             $returnCode !== 0
-            || trim($actionOutput) === pfsensePackageSinkholeTranslate(
-                'another_package_operation_running',
-            )
+            || in_array(trim($actionOutput), $lockMessages, true)
         ) {
             $updateActionError = $actionOutput !== ''
                 ? $actionOutput

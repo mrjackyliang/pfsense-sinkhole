@@ -40,7 +40,9 @@ After a full configuration restore on the same firewall, pfSense may say Sinkhol
 
 A released build also stores one checksum-pinned recovery job in `config.xml`. On a new firewall without Sinkhole's files, the detached job waits for pfSense package synchronization to finish, verifies and installs the exact release that created it, and otherwise exits every 15 minutes once Sinkhole is present.
 
-Keep Settings preserves this recovery job during a deliberate uninstall. Clear Keep Settings before removing Sinkhole if it should stay uninstalled.
+The job keeps a checksum-verified copy of that release under `/cf/conf/sinkhole/restore-heal`, from its own download or from an update installed on **About**, so a restore onto the same firewall can reinstall Sinkhole without internet access. Only one run works at a time; a run that starts while another is still downloading or installing exits at once. Each step is logged in the system log under `sinkhole-restore-heal`: `deferred` while pfSense is still restoring packages, then `cache` or `fetch`, `install`, and `installed`, or `fetch-failed`, `checksum-failed`, `cache-failed` or `install-failed` when a step fails.
+
+A deliberate uninstall removes the recovery job and its cached copy whether **Keep Settings** is on or off; only a removal during a configuration restore keeps them.
 
 ## Why a pfSense Upgrade Keeps Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
@@ -70,7 +72,7 @@ When **Keep Settings** is on, configuration and the saved DNS and IP lists remai
 
 1. Confirm **Firewall → Sinkhole** is no longer present.
 2. Confirm the DNS Resolver's Python script and order match the values that preceded Sinkhole.
-3. If Keep Settings was off, confirm no Sinkhole cron entries remain. In every case, confirm no plain-DNS redirect block, `sinkhole/bypass` anchor, or `sinkhole/ip` anchor remains.
+3. Confirm no Sinkhole cron entries remain, including the `sinkhole-restore-heal` recovery job, and no plain-DNS redirect block, `sinkhole/bypass` anchor, or `sinkhole/ip` anchor remains.
 4. If Keep Settings was off, confirm `/cf/conf/sinkhole` is absent.
 
 If an update was active, the removal marker asks it to stop between bounded stages before persistent data is touched. Removal records the first cleanup failure while still attempting the remaining independent cleanup steps.

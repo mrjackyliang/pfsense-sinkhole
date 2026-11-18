@@ -7,7 +7,7 @@ keywords:
   - safesearch
   - ricerca sicura
   - modalità con restrizioni youtube
-  - ambito di rete
+  - filtro per rete
 tags:
   - configure
   - safesearch
@@ -22,17 +22,17 @@ Usa **Firewall → Sinkhole → SafeSearch** per mantenere i motori di ricerca n
 
 1. Blocca la modalità sicura a livello di rete, così un browser senza accesso, un nuovo dispositivo o una finestra privata ricevono comunque risultati filtrati.
 2. Copre tutti i domini nazionali di Google, non solo `google.com`, quindi passare a `google.co.uk` non permette di aggirarla.
-3. Segue gli stessi ambiti delle liste di blocco, così la VLAN dei bambini può ricevere SafeSearch mentre il resto della rete no.
+3. Usa gli stessi contesti Global, di rete e di dispositivo delle liste di blocco, così la VLAN dei bambini può ricevere SafeSearch mentre il resto della rete no.
 
-## Scegliere un ambito e i motori \{#choose-a-scope-and-engines}
+## Scegliere un contesto e i motori \{#choose-a-context-and-engines}
 
-1. Seleziona **Global**, una rete configurata o un dispositivo configurato in **Scope**.
+1. Scegli **Global**, una rete o un dispositivo nella [riga dei contesti](/docs/configure/scopes#contexts) sotto le schede principali.
 2. Spunta ogni motore da bloccare e scegli **Moderate** o **Strict** per YouTube.
 3. Seleziona **Save**.
 
-Una rete o un dispositivo deve esistere in **Scopes** prima di comparire qui. Il salvataggio risolve subito ogni host sicuro e applica la modifica in background.
+Una rete o un dispositivo deve esistere in **Clients** prima di comparire nella riga dei contesti. Il salvataggio risolve subito ogni host sicuro e applica la modifica in background. **All** elenca ogni contesto che blocca almeno un motore; seleziona una riga per modificare quel contesto.
 
-<img src={safesearchTab} alt="Scheda SafeSearch per l’ambito di un tablet dimostrativo con SafeSearch bloccato per Google, Bing, DuckDuckGo e Brave Search, YouTube impostato su Strict e gli indirizzi sicuri in uso" width={1024} height={1322} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={safesearchTab} alt="Scheda SafeSearch per un tablet dimostrativo con SafeSearch bloccato per Google, Bing, DuckDuckGo e Brave Search, YouTube impostato su Strict e gli indirizzi sicuri in uso" width={1024} height={1476} style={{maxWidth: '100%', height: 'auto'}} />
 
 | Motore       | Nomi a cui risponde                                                                         | Host sicuro                                                                 |
 |--------------|---------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
@@ -47,26 +47,26 @@ Una rete o un dispositivo deve esistere in **Scopes** prima di comparire qui. Il
 | Pixabay      | `pixabay.com`, `www.pixabay.com`                                                            | `safesearch.pixabay.com`                                                    |
 | Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                             | Nessuno; Qwant viene bloccato                                               |
 
-Qwant non pubblica alcun host SafeSearch, quindi sceglierlo blocca Qwant per quell’ambito.
+Qwant non pubblica alcun host SafeSearch, quindi sceglierlo blocca Qwant per quel contesto.
 
-## Come si combinano gli ambiti \{#how-scopes-combine}
+## Come si combinano i contesti \{#how-contexts-combine}
 
 Un client riceve, combinati, tutti i motori scelti per **Global**, per la rete in cui si trova e per il suo dispositivo. Quando YouTube compare con entrambi i livelli, prevale **Strict**.
 
-SafeSearch si applica dopo il blocco. Un nome bloccato per il client da una lista o da un servizio bloccato resta bloccato, e i domini consentiti non disattivano SafeSearch. Come qualsiasi client senza ambito, le query del firewall stesso ricevono i motori scelti per **Global**.
+SafeSearch si applica dopo il blocco. Un nome bloccato per il client da una lista o da un servizio bloccato resta bloccato, e i domini consentiti non disattivano SafeSearch. Come qualsiasi client esterno a ogni rete e dispositivo, le query del firewall stesso ricevono i motori scelti per **Global**.
 
 ## Come funziona la risposta \{#how-the-answer-works}
 
 Per un motore scelto, Sinkhole risponde al nome del motore con un CNAME verso l’host sicuro più gli indirizzi dell’host sicuro, la stessa risposta di una vista Unbound scritta a mano. Gli altri tipi di record, come i record HTTPS, ricevono solo il CNAME, così un browser non può usare indicazioni che aggirano l’host sicuro.
 
-Sinkhole risolve gli indirizzi di ogni host sicuro al salvataggio e a ogni aggiornamento delle liste, e mantiene gli ultimi indirizzi validi quando una risoluzione non riesce. Un motore il cui host sicuro non ha mai restituito un indirizzo resta bloccato per i suoi ambiti finché una risoluzione non riesce.
+Sinkhole risolve gli indirizzi di ogni host sicuro al salvataggio e a ogni aggiornamento delle liste, e mantiene gli ultimi indirizzi validi quando una risoluzione non riesce. Un motore il cui host sicuro non ha mai restituito un indirizzo resta bloccato per i suoi contesti finché una risoluzione non riesce.
 
-Le risposte SafeSearch non vengono mai salvate nella cache del Resolver, quindi la risposta per un client non raggiunge mai un client fuori dall’ambito.
+Le risposte SafeSearch non vengono mai salvate nella cache del Resolver, quindi la risposta per un client non raggiunge mai un client fuori da quel contesto.
 
 ## Verificare SafeSearch \{#verify-safesearch}
 
 1. Apri **Status** e verifica che il pannello **SafeSearch** elenchi ogni host sicuro con i suoi indirizzi e senza errori.
-2. Da un client nell’ambito, risolvi il nome di un motore, ad esempio `nslookup www.google.com`, e verifica che la risposta indichi l’host sicuro.
-3. Da un client fuori dall’ambito, verifica che la stessa query restituisca la normale risposta del motore.
+2. Da un client nel contesto, risolvi il nome di un motore, ad esempio `nslookup www.google.com`, e verifica che la risposta indichi l’host sicuro.
+3. Da un client fuori dal contesto, verifica che la stessa query restituisca la normale risposta del motore.
 
 Il DNS cifrato che un client invia altrove salta ogni criterio DNS, incluso SafeSearch. La [protezione Bypass](/docs/configure/bypass-protection) mantiene le interfacce selezionate sul percorso DNS di Sinkhole.

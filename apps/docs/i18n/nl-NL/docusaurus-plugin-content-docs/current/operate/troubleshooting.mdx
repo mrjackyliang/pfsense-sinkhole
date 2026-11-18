@@ -59,8 +59,8 @@ Een toegestane querynaam blijft toegestaan. Dit voorkomt dat een minder specifie
 
 ## SafeSearch wordt niet toegepast \{#safesearch-does-not-apply}
 
-1. Controleer of de netwerk- of apparaatscope van de client is ingeschakeld op **Scopes** en of de zoekmachine op **SafeSearch** is aangevinkt voor die scope of voor Global.
-2. Bekijk in **Status → SafeSearch** de adressen en de laatste fout van de veilige host. Een host zonder adressen houdt de bijbehorende zoekmachine voor de scope geblokkeerd totdat een lookup slaagt.
+1. Controleer of het netwerk of apparaat van de client is ingeschakeld op **Clients** en of de zoekmachine op **SafeSearch** is aangevinkt voor dat netwerk of apparaat, of voor Global.
+2. Bekijk in **Status → SafeSearch** de adressen en de laatste fout van de veilige host. Een host zonder adressen houdt de bijbehorende zoekmachine voor die context geblokkeerd totdat een lookup slaagt.
 3. Controleer of **Compile Needed** en **Deployment Needed** na het opslaan `No` zijn.
 4. Controleer of de client geen versleutelde DNS of een andere resolver gebruikt; [Beveiliging tegen omzeiling](/docs/configure/bypass-protection) houdt geselecteerde interfaces op het DNS-pad van Sinkhole.
 
@@ -68,10 +68,10 @@ Een browser kan het normale adres van een zoekmachine enkele minuten in de cache
 
 ## Een apparaat krijgt het verkeerde beleid \{#a-device-gets-the-wrong-policy}
 
-- Voer `/usr/local/sbin/sinkhole --refresh-clients` uit en bekijk **Status → Scopes**.
-- Controleer of de netwerkrij de huidige subnetten van de interface toont en de apparaatrij de huidige adressen van het apparaat.
+- Voer `/usr/local/sbin/sinkhole --refresh-clients` uit en bekijk **Status → Clients**.
+- Controleer of de netwerkrij de huidige subnetten van de interface toont en de apparaatrij alle geconfigureerde identificaties en huidige adressen van het apparaat.
 - Los elke waarde **Conflict** op, omdat het eerste apparaat in de tabelvolgorde een gedeeld adres krijgt.
-- Controleer bij een statische toewijzing zowel het geconfigureerde adres als de huidige adressen die voor het MAC-adres zijn waargenomen.
+- Controleer voor elke statische-toewijzingsidentificatie zowel het geconfigureerde adres als de huidige adressen die voor het MAC-adres zijn waargenomen. Adressen die via twee identificaties van hetzelfde apparaat worden gevonden, zijn geen conflicten.
 
 ISC-leasetijden kunnen GMT of de lokale tijd van de firewall gebruiken, afhankelijk van de leasetijdinstelling van de interface, terwijl Kea-leasetijden al lokaal zijn. Sinkhole volgt die pfSense-semantiek om te bepalen of een lease actueel is.
 

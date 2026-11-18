@@ -98,17 +98,20 @@
   "home.showcase.tabsLabel": {
     "message": "Sinkhole-pagina's"
   },
+  "home.showcase.scopes.label": {
+    "message": "Clients en blokkeren"
+  },
   "home.showcase.scopes.heading": {
     "message": "Andere regels voor elk netwerk en apparaat"
   },
   "home.showcase.scopes.description": {
-    "message": "Geef een netwerk of één apparaat eigen lijsten en toegestane domeinen. Elke DNS-query volgt de meest specifieke scope die erop van toepassing is."
+    "message": "Definieer elk netwerk en apparaat eenmaal op Clients en geef het daarna op Blokkeren eigen lijsten en toegestane domeinen. Elke DNS-query volgt de meest specifieke overeenkomst: eerst het apparaat, dan het netwerk, dan de globale instellingen."
   },
   "home.showcase.scopes.link": {
-    "message": "Scopes instellen"
+    "message": "Clients en blokkeren instellen"
   },
   "home.showcase.scopes.alt": {
-    "message": "Sinkhole-pagina Scopes met een netwerkscope voor LAN en drie apparaatscopes"
+    "message": "Sinkhole-pagina Clients met een LAN-netwerk en drie apparaten"
   },
   "home.showcase.services.label": {
     "message": "Diensten"
@@ -129,13 +132,13 @@
     "message": "Weet wat er geladen is en wat verouderd is"
   },
   "home.showcase.status.description": {
-    "message": "Status toont elke lijst met het aantal items en de laatste update, plus de scopes, netwerken en apparaten die Sinkhole nu toepast."
+    "message": "Status toont elke lijst met het aantal items en de laatste update, plus de netwerken en apparaten die Sinkhole nu toepast."
   },
   "home.showcase.status.link": {
     "message": "Over de pagina Status"
   },
   "home.showcase.status.alt": {
-    "message": "Sinkhole-pagina Status met de panelen voor lijsten, scopes, netwerken en apparaten"
+    "message": "Sinkhole-pagina Status met de panelen voor lijsten, netwerken en apparaten"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Firewall: Sinkhole: Diensten"

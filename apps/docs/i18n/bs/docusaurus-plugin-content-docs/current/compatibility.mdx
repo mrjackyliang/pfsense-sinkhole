@@ -52,7 +52,7 @@ pfBlockerNG DNSBL u Python načinu rada koristi isto mjesto za Python skriptu ka
 ## Mrežni zahtjevi \{#network-requirements}
 
 - Mrežni opsezi koriste trenutne IPv4 i IPv6 podmreže konfiguriranih interfejsa pfSensea.
-- Uređaji identificirani MAC adresom ili statičkim mapiranjem zavise od trenutnih podataka ARP-a, NDP-a, DHCP zakupa, statičkih mapiranja i interfejsa.
+- Svaki uređaj može imati više IP adresa, MAC adresa i statičkih mapiranja. MAC identifikatori i identifikatori statičkih mapiranja zavise od trenutnih podataka ARP-a, NDP-a, DHCP zakupa, statičkih mapiranja i interfejsa.
 - Preusmjeravanje običnog DNS-a na kartici **Bypass** zahtijeva porodicu adresa na odabranom interfejsu i odgovarajući slušač Resolvera.
 - Preusmjereni klijenti i dalje moraju biti dopušteni postavkama kontrole pristupa Resolvera.
 

@@ -49,54 +49,56 @@ Um campo vazio não escreve nada e mantém a predefinição do Resolver. [Defini
 | Update Checks        | Weekly       | Seleciona verificações Daily, Weekly, Monthly ou Never para novas versões no GitHub.   |
 | Remote Notifications | Off          | Também envia cada aviso de nova versão pelos serviços remotos configurados no pfSense. |
 
-Cada nova versão cria um aviso local no pfSense. **About → Check Now** executa imediatamente a mesma verificação limitada de versão sem alterar o agendamento.
+Cada nova versão encontrada por uma verificação agendada cria um aviso local no pfSense. **About → Check Now** executa a mesma verificação limitada de versão sem alterar o agendamento, não cria qualquer aviso e impede que uma verificação agendada posterior anuncie essa versão.
 
 ## Lists \{#lists}
 
-| Campo           | Predefinição | Descrição                                                                                                |
-|-----------------|--------------|----------------------------------------------------------------------------------------------------------|
-| Name            | Empty        | Etiqueta local usado por atribuições, alertas e Status.                                                  |
-| URL             | Empty        | Origem HTTP ou HTTPS sem credenciais incorporadas.                                                       |
-| Enabled         | On           | Inclui a origem nas atualizações e na política compilada quando atribuída.                               |
-| Global          | Off          | Aplica a lista a todos os clientes após as decisões de dispositivos e redes.                             |
-| Allowed Domains | Empty        | Um domínio global permitido por linha; cada entrada permite o domínio exato e todos os seus subdomínios. |
+| Campo   | Predefinição | Descrição                                                              |
+|---------|--------------|------------------------------------------------------------------------|
+| Name    | Empty        | Etiqueta local usada por Blocking, alertas e Status.                   |
+| URL     | Empty        | Origem HTTP ou HTTPS sem credenciais incorporadas.                     |
+| Enabled | On           | Inclui a origem nas atualizações e na política compilada quando usada. |
 
 **Add from Catalog** pesquisa sob demanda o registo de listas do AdGuard Home e o catálogo de feeds do pfBlockerNG. Adicionar um resultado cria a mesma linha comum que a inserção manual da URL.
 
 As fontes de bypass são excluídas deste catálogo.
 
+## Blocking \{#blocking}
+
+Cada contexto (Global, uma rede ou um dispositivo) tem os seus próprios dois campos:
+
+| Campo           | Predefinição | Descrição                                                                                                                                          |
+|-----------------|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Lists           | Empty        | Listas de DNS que bloqueiam nesse contexto. As listas Global aplicam-se a todos os clientes após as decisões de dispositivos e redes.              |
+| Allowed Domains | Empty        | Uma exceção por linha; cada uma permite o domínio exato e todos os seus subdomínios antes das listas desse contexto e de cada contexto mais amplo. |
+
 ## Serviços \{#services}
 
-As seleções de serviços estão vazias por predefinição em cada âmbito. Um serviço do registo abrangido por uma proteção de Bypass dedicada é ocultado em Serviços e removido das seleções guardadas; o Private Relay é configurado apenas no separador Bypass.
+As seleções de serviços estão vazias por predefinição em cada contexto. Um serviço do registo abrangido por uma proteção de Bypass dedicada é ocultado em Serviços e removido das seleções guardadas; o Private Relay é configurado apenas no separador Bypass.
 
 ## SafeSearch \{#safesearch}
 
-As seleções de SafeSearch estão vazias por predefinição em cada âmbito. Cada âmbito pode bloquear no modo seguro o Google, o YouTube (Moderate ou Strict), o Bing, o DuckDuckGo, o Brave Search, o Startpage, o Ecosia, o Yandex e o Pixabay, ou bloquear o Qwant. [SafeSearch](/docs/configure/safesearch) lista os nomes e os anfitriões seguros.
+As seleções de SafeSearch estão vazias por predefinição em cada contexto. Cada contexto pode bloquear no modo seguro o Google, o YouTube (Moderate ou Strict), o Bing, o DuckDuckGo, o Brave Search, o Startpage, o Ecosia, o Yandex e o Pixabay, ou bloquear o Qwant. [SafeSearch](/docs/configure/safesearch) lista os nomes e os anfitriões seguros.
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| Campo           | Predefinição | Descrição                                                                                                                                                   |
-|-----------------|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | LAN          | Interface configurada no pfSense cujas sub-redes IPv4 e IPv6 atuais identificam a rede. Sem LAN, é selecionada a primeira interface livre que não seja WAN. |
-| Lists           | Empty        | Listas de DNS adicionais que bloqueiam clientes na rede.                                                                                                    |
-| Allowed Domains | Empty        | Uma exceção de rede por linha; cada uma permite o domínio exato e todos os seus subdomínios antes das listas dessa rede e de toda a política global.        |
-| Enabled         | On           | Inclui a linha na correspondência de clientes e na política compilada.                                                                                      |
+| Campo     | Predefinição | Descrição                                                                                                                                                   |
+|-----------|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface | LAN          | Interface configurada no pfSense cujas sub-redes IPv4 e IPv6 atuais identificam a rede. Sem LAN, é selecionada a primeira interface livre que não seja WAN. |
+| Enabled   | On           | Inclui a linha na correspondência de clientes e na política compilada.                                                                                      |
 
 Cada interface pode aparecer apenas uma vez. Uma interface guardada que não esteja disponível continua visível para correção, em vez de ser descartada.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| Campo                    | Predefinição | Descrição                                                                                                                                        |
-|--------------------------|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Name                     | Empty        | Etiqueta local apresentado na política e em Status.                                                                                              |
-| Identified By            | IP address   | Seleciona IP address, DHCP static mapping ou MAC address.                                                                                        |
-| IP Address / MAC Address | Empty        | Identificador exato quando IP address ou MAC address está selecionado. A etiqueta acompanha o método selecionado.                                |
-| DHCP Static Mapping      | Empty        | Mapeamento existente selecionado quando esse método de identificação é usado.                                                                    |
-| Lists                    | Empty        | Listas de DNS adicionais que bloqueiam esse dispositivo.                                                                                         |
-| Allowed Domains          | Empty        | Uma exceção de dispositivo por linha; cada uma permite o domínio exato e todos os seus subdomínios antes de todas as decisões de rede e globais. |
-| Enabled                  | On           | Inclui a linha na correspondência de clientes e na política compilada.                                                                           |
+| Campo               | Predefinição            | Descrição                                                                                                               |
+|---------------------|-------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty                   | Etiqueta local apresentado na política e em Status.                                                                     |
+| Identifiers → Type  | Uma linha de IP address | Seleciona IP address, DHCP static mapping ou MAC address em cada linha que pode ser adicionada ou removida.             |
+| Identifiers → Value | Empty                   | Endereço IP ou MAC exato, ou um mapeamento estático DHCP existente. É necessária pelo menos uma linha de identificador. |
+| Enabled             | On                      | Inclui a linha na correspondência de clientes e na política compilada.                                                  |
 
-Os mapeamentos estáticos usam o endereço configurado e os endereços atuais observados para o MAC do mapeamento. Uma linha de MAC usa dados atuais de ARP, NDP e concessões DHCP.
+Todas as linhas de identificador pertencem ao mesmo dispositivo e partilham as suas definições. Os mapeamentos estáticos usam o endereço configurado e os endereços atuais observados para o MAC do mapeamento. Uma linha de MAC usa dados atuais de ARP, NDP e concessões DHCP. Os endereços alcançados por vários identificadores do mesmo dispositivo não são conflitos.
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Os mapeamentos estáticos usam o endereço configurado e os endereços atuais ob
 |----------------------|--------------|-----------------------------------------------------------------------------------------------------------|
 | Description          | Empty        | Etiqueta local da regra.                                                                                  |
 | Lists                | Any          | Corresponde a qualquer lista ou apenas às listas configuradas selecionadas.                               |
-| Clients              | Everyone     | Corresponde a todos ou aos âmbitos de rede e de dispositivo selecionados.                                 |
+| Clients              | Everyone     | Corresponde a todos ou às redes e aos dispositivos selecionados.                                          |
 | Repeat After         | 60           | Minutos antes que a mesma regra, cliente, domínio e lista possam notificar novamente; aceita de 1 a 1440. |
 | WebGUI Notice        | On           | Adiciona um aviso do pfSense quando a regra corresponde.                                                  |
 | Remote Notifications | On           | Usa os serviços de notificação configurados no pfSense quando a regra corresponde.                        |

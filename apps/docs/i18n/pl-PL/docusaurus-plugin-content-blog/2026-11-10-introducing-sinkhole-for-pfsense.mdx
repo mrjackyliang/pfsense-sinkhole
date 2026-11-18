@@ -30,7 +30,7 @@ To rozwiązanie działało, ale każdy restart lub przeładowanie zapory oznacza
 
 Sinkhole działa jako moduł Python wewnątrz DNS Resolver w pfSense i odpowiada na zablokowaną nazwę adresami `0.0.0.0` i `::`.
 
-- **Listy dla każdego zakresu** — listy globalne dotyczą wszystkich. Zakres sieci dodaje listy dla jednego interfejsu lub VLAN-u, a zakres urządzenia dodaje listy dla jednego urządzenia, dopasowanego według adresu IP, statycznego mapowania DHCP lub adresu MAC.
+- **Listy dla każdego zakresu** — listy globalne dotyczą wszystkich. Zakres sieci dodaje listy dla jednego interfejsu lub VLAN-u, a zakres urządzenia dodaje jeden wspólny zestaw list dla urządzenia dopasowanego według co najmniej jednego adresu IP, statycznego mapowania DHCP lub adresu MAC.
 - **Dozwolone domeny na każdym poziomie** — wynik fałszywie dodatni poprawiasz tam, gdzie ma to znaczenie, bez rezygnowania z całej listy.
 - **Zapisane kopie każdej listy** — DNS odpowiada na podstawie ostatnich prawidłowych danych zaraz po restarcie DNS Resolver lub ponownym uruchomieniu systemu, także w instalacjach z dyskiem RAM. Nieudane pobranie zachowuje poprzednią kopię.
 - **Wybrane przez Ciebie alerty** — powiadomienie pfSense przychodzi tylko dla list, sieci i urządzeń wybranych w regule alertu, raz na urządzenie i domenę.

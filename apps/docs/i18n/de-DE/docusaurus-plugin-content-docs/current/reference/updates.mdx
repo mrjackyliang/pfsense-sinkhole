@@ -22,11 +22,11 @@ Sinkhole kann seine GitHub-Releases prüfen, über pfSense benachrichtigen und e
 
 **General → Update Checks** wählt Daily, Weekly, Monthly oder Never; Weekly ist der Standard. Sinkhole speichert stabile zufällige Zeitplankomponenten, sodass das Speichern von Einstellungen den Prüfzeitpunkt nicht ständig verschiebt.
 
-Eine Prüfung speichert neueste Version, Release-Seite, Prüfzeit und letzten Fehler. **About → Check Now** führt dieselbe Prüfung sofort aus.
+Eine Prüfung speichert neueste Version, Release-Seite, Prüfzeit und letzten Fehler. **About → Check Now** führt dieselbe Prüfung sofort ohne Hinweis aus und speichert eine neuere Version als bereits gemeldet.
 
 ## Aktualisierungshinweise \{#update-notices}
 
-Jede neu erkannte Version erzeugt einen lokalen pfSense-WebGUI-Hinweis, der zum Sinkhole-Tab About verlinkt. Wiederholte Prüfungen erzeugen für dieselbe Version keine doppelten Hinweise.
+Jede durch eine geplante Prüfung neu erkannte Version erzeugt einen lokalen pfSense-WebGUI-Hinweis, der zum Sinkhole-Tab About verlinkt. Wiederholte Prüfungen erzeugen für dieselbe Version keine doppelten Hinweise, auch wenn sie bereits durch eine manuelle About-Prüfung angezeigt wurde.
 
 Wähle **Remote Notifications**, um zusätzlich die unter **System → Advanced → Notifications** konfigurierten Dienste zu verwenden. Die Einstellung ist standardmäßig deaktiviert und betrifft Versionshinweise, nicht die Alarmregeln für Listenblockierungen.
 
@@ -36,7 +36,9 @@ Die Updateleiste zeigt installierte Version, zuletzt geprüfte Version, letzte P
 
 **Update** erscheint, wenn die gespeicherte neueste Version neuer ist. Die Seite fragt den abgekoppelten Auftrag ab und meldet sein Ergebnis, ohne die Browseranfrage offen zu halten.
 
-<img src={aboutUpdateBar} alt="Tab About mit einer verfügbaren Sinkhole-Aktualisierung und den Steuerelementen Update und What's New" width={1024} height={816} style={{maxWidth: '100%', height: 'auto'}} />
+Wenn eine Listen-, IP- oder Bypass-Aktualisierung läuft, zeigt eine Installation über About den Wartezustand und beginnt nach Abschluss dieses Vorgangs. Die Wartezeit ist auf 30 Minuten begrenzt.
+
+<img src={aboutUpdateBar} alt="Tab About mit einer verfügbaren Sinkhole-Aktualisierung und den Steuerelementen Update und What's New" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Verifizierung vor der Installation \{#verification-before-installation}
 
@@ -48,9 +50,9 @@ Bei einer leeren installierten Vertrauensliste ist keine Signatur erforderlich; 
 
 ## Aktualisierungssperre \{#update-locking}
 
-Paketprüfung und Selbstaktualisierung teilen `/var/run/sinkhole-update.lock` mit DNS-, Bypass- und IP-/Länderaktualisierungen, dem Anwenden von Einstellungen und der Bereinigung bei der Entfernung. Sie warten nicht auf die Sperre: Hält ein anderer Vorgang sie, stoppt die Prüfung oder die Aktion **Update** mit `Another package operation is already running.`
+Release-Prüfungen und Selbstaktualisierung koordinieren sich über `/var/run/sinkhole-release.lock` und warten bis zu 30 Sekunden auf eine andere Prüfung oder Installation. Eine Release-Prüfung nimmt die Sperre für Paketaufgaben nie in Anspruch und kann daher während einer Listen-, IP- oder Bypass-Aktualisierung laufen.
 
-Die Sperre verhindert Änderungen an Paketdateien, während das aktuelle Paket Richtlinien herunterlädt, verarbeitet, kompiliert oder anwendet. Versuche es über About erneut, sobald Status keine laufende Aktualisierung mehr zeigt.
+Die Selbstaktualisierung nimmt zuerst die Release-Sperre und danach `/var/run/sinkhole-update.lock`. Hält eine Listen-, IP- oder Bypass-Aktualisierung die Sperre für Paketaufgaben, zeigt die Fortschrittszeile auf About bis zu 30 Minuten lang den Wartezustand, bevor die Installation fehlschlägt.
 
 ## Manuelle Paketaktualisierung \{#manual-package-update}
 

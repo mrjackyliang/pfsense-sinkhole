@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Listas e cópias salvas
-description: Adicione listas DNS por URL ou catálogo, use formatos hosts, domínio e estilo adblock, controle a política global e mantenha cópias válidas após falhas.
+description: Adicione listas DNS por URL ou catálogo, use formatos hosts, domínio e estilo adblock e mantenha cópias válidas após falhas.
 keywords:
   - sinkhole for pfsense
   - listas de bloqueio
@@ -21,7 +21,7 @@ Adicione fontes de listas em que você confia e deixe o Sinkhole manter no firew
 ## Por que usar listas salvas? \{#why-use-saved-lists}
 
 1. Mantém o DNS independente do host de uma lista, para que um download lento ou com falha não interrompa a resolução de nomes.
-2. Baixa cada fonte uma vez, para que a mesma cópia salva possa atender aos escopos global, de rede e de dispositivo.
+2. Baixa cada fonte uma vez, para que a mesma cópia salva possa atender a Global, a todas as redes e a todos os dispositivos.
 3. Preserva a cópia válida anterior quando um novo download ou análise falha, para que uma entrada com defeito não substitua uma política funcional.
 4. Atualiza as listas em segundo plano, para que uma reinicialização ou recarga do Resolver nunca espere pela rede.
 
@@ -29,14 +29,15 @@ Adicione fontes de listas em que você confia e deixe o Sinkhole manter no firew
 
 Abra **Firewall → Sinkhole → Lists**, selecione **Add** abaixo da tabela de listas de bloqueio e preencha **Add Block List** na página do editor:
 
-| Campo   | Descrição                                                                     |
-|---------|-------------------------------------------------------------------------------|
-| Name    | Rótulo local exibido em atribuições, alertas e Status.                        |
-| URL     | Fonte HTTP ou HTTPS sem credenciais incorporadas.                             |
-| Enabled | Baixa a fonte e a disponibiliza aos escopos atribuídos.                       |
-| Global  | Aplica a fonte a todos os clientes depois das decisões de dispositivo e rede. |
+| Campo   | Descrição                                          |
+|---------|----------------------------------------------------|
+| Name    | Rótulo local exibido em Blocking, Alerts e Status. |
+| URL     | Fonte HTTP ou HTTPS sem credenciais incorporadas.  |
+| Enabled | Baixa a fonte para que Blocking possa usá-la.      |
 
 Ao salvar, você volta para a aba Lists, e o mesmo fluxo de aplicação validado é iniciado em segundo plano. Selecione o lápis de uma linha ou clique duas vezes nela para editá-la. Uma linha desativada continua configurada, mas aparece esmaecida na tabela e não é usada pelo atualizador nem pela política compilada.
+
+Lists é apenas o gerenciador de listas. Quais listas se aplicam a Global, a uma rede ou a um dispositivo é escolhido em [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), e a coluna **Used By** conta Global mais cada rede e cada dispositivo que seleciona a lista.
 
 ## Formatos DNS aceitos \{#accepted-dns-formats}
 
@@ -60,19 +61,19 @@ Os resultados aparecem como cartões. Use juntos os controles de pesquisa, fonte
 
 Cada cartão mostra o nome da lista, seu mantenedor ou categoria, o catálogo de origem, uma descrição de duas linhas, a página inicial e o estado **Add** ou **Added**. Os cartões não mostram avaliações, distintivos nem recomendações. Selecionar **Add** cria uma linha de lista comum cuja URL pode ser atribuída como qualquer fonte inserida manualmente.
 
-Novas listas, inclusive as adicionadas do catálogo, começam com **Global** desmarcado, então não bloqueiam nada até você marcar Global ou selecioná-las em um escopo.
+Novas listas, inclusive as adicionadas do catálogo, não bloqueiam nada até você selecioná-las para Global, uma rede ou um dispositivo em Blocking.
 
 A linha **Contents** de cada cartão mostra **Domains**. Ao adicionar um resultado do catálogo, o nome dele no catálogo permanece inalterado.
 
 As cópias dos catálogos ficam em cache em `/var/db` por um dia. Uma atualização com falha mantém a última cópia válida do catálogo e mostra o erro de busca em Status.
 
-<img src={catalogSearch} alt="Painel Add from Catalog da aba Lists com controles de pesquisa no catálogo e estado da busca" width={1024} height={920} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Painel Add from Catalog da aba Lists com controles de pesquisa no catálogo e estado da busca" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 Os feeds atribuídos à proteção de bypass de Encrypted DNS, Tor ou VPN não aparecem aqui. Eles estão disponíveis somente por **Add from Catalog** na guia Bypass.
 
 ## Defina domínios permitidos globais \{#set-global-allowed-domains}
 
-A seção **Allowed Domains** abaixo dos painéis de listas e catálogos define exceções globais. Cada linha permite esse domínio e seus subdomínios diante das listas globais herdadas. Selecione **Save** abaixo dessa seção para aplicar a configuração de toda a página.
+As exceções globais ficam em **Blocking → Global**, na caixa **Allowed Domains**. Cada linha permite esse domínio e seus subdomínios diante das listas globais. Selecione **Save** para aplicá-las.
 
 Um domínio permitido global é verificado depois das regras de dispositivo e rede. Portanto, ele não pode substituir uma lista que já bloqueou a consulta em um nível mais específico de dispositivo ou rede.
 

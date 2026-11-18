@@ -52,7 +52,7 @@ Python 모드에서 pfBlockerNG DNSBL은 Sinkhole과 동일한 Python 스크립�
 ## 네트워크 요구 사항 \{#network-requirements}
 
 - 네트워크 범위는 구성된 pfSense 인터페이스의 현재 IPv4 및 IPv6 서브넷을 사용합니다.
-- MAC 주소 또는 정적 매핑으로 식별한 장치는 현재 ARP, NDP, DHCP 임대, 정적 매핑 및 인터페이스 데이터에 의존합니다.
+- 각 장치는 여러 IP 주소, MAC 주소 및 정적 매핑을 가질 수 있습니다. MAC 및 정적 매핑 식별자는 현재 ARP, NDP, DHCP 임대, 정적 매핑 및 인터페이스 데이터에 의존합니다.
 - **Bypass**의 일반 DNS 리디렉션에는 선택한 인터페이스의 주소 패밀리와 일치하는 Resolver 리스너가 필요합니다.
 - 리디렉션된 클라이언트도 Resolver의 액세스 제어 설정에서 허용되어야 합니다.
 

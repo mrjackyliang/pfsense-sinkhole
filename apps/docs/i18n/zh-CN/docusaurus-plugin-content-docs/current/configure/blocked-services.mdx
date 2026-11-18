@@ -6,8 +6,8 @@ keywords:
   - sinkhole for pfsense
   - 已阻止的服务
   - 服务阻止
-  - 网络作用域
-  - 设备作用域
+  - 网络阻止
+  - 设备阻止
 tags:
   - configure
   - services
@@ -18,15 +18,17 @@ import servicesTab from './_assets_/blocked-services-1.png';
 
 如果您想阻止整个品牌，而不选择和维护单独的列表 URL，请使用 **Firewall → Sinkhole → Services**。
 
-## 选择作用域 \{#choose-a-scope}
+## 选择上下文 \{#choose-a-context}
 
-选择 **Global**、一个已配置的网络或一个已配置的设备。搜索服务，使用组芯片缩小磁贴范围，打开或关闭服务，然后选择服务卡片下方的 **Save**。
+在主选项卡下方的[上下文行](/docs/configure/scopes#contexts)中选择 **Global**、一个网络或一台设备；页面只显示该上下文自身的选择。搜索服务，使用组芯片缩小磁贴范围，打开或关闭服务，然后选择服务卡片下方的 **Save**。
 
-选择会在该作用域的现有层级编译。设备允许域名仍优先于设备服务规则，网络允许域名仍优先于网络服务规则，全局允许域名仍优先于全局服务规则。
+**All** 列出每个至少阻止一项服务的上下文及其服务名称；选择某行即可编辑该上下文。
+
+选择会在该上下文的现有层级编译。设备允许域名仍优先于设备服务规则，网络允许域名仍优先于网络服务规则，全局允许域名仍优先于全局服务规则。
 
 由专用 Bypass 防护涵盖的服务不会出现在网格、组计数或搜索中。Private Relay 只能在 Bypass 标签页配置。
 
-<img src={servicesTab} alt="Services 选项卡按 Gaming 组筛选演示设备作用域，已选择四项服务" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={servicesTab} alt="Services 选项卡按 Gaming 组筛选演示设备，已选择四项服务" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 注册表和修复 \{#registry-and-repair}
 
@@ -34,4 +36,4 @@ Sinkhole 仅在此页面打开或您选择 **Refresh** 时获取 AdGuard Home �
 
 服务徽标会呈现为隔离的 data-URI 图像。缺失或过大的徽标会使用通用图像。如果已保存的服务从较新的注册表中消失，Sinkhole 会保留其 ID 并将其显示在 **Needs Repair** 下；将其关闭并保存即可删除该选择。
 
-**Status** 选项卡显示注册表的获取时间、最后错误，以及为每个已配置作用域选择的已阻止服务数量。
+**Status** 选项卡显示注册表的获取时间、最后错误，以及为 Global 和每个网络及设备选择的已阻止服务数量。

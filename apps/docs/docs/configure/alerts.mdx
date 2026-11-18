@@ -27,20 +27,22 @@ Send notifications only for blocked answers whose list and client match an enabl
 
 ## Create a Rule \{#create-a-rule}
 
-Open **Firewall → Sinkhole → Alerts**, select **Add** below the alert-rule table, then complete **Add Alert Rule** on the editor page:
+Open **Firewall → Sinkhole → Alerts**. The [context row](/docs/configure/scopes#contexts) filters the table: **Global** lists the rules for **Everyone**, a network or device lists the rules that choose it, and **All** lists every rule. A rule can still choose several networks and devices at once.
 
-| Field                | Description                                                              |
-|----------------------|--------------------------------------------------------------------------|
-| Description          | Local rule name shown in notification text and summaries.                |
-| Any block list       | Matches a block from any list, instead of only the chosen lists.         |
-| Chosen block lists   | Lists that can satisfy the rule when **Any** is off.                     |
-| Everyone             | Matches every client, instead of only chosen networks and devices.       |
-| Chosen networks      | Network scopes that can satisfy the rule when **Everyone** is off.       |
-| Chosen devices       | Device scopes that can satisfy the rule when **Everyone** is off.        |
-| Repeat after         | Minutes before the same rule, client, domain, and list can notify again. |
-| WebGUI notice        | Adds a local Sinkhole notice to pfSense.                                 |
-| Remote notifications | Uses the remote services configured in pfSense.                          |
-| Enabled              | Lets blocked answers match this rule.                                    |
+Select **Add** below the alert-rule table, then complete **Add Alert Rule** on the editor page:
+
+| Field                | Description                                                                                                 |
+|----------------------|-------------------------------------------------------------------------------------------------------------|
+| Description          | Local rule name shown in notification text and summaries.                                                   |
+| Any block list       | Matches a block from any list, instead of only the chosen lists.                                            |
+| Chosen block lists   | Lists that can satisfy the rule when **Any** is off.                                                        |
+| Everyone             | Matches every client, instead of only chosen networks and devices.                                          |
+| Chosen networks      | Networks from Clients that can satisfy the rule when **Everyone** is off.                                   |
+| Chosen devices       | Devices from Clients, shown with all their identifiers, that can satisfy the rule when **Everyone** is off. |
+| Repeat after         | Minutes before the same rule, client, domain, and list can notify again.                                    |
+| WebGUI notice        | Adds a local Sinkhole notice to pfSense.                                                                    |
+| Remote notifications | Uses the remote services configured in pfSense.                                                             |
+| Enabled              | Lets blocked answers match this rule.                                                                       |
 
 The chosen-list field is hidden while **Any block list** is selected, and the network and device fields are hidden while **Everyone** is selected. Saving returns to Alerts; select the pencil or double-click a row to edit it.
 
@@ -75,7 +77,7 @@ pfSense's local notice function writes `New alert found: <message>` to the syste
 
 ## Verify an Alert \{#verify-an-alert}
 
-1. Confirm that the rule, selected list, and selected client scope are enabled.
+1. Confirm that the rule, selected list, and selected network or device are enabled.
 2. Confirm that the client is currently mapped to the intended network or device on Status.
 3. Query a name that the selected list blocks and check the configured pfSense channel.
 4. If no second notice arrives, compare the attempt with the rule's repeat window and fixed caps.

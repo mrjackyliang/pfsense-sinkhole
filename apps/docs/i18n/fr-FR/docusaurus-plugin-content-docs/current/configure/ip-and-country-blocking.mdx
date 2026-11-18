@@ -35,9 +35,31 @@ Ouvrez **Firewall → Sinkhole → IP** et sélectionnez **Enable** uniquement a
 | Inbound    | Bloque les paquets provenant d’une adresse source répertoriée, généralement sur un WAN.                        |
 | Outbound   | Bloque les paquets arrivant vers une adresse de destination répertoriée, généralement sur les réseaux clients. |
 
-L’ancre contient des règles `block drop in quick` et aucune règle pass. Sinkhole la référence depuis la position précoce des règles de paquet de pfSense afin que les blocages précèdent les règles pass-quick ordinaires. La page affiche d’abord les panneaux des listes IP et du catalogue, puis les réglages IP et pays communs à la page avec **Save** sous le panneau.
+L’ancre contient des règles `block drop in quick` et aucune règle pass. Sinkhole la référence depuis la position précoce des règles de paquet de pfSense afin que les blocages précèdent les règles pass-quick ordinaires. Dans **Global**, la page affiche d’abord les panneaux des listes IP et du catalogue, puis les réglages IP et pays avec **Save** sous le panneau.
 
-<img src={ipTab} alt="Onglet IP affichant deux listes IP de démonstration, les boutons d’ajout et d’ajout depuis le catalogue, et le blocage IP et par pays activé sur LAN dans les deux sens" width={1024} height={1389} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Onglet IP affichant deux listes IP de démonstration, les boutons d’ajout et d’ajout depuis le catalogue, et le blocage IP et par pays activé sur LAN dans les deux sens" width={1024} height={1648} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Définir le blocage par réseau et par appareil \{#set-blocking-per-network-and-device}
+
+La ligne sous les onglets choisit ce que vous modifiez : **All**, **Global**, un réseau ou un appareil. La ligne en dessous nomme les clients auxquels ces réglages s’appliquent. Chaque choix n’affiche que ses propres réglages ; les réglages d’un choix plus large ne sont jamais affichés.
+
+Un client suit les réglages les plus spécifiques qui existent : d’abord ceux de son appareil, puis ceux de son réseau, puis ceux de Global. Un réseau ou un appareil désactivé dans l’onglet Clients est ignoré.
+
+Seul **Global** contient :
+
+- **Interfaces**, où s’applique le blocage de Global.
+- **MaxMind Account ID** et **MaxMind License Key**.
+- Les sources des listes IP, **Add from Catalog** et les mises à jour des listes.
+
+Global et chaque réseau ou appareil contiennent **Enable**, **Directions**, **IP Lists** (les sources utilisées à cet endroit), **Countries** et **IP Allowlist**. Pour un réseau ou un appareil, **Outbound** empêche ses clients d’atteindre une destination répertoriée et **Inbound** empêche une source répertoriée d’atteindre ses clients. Les pays d’un réseau ou d’un appareil utilisent le compte MaxMind de Global.
+
+Un réseau ou un appareil sans réglages propres affiche une ligne, comme « Non défini pour ce réseau ; Global s’applique. », au-dessus d’un formulaire vide. Un appareil y nomme son réseau lorsque ce réseau a ses propres réglages. Enregistrer le formulaire crée les réglages, et **Remove settings for this network** ou **Remove settings for this device** les supprime pour que les réglages plus larges s’appliquent à nouveau. Supprimer un réseau ou un appareil dans l’onglet Clients supprime aussi ses réglages.
+
+**All** liste Global et chaque réseau et appareil ayant ses propres réglages, avec leurs directions, leurs pays et leur nombre de listes IP. Sélectionnez une ligne pour la modifier.
+
+Lors de la mise à niveau de Sinkhole vers 1.3.0, les réglages existants restent dans Global et sont copiés dans chaque réseau et appareil. Chaque copie est ensuite indépendante. Une copie n’est activée que si l’interface du réseau, ou une interface de l’un des identifiants de l’appareil, était sélectionnée dans **Interfaces** ; toutes les autres copies sont enregistrées désactivées, de sorte qu’aucun client n’est bloqué s’il ne l’était pas auparavant.
+
+Chaque réseau ou appareil dont les réglages sont activés reçoit sa propre table de clients dans l’ancre `sinkhole/ip`. Les adresses d’un appareil sont retirées de la table de son réseau et de celle de Global, et les sous-réseaux d’un réseau de celle de Global, de sorte qu’un client n’est bloqué que par ses réglages les plus spécifiques.
 
 ## Ajouter des listes IP \{#add-ip-lists}
 

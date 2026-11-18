@@ -105,19 +105,19 @@
     "message": "Sinkhole stranice"
   },
   "home.showcase.scopes.label": {
-    "message": "Opsezi"
+    "message": "Klijenti i blokiranje"
   },
   "home.showcase.scopes.heading": {
     "message": "Različita pravila za svaku mrežu i uređaj"
   },
   "home.showcase.scopes.description": {
-    "message": "Dodijelite mreži ili pojedinačnom uređaju vlastite liste i dopuštene domene. Svaki DNS upit slijedi najspecifičniji opseg koji mu odgovara."
+    "message": "Definišite svaku mrežu i svaki uređaj jednom na kartici Klijenti, a zatim im na kartici Blokiranje dodijelite vlastite liste i dopuštene domene. Svaki DNS upit slijedi najspecifičnije podudaranje: prvo uređaj, zatim njegovu mrežu, pa globalne postavke."
   },
   "home.showcase.scopes.link": {
-    "message": "Postavite opsege"
+    "message": "Postavite klijente i blokiranje"
   },
   "home.showcase.scopes.alt": {
-    "message": "Sinkhole stranica Opsezi s opsegom mreže LAN i tri opsega uređaja"
+    "message": "Sinkhole stranica Klijenti s mrežom LAN i tri uređaja"
   },
   "home.showcase.services.label": {
     "message": "Usluge"
@@ -141,16 +141,16 @@
     "message": "Znajte šta je učitano, a šta je zastarjelo"
   },
   "home.showcase.status.description": {
-    "message": "Stanje prikazuje svaku listu s brojem unosa i posljednjim ažuriranjem, kao i opsege, mreže i uređaje koje Sinkhole trenutno primjenjuje."
+    "message": "Stanje prikazuje svaku listu s brojem unosa i posljednjim ažuriranjem, kao i mreže i uređaje koje Sinkhole trenutno primjenjuje."
   },
   "home.showcase.status.link": {
     "message": "Pročitajte o stranici Stanje"
   },
   "home.showcase.status.alt": {
-    "message": "Sinkhole stranica Stanje s panelima za liste, opsege, mreže i uređaje"
+    "message": "Sinkhole stranica Stanje s panelima za liste, mreže i uređaje"
   },
   "home.showcase.scopes.title": {
-    "message": "pfSense.home.arpa - Firewall: Sinkhole: Opsezi"
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: Klijenti"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Firewall: Sinkhole: Usluge"

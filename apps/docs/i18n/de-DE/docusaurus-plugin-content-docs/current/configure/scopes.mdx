@@ -1,10 +1,11 @@
 ---
 id: scopes
-title: Scopes und erlaubte Domains
-description: Weise Listen und erlaubte Domains globalen, Schnittstellen- und Geräte-Scopes zu und folge bei jeder DNS-Abfrage der genauen spezifischsten Reihenfolge.
+title: Clients und Blockierung
+description: Lege Netzwerke und Geräte unter Clients an, wähle unter Blocking die Listen und erlaubten Domains für Global, jedes Netzwerk und jedes Gerät und folge bei jeder DNS-Abfrage der genauen spezifischsten Entscheidungsreihenfolge.
 keywords:
   - sinkhole for pfsense
-  - scopes
+  - clients
+  - blockierung
   - vlan-blockierung
   - geräterichtlinie
   - erlaubte domains
@@ -17,44 +18,65 @@ tags:
 import deviceEditor from './_assets_/scopes-2.png';
 import scopesTab from './_assets_/scopes-1.png';
 
-Weise Listen und erlaubte Domains auf globaler, Netzwerk- und Geräteebene zu, damit jeder Client die für seinen aktuellen Standort vorgesehene Richtlinie erhält.
+Lege jedes Netzwerk und jedes Gerät einmal unter **Clients** an und wähle dann unter **Blocking**, was jeweils blockiert wird. Jeder Client erhält die für seinen aktuellen Standort vorgesehene Richtlinie.
 
-## Warum Scopes verwenden? \{#why-use-scopes}
+## Warum Netzwerke und Geräte verwenden? \{#why-use-networks-and-devices}
 
 1. Gibt jeder pfSense-Schnittstelle oder jedem VLAN eine eigene Richtlinie und behält zugleich globale Regeln für alle bei.
 2. Gibt einem einzelnen Gerät eine spezifischere Entscheidung, ohne einen separaten DNS-Server zu erfordern.
 3. Lässt erlaubte Domains Fehlalarme auf der relevanten Ebene korrigieren, ohne eine vollständige Liste zu entfernen.
 4. Hält Clientadressen von kompilierten Listen getrennt, sodass DHCP-, Nachbar- oder Schnittstellenänderungen Unbound nicht neu laden.
 
-## Globaler Scope \{#global-scope}
+## Kontexte \{#contexts}
 
-Eine Liste, bei der **Global** ausgewählt ist, gilt nach Geräte- und Netzwerkentscheidungen für jeden Client. Globale erlaubte Domains werden auf dem Tab **Lists** eingegeben und lassen die genannte Domain sowie ihre Subdomains durch globale Listen passieren.
+Blocking, Services, SafeSearch, Alerts, Bypass und IP teilen sich eine zweite Tab-Zeile unter den Haupttabs:
 
-Ein Client, der mit keinem aktivierten Netzwerk- oder Geräte-Scope übereinstimmt, erhält nur diese Ebene.
+| Tab      | Was die Seite bearbeitet                                                                                                                  |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| All      | Nichts. Eine schreibgeschützte Tabelle listet jeden Kontext mit eigenen Einstellungen auf; wähle eine Zeile, um diesen Kontext zu öffnen. |
+| Global   | Die Einstellungen für jeden Client.                                                                                                       |
+| Networks | Ein Netzwerk. Eine Zeile mit Netzwerk-Chips wählt aus, welches.                                                                           |
+| Devices  | Ein Gerät. Eine Zeile mit Geräte-Chips wählt aus, welches, und das Suchfeld grenzt die Chips nach Namen ein.                              |
 
-## Netzwerk-Scopes \{#network-scopes}
+Ein Banner unter der Zeile nennt, was du gerade bearbeitest, etwa **Editing: Network: IOT · applies to clients on IOT** oder **Editing: Device: Tablet · this device only**. Jeder Kontext zeigt nur seine eigenen Einstellungen; nichts, was von einem umfassenderen Kontext geerbt wird, erscheint in seinem Formular.
 
-Öffne **Firewall → Sinkhole → Scopes** und wähle unter der Tabelle Networks **Add**. Der Editor verwendet standardmäßig LAN oder die erste verfügbare Nicht-WAN-Schnittstelle und lässt Schnittstellen aus, für die bereits ein Netzwerk-Scope besteht. Ein Client gehört zu diesem Netzwerk, wenn seine Adresse in einem der aktuellen IPv4- oder IPv6-Subnetze der Schnittstelle liegt.
+Der gewählte Kontext bleibt beim Wechsel zwischen Tabs erhalten, bis du einen anderen auswählst. Ein deaktiviertes Netzwerk oder Gerät kann weiterhin bearbeitet werden, und eine Warnung weist darauf hin, dass seine Einstellungen für keinen Client gelten, bis es wieder aktiviert ist.
 
-Jeder Netzwerkeintrag wählt zusätzliche Listen, erlaubte Domains und den Aktivierungszustand des Scopes aus. Nach dem Speichern kehrst du zu Scopes zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile. Ein Gerät, das zwischen Netzwerken wechselt, erhält die Richtlinie des Netzwerks, zu dem seine aktuelle Adresse gehört.
+## Netzwerke anlegen \{#define-networks}
 
-<img src={scopesTab} alt="Tab Scopes mit einem LAN-Netzwerk-Scope und drei Demo-Geräten, die per IP- oder MAC-Adresse identifiziert werden, samt ihren aktuellen Adressen" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+Öffne **Firewall → Sinkhole → Clients** und wähle unter der Tabelle Networks **Add**. Der Editor verwendet standardmäßig LAN oder die erste verfügbare Nicht-WAN-Schnittstelle und lässt Schnittstellen aus, für die bereits ein Netzwerk besteht. Ein Client gehört zu diesem Netzwerk, wenn seine Adresse in einem der aktuellen IPv4- oder IPv6-Subnetze der Schnittstelle liegt.
 
-## Geräte-Scopes \{#device-scopes}
+Jeder Netzwerkeintrag hat eine Schnittstelle und ein Kontrollkästchen **Enabled**. Nach dem Speichern kehrst du zu Clients zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile. Ein Gerät, das zwischen Netzwerken wechselt, erhält die Richtlinie des Netzwerks, zu dem seine aktuelle Adresse gehört.
 
-Wähle unter der Tabelle Devices **Add**, gib einen Namen ein und wähle eine Identifikationsmethode. Der Editor zeigt nur das Identifikatorfeld für die ausgewählte Methode an:
+<img src={scopesTab} alt="Tab Clients mit einem LAN-Netzwerk und drei Demo-Geräten, die per IP- oder MAC-Adresse identifiziert werden, samt ihren aktuellen Adressen" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-| Methode             | Für das Gerät verwendete Adressen                                                                   |
+## Geräte anlegen \{#define-devices}
+
+Wähle unter der Tabelle Devices **Add**, gib einen Namen ein und füge eine oder mehrere Identifikatorzeilen hinzu. Jede Zeile enthält einen Typ und den zugehörigen Wert:
+
+| Identifikatortyp    | Für das Gerät verwendete Adressen                                                                   |
 |---------------------|-----------------------------------------------------------------------------------------------------|
 | IP address          | Die konfigurierte IPv4- oder IPv6-Adresse.                                                          |
 | DHCP static mapping | Die konfigurierte Adresse sowie aktuelle Adressen, die für die MAC der Zuordnung beobachtet werden. |
 | MAC address         | Aktuelle ARP-, NDP- und DHCP-Lease-Adressen für diese MAC.                                          |
 
-Der Geräteeintrag wählt seine Listen, erlaubten Domains und seinen Aktivierungszustand aus. Nach dem Speichern kehrst du zu Scopes zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile. Ein Hintergrundauftrag aktualisiert aktuelle Subnetze und Geräteadressen jede Minute, solange die DNS-Blockierung einen aktivierten Netzwerk- oder Geräte-Scope hat oder der Bypass-DNS-Schutz eine Client-Zuordnung benötigt. Paket-Sync startet dieselbe Aktualisierung nur unter dieser Bedingung.
+Verwalte die Zeilen mit **Add Identifier** und den Papierkorb-Schaltflächen. Ein Gerät benötigt mindestens einen Identifikator. Jede über einen seiner Identifikatoren gefundene Adresse gehört zum selben Gerät und teilt daher dieselben Einstellungen und denselben Aktivierungszustand. Nach dem Speichern kehrst du zu Clients zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile. Ein Hintergrundauftrag aktualisiert aktuelle Subnetze und Geräteadressen jede Minute, solange die DNS-Blockierung ein aktiviertes Netzwerk oder Gerät hat oder der Bypass-DNS-Schutz eine Client-Zuordnung benötigt. Paket-Sync startet dieselbe Aktualisierung nur unter dieser Bedingung.
 
-Ziehe an der unteren Ecke des Felds **Lists**, um es zu vergrößern, wenn du viele Listen hast.
+Wenn du ein Netzwerk oder Gerät unter Clients löschst, werden auch seine Einstellungen unter Blocking, Services, SafeSearch, Bypass und IP gelöscht.
 
-<img src={deviceEditor} alt="Seite Edit Device für ein Demo-Tablet, das per IP-Adresse identifiziert wird, mit einer ausgewählten Liste und einer erlaubten Domain" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={deviceEditor} alt="Seite Edit Device für ein Demo-Tablet, das per IP-Adresse und MAC-Adresse identifiziert wird" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Listen und erlaubte Domains auswählen \{#choose-lists-and-allowed-domains}
+
+Öffne **Firewall → Sinkhole → Blocking** und wähle einen Kontext:
+
+- **Global** wählt die Listen, die nach Geräte- und Netzwerkentscheidungen für jeden Client gelten, und enthält die globalen erlaubten Domains.
+- **Networks** wählt die zusätzlichen Listen und erlaubten Domains für Clients im gewählten Netzwerk.
+- **Devices** wählt die zusätzlichen Listen und erlaubten Domains für das gewählte Gerät.
+
+Jeder Kontext hat ein Feld **Lists** und ein Feld **Allowed Domains** mit einer Domain pro Zeile. Wähle **Save**, um diesen Kontext anzuwenden. Ziehe an der unteren Ecke des Felds **Lists**, um es zu vergrößern, wenn du viele Listen hast. Die Listen selbst werden auf dem Tab [Lists](/docs/configure/lists) hinzugefügt und bearbeitet.
+
+**All** zeigt eine Zeile pro Kontext, der Listen oder erlaubte Domains hat, mit seinen Listennamen und der Anzahl erlaubter Domains.
 
 ## Entscheidungsreihenfolge \{#decision-order}
 
@@ -67,7 +89,7 @@ Die spezifischste übereinstimmende Ebene entscheidet jede Abfrage in genau dies
 5. **Globale erlaubte Domains** — Sofort zulassen, wenn die globale Ausnahme übereinstimmt.
 6. **Globale Listen** — Blockieren, wenn eine globale Liste übereinstimmt.
 
-Die Abfrage wird zugelassen, wenn kein Schritt entscheidet. Die erlaubten Domains einer Ebene setzen Listen weniger spezifischer Ebenen außer Kraft, aber keine Liste einer spezifischeren Ebene, die bereits entschieden hat.
+Die Abfrage wird zugelassen, wenn kein Schritt entscheidet. Ein Client, der mit keinem aktivierten Netzwerk oder Gerät übereinstimmt, erhält nur die globalen Schritte. Die erlaubten Domains einer Ebene setzen Listen weniger spezifischer Ebenen außer Kraft, aber keine Liste einer spezifischeren Ebene, die bereits entschieden hat.
 
 ## Verhalten erlaubter Domains \{#allowed-domain-behavior}
 
@@ -79,11 +101,11 @@ Jeder Eintrag für eine erlaubte Domain gilt für die genaue Domain und jede Sub
 
 ## Adresskonflikte \{#address-conflicts}
 
-Wenn zwei Geräteeinträge dieselbe aktuelle Adresse beanspruchen, gewinnt das erste Gerät in der Tabellenreihenfolge. **Status → Scopes** zeigt die Adresse bei jedem betroffenen Eintrag unter **Conflict**, damit Reihenfolge oder Identifikatoren korrigiert werden können.
+Mehrere Identifikatoren desselben Geräts können dieselbe Adresse erreichen, ohne einen Konflikt zu erzeugen. Wenn zwei verschiedene Geräte dieselbe aktuelle Adresse beanspruchen, gewinnt das erste Gerät in der Tabelle Clients. Die Tabelle Clients und **Status → Clients** zeigen die Adresse bei jedem betroffenen Eintrag unter **Conflict**, damit Reihenfolge oder Identifikatoren korrigiert werden können.
 
-## Scope prüfen \{#verify-a-scope}
+## Netzwerk oder Gerät prüfen \{#verify-a-network-or-device}
 
 1. Führe `/usr/local/sbin/sinkhole --refresh-clients` aus oder warte auf die minutenweise Aktualisierung.
-2. Öffne **Status → Scopes** und bestätige die aktuellen Subnetze des Netzwerks sowie die aktuellen Adressen des Geräts.
-3. Frage einen Namen von einem Client in diesem Scope ab und vergleiche das Ergebnis mit der obigen Entscheidungsreihenfolge.
+2. Öffne **Status → Clients** und bestätige die aktuellen Subnetze des Netzwerks sowie die aktuellen Adressen des Geräts.
+3. Frage einen Namen von einem Client in diesem Netzwerk oder auf diesem Gerät ab und vergleiche das Ergebnis mit der obigen Entscheidungsreihenfolge.
 4. Prüfe auf einen Adresskonflikt, bevor du dich auf gerätespezifisches Verhalten verlässt.

@@ -52,7 +52,7 @@ sidebar_position: 4
 ## 網路要求 \{#network-requirements}
 
 - 網路作用域使用已配置 pfSense 介面的當前 IPv4 和 IPv6 子網。
-- 通過 MAC 地址或靜態映射識別的設備依賴當前 ARP、NDP、DHCP 租約、靜態映射和介面資料。
+- 每台設備可以有多個 IP 位址、MAC 位址和靜態對應。MAC 和靜態對應識別碼依賴當前 ARP、NDP、DHCP 租約、靜態對應和介面資料。
 - **Bypass** 中的普通 DNS 重定向要求所選介面具有相應地址族，並有匹配的 Resolver 監聽器。
 - 被重定向的用戶端仍需獲得 Resolver 訪問控制設定的允許。
 

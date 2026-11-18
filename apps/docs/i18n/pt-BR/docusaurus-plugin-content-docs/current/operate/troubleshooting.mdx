@@ -59,8 +59,8 @@ Um nome consultado permitido continua permitido. Isso impede que um destino CNAM
 
 ## O SafeSearch não é aplicado \{#safesearch-does-not-apply}
 
-1. Confirme que o escopo de rede ou de dispositivo do cliente está ativado em **Scopes** e que o mecanismo está marcado em **SafeSearch** para esse escopo ou para Global.
-2. Verifique em **Status → SafeSearch** os endereços do host seguro e o último erro. Um host sem endereços mantém seu mecanismo bloqueado no escopo até que uma consulta tenha sucesso.
+1. Confirme que a rede ou o dispositivo do cliente está ativado em **Clients** e que o mecanismo está marcado em **SafeSearch** para essa rede ou esse dispositivo, ou para Global.
+2. Verifique em **Status → SafeSearch** os endereços do host seguro e o último erro. Um host sem endereços mantém seu mecanismo bloqueado nesse contexto até que uma consulta tenha sucesso.
 3. Confirme que **Compile Needed** e **Deployment Needed** são `No` depois de salvar.
 4. Confirme que o cliente não está usando DNS criptografado nem outro resolvedor; a [Proteção contra evasão](/docs/configure/bypass-protection) mantém as interfaces selecionadas no caminho de DNS do Sinkhole.
 
@@ -68,10 +68,10 @@ Um navegador pode manter o endereço normal de um mecanismo em cache por alguns 
 
 ## Um dispositivo recebe a política errada \{#a-device-gets-the-wrong-policy}
 
-- Execute `/usr/local/sbin/sinkhole --refresh-clients` e examine **Status → Scopes**.
-- Confirme que a linha de rede mostra as sub-redes atuais da interface e que a linha do dispositivo mostra seus endereços atuais.
+- Execute `/usr/local/sbin/sinkhole --refresh-clients` e examine **Status → Clients**.
+- Confirme que a linha de rede mostra as sub-redes atuais da interface e que a linha do dispositivo mostra todos os identificadores configurados e seus endereços atuais.
 - Resolva qualquer valor **Conflict**, pois o primeiro dispositivo na ordem da tabela vence quando um endereço é compartilhado.
-- Para um mapeamento estático, verifique seu endereço configurado e os endereços atuais observados para seu MAC.
+- Para cada identificador de mapeamento estático, verifique seu endereço configurado e os endereços atuais observados para seu MAC. Endereços encontrados por dois identificadores do mesmo dispositivo não são conflitos.
 
 Os horários de término das concessões ISC podem estar em GMT ou na hora local do firewall, conforme a configuração de hora de concessão da interface, enquanto os horários de término das concessões Kea já estão na hora local. O Sinkhole segue essa semântica do pfSense ao decidir se uma concessão é atual.
 

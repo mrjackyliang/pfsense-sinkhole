@@ -30,7 +30,7 @@ Diese Einrichtung funktionierte, aber jeder Neustart oder Reload der Firewall be
 
 Sinkhole läuft als Python-Modul im DNS Resolver von pfSense und beantwortet einen blockierten Namen mit `0.0.0.0` und `::`.
 
-- **Listen für jeden Scope** — Globale Listen gelten für alle. Ein Netzwerk-Scope fügt Listen für eine Schnittstelle oder ein VLAN hinzu, und ein Geräte-Scope fügt Listen für ein Gerät hinzu, zugeordnet über IP-Adresse, statische DHCP-Zuordnung oder MAC-Adresse.
+- **Listen für jeden Scope** — Globale Listen gelten für alle. Ein Netzwerk-Scope fügt Listen für eine Schnittstelle oder ein VLAN hinzu, und ein Geräte-Scope fügt einen gemeinsamen Listensatz für ein Gerät hinzu, das über eine oder mehrere IP-Adressen, statische DHCP-Zuordnungen und MAC-Adressen zugeordnet wird.
 - **Erlaubte Domains auf jeder Ebene** — Ein Fehlalarm wird dort behoben, wo er zählt, ohne eine ganze Liste aufzugeben.
 - **Gespeicherte Kopien jeder Liste** — DNS antwortet direkt nach einem Neustart des DNS Resolver oder des Systems aus den letzten gültigen Daten, auch bei Installationen auf einer RAM-Disk. Ein fehlgeschlagener Download behält die vorherige Kopie.
 - **Alarme nach deiner Wahl** — Eine pfSense-Benachrichtigung kommt nur für die Listen, Netzwerke und Geräte, die eine Alarmregel auswählt, einmal pro Gerät und Domain.

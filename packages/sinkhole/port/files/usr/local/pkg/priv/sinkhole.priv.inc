@@ -44,6 +44,30 @@ $priv_list['page-firewall-sinkhole-services'] = [
     ],
 ];
 
+$priv_list['page-firewall-sinkhole-clients'] = [
+    'name' => gettext('WebCfg - Firewall: Sinkhole: Clients'),
+    'descr' => gettext('Allow access to Sinkhole network and device definitions.'),
+    'match' => [
+        'sinkhole-clients.php*',
+    ],
+];
+
+$priv_list['page-firewall-sinkhole-clients-edit'] = [
+    'name' => gettext('WebCfg - Firewall: Sinkhole: Clients: Edit'),
+    'descr' => gettext('Allow access to the Sinkhole network and device editor.'),
+    'match' => [
+        'sinkhole-clients_edit.php*',
+    ],
+];
+
+$priv_list['page-firewall-sinkhole-blocking'] = [
+    'name' => gettext('WebCfg - Firewall: Sinkhole: Blocking'),
+    'descr' => gettext('Allow access to the Sinkhole lists and allowed domains of each context.'),
+    'match' => [
+        'sinkhole-blocking.php*',
+    ],
+];
+
 $priv_list['page-firewall-sinkhole-scopes'] = [
     'name' => gettext('WebCfg - Firewall: Sinkhole: Scopes'),
     'descr' => gettext('Allow access to Sinkhole network and device scope configuration.'),

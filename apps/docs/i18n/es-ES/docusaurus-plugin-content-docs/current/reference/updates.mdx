@@ -22,11 +22,11 @@ Sinkhole puede comprobar sus versiones de GitHub, notificar mediante pfSense e i
 
 **General → Update Checks** selecciona Daily, Weekly, Monthly o Never; Weekly es el valor predeterminado. Sinkhole guarda componentes aleatorios estables del horario para que guardar la configuración no desplace continuamente la hora de comprobación.
 
-Una comprobación registra la última versión, la página de la versión, la hora de comprobación y el último error. **About → Check Now** ejecuta de inmediato la misma comprobación.
+Una comprobación registra la última versión, la página de la versión, la hora de comprobación y el último error. **About → Check Now** ejecuta de inmediato la misma comprobación sin crear un aviso y registra una versión más reciente como ya notificada.
 
 ## Avisos de actualización \{#update-notices}
 
-Cada nueva versión detectada crea un aviso local en la WebGUI de pfSense que enlaza con la pestaña About de Sinkhole. Las comprobaciones repetidas no crean avisos duplicados para la misma versión.
+Cada nueva versión detectada por una comprobación programada crea un aviso local en la WebGUI de pfSense que enlaza con la pestaña About de Sinkhole. Las comprobaciones repetidas no crean avisos duplicados para la misma versión, incluida una versión ya mostrada por una comprobación manual en About.
 
 Seleccione **Remote Notifications** para usar también los servicios configurados en **System → Advanced → Notifications**. La opción está desactivada de forma predeterminada y afecta a los avisos de versiones, no a las reglas de alerta de bloqueos de listas.
 
@@ -36,7 +36,9 @@ La barra de actualización muestra la versión instalada, la última versión co
 
 **Update** aparece cuando la última versión registrada es más reciente. La página consulta el trabajo independiente e informa de su resultado sin mantener abierta la solicitud del navegador.
 
-<img src={aboutUpdateBar} alt="Pestaña About con una actualización de Sinkhole disponible y los controles Update y What's New" width={1024} height={816} style={{maxWidth: '100%', height: 'auto'}} />
+Si se está ejecutando una actualización de listas, IP o Bypass, una instalación desde About muestra que está esperando y comienza cuando termina esa tarea. La espera está limitada a 30 minutos.
+
+<img src={aboutUpdateBar} alt="Pestaña About con una actualización de Sinkhole disponible y los controles Update y What's New" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Verificación antes de instalar \{#verification-before-installation}
 
@@ -48,9 +50,9 @@ Una lista de confianza instalada vacía significa que no se requiere firma, pero
 
 ## Bloqueo de actualizaciones \{#update-locking}
 
-La comprobación y la actualización automática del paquete comparten `/var/run/sinkhole-update.lock` con las actualizaciones DNS, de Bypass y de IP/país, las aplicaciones de la configuración y la limpieza de la eliminación. No esperan al bloqueo: si otra operación lo tiene, la comprobación o la acción **Update** se detiene con `Another package operation is already running.`
+Las comprobaciones de versiones y la actualización automática se coordinan mediante `/var/run/sinkhole-release.lock` y esperan hasta 30 segundos a otra comprobación o instalación. Una comprobación de versiones nunca adquiere el bloqueo de tareas del paquete, por lo que puede ejecutarse durante una actualización de listas, IP o Bypass.
 
-El bloqueo impide que cambien los archivos del paquete mientras el paquete actual descarga, analiza, compila o aplica políticas. Vuelva a intentarlo desde About cuando Status ya no muestre una actualización en ejecución.
+La actualización automática adquiere primero el bloqueo de versiones y después `/var/run/sinkhole-update.lock`. Si una actualización de listas, IP o Bypass mantiene el bloqueo de tareas del paquete, la línea de progreso de About muestra la espera durante un máximo de 30 minutos antes de que falle la instalación.
 
 ## Actualización manual del paquete \{#manual-package-update}
 

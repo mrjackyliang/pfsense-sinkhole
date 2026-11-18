@@ -35,9 +35,31 @@ Otwórz **Firewall → Sinkhole → IP** i zaznacz **Enable** dopiero po wybrani
 | Inbound    | Blokuje pakiety przychodzące z adresu źródłowego na liście, zwykle na interfejsie WAN.           |
 | Outbound   | Blokuje pakiety przychodzące w kierunku adresu docelowego na liście, zwykle w sieciach klientów. |
 
-Kotwica zawiera reguły `block drop in quick` i nie zawiera reguł przepuszczania. Sinkhole odwołuje się do niej przez wczesną pozycję reguł pakietu pfSense, dzięki czemu blokady działają przed zwykłymi regułami pass-quick. Strona najpierw pokazuje panele list IP i katalogu, a następnie ustawienia IP i krajów obejmujące całą stronę z **Save** pod panelem.
+Kotwica zawiera reguły `block drop in quick` i nie zawiera reguł przepuszczania. Sinkhole odwołuje się do niej przez wczesną pozycję reguł pakietu pfSense, dzięki czemu blokady działają przed zwykłymi regułami pass-quick. W **Global** strona najpierw pokazuje panele list IP i katalogu, a następnie ustawienia IP i krajów z **Save** pod panelem.
 
-<img src={ipTab} alt="Karta IP pokazująca dwie demonstracyjne listy IP z przyciskami dodawania i dodawania z katalogu oraz blokowanie IP i krajów włączone na LAN w obu kierunkach" width={1024} height={1409} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Karta IP pokazująca dwie demonstracyjne listy IP z przyciskami dodawania i dodawania z katalogu oraz blokowanie IP i krajów włączone na LAN w obu kierunkach" width={1024} height={1668} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Ustawianie blokowania dla sieci i urządzeń \{#set-blocking-per-network-and-device}
+
+Wiersz pod kartami określa, co edytujesz: **All**, **Global**, jedną sieć lub jedno urządzenie. Linia pod nim wskazuje klientów, których dotyczą te ustawienia. Każdy wybór pokazuje tylko własne ustawienia; ustawienia z szerszego wyboru nigdy nie są wyświetlane.
+
+Klient stosuje najbardziej szczegółowe istniejące ustawienia: najpierw ustawienia swojego urządzenia, potem swojej sieci, a na końcu Global. Sieć lub urządzenie wyłączone na karcie Clients są pomijane.
+
+Tylko **Global** zawiera:
+
+- **Interfaces**, czyli miejsca, w których obowiązuje blokowanie Global.
+- **MaxMind Account ID** i **MaxMind License Key**.
+- Źródła list IP, **Add from Catalog** i aktualizacje list.
+
+Global oraz każda sieć lub urządzenie zawierają **Enable**, **Directions**, **IP Lists** (źródła używane w danym miejscu), **Countries** i **IP Allowlist**. W przypadku sieci lub urządzenia **Outbound** blokuje jego klientom dostęp do miejsca docelowego z listy, a **Inbound** blokuje źródłu z listy dostęp do jego klientów. Kraje w sieci lub urządzeniu korzystają z konta MaxMind z Global.
+
+Sieć lub urządzenie bez własnych ustawień pokazuje jedną linię, na przykład "Nie ustawiono dla tej sieci; obowiązuje Globalne.", nad pustym formularzem. Urządzenie podaje tam swoją sieć, gdy ta sieć ma własne ustawienia. Zapisanie formularza tworzy ustawienia, a **Remove settings for this network** lub **Remove settings for this device** je usuwa, dzięki czemu ponownie obowiązują szersze ustawienia. Usunięcie sieci lub urządzenia na karcie Clients usuwa także jego ustawienia.
+
+**All** wyświetla Global oraz każdą sieć i każde urządzenie z własnymi ustawieniami wraz z ich kierunkami, krajami i liczbą list IP. Wybierz wiersz, aby go edytować.
+
+Po uaktualnieniu Sinkhole do wersji 1.3.0 istniejące ustawienia pozostają w Global i są kopiowane do każdej sieci i każdego urządzenia. Od tej chwili każda kopia jest niezależna. Kopia jest włączana tylko wtedy, gdy interfejs sieci lub interfejs jednego z identyfikatorów urządzenia był wybrany w polu **Interfaces**; każda inna kopia jest zapisywana jako wyłączona, więc żaden klient, który wcześniej nie był blokowany, nie zacznie być blokowany.
+
+Każda sieć lub urządzenie z włączonymi ustawieniami otrzymuje własną tabelę klientów w kotwicy `sinkhole/ip`. Adresy urządzenia są usuwane z tabeli jego sieci i z tabeli Global, a podsieci sieci z tabeli Global, więc klient jest blokowany tylko przez swoje najbardziej szczegółowe ustawienia.
 
 ## Dodawanie list IP \{#add-ip-lists}
 

@@ -101,17 +101,20 @@
   "home.showcase.tabsLabel": {
     "message": "Sinkhole-Seiten"
   },
+  "home.showcase.scopes.label": {
+    "message": "Clients und Blockierung"
+  },
   "home.showcase.scopes.heading": {
     "message": "Eigene Regeln für jedes Netzwerk und Gerät"
   },
   "home.showcase.scopes.description": {
-    "message": "Gib einem Netzwerk oder einem einzelnen Gerät eigene Listen und erlaubte Domains. Jede DNS-Anfrage folgt dem spezifischsten Scope, der auf sie passt."
+    "message": "Lege jedes Netzwerk und Gerät einmal unter Clients an und gib ihm dann unter Blockierung eigene Listen und erlaubte Domains. Jede DNS-Anfrage folgt der spezifischsten Übereinstimmung: zuerst dem Gerät, dann seinem Netzwerk, dann den globalen Einstellungen."
   },
   "home.showcase.scopes.link": {
-    "message": "Scopes einrichten"
+    "message": "Clients und Blockierung einrichten"
   },
   "home.showcase.scopes.alt": {
-    "message": "Sinkhole-Seite Scopes mit einem Netzwerk-Scope für LAN und drei Geräte-Scopes"
+    "message": "Sinkhole-Seite Clients mit einem LAN-Netzwerk und drei Geräten"
   },
   "home.showcase.services.label": {
     "message": "Dienste"
@@ -132,13 +135,13 @@
     "message": "Sieh, was geladen ist und was veraltet ist"
   },
   "home.showcase.status.description": {
-    "message": "Status zeigt jede Liste mit der Anzahl ihrer Einträge und der letzten Aktualisierung sowie die Scopes, Netzwerke und Geräte, die Sinkhole gerade anwendet."
+    "message": "Status zeigt jede Liste mit der Anzahl ihrer Einträge und der letzten Aktualisierung sowie die Netzwerke und Geräte, die Sinkhole gerade anwendet."
   },
   "home.showcase.status.link": {
     "message": "Mehr zur Seite Status"
   },
   "home.showcase.status.alt": {
-    "message": "Sinkhole-Seite Status mit den Bereichen Listen, Scopes, Netzwerke und Geräte"
+    "message": "Sinkhole-Seite Status mit den Bereichen Listen, Netzwerke und Geräte"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Firewall: Sinkhole: Dienste"

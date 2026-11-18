@@ -49,7 +49,7 @@ Sinkhole 和 pfBlockerNG 无法同时过滤 DNS。只要 pfBlockerNG 已安装�
 ## 仍由您控制的内容 \{#what-stays-under-your-control}
 
 - **Lists** — 通过 URL 添加您信任的来源，或使用中立的<Terminology title="无需四处找 URL，即可找到知名阻止列表" to="/docs/reference/terminology#lists-and-scopes">常用列表搜索</Terminology>查找来源。Sinkhole 不发布也不推荐任何列表。
-- **Scopes** — 选择全局列表、某个 pfSense 接口或 VLAN 的列表，以及通过 IP 地址、DHCP 静态映射或 MAC 地址识别的设备列表。
+- **Clients and Blocking** — 为一个 pfSense 接口或 VLAN 定义网络，并定义由一个或多个 IP 地址、DHCP 静态映射和 MAC 地址识别的设备，然后为 Global、每个网络和每台设备选择列表。
 - **Allowed Domains** — 在全局、网络或设备层级允许某个域名及其子域名，而无需放弃整份列表。
 - **SafeSearch** — 为每个作用域选择哪些搜索引擎锁定在安全模式，以及 YouTube 使用 Moderate 还是 Strict。
 - **Alerts** — 选择哪些列表和客户端组合创建本地 WebGUI 通知，或使用 pfSense 已配置的远程通知服务。
@@ -71,6 +71,6 @@ WebGUI 遵循 pfSense 中选择的语言，并提供英语和 pfSense 的其他 
 ## 后续步骤 \{#next-steps}
 
 - **[安装软件包](/docs/installation)** — 验证并安装稳定版软件包。
-- **[设置 Sinkhole](/docs/first-run)** — 添加第一份列表、选择其作用域并验证活动代次。
-- **[了解作用域](/docs/configure/scopes)** — 按照设备、网络和全局的准确决定顺序操作。
+- **[设置 Sinkhole](/docs/first-run)** — 添加第一份列表、选择其阻止位置并验证活动代次。
+- **[了解客户端和阻止](/docs/configure/scopes)** — 按照设备、网络和全局的准确决定顺序操作。
 - **[查看安全模型](/docs/safety/how-updates-work)** — 了解已保存副本和原子部署如何保持 DNS 可用。

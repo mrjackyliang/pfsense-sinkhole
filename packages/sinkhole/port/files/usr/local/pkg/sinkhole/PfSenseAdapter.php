@@ -357,13 +357,18 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      *
      * @since 1.0.0
      * @since 1.2.0
+     * @since 1.3.0
      */
     public function getBypassConfiguration(): array
     {
         $redirect = $this->getRedirectConfiguration();
-        $configuration = BypassConfiguration::partition(
-            config_get_path('installedpackages/sinkhole/bypass', []),
-            $redirect['interfaces'],
+        $configuration = BypassConfiguration::withContexts(
+            BypassConfiguration::partition(
+                config_get_path('installedpackages/sinkhole/bypass', []),
+                $redirect['interfaces'],
+                $this->getHostNetworkAliases(),
+            ),
+            config_get_path(BypassConfiguration::CONTEXTS_PATH, []),
             $this->getHostNetworkAliases(),
         );
         $tls = $this->dnsResolverTlsStatus();
@@ -513,14 +518,134 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return array
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public function getIpConfiguration(): array
     {
-        return IpConfiguration::partition(
-            config_get_path('installedpackages/sinkhole/ip', []),
+        $section = config_get_path('installedpackages/sinkhole/ip', []);
+
+        if (!is_array($section) && $section !== null && $section !== '') {
+            return IpConfiguration::partition(
+                $section,
+                $this->getConfiguredInterfaces(),
+                $this->getHostNetworkAliases(),
+            );
+        }
+
+        $contextRows = config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+        $configuration = IpConfiguration::forContext(
+            is_array($section) ? $section : [],
+            is_array($contextRows) ? $contextRows : [],
+            'global',
             $this->getConfiguredInterfaces(),
             $this->getHostNetworkAliases(),
         );
+
+        return is_array($configuration) ? $configuration : [];
+    }
+
+    /**
+     * pfSense Adapter - IP Context Configurations.
+     *
+     * Returns Global plus exact rows whose owning network or device is enabled;
+     * deleted and disabled client definitions never create runtime policy tables.
+     *
+     * @return array<string, array>
+     *
+     * @since 1.3.0
+     */
+    public function getIpContextConfigurations(): array
+    {
+        $storedSection = config_get_path('installedpackages/sinkhole/ip', []);
+        $storedRows = config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+        $section = is_array($storedSection) ? $storedSection : [];
+        $rows = is_array($storedRows) ? $storedRows : [];
+        $interfaces = $this->getConfiguredInterfaces();
+        $aliases = $this->getHostNetworkAliases();
+        $global = IpConfiguration::forContext(
+            $section,
+            $rows,
+            'global',
+            $interfaces,
+            $aliases,
+        );
+        $configurations = is_array($global) ? ['global' => $global] : [];
+        $networks = $this->getNetworks();
+        $devices = $this->getDevices();
+
+        foreach (IpConfiguration::contextKeys() as $context) {
+            [$kind, $identifier] = explode(':', $context, 2);
+            $owner = ($kind === 'network')
+                ? ($networks[$identifier] ?? null)
+                : ($devices[$identifier] ?? null);
+
+            if (!is_array($owner) || ($owner['enabled'] ?? false) !== true) {
+                continue;
+            }
+
+            $configuration = IpConfiguration::forContext(
+                $section,
+                $rows,
+                $context,
+                $interfaces,
+                $aliases,
+            );
+
+            if (is_array($configuration)) {
+                $configurations[$context] = $configuration;
+            }
+        }
+
+        return $configurations;
+    }
+
+    /**
+     * pfSense Adapter - IP Blocking Enabled.
+     *
+     * Cron and lifecycle callers need one decision covering Global and every
+     * enabled client context rather than only the historical global checkbox.
+     *
+     * @return bool
+     *
+     * @since 1.3.0
+     */
+    public function ipBlockingEnabled(): bool
+    {
+        foreach ($this->getIpContextConfigurations() as $configuration) {
+            if (
+                ($configuration['enabled'] ?? false) === true
+                && ($configuration['invalid_values'] ?? []) === []
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * pfSense Adapter - IP Client Refresh Required.
+     *
+     * Network and device context tables depend on the client map; Global alone
+     * continues to use its selected interface subnets directly.
+     *
+     * @return bool
+     *
+     * @since 1.3.0
+     */
+    public function ipClientRefreshRequired(): bool
+    {
+        foreach ($this->getIpContextConfigurations() as $context => $configuration) {
+            if (
+                $context !== 'global'
+                && ($configuration['enabled'] ?? false) === true
+                && ($configuration['invalid_values'] ?? []) === []
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -531,9 +656,77 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return void
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public function saveIpConfiguration(array $storage): void
     {
+        $storedSection = config_get_path('installedpackages/sinkhole/ip', []);
+        $listSelectionSubmitted = array_key_exists('list_ids', $storage);
+        $unwrapItems = static function (mixed $value): array {
+            if (is_array($value) && count($value) === 1 && array_key_exists('item', $value)) {
+                $value = $value['item'];
+            }
+
+            if ($value === null || $value === '' || $value === []) {
+                return [];
+            }
+
+            if (
+                is_array($value)
+                && (array_key_exists('id', $value) || array_key_exists('context', $value))
+            ) {
+                return [$value];
+            }
+
+            return is_array($value) ? array_values($value) : [$value];
+        };
+
+        if (is_array($storedSection)) {
+            foreach ([IpConfiguration::CONTEXT_MIGRATION_FIELD, 'list_ids'] as $preservedField) {
+                if (
+                    !array_key_exists($preservedField, $storage)
+                    && array_key_exists($preservedField, $storedSection)
+                ) {
+                    $storage[$preservedField] = $storedSection[$preservedField];
+                }
+            }
+        }
+
+        $listPartition = IpConfiguration::partitionLists(
+            $unwrapItems($storage['lists'] ?? []),
+        );
+        $configuredListIdentifiers = array_fill_keys(
+            array_keys($listPartition['lists']),
+            true,
+        );
+
+        if (!$listSelectionSubmitted && array_key_exists('list_ids', $storage)) {
+            $storage['list_ids'] = ['item' => array_values(array_filter(
+                $unwrapItems($storage['list_ids']),
+                static fn(mixed $identifier): bool => is_string($identifier)
+                    && isset($configuredListIdentifiers[$identifier]),
+            ))];
+        }
+
+        $storedContextRows = config_get_path(
+            'installedpackages/sinkhole/ip_contexts/item',
+            [],
+        );
+        $contextRows = $unwrapItems($storedContextRows);
+
+        foreach ($contextRows as &$contextRow) {
+            if (!is_array($contextRow) || !array_key_exists('list_ids', $contextRow)) {
+                continue;
+            }
+
+            $contextRow['list_ids'] = ['item' => array_values(array_filter(
+                $unwrapItems($contextRow['list_ids']),
+                static fn(mixed $identifier): bool => is_string($identifier)
+                    && isset($configuredListIdentifiers[$identifier]),
+            ))];
+        }
+        unset($contextRow);
+
         $partition = IpConfiguration::partition(
             $storage,
             $this->getConfiguredInterfaces(),
@@ -550,6 +743,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         }
 
         config_set_path('installedpackages/sinkhole/ip', $storage);
+        config_set_path('installedpackages/sinkhole/ip_contexts/item', $contextRows);
         write_config(Translator::translate('revision_saved_ip_blocking'));
 
         if ($partition['enabled']) {
@@ -586,6 +780,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return string
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public function ipAnchorText(): string
     {
@@ -593,27 +788,11 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             return '';
         }
 
-        $configuration = $this->getIpConfiguration();
-
-        if (
-            $configuration['enabled'] === false
-            || $configuration['invalid_values'] !== []
-        ) {
+        if ($this->ipBlockingWanted() === false) {
             return '';
         }
 
-        foreach ([$this->paths->ipTableIpv4File, $this->paths->ipTableIpv6File] as $path) {
-            if (!FileSystem::isRegularFile($path)) {
-                AtomicFile::write($path, '', 0600);
-            }
-        }
-
-        return IpRuleConfiguration::anchorText(
-            $this->ipInterfaceDetails($configuration['interfaces']),
-            $configuration['directions'],
-            $this->paths->ipTableIpv4File,
-            $this->paths->ipTableIpv6File,
-        );
+        return IpRuleConfiguration::anchorText($this->ipContextRuleDescriptors());
     }
 
     /**
@@ -636,6 +815,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return string
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public function bypassAnchorText(): string
     {
@@ -645,30 +825,345 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
 
         $configuration = $this->getBypassConfiguration();
 
-        if (!$configuration['firewall_enabled'] || $configuration['invalid_values'] !== []) {
+        if (!$configuration['firewall_enabled']) {
             return '';
         }
 
-        if (
-            $configuration['block_encrypted_dns']
-            || $configuration['block_tor']
-            || $configuration['block_vpn']
-        ) {
-            foreach (
-                [$this->paths->bypassTableIpv4File, $this->paths->bypassTableIpv6File]
-                as $path
-            ) {
-                if (!FileSystem::isRegularFile($path)) {
-                    AtomicFile::write($path, '', 0600);
-                }
+        return BypassRuleConfiguration::contextAnchorText(
+            $this->bypassRuleContexts(
+                $configuration,
+                new BypassListStore($this->paths),
+            ),
+        );
+    }
+
+    /**
+     * pfSense Adapter - Cancel Exact Negations.
+     *
+     * A child context that owns exactly a parent's subnet removes that subnet from the
+     * parent's table: pf can't hold one prefix as both an entry and its negation, and
+     * the positive entry would win, applying the parent's rules to the child too.
+     *
+     * @param list<string> $entries - Positive entries and "!"-prefixed exclusions.
+     *
+     * @return list<string>
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private static function cancelExactNegations(array $entries): array
+    {
+        $positive = [];
+        $negative = [];
+
+        foreach ($entries as $entry) {
+            if (str_starts_with($entry, '!')) {
+                $negative[substr($entry, 1)] = true;
+            } else {
+                $positive[$entry] = true;
             }
         }
 
-        return BypassRuleConfiguration::anchorText(
-            $this->ipInterfaceDetails($configuration['interfaces']),
-            $configuration,
-            $this->paths->bypassTableIpv4File,
-            $this->paths->bypassTableIpv6File,
+        foreach (array_keys($negative) as $negativeEntry) {
+            if (isset($positive[$negativeEntry])) {
+                unset($positive[$negativeEntry], $negative[$negativeEntry]);
+            }
+        }
+
+        return array_merge(
+            array_map('strval', array_keys($positive)),
+            array_map(static fn(int|string $entry): string => '!' . $entry, array_keys($negative)),
+        );
+    }
+
+    /**
+     * pfSense Adapter - Bypass Rule Contexts.
+     *
+     * @param array $configuration - Global settings with normalized context rows.
+     * @param BypassListStore $store - Saved Bypass source data.
+     *
+     * @return array<string, array>
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function bypassRuleContexts(
+        array $configuration,
+        BypassListStore $store,
+    ): array {
+        $contextPolicies = is_array($configuration['contexts'] ?? null) ? $configuration['contexts'] : [];
+        $needsClientMap = false;
+
+        foreach ($contextPolicies as $contextPolicy) {
+            if (
+                is_array($contextPolicy)
+                && ($contextPolicy['enabled'] ?? false) === true
+                && ($contextPolicy['invalid_values'] ?? []) === []
+            ) {
+                $needsClientMap = true;
+
+                break;
+            }
+        }
+
+        $map = $needsClientMap ? $this->bypassClientMap() : [];
+        $networkCidrs = [];
+        $deviceAddresses = [];
+
+        foreach (is_array($map['networks'] ?? null) ? $map['networks'] : [] as $network) {
+            if (
+                is_array($network)
+                && is_string($network['id'] ?? null)
+                && is_array($network['cidrs'] ?? null)
+            ) {
+                $networkCidrs[$network['id']] = array_values(array_filter(
+                    $network['cidrs'],
+                    'is_string',
+                ));
+            }
+        }
+
+        foreach (is_array($map['devices'] ?? null) ? $map['devices'] : [] as $address => $identifier) {
+            if (is_string($address) && is_string($identifier)) {
+                $deviceAddresses[$identifier][] = $address;
+            }
+        }
+
+        $ownedNetworks = [];
+        $ownedDevices = [];
+
+        foreach (is_array($configuration['contexts'] ?? null) ? $configuration['contexts'] : [] as $context => $policy) {
+            if (
+                !is_string($context)
+                || !is_array($policy)
+                || ($policy['enabled'] ?? false) !== true
+                || ($policy['invalid_values'] ?? []) !== []
+            ) {
+                continue;
+            }
+
+            [$kind, $identifier] = explode(':', $context, 2);
+
+            if ($kind === 'network' && isset($networkCidrs[$identifier])) {
+                $ownedNetworks[$identifier] = $networkCidrs[$identifier];
+            } elseif ($kind === 'device' && isset($deviceAddresses[$identifier])) {
+                $ownedDevices[$identifier] = $deviceAddresses[$identifier];
+            }
+        }
+
+        $records = [];
+        $globalClients = [];
+        $configuredSubnets = $this->getInterfaceSubnets();
+        $configuredAddresses = $this->getInterfaceAddresses();
+
+        foreach (is_array($configuration['interfaces'] ?? null) ? $configuration['interfaces'] : [] as $interface) {
+            if (is_string($interface)) {
+                $interfaceClients = $configuredSubnets[$interface] ?? [];
+
+                if ($interfaceClients === []) {
+                    $interfaceClients = $configuredAddresses[$interface] ?? [];
+                }
+
+                $globalClients = array_merge($globalClients, $interfaceClients);
+            }
+        }
+
+        foreach ($ownedNetworks as $cidrs) {
+            foreach ($cidrs as $cidr) {
+                $globalClients[] = '!' . $cidr;
+            }
+        }
+
+        foreach ($ownedDevices as $addresses) {
+            foreach ($addresses as $address) {
+                $globalClients[] = '!' . $address;
+            }
+        }
+
+        $globalClients = self::cancelExactNegations($globalClients);
+
+        if (($configuration['global_firewall_enabled'] ?? false) === true) {
+            $records['global'] = $this->bypassRuleContextRecord(
+                $configuration,
+                $globalClients,
+                $configuration,
+                $store,
+            );
+        }
+
+        foreach ($ownedNetworks as $identifier => $cidrs) {
+            $contextKey = 'network:' . $identifier;
+            $policy = $configuration['contexts'][$contextKey];
+
+            if (($policy['firewall_enabled'] ?? false) !== true) {
+                continue;
+            }
+
+            $clients = $cidrs;
+
+            foreach ($ownedDevices as $addresses) {
+                foreach ($addresses as $address) {
+                    foreach ($cidrs as $cidr) {
+                        if (IpNetwork::contains($cidr, $address)) {
+                            $clients[] = '!' . $address;
+
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $records[$contextKey] = $this->bypassRuleContextRecord(
+                $policy,
+                $clients,
+                $configuration,
+                $store,
+            );
+        }
+
+        foreach ($ownedDevices as $identifier => $addresses) {
+            $contextKey = 'device:' . $identifier;
+            $policy = $configuration['contexts'][$contextKey];
+
+            if (($policy['firewall_enabled'] ?? false) !== true) {
+                continue;
+            }
+
+            $records[$contextKey] = $this->bypassRuleContextRecord(
+                $policy,
+                $addresses,
+                $configuration,
+                $store,
+            );
+        }
+
+        return $records;
+    }
+
+    /** @since 1.3.0 */
+    private function bypassRuleContextRecord(
+        array $policy,
+        array $clients,
+        array $global,
+        BypassListStore $store,
+    ): array {
+        $destinations = $this->bypassProviderNetworks($policy, $global, $store);
+
+        return [
+            'configuration' => $policy,
+            'clients' => $this->bypassNetworksByFamily($clients, true),
+            'destinations' => $this->bypassNetworksByFamily($destinations, false),
+        ];
+    }
+
+    /** @since 1.3.0 */
+    private function bypassProviderNetworks(
+        array $policy,
+        array $global,
+        BypassListStore $store,
+    ): array {
+        $lists = is_array($global['lists'] ?? null) ? $global['lists'] : [];
+        $selected = is_array($policy['selected_lists'] ?? null)
+            ? array_fill_keys($policy['selected_lists'], true)
+            : array_fill_keys(array_keys($lists), true);
+        $networks = [];
+
+        foreach ($lists as $identifier => $list) {
+            if (
+                !is_string($identifier)
+                || !isset($selected[$identifier])
+                || !is_array($list)
+                || ($list['enabled'] ?? false) !== true
+                || !is_string($list['kind'] ?? null)
+                || !BypassConfiguration::kindEnabled($policy, $list['kind'])
+                || !is_string($list['url'] ?? null)
+                || !$store->hasUsableCopy($identifier, $list['url'])
+            ) {
+                continue;
+            }
+
+            $networks = array_merge($networks, $store->readNetworks($identifier));
+
+            if (count($networks) > IpNetwork::MAXIMUM_NETWORKS) {
+                throw new RuntimeException('The merged Bypass List network limit was exceeded.');
+            }
+        }
+
+        $exemptions = BypassRuleConfiguration::splitExemptions(
+            BypassConfiguration::effectiveExemptions($policy)['destinations'],
+        );
+
+        return IpNetwork::subtract(
+            IpNetwork::merge($networks),
+            array_merge($this->ipProtectedAddresses(), $exemptions['literals']),
+        );
+    }
+
+    /** @since 1.3.0 */
+    private function bypassNetworksByFamily(array $entries, bool $allowNegated): array
+    {
+        $families = ['ipv4' => [], 'ipv6' => []];
+
+        foreach ($entries as $entry) {
+            if (!is_string($entry)) {
+                continue;
+            }
+
+            $negated = str_starts_with($entry, '!');
+
+            if ($negated && !$allowNegated) {
+                continue;
+            }
+
+            $network = $negated ? substr($entry, 1) : $entry;
+
+            try {
+                $family = IpNetwork::family($network);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            $families[$family][] = $entry;
+        }
+
+        foreach ($families as &$values) {
+            $values = array_values(array_unique($values));
+            sort($values, SORT_STRING);
+        }
+        unset($values);
+
+        return $families;
+    }
+
+    /** @since 1.3.0 */
+    private function bypassClientMap(): array
+    {
+        if (FileSystem::isRegularFile($this->paths->runtimeClientMapFile)) {
+            $contents = file_get_contents($this->paths->runtimeClientMapFile);
+            $map = is_string($contents) ? json_decode($contents, true, 16) : null;
+
+            if (
+                is_array($map)
+                && ($map['schema_version'] ?? null) === ClientMap::SCHEMA_VERSION
+                && is_array($map['networks'] ?? null)
+                && is_array($map['interfaces'] ?? null)
+                && is_array($map['devices'] ?? null)
+            ) {
+                return $map;
+            }
+        }
+
+        return $this->clientMap->build(
+            $this->getNetworks(),
+            $this->getDevices(),
+            $this->getInterfaceSubnets(),
+            $this->getStaticMappings(),
+            $this->getArpEntries(),
+            $this->getNdpOutput(),
+            $this->getDhcpLeases(),
+            $this->getDhcpLeaseContext(),
+            $this->getBypassInterfaces(),
+            $this->getInterfaceAddresses(),
         );
     }
 
@@ -1728,6 +2223,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      *
      * @since 1.0.0
      * @since 1.2.0
+     * @since 1.3.0
      */
     public function saveBypassConfiguration(
         array $storage,
@@ -1797,7 +2293,22 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         }
 
         config_set_path('installedpackages/sinkhole/redirect', $redirectStorage);
+        $existingBypass = config_get_path(BypassConfiguration::SECTION_PATH, []);
+
+        if (
+            is_array($existingBypass)
+            && array_key_exists(BypassConfiguration::CONTEXT_MIGRATION_FLAG, $existingBypass)
+        ) {
+            $storage[BypassConfiguration::CONTEXT_MIGRATION_FLAG] =
+                $existingBypass[BypassConfiguration::CONTEXT_MIGRATION_FLAG];
+        }
+
         config_set_path('installedpackages/sinkhole/bypass', $storage);
+        $configuration = BypassConfiguration::withContexts(
+            $configuration,
+            config_get_path(BypassConfiguration::CONTEXTS_PATH, []),
+            $this->getHostNetworkAliases(),
+        );
         $discoveryZoneChanged = $this->setManagedCustomOptions(
             $this->resolverIntegrationConfigured() && $this->pfBlockerNgActive() === false,
             $configuration,
@@ -2557,14 +3068,22 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      *
      * @since 1.0.0
      * @since 1.2.0
+     * @since 1.3.0
      */
     public function refreshBypassTables(
         array $configuration,
         ?BypassListStore $store = null,
     ): void {
-        $usesTables = ($configuration['block_encrypted_dns'] ?? false) === true
-            || ($configuration['block_tor'] ?? false) === true
-            || ($configuration['block_vpn'] ?? false) === true;
+        $usesTables = BypassConfiguration::kindEnabledAnywhere(
+            $configuration,
+            BypassConfiguration::KIND_ENCRYPTED_DNS,
+        ) || BypassConfiguration::kindEnabledAnywhere(
+            $configuration,
+            BypassConfiguration::KIND_TOR,
+        ) || BypassConfiguration::kindEnabledAnywhere(
+            $configuration,
+            BypassConfiguration::KIND_VPN,
+        );
 
         if (!$usesTables) {
             FileSystem::removeFixedFile($this->paths->bypassTableIpv4File);
@@ -2587,7 +3106,11 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
                 || ($list['enabled'] ?? false) !== true
                 || !is_string($identifier)
                 || !is_string($list['kind'] ?? null)
-                || !BypassConfiguration::kindEnabled($configuration, $list['kind'])
+                || !BypassConfiguration::sourceUsedAnywhere(
+                    $configuration,
+                    $identifier,
+                    $list['kind'],
+                )
                 || !is_string($list['url'] ?? null)
                 || !$store->hasUsableCopy($identifier, $list['url'])
             ) {
@@ -2633,14 +3156,6 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             0600,
         );
         $this->applyBypassAnchor();
-        $this->replaceBypassTable(
-            BypassRuleConfiguration::TABLE_IPV4,
-            $this->paths->bypassTableIpv4File,
-        );
-        $this->replaceBypassTable(
-            BypassRuleConfiguration::TABLE_IPV6,
-            $this->paths->bypassTableIpv6File,
-        );
     }
 
     /**
@@ -2993,13 +3508,15 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             }
         }
 
+        $entryCounts = $this->ipBlockEntryCounts();
+
         return [
             'loaded' => $loaded,
             'anchor_loaded' => $anchorLoaded,
             'out_of_date' => ($expectedAnchorText === '') ? $anchorLoaded : !$loaded,
             'rule_count' => $ruleCount,
-            'ipv4_entries' => $this->fixedFileLineCount($this->paths->ipTableIpv4File),
-            'ipv6_entries' => $this->fixedFileLineCount($this->paths->ipTableIpv6File),
+            'ipv4_entries' => $entryCounts['ipv4'],
+            'ipv6_entries' => $entryCounts['ipv6'],
         ];
     }
 
@@ -3088,7 +3605,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
                 $firstFailure = $throwable;
             }
 
-            foreach ([
+            $runtimePaths = [
                 $this->paths->ipTableIpv4File,
                 $this->paths->ipTableIpv6File,
                 $this->paths->ipAnchorFile,
@@ -3096,7 +3613,29 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
                 $this->paths->geoLite2ArchiveFile,
                 $this->paths->geoLite2MetadataFile,
                 $this->paths->ipStatusFile,
-            ] as $path) {
+            ];
+            $tableDirectories = array_values(array_unique([
+                dirname($this->paths->ipTableIpv4File),
+                dirname($this->paths->ipTableIpv6File),
+            ]));
+
+            foreach ($tableDirectories as $tableDirectory) {
+                $matches = glob($tableDirectory . '/sinkhole-ip-*-*.txt');
+
+                foreach (is_array($matches) ? $matches : [] as $match) {
+                    if (
+                        dirname($match) === $tableDirectory
+                        && preg_match(
+                            '/^sinkhole-ip-[a-f0-9]{12}-(?:clients|block)-v[46]\.txt$/D',
+                            basename($match),
+                        ) === 1
+                    ) {
+                        $runtimePaths[] = $match;
+                    }
+                }
+            }
+
+            foreach (array_values(array_unique($runtimePaths)) as $path) {
                 try {
                     FileSystem::removeFixedFile($path);
                 } catch (Throwable $throwable) {
@@ -3189,6 +3728,48 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     }
 
     /**
+     * pfSense Adapter - IP Block Entry Counts.
+     *
+     * Sums only block-list files across enabled contexts; client membership and
+     * negation rows remain implementation detail rather than status totals.
+     *
+     * @return array{ipv4: int, ipv6: int}
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function ipBlockEntryCounts(): array
+    {
+        $counts = [
+            'ipv4' => 0,
+            'ipv6' => 0,
+        ];
+
+        foreach ($this->getIpContextConfigurations() as $context => $configuration) {
+            if (
+                ($configuration['enabled'] ?? false) !== true
+                || ($configuration['invalid_values'] ?? []) !== []
+            ) {
+                continue;
+            }
+
+            $tables = IpRuleConfiguration::contextTables(
+                $context,
+                $this->paths->ipTableIpv4File,
+                $this->paths->ipTableIpv6File,
+            );
+
+            foreach (['ipv4', 'ipv6'] as $family) {
+                $counts[$family] += $this->fixedFileLineCount(
+                    $tables[$family]['block_file'],
+                );
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
      * pfSense Adapter - Fixed File Line Count.
      *
      * @param string $path - Fixed package-owned file.
@@ -3268,13 +3849,365 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             return false;
         }
 
-        $configuration = $this->getIpConfiguration();
-
-        return $configuration['enabled']
-            && $configuration['invalid_values'] === [];
+        return $this->ipBlockingEnabled();
     }
 
-    /** @since 1.0.0 */
+    /**
+     * pfSense Adapter - IP Context Rule Descriptors.
+     *
+     * Writes current client-membership files and returns the validated table
+     * descriptors used to render every exact-context block rule.
+     *
+     * @return list<array>
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function ipContextRuleDescriptors(): array
+    {
+        $configurations = $this->getIpContextConfigurations();
+        $clientEntries = $this->ipContextClientEntries($configurations);
+        $descriptors = [];
+
+        foreach ($configurations as $context => $configuration) {
+            if (
+                ($configuration['enabled'] ?? false) !== true
+                || ($configuration['invalid_values'] ?? []) !== []
+            ) {
+                continue;
+            }
+
+            $tables = IpRuleConfiguration::contextTables(
+                $context,
+                $this->paths->ipTableIpv4File,
+                $this->paths->ipTableIpv6File,
+            );
+            $clientContents = [];
+
+            foreach (['ipv4', 'ipv6'] as $family) {
+                $blockFile = $tables[$family]['block_file'];
+
+                if (FileSystem::isRegularFile($blockFile) === false) {
+                    AtomicFile::write($blockFile, '', 0600);
+                }
+
+                $clientContents[$family] = $this->ipTableContents(
+                    $clientEntries[$context][$family] ?? [],
+                );
+                $this->writeIpTableIfChanged(
+                    $tables[$family]['client_file'],
+                    $clientContents[$family],
+                );
+            }
+
+            $descriptors[] = [
+                'context' => $context,
+                'directions' => $configuration['directions'],
+                'tables' => $tables,
+                'client_digest' => hash(
+                    'sha256',
+                    $clientContents['ipv4'] . "\0" . $clientContents['ipv6'],
+                ),
+            ];
+        }
+
+        return $descriptors;
+    }
+
+    /**
+     * pfSense Adapter - IP Context Client Entries.
+     *
+     * Builds Global, network, and device membership with negated child entries so
+     * pf's most-specific table decision selects exactly one enabled context.
+     *
+     * @param array<string, array> $configurations - Exact-context configurations.
+     *
+     * @return array<string, array{ipv4: list<string>, ipv6: list<string>}>
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function ipContextClientEntries(array $configurations): array
+    {
+        $interfaceSubnets = $this->getInterfaceSubnets();
+        $networks = $this->getNetworks();
+        $deviceAddresses = $this->ipClientMapDeviceAddresses();
+        $activeNetworks = [];
+        $activeDevices = [];
+
+        foreach ($configurations as $context => $configuration) {
+            if (
+                $context === 'global'
+                || ($configuration['enabled'] ?? false) !== true
+                || ($configuration['invalid_values'] ?? []) !== []
+            ) {
+                continue;
+            }
+
+            [$kind, $identifier] = explode(':', $context, 2);
+
+            if ($kind === 'network') {
+                $activeNetworks[$identifier] = true;
+            } else {
+                $activeDevices[$identifier] = true;
+            }
+        }
+
+        $networkSubnets = [];
+
+        foreach ($networks as $identifier => $network) {
+            if (($network['enabled'] ?? false) !== true) {
+                continue;
+            }
+
+            $interface = is_string($network['interface'] ?? null)
+                ? $network['interface']
+                : '';
+            $networkSubnets[$identifier] = $interfaceSubnets[$interface] ?? [];
+        }
+
+        $entries = [];
+
+        foreach ($configurations as $context => $configuration) {
+            if (
+                ($configuration['enabled'] ?? false) !== true
+                || ($configuration['invalid_values'] ?? []) !== []
+            ) {
+                continue;
+            }
+
+            $positiveEntries = [];
+            $negativeEntries = [];
+
+            if ($context === 'global') {
+                foreach ($configuration['interfaces'] ?? [] as $interface) {
+                    foreach ($interfaceSubnets[$interface] ?? [] as $subnet) {
+                        $positiveEntries[$subnet] = true;
+                    }
+                }
+
+                foreach (array_keys($activeNetworks) as $networkIdentifier) {
+                    foreach ($networkSubnets[$networkIdentifier] ?? [] as $subnet) {
+                        $negativeEntries[$subnet] = true;
+                    }
+                }
+
+                foreach (array_keys($activeDevices) as $deviceIdentifier) {
+                    foreach ($deviceAddresses[$deviceIdentifier] ?? [] as $address) {
+                        $negativeEntries[$address] = true;
+                    }
+                }
+            } else {
+                [$kind, $identifier] = explode(':', $context, 2);
+
+                if ($kind === 'network') {
+                    foreach ($networkSubnets[$identifier] ?? [] as $subnet) {
+                        $positiveEntries[$subnet] = true;
+                    }
+
+                    foreach (array_keys($activeDevices) as $deviceIdentifier) {
+                        foreach ($deviceAddresses[$deviceIdentifier] ?? [] as $address) {
+                            foreach ($networkSubnets[$identifier] ?? [] as $subnet) {
+                                if (IpNetwork::contains($subnet, $address)) {
+                                    $negativeEntries[$address] = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    foreach ($deviceAddresses[$identifier] ?? [] as $address) {
+                        $positiveEntries[$address] = true;
+                    }
+                }
+            }
+
+            $entries[$context] = $this->ipFamilyEntries(
+                array_keys($positiveEntries),
+                array_keys($negativeEntries),
+            );
+        }
+
+        return $entries;
+    }
+
+    /**
+     * pfSense Adapter - IP Client Map Device Addresses.
+     *
+     * Reads only the bounded generated client map and inverts its first-wins
+     * address ownership map into deterministic per-device address lists.
+     *
+     * @return array<string, list<string>>
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function ipClientMapDeviceAddresses(): array
+    {
+        $status = @lstat($this->paths->runtimeClientMapFile);
+
+        if (
+            !is_array($status)
+            || ($status['mode'] & 0170000) !== 0100000
+            || $status['size'] > ClientMap::MAXIMUM_BYTES
+        ) {
+            return [];
+        }
+
+        $contents = file_get_contents($this->paths->runtimeClientMapFile);
+        $document = is_string($contents) ? json_decode($contents, true, 32) : null;
+
+        if (
+            !is_array($document)
+            || ($document['schema_version'] ?? null) !== ClientMap::SCHEMA_VERSION
+            || !is_array($document['devices'] ?? null)
+        ) {
+            return [];
+        }
+
+        $addresses = [];
+
+        foreach ($document['devices'] as $address => $identifier) {
+            if (
+                !is_string($address)
+                || !is_string($identifier)
+                || preg_match('/^[a-f0-9]{32}$/D', $identifier) !== 1
+            ) {
+                continue;
+            }
+
+            try {
+                $normalized = IpNetwork::normalize($address);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            $addresses[$identifier][] = explode('/', $normalized, 2)[0];
+        }
+
+        foreach ($addresses as &$deviceAddresses) {
+            $deviceAddresses = array_values(array_unique($deviceAddresses));
+            sort($deviceAddresses, SORT_STRING);
+        }
+        unset($deviceAddresses);
+
+        return $addresses;
+    }
+
+    /**
+     * pfSense Adapter - IP Family Entries.
+     *
+     * Splits positive and negated membership entries by family while keeping all
+     * positive networks before their deterministic ``!`` exclusions.
+     *
+     * @param list<string> $positiveEntries - Positive client addresses and subnets.
+     * @param list<string> $negativeEntries - Child addresses and subnets to exclude.
+     *
+     * @return array{ipv4: list<string>, ipv6: list<string>}
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function ipFamilyEntries(array $positiveEntries, array $negativeEntries): array
+    {
+        $families = [
+            'ipv4' => ['positive' => [], 'negative' => []],
+            'ipv6' => ['positive' => [], 'negative' => []],
+        ];
+
+        foreach ([
+            'positive' => $positiveEntries,
+            'negative' => $negativeEntries,
+        ] as $kind => $entries) {
+            foreach ($entries as $entry) {
+                try {
+                    $family = IpNetwork::family($entry);
+                } catch (InvalidArgumentException) {
+                    continue;
+                }
+
+                $families[$family][$kind][$entry] = true;
+            }
+        }
+
+        $result = [];
+
+        foreach ($families as $family => $familyEntries) {
+            // A child that owns exactly a parent's subnet removes it outright: pf can't
+            // hold one prefix as both an entry and its negation, and the entry would win.
+            foreach (array_keys($familyEntries['negative']) as $negativeEntry) {
+                if (isset($familyEntries['positive'][$negativeEntry])) {
+                    unset($familyEntries['positive'][$negativeEntry], $familyEntries['negative'][$negativeEntry]);
+                }
+            }
+
+            $positive = array_keys($familyEntries['positive']);
+            $negative = array_keys($familyEntries['negative']);
+            sort($positive, SORT_STRING);
+            sort($negative, SORT_STRING);
+            $result[$family] = array_merge(
+                $positive,
+                array_map(
+                    static fn(string $entry): string => '!' . $entry,
+                    $negative,
+                ),
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * pfSense Adapter - IP Table Contents.
+     *
+     * Serializes one validated entry per line for pfctl's table-file parser.
+     *
+     * @param list<string> $entries - Positive and negated table entries.
+     *
+     * @return string
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function ipTableContents(array $entries): string
+    {
+        return ($entries === []) ? '' : implode(PHP_EOL, $entries) . PHP_EOL;
+    }
+
+    /**
+     * pfSense Adapter - Write IP Table If Changed.
+     *
+     * Avoids replacing identical fixed files during every minute reconciliation
+     * while retaining AtomicFile's no-follow and mode guarantees on changes.
+     *
+     * @param string $path - Fixed generated table path.
+     * @param string $contents - Complete table contents.
+     *
+     * @return void
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function writeIpTableIfChanged(string $path, string $contents): void
+    {
+        if (FileSystem::isRegularFile($path)) {
+            $existingContents = file_get_contents($path);
+
+            if (is_string($existingContents) && hash_equals(
+                hash('sha256', $contents),
+                hash('sha256', $existingContents),
+            )) {
+                return;
+            }
+        }
+
+        AtomicFile::write($path, $contents, 0600);
+    }
+
+    /**
+     * @since 1.0.0
+     * @since 1.3.0
+     */
     private function bypassBlockingWanted(): bool
     {
         if ($this->stateStore->removing()) {
@@ -3283,8 +4216,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
 
         $configuration = $this->getBypassConfiguration();
 
-        return $configuration['firewall_enabled']
-            && $configuration['invalid_values'] === [];
+        return $configuration['firewall_enabled'];
     }
 
     /** @since 1.0.0 */
@@ -3294,6 +4226,21 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             IpRuleConfiguration::TABLE_IPV4 => $this->paths->ipTableIpv4File,
             IpRuleConfiguration::TABLE_IPV6 => $this->paths->ipTableIpv6File,
         ];
+
+        foreach (array_keys($this->getIpContextConfigurations()) as $context) {
+            $tables = IpRuleConfiguration::contextTables(
+                $context,
+                $this->paths->ipTableIpv4File,
+                $this->paths->ipTableIpv6File,
+            );
+
+            foreach (['ipv4', 'ipv6'] as $family) {
+                foreach (IpRuleConfiguration::TABLE_ROLES as $role) {
+                    $expected[$tables[$family][$role . '_table']] =
+                        $tables[$family][$role . '_file'];
+                }
+            }
+        }
 
         if (!isset($expected[$table]) || $expected[$table] !== $file) {
             throw new InvalidArgumentException('The Sinkhole IP table target is invalid.');
@@ -3643,14 +4590,14 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return bool
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public function dnsIntegrationWanted(): bool
     {
         $settings = Settings::fromStorage($this->getSettings());
         $bypass = $this->getBypassConfiguration();
 
-        return $settings['enabled']
-            || ($bypass['dns_enabled'] && $bypass['invalid_values'] === []);
+        return $settings['enabled'] || $bypass['dns_enabled'];
     }
 
     /**
@@ -3663,6 +4610,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      *
      * @since 1.0.0
      * @since 1.2.0
+     * @since 1.3.0
      */
     public function runtimeGenerationMissing(): bool
     {
@@ -3692,6 +4640,10 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             || !is_array($manifest['scopes']['devices'] ?? null)
             || !is_array($manifest['alerts'] ?? null)
             || !is_array($manifest['bypass'] ?? null)
+            || !is_array($manifest['bypass']['lists'] ?? null)
+            || !is_array($manifest['bypass']['global'] ?? null)
+            || !is_array($manifest['bypass']['networks'] ?? null)
+            || !is_array($manifest['bypass']['devices'] ?? null)
             || ($manifest['bypass_file'] ?? null) !== 'bypass.tsv'
             || !FileSystem::isRegularFile($generationPath . '/bypass.tsv')
             || ($manifest['domain_index']['file'] ?? null) !== 'domains.index'
@@ -4614,6 +5566,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return mixed
      *
      * @since 1.0.0
+     * @since 1.3.0
      * @private
      */
     private static function scopeRowForStorage(mixed $row): mixed
@@ -4622,7 +5575,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             return $row;
         }
 
-        foreach (['lists', 'allowed_domains'] as $field) {
+        foreach (['identifiers', 'lists', 'allowed_domains'] as $field) {
             if (!array_key_exists($field, $row) || !is_array($row[$field])) {
                 continue;
             }
@@ -5146,6 +6099,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @return bool
      *
      * @since 1.0.0
+     * @since 1.3.0
      * @private
      */
     private function discoveryZoneWanted(?array $configuration = null): bool
@@ -5153,11 +6107,33 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         $settings = Settings::fromStorage($this->getSettings());
         $configuration ??= $this->getBypassConfiguration();
 
-        return $settings['enabled']
+        if ($settings['enabled'] === false) {
+            return false;
+        }
+
+        if (
+            ($configuration['global_enabled'] ?? $configuration['enabled'] ?? false) === true
             && ($configuration['discovery'] ?? BypassConfiguration::DISCOVERY_OFF)
                 !== BypassConfiguration::DISCOVERY_OFF
             && ($configuration['interfaces'] ?? []) !== []
-            && ($configuration['invalid_values'] ?? []) === [];
+            && ($configuration['invalid_values'] ?? []) === []
+        ) {
+            return true;
+        }
+
+        foreach (is_array($configuration['contexts'] ?? null) ? $configuration['contexts'] : [] as $context) {
+            if (
+                is_array($context)
+                && ($context['enabled'] ?? false) === true
+                && ($context['discovery'] ?? BypassConfiguration::DISCOVERY_OFF)
+                    !== BypassConfiguration::DISCOVERY_OFF
+                && ($context['invalid_values'] ?? []) === []
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

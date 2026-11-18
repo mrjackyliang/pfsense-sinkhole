@@ -49,7 +49,7 @@ Sinkhole und pfBlockerNG können DNS nicht gleichzeitig filtern. Sinkhole bleibt
 ## Was unter deiner Kontrolle bleibt \{#what-stays-under-your-control}
 
 - **Lists** — Füge vertrauenswürdige Quellen per URL hinzu oder finde sie mit der neutralen <Terminology title="Bekannte Blocklisten finden, ohne nach URLs zu suchen" to="/docs/reference/terminology#lists-and-scopes">Suche nach populären Listen</Terminology>. Sinkhole veröffentlicht und empfiehlt keine Liste.
-- **Scopes** — Wähle globale Listen, Listen für eine pfSense-Schnittstelle oder ein VLAN und Listen für ein Gerät, das über IP-Adresse, statische DHCP-Zuordnung oder MAC-Adresse identifiziert wird.
+- **Clients und Blockierung** — Lege ein Netzwerk für eine pfSense-Schnittstelle oder ein VLAN und ein Gerät an, das über eine oder mehrere IP-Adressen, statische DHCP-Zuordnungen und MAC-Adressen identifiziert wird, und wähle dann die Listen für Global, jedes Netzwerk und jedes Gerät.
 - **Allowed domains** — Erlaube eine Domain und ihre Subdomains auf globaler, Netzwerk- oder Geräteebene, ohne eine vollständige Liste zu entfernen.
 - **SafeSearch** — Wähle für jeden Scope, welche Suchmaschinen in ihrem sicheren Modus fixiert werden und ob YouTube Moderate oder Strict verwendet.
 - **Alerts** — Wähle die Kombinationen aus Liste und Client, die lokale WebGUI-Hinweise erzeugen oder die in pfSense konfigurierten externen Benachrichtigungsdienste verwenden.
@@ -71,7 +71,7 @@ Die Dokumentationswebsite bietet Englisch und die 17 weiteren pfSense-Locales. �
 ## Nächste Schritte \{#next-steps}
 
 - **[Paket installieren](/docs/installation)** — Prüfe und installiere das stabile Release-Paket.
-- **[Sinkhole einrichten](/docs/first-run)** — Füge eine erste Liste hinzu, wähle ihren Scope und prüfe die aktive Generation.
-- **[Scopes verstehen](/docs/configure/scopes)** — Folge der genauen Entscheidungsreihenfolge für Gerät, Netzwerk und globale Ebene.
+- **[Sinkhole einrichten](/docs/first-run)** — Füge eine erste Liste hinzu, wähle, wo sie blockiert, und prüfe die aktive Generation.
+- **[Clients und Blockierung verstehen](/docs/configure/scopes)** — Folge der genauen Entscheidungsreihenfolge für Gerät, Netzwerk und globale Ebene.
 - **[Sicherheitsmodell prüfen](/docs/safety/how-updates-work)** — Erfahre, wie gespeicherte Kopien und atomare Bereitstellung DNS verfügbar halten.
 

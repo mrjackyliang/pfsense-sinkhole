@@ -59,8 +59,8 @@ An allowed query name remains allowed. This prevents a less-specific CNAME targe
 
 ## SafeSearch Does Not Apply \{#safesearch-does-not-apply}
 
-1. Confirm the client's network or device scope is enabled on **Scopes** and the engine is ticked for that scope or for Global on **SafeSearch**.
-2. Check **Status → SafeSearch** for the safe host's addresses and last error. A host with no addresses keeps its engine blocked for the scope until a lookup succeeds.
+1. Confirm the client's network or device is enabled on **Clients** and the engine is ticked for that network or device, or for Global, on **SafeSearch**.
+2. Check **Status → SafeSearch** for the safe host's addresses and last error. A host with no addresses keeps its engine blocked for that context until a lookup succeeds.
 3. Confirm **Compile Needed** and **Deployment Needed** are `No` after saving.
 4. Confirm the client isn't using encrypted DNS or another resolver; [Bypass Protection](/docs/configure/bypass-protection) keeps selected interfaces on Sinkhole's DNS path.
 
@@ -68,10 +68,10 @@ A browser can keep an engine's normal address cached for a few minutes, so test 
 
 ## A Device Gets the Wrong Policy \{#a-device-gets-the-wrong-policy}
 
-- Run `/usr/local/sbin/sinkhole --refresh-clients` and inspect **Status → Scopes**.
-- Confirm that the network row shows the interface's current subnets and that the device row shows its current addresses.
+- Run `/usr/local/sbin/sinkhole --refresh-clients` and inspect **Status → Clients**.
+- Confirm that the network row shows the interface's current subnets and that the device row shows every configured identifier and its current addresses.
 - Resolve any **Conflict** value because the first device in table order wins a shared address.
-- For a static mapping, check both its configured address and current addresses observed for its MAC.
+- For each static mapping identifier, check both its configured address and current addresses observed for its MAC. Addresses found through two identifiers in the same device are not conflicts.
 
 ISC lease times can be GMT or firewall-local depending on the interface's lease-time setting, while Kea lease times are already local. Sinkhole follows those pfSense semantics when deciding whether a lease is current.
 

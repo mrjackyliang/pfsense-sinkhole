@@ -21,6 +21,7 @@ use PfSense\Sinkhole\Runtime\IpStatusStore;
 use PfSense\Sinkhole\Runtime\IpUpdater;
 use PfSense\Sinkhole\Runtime\PackagePaths;
 use PfSense\Sinkhole\Runtime\PfSenseAdapter;
+use PfSense\Sinkhole\Runtime\ReleaseUpdateLockRunner;
 use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Runtime\StateStore;
 use PfSense\Sinkhole\Runtime\Translator;
@@ -78,61 +79,74 @@ function sinkholeEnvironmentOverride(string $name, string $fallback): string
 /**
  * Sinkhole - Run Release Update.
  *
- * Runs a release check or verified self-update under the package-wide update
- * lock shared with list and IP updates.
+ * Runs a release check under its dedicated lock, or takes that release lock
+ * before waiting for the package-wide task lock during a verified self-update.
  *
  * @param bool $selfUpdate - Whether to install instead of only checking.
+ * @param bool $fileNotice - Whether a check may file a new-version notice.
  * @param PackagePaths $paths - Package paths.
  *
  * @return int
  *
  * @since 1.0.0
+ * @since 1.3.0
  */
-function sinkholeRunReleaseUpdate(bool $selfUpdate, PackagePaths $paths): int
+function sinkholeRunReleaseUpdate(
+    bool $selfUpdate,
+    bool $fileNotice,
+    PackagePaths $paths,
+): int
 {
-    $lock = new FileLock($paths->updateLockFile);
+    $runner = new ReleaseUpdateLockRunner(
+        new FileLock($paths->releaseLockFile),
+        $selfUpdate ? new FileLock($paths->updateLockFile) : null,
+        $paths->updateStatusFile,
+    );
 
     try {
-        UpdateManager::assertEnvironment();
-        $installedVersion = UpdateManager::installedVersion();
+        $runResult = $runner->run(
+            $selfUpdate,
+            static function () use ($fileNotice, $paths, $selfUpdate): array {
+                UpdateManager::assertEnvironment();
+                $installedVersion = UpdateManager::installedVersion();
 
-        if ($installedVersion === null) {
-            throw new RuntimeException(Translator::translate('installed_package_version_unknown'));
-        }
+                if ($installedVersion === null) {
+                    throw new RuntimeException(Translator::translate(
+                        'installed_package_version_unknown',
+                    ));
+                }
 
-        if ($lock->acquire() === false) {
-            $message = Translator::translate('another_package_operation_running');
+                $settings = config_get_path('installedpackages/sinkhole/config/0', []);
+                $settings = is_array($settings) ? $settings : [];
+                $remoteNotifications = ($settings['update_remote_notifications'] ?? '') === 'on';
+                $manager = new UpdateManager(
+                    $installedVersion,
+                    sinkholeEnvironmentOverride(
+                        'NOVA_PFSENSE_UPDATE_RELEASES_API',
+                        UpdateManager::RELEASES_API,
+                    ),
+                    sinkholeEnvironmentOverride(
+                        'NOVA_PFSENSE_UPDATE_DOWNLOAD_PREFIX',
+                        UpdateManager::DOWNLOAD_PREFIX,
+                    ),
+                    $paths->updatesFile,
+                    $paths->updateStatusFile,
+                );
 
-            if ($selfUpdate) {
-                UpdateManager::failQueuedSelfUpdate($message, $paths->updateStatusFile);
-            }
+                return $selfUpdate
+                    ? $manager->selfUpdate($remoteNotifications)
+                    : $manager->check($remoteNotifications, $fileNotice);
+            },
+        );
 
-            fwrite(STDOUT, $message . PHP_EOL);
+        if ($runResult['completed'] === false) {
+            fwrite(STDOUT, (string) $runResult['message'] . PHP_EOL);
 
             return 0;
         }
 
-        $settings = config_get_path('installedpackages/sinkhole/config/0', []);
-        $settings = is_array($settings) ? $settings : [];
-        $remoteNotifications = ($settings['update_remote_notifications'] ?? '') === 'on';
-        $manager = new UpdateManager(
-            $installedVersion,
-            sinkholeEnvironmentOverride(
-                'NOVA_PFSENSE_UPDATE_RELEASES_API',
-                UpdateManager::RELEASES_API,
-            ),
-            sinkholeEnvironmentOverride(
-                'NOVA_PFSENSE_UPDATE_DOWNLOAD_PREFIX',
-                UpdateManager::DOWNLOAD_PREFIX,
-            ),
-            $paths->updatesFile,
-            $paths->updateStatusFile,
-        );
-        $state = $selfUpdate
-            ? $manager->selfUpdate($remoteNotifications)
-            : $manager->check($remoteNotifications);
-
         if ($selfUpdate === false) {
+            $state = $runResult['state'] ?? [];
             $latestVersion = $state['latest_version'] ?? null;
             $message = is_string($latestVersion) && $latestVersion !== ''
                 ? Translator::translate('latest_available_version', [$latestVersion])
@@ -160,8 +174,6 @@ function sinkholeRunReleaseUpdate(bool $selfUpdate, PackagePaths $paths): int
         ) . PHP_EOL);
 
         return 1;
-    } finally {
-        $lock->release();
     }
 }
 
@@ -190,14 +202,15 @@ function sinkholeThrowableMessage(Throwable $throwable): string
 /**
  * Sinkhole - Main.
  *
- * Parses the fixed scheduled and WebGUI flags, takes the shared package lock, and
- * delegates all update behavior to testable runtime classes.
+ * Parses the fixed scheduled and WebGUI flags, then delegates package and release
+ * lock coordination to testable runtime classes.
  *
  * @param list<string> $arguments - Command-line arguments.
  *
  * @return int
  *
  * @since 1.0.0
+ * @since 1.3.0
  */
 function sinkholeMain(array $arguments): int
 {
@@ -207,6 +220,8 @@ function sinkholeMain(array $arguments): int
     $alerts = false;
     $redirectCheck = false;
     $checkUpdates = false;
+    $help = false;
+    $noNotice = false;
     $selfUpdate = false;
     $update = false;
 
@@ -247,18 +262,19 @@ function sinkholeMain(array $arguments): int
                 break;
             }
 
+            case '--no-notice': {
+                $noNotice = true;
+                break;
+            }
+
             case '--self-update': {
                 $selfUpdate = true;
                 break;
             }
 
             case '--help': {
-                fwrite(
-                    STDOUT,
-                    Translator::translate('cli_usage') . PHP_EOL,
-                );
-
-                return 0;
+                $help = true;
+                break;
             }
 
             default: {
@@ -280,6 +296,7 @@ function sinkholeMain(array $arguments): int
         + ($alerts ? 1 : 0)
         + ($redirectCheck ? 1 : 0)
         + ($checkUpdates ? 1 : 0)
+        + ($help ? 1 : 0)
         + ($selfUpdate ? 1 : 0) > 1
     ) {
         fwrite(STDERR, Translator::translate('cli_options_mutually_exclusive') . PHP_EOL);
@@ -287,10 +304,25 @@ function sinkholeMain(array $arguments): int
         return 64;
     }
 
+    if ($noNotice && $checkUpdates === false) {
+        fwrite(STDERR, Translator::translate('cli_options_mutually_exclusive') . PHP_EOL);
+
+        return 64;
+    }
+
+    if ($help) {
+        fwrite(
+            STDOUT,
+            Translator::translate('cli_usage') . PHP_EOL,
+        );
+
+        return 0;
+    }
+
     $paths = new PackagePaths();
 
     if ($checkUpdates || $selfUpdate) {
-        return sinkholeRunReleaseUpdate($selfUpdate, $paths);
+        return sinkholeRunReleaseUpdate($selfUpdate, $noNotice === false, $paths);
     }
 
     $adapter = new PfSenseAdapter($paths, commandLineMode: true);

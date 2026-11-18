@@ -47,9 +47,11 @@ final class SinkholeE2eClientSource implements ClientSource
     {
         return ['dddddddddddddddddddddddddddddddd' => [
             'id' => 'dddddddddddddddddddddddddddddddd',
-            'identifier_type' => 'ip',
-            'identifier' => '192.0.2.10',
-            'interface' => '',
+            'identifiers' => [[
+                'type' => 'ip',
+                'value' => '192.0.2.10',
+                'interface' => '',
+            ]],
             'enabled' => true,
         ]];
     }

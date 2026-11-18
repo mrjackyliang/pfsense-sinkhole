@@ -49,6 +49,7 @@ const requiredFiles = [
   'port/files/usr/local/pkg/sinkhole/ClientMap.php',
   'port/files/usr/local/pkg/sinkhole/ClientSource.php',
   'port/files/usr/local/pkg/sinkhole/Compiler.php',
+  'port/files/usr/local/pkg/sinkhole/Context.php',
   'port/files/usr/local/pkg/sinkhole/CurlDownloadClient.php',
   'port/files/usr/local/pkg/sinkhole/DomainParser.php',
   'port/files/usr/local/pkg/sinkhole/DownloadClient.php',
@@ -67,6 +68,7 @@ const requiredFiles = [
   'port/files/usr/local/pkg/sinkhole/PfSenseAdapter.php',
   'port/files/usr/local/pkg/sinkhole/PlatformAdapter.php',
   'port/files/usr/local/pkg/sinkhole/RedirectConfiguration.php',
+  'port/files/usr/local/pkg/sinkhole/RestoreHeal.php',
   'port/files/usr/local/pkg/sinkhole/SavedListStore.php',
   'port/files/usr/local/pkg/sinkhole/ScopeConfiguration.php',
   'port/files/usr/local/pkg/sinkhole/ServiceConfiguration.php',
@@ -110,8 +112,11 @@ const requiredFiles = [
   'port/files/usr/local/www/sinkhole-about.php',
   'port/files/usr/local/www/sinkhole-alerts.php',
   'port/files/usr/local/www/sinkhole-alerts_edit.php',
+  'port/files/usr/local/www/sinkhole-blocking.php',
   'port/files/usr/local/www/sinkhole-bypass.php',
   'port/files/usr/local/www/sinkhole-bypass_edit.php',
+  'port/files/usr/local/www/sinkhole-clients.php',
+  'port/files/usr/local/www/sinkhole-clients_edit.php',
   'port/files/usr/local/www/sinkhole-lists.php',
   'port/files/usr/local/www/sinkhole-lists_edit.php',
   'port/files/usr/local/www/sinkhole-services.php',
@@ -377,6 +382,8 @@ if (packageLogo.equals(documentationLogo) === false) {
 }
 
 for (const catalogFile of [
+  'Context.php',
+  'RestoreHeal.php',
   'ServiceConfiguration.php',
   'ServicePresentation.php',
   'ServiceRegistry.php',
@@ -446,6 +453,7 @@ if (
 for (const editorPage of [
   'sinkhole-alerts_edit.php',
   'sinkhole-bypass_edit.php',
+  'sinkhole-clients_edit.php',
   'sinkhole-ip_edit.php',
   'sinkhole-lists_edit.php',
   'sinkhole-scopes_edit.php',
@@ -477,6 +485,7 @@ for (const editorPage of [
  * These markers keep the page aligned with the reviewed pfSense scaffold.
  *
  * @since 1.0.0
+ * @since 1.2.4
  */
 const aboutPage = await readFile(
   join(workspaceDirectory, 'port', 'files', 'usr', 'local', 'www', 'sinkhole-about.php'),
@@ -487,7 +496,7 @@ for (const aboutPageMarker of [
   '##|*MATCH=sinkhole-about.php*',
   'UpdateManager::installedVersion()',
   'UpdateManager::readUpdatesState($paths->updatesFile)',
-  'PackagePaths::UPDATE_CHECK_COMMAND',
+  'PackagePaths::MANUAL_UPDATE_CHECK_COMMAND',
   'PackagePaths::SELF_UPDATE_COMMAND',
   '\'self_update\',',
   'sinkhole-about.php?update_status=1',

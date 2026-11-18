@@ -31,21 +31,21 @@ Sinkhole verweigert das Speichern von **Enable**, solange pfBlockerNG installier
 
 1. Öffne **Lists** und füge die URL einer vertrauenswürdigen Quelle hinzu, oder öffne **Add from Catalog**, um die beiden Kataloge auf Abruf zu durchsuchen.
 2. Vergib einen lokalen Namen für die Quelle und lasse **Enabled** ausgewählt, damit Sinkhole sie herunterlädt.
-3. Wähle **Global** nur aus, wenn die Liste nach allen Geräte- und Netzwerkregeln gelten soll.
-4. Füge bei Bedarf unter **Allowed Domains** globale Ausnahmen hinzu, eine Domain pro Zeile, damit ein bekannter Fehlalarm zugelassen wird.
+3. Öffne **Blocking**, bleib auf **Global** und wähle die Liste nur aus, wenn sie nach allen Geräte- und Netzwerkregeln gelten soll.
+4. Füge bei Bedarf auf derselben Seite unter **Allowed Domains** globale Ausnahmen hinzu, eine Domain pro Zeile, damit ein bekannter Fehlalarm zugelassen wird.
 
 Sinkhole empfiehlt keine Quelle. [Listen und gespeicherte Kopien](/docs/configure/lists) beschreibt die akzeptierten Formate und wie Katalogergebnisse zu gewöhnlichen Listeneinträgen werden.
 
-<img src={listsTab} alt="Tab Lists mit fünf Demo-Blocklisten samt den Spalten Global und Used By sowie zwei global erlaubten Domains" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Tab Lists mit fünf Demo-Blocklisten samt ihrer Spalte Used By" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-## Optionale Scopes hinzufügen \{#add-optional-scopes}
+## Optionale Netzwerke und Geräte hinzufügen \{#add-optional-networks-and-devices}
 
-Öffne **Scopes**, wenn ein Netzwerk oder Gerät zusätzliche Richtlinien über die globale Ebene hinaus benötigt:
+Öffne **Clients**, wenn ein Netzwerk oder Gerät zusätzliche Richtlinien über die Ebene Global hinaus benötigt:
 
-- Füge ein **Network** für eine konfigurierte pfSense-Schnittstelle hinzu und wähle anschließend dessen Listen und erlaubte Domains aus.
-- Füge ein **Device** anhand einer IP-Adresse, statischen DHCP-Zuordnung oder MAC-Adresse hinzu und wähle anschließend dessen Listen und erlaubte Domains aus.
+- Füge ein **Network** für eine konfigurierte pfSense-Schnittstelle hinzu.
+- Füge ein **Device** mit einer oder mehreren IP-Adressen, statischen DHCP-Zuordnungen oder MAC-Adressen hinzu.
 
-Ein Gerät erbt das Netzwerk, in dem es sich aktuell befindet, und das Netzwerk erbt globale Listen. [Scopes und erlaubte Domains](/docs/configure/scopes) zeigt die Entscheidungsreihenfolge, nach der ein Name zugelassen oder blockiert wird.
+Öffne dann **Blocking**, wähle das Netzwerk oder Gerät in der Kontextzeile aus und wähle seine Listen und erlaubten Domains. Ein Gerät erbt das Netzwerk, in dem es sich aktuell befindet, und das Netzwerk erbt die Listen von Global. [Clients und Blockierung](/docs/configure/scopes) zeigt die Entscheidungsreihenfolge, nach der ein Name zugelassen oder blockiert wird.
 
 ## Aktivieren und aktualisieren \{#enable-and-update}
 

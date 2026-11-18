@@ -335,3 +335,44 @@ select[name="device_lists[]"] {
   overflow: auto;
   resize: vertical;
 }
+
+/**
+ * ============================
+ * Context Row
+ * ============================
+ */
+
+/* The second tab row (All, Global, Networks, Devices) and its chips sit under pfSense's top tabs. */
+.sinkhole-context {
+  margin: 10px 0;
+}
+
+.sinkhole-context .nav-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sinkhole-context .nav-pills::before,
+.sinkhole-context .nav-pills::after {
+  display: none;
+}
+
+.sinkhole-context .nav-pills > li + li {
+  margin-left: 0;
+}
+
+.sinkhole-context-chips {
+  margin-top: 8px;
+}
+
+.sinkhole-context-chips > li > a {
+  padding: 4px 10px;
+
+  font-size: 12px;
+}
+
+.sinkhole-context-search {
+  max-width: 320px;
+  margin-top: 8px;
+}

@@ -17,9 +17,11 @@ declare(strict_types=1);
 use PfSense\Sinkhole\Domain\IpConfiguration;
 use PfSense\Sinkhole\Domain\ListConfiguration;
 use PfSense\Sinkhole\Domain\ValidationException;
+use PfSense\Sinkhole\Runtime\Context;
 
 require_once('guiconfig.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
+require_once('/usr/local/pkg/sinkhole/Context.php');
 require_once('/usr/local/pkg/sinkhole/IpConfiguration.php');
 require_once('/usr/local/pkg/sinkhole/ListConfiguration.php');
 
@@ -38,12 +40,26 @@ function sinkholeIpEditorRequireSettingsRepair(array $configuration): void
     );
 }
 
-/** @since 1.0.0 */
-function sinkholeIpEditorStorage(
+/**
+ * Sinkhole IP Editor - Store Lists.
+ *
+ * IP List sources are package-wide and live in the Global section; the existing
+ * IP save keeps the Global list selection and migration marker beside them.
+ *
+ * @param array $configuration - Partitioned Global IP configuration.
+ * @param array<string, array> $lists - Valid IP lists.
+ * @param list<array> $invalidRows - Malformed rows retained for repair.
+ *
+ * @return void
+ *
+ * @since 1.0.0
+ * @since 1.3.0
+ */
+function sinkholeIpEditorStoreLists(
     array $configuration,
     array $lists,
     array $invalidRows,
-): array {
+): void {
     $rows = [];
 
     foreach ($lists as $list) {
@@ -62,7 +78,7 @@ function sinkholeIpEditorStorage(
         }
     }
 
-    return [
+    pfsensePackageSinkholeSaveIp([
         'enabled' => $configuration['enabled'] ? 'on' : '',
         'interfaces' => ['item' => array_values($configuration['stored_interfaces'])],
         'directions' => ['item' => array_values($configuration['stored_directions'])],
@@ -71,8 +87,14 @@ function sinkholeIpEditorStorage(
         'account_id' => $configuration['account_id'],
         'license_key' => $configuration['license_key'],
         'allowlist' => ['item' => array_values($configuration['stored_allowlist'])],
-    ];
+    ]);
 }
+
+$scopeConfiguration = pfsensePackageSinkholeGetScopeConfiguration();
+$networks = $scopeConfiguration['networks'];
+$devices = $scopeConfiguration['devices'];
+
+Context::remember(Context::GLOBAL);
 
 $configuration = pfsensePackageSinkholeGetIpConfiguration();
 $lists = $configuration['lists'];
@@ -175,8 +197,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_ip_list'])) {
             ));
         }
 
-        pfsensePackageSinkholeSaveIp(sinkholeIpEditorStorage($configuration, $lists, $invalidRows));
-        header('Location: sinkhole-ip.php?saved=1');
+        sinkholeIpEditorStoreLists($configuration, $lists, $invalidRows);
+        header('Location: sinkhole-ip.php?context=global&saved=1');
         exit;
     } catch (Throwable $throwable) {
         $actionMessage = pfsensePackageSinkholeThrowableMessage($throwable);
@@ -205,7 +227,7 @@ $pgtitle = [
 $pglinks = [
     '',
     '/pkg_edit.php?xml=sinkhole.xml&id=0',
-    '/sinkhole-ip.php',
+    '/sinkhole-ip.php?context=global',
     '@self',
 ];
 
@@ -215,6 +237,8 @@ display_top_tabs(pfsensePackageSinkholeTabs('ip'));
 if (is_string($actionMessage)) {
     print_info_box(htmlspecialchars($actionMessage), $actionClass, false);
 }
+
+print(Context::renderRow('sinkhole-ip.php', Context::GLOBAL, $networks, $devices, true));
 
 $button = new Form_Button(
     'save_ip_list',

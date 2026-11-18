@@ -31,21 +31,21 @@ Sinkhole refuses to save **Enable** while pfBlockerNG is installed and enabled, 
 
 1. Open **Lists** and add the URL of a source you trust, or open **Add from Catalog** to search the two on-demand catalogs.
 2. Give the source a local name and leave **Enabled** selected so Sinkhole downloads it.
-3. Select **Global** only when the list should apply after every device and network rule.
-4. Add any global **Allowed Domains**, one domain per line, when a known false positive needs to pass.
+3. Open **Blocking**, stay on **Global**, and select the list only when it should apply after every device and network rule.
+4. Add any global **Allowed Domains** on the same page, one domain per line, when a known false positive needs to pass.
 
-<img src={listsTab} alt="Lists tab showing five demo block lists with their Global and Used By columns, and two global allowed domains" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Lists tab showing five demo block lists with their Used By column" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
 Sinkhole recommends no source. [Lists and Saved Copies](/docs/configure/lists) explains the accepted formats and how catalog results become ordinary list rows.
 
-## Add Optional Scopes \{#add-optional-scopes}
+## Add Optional Networks and Devices \{#add-optional-networks-and-devices}
 
-Open **Scopes** when a network or device needs policy beyond the global level:
+Open **Clients** when a network or device needs policy beyond the Global level:
 
-- Add a **Network** for one configured pfSense interface, then select its lists and allowed domains.
-- Add a **Device** by IP address, DHCP static mapping, or MAC address, then select its lists and allowed domains.
+- Add a **Network** for one configured pfSense interface.
+- Add a **Device** with one or more IP addresses, DHCP static mappings, or MAC addresses.
 
-A device inherits the network it is currently on, and the network inherits global lists. [Scopes and Allowed Domains](/docs/configure/scopes) shows the decision order that determines whether a name passes or is blocked.
+Then open **Blocking**, pick the network or device in the context row, and select its lists and allowed domains. A device inherits the network it is currently on, and the network inherits Global lists. [Clients and Blocking](/docs/configure/scopes) shows the decision order that determines whether a name passes or is blocked.
 
 ## Enable and Update \{#enable-and-update}
 

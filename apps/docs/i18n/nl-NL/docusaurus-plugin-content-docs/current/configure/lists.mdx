@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Lijsten en opgeslagen kopieën
-description: Voeg DNS-lijsten toe via URL of catalogus, gebruik hosts-, domein- en adblock-achtige indelingen, beheer globaal beleid en behoud de laatste geldige kopieën bij fouten.
+description: Voeg DNS-lijsten toe via URL of catalogus, gebruik hosts-, domein- en adblock-achtige indelingen en behoud de laatste geldige kopieën bij fouten.
 keywords:
   - sinkhole voor pfsense
   - blokkeerlijsten
@@ -21,7 +21,7 @@ Voeg vertrouwde lijstbronnen toe en laat Sinkhole genormaliseerde, laatst geldig
 ## Waarom opgeslagen lijsten gebruiken? \{#why-use-saved-lists}
 
 1. Houdt DNS onafhankelijk van de host van een lijst, zodat een trage of mislukte download de naamomzetting niet onderbreekt.
-2. Downloadt elke bron eenmaal, zodat dezelfde opgeslagen kopie globale, netwerk- en apparaatscopes kan bedienen.
+2. Downloadt elke bron eenmaal, zodat dezelfde opgeslagen kopie Global, elk netwerk en elk apparaat kan bedienen.
 3. Behoudt de vorige geldige kopie wanneer een nieuwe download of analyse mislukt, zodat defecte invoer geen werkend beleid vervangt.
 4. Werkt lijsten op de achtergrond bij, zodat een herstart of herlading van de Resolver nooit op het netwerk wacht.
 
@@ -29,14 +29,15 @@ Voeg vertrouwde lijstbronnen toe en laat Sinkhole genormaliseerde, laatst geldig
 
 Open **Firewall → Sinkhole → Lists**, selecteer **Add** onder de tabel met blokkeerlijsten en vul vervolgens **Add Block List** op de bewerkingspagina in:
 
-| Veld    | Beschrijving                                                              |
-|---------|---------------------------------------------------------------------------|
-| Name    | Lokaal label dat in toewijzingen, waarschuwingen en Status wordt getoond. |
-| URL     | HTTP- of HTTPS-bron zonder ingesloten referenties.                        |
-| Enabled | Downloadt de bron en maakt deze beschikbaar voor toegewezen scopes.       |
-| Global  | Past de bron na apparaat- en netwerkbeslissingen op elke client toe.      |
+| Veld    | Beschrijving                                                  |
+|---------|---------------------------------------------------------------|
+| Name    | Lokaal label dat op Blocking, Alerts en Status wordt getoond. |
+| URL     | HTTP- of HTTPS-bron zonder ingesloten referenties.            |
+| Enabled | Downloadt de bron zodat Blocking deze kan gebruiken.          |
 
 Na opslaan keert u terug naar het tabblad Lists en wordt hetzelfde gevalideerde toepassingspad op de achtergrond gestart. Selecteer het potlood van een rij of dubbelklik op de rij om deze te bewerken. Een uitgeschakelde rij blijft geconfigureerd, maar wordt gedimd in de tabel en niet door het updateproces of het gecompileerde beleid gebruikt.
+
+Lists is alleen de lijstbeheerder. Welke lijsten voor Global, een netwerk of een apparaat gelden, kiest u op [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), en de kolom **Used By** telt Global plus elk netwerk en apparaat dat de lijst selecteert.
 
 ## Geaccepteerde DNS-indelingen \{#accepted-dns-formats}
 
@@ -60,19 +61,19 @@ Resultaten worden als kaarten weergegeven. Gebruik de besturingselementen voor z
 
 Elke kaart toont de lijstnaam, de beheerder of categorie, de broncatalogus, een beschrijving van twee regels, de startpagina en de status **Add** of **Added**. De kaarten tonen geen beoordelingen, badges of aanbevelingen. Als u **Add** selecteert, wordt een gewone lijstrij gemaakt waarvan de URL net als elke handmatig ingevoerde bron kan worden toegewezen.
 
-Nieuwe lijsten, ook lijsten die vanuit de catalogus zijn toegevoegd, beginnen met **Global** uitgevinkt, zodat ze niets blokkeren totdat u Global aanvinkt of ze in een scope selecteert.
+Nieuwe lijsten, ook lijsten die vanuit de catalogus zijn toegevoegd, blokkeren niets totdat u ze op Blocking selecteert voor Global, een netwerk of een apparaat.
 
 De regel **Contents** op elke kaart toont **Domains**. Bij het toevoegen van een catalogusresultaat blijft de catalogusnaam ongewijzigd.
 
 Cataloguskopieën worden één dag onder `/var/db` gecachet. Bij een mislukte vernieuwing blijft de laatste geldige cataloguskopie behouden en wordt de ophaalfout in Status getoond.
 
-<img src={catalogSearch} alt="Paneel Add from Catalog op het tabblad Lists met besturingselementen voor zoeken in de catalogus en de ophaalstatus" width={1024} height={920} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Paneel Add from Catalog op het tabblad Lists met besturingselementen voor zoeken in de catalogus en de ophaalstatus" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 Feeds die zijn toegewezen aan bypass-beveiliging voor Encrypted DNS, Tor of VPN verschijnen hier niet. Ze zijn alleen beschikbaar via **Add from Catalog** op het tabblad Bypass.
 
 ## Globale toegestane domeinen instellen \{#set-global-allowed-domains}
 
-De sectie **Allowed Domains** onder de lijst- en cataloguspanelen definieert globale uitzonderingen. Elke regel laat dat domein en de subdomeinen ervan door de geërfde globale lijsten. Selecteer **Save** onder die sectie om de paginabrede instelling toe te passen.
+Globale uitzonderingen staan op **Blocking → Global** in het vak **Allowed Domains**. Elke regel laat dat domein en de subdomeinen ervan door globale lijsten. Selecteer **Save** om ze toe te passen.
 
 Een globaal toegestaan domein wordt na apparaat- en netwerkregels gecontroleerd. Het kan daarom geen lijst opheffen die de query al op een specifieker apparaat- of netwerkniveau heeft geblokkeerd.
 

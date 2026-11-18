@@ -49,54 +49,56 @@ Puste pole niczego nie zapisuje i zachowuje domyślną wartość Resolvera. [Ust
 | Update Checks        | Weekly    | Wybiera kontrole Daily, Weekly, Monthly lub Never pod kątem nowych wydań GitHub.                |
 | Remote Notifications | Off       | Wysyła również każde powiadomienie o nowej wersji przez usługi zdalne skonfigurowane w pfSense. |
 
-Każda nowa wersja tworzy jedno lokalne powiadomienie pfSense. **About → Check Now** natychmiast uruchamia tę samą ograniczoną kontrolę wydania bez zmiany harmonogramu.
+Każda nowa wersja znaleziona przez zaplanowaną kontrolę tworzy jedno lokalne powiadomienie pfSense. **About → Check Now** uruchamia tę samą ograniczoną kontrolę wydania bez zmiany harmonogramu, nie tworzy powiadomienia i zapobiega ogłoszeniu tej wersji przez późniejszą zaplanowaną kontrolę.
 
 ## Lists \{#lists}
 
-| Pole            | Domyślnie | Opis                                                                                                        |
-|-----------------|-----------|-------------------------------------------------------------------------------------------------------------|
-| Name            | Empty     | Lokalna etykieta używana przez przypisania, alerty i Status.                                                |
-| URL             | Empty     | Źródło HTTP lub HTTPS bez osadzonych danych uwierzytelniających.                                            |
-| Enabled         | On        | Uwzględnia źródło w aktualizacjach i skompilowanych zasadach po przypisaniu.                                |
-| Global          | Off       | Stosuje listę do każdego klienta po decyzjach urządzenia i sieci.                                           |
-| Allowed Domains | Empty     | Jedna globalna dozwolona domena w wierszu; każdy wpis zezwala na dokładną domenę i wszystkie jej poddomeny. |
+| Pole    | Domyślnie | Opis                                                                            |
+|---------|-----------|---------------------------------------------------------------------------------|
+| Name    | Empty     | Lokalna etykieta używana przez Blocking, alerty i Status.                       |
+| URL     | Empty     | Źródło HTTP lub HTTPS bez osadzonych danych uwierzytelniających.                |
+| Enabled | On        | Uwzględnia źródło w aktualizacjach i skompilowanych zasadach, gdy jest używane. |
 
 **Add from Catalog** na żądanie przeszukuje rejestr list AdGuard Home i katalog źródeł pfBlockerNG. Dodanie wyniku tworzy taki sam zwykły wiersz jak ręczne wprowadzenie adresu URL.
 
 Źródła obejścia są wykluczone z tego katalogu.
 
+## Blocking \{#blocking}
+
+Każdy kontekst (Global, jedna sieć lub jedno urządzenie) ma własne dwa pola:
+
+| Pole            | Domyślnie | Opis                                                                                                                                            |
+|-----------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| Lists           | Empty     | Listy DNS blokujące w tym kontekście. Listy Global są stosowane do każdego klienta po decyzjach urządzenia i sieci.                             |
+| Allowed Domains | Empty     | Jeden wyjątek w wierszu; każdy zezwala na dokładną domenę i wszystkie jej poddomeny przed listami tego kontekstu i każdego szerszego kontekstu. |
+
 ## Usługi \{#services}
 
-Wybór usług jest domyślnie pusty dla każdego zakresu. Usługa rejestru objęta dedykowaną ochroną Bypass jest ukrywana w Usługach i usuwana z zapisanych wyborów; Private Relay konfiguruje się tylko na karcie Bypass.
+Wybór usług jest domyślnie pusty dla każdego kontekstu. Usługa rejestru objęta dedykowaną ochroną Bypass jest ukrywana w Usługach i usuwana z zapisanych wyborów; Private Relay konfiguruje się tylko na karcie Bypass.
 
 ## SafeSearch \{#safesearch}
 
-Wybór SafeSearch jest domyślnie pusty dla każdego zakresu. Każdy zakres może blokować w trybie bezpiecznym Google, YouTube (Moderate lub Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex i Pixabay albo zablokować Qwant. [SafeSearch](/docs/configure/safesearch) zawiera listę nazw i bezpiecznych hostów.
+Wybór SafeSearch jest domyślnie pusty dla każdego kontekstu. Każdy kontekst może blokować w trybie bezpiecznym Google, YouTube (Moderate lub Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex i Pixabay albo zablokować Qwant. [SafeSearch](/docs/configure/safesearch) zawiera listę nazw i bezpiecznych hostów.
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| Pole            | Domyślnie | Opis                                                                                                                                                    |
-|-----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | LAN       | Skonfigurowany interfejs pfSense, którego bieżące podsieci IPv4 i IPv6 identyfikują sieć. Bez LAN wybierany jest pierwszy wolny interfejs inny niż WAN. |
-| Lists           | Empty     | Dodatkowe listy DNS blokujące klientów w sieci.                                                                                                         |
-| Allowed Domains | Empty     | Jeden wyjątek sieci w wierszu; każdy zezwala na dokładną domenę i wszystkie jej poddomeny przed listami tej sieci i wszystkimi zasadami globalnymi.     |
-| Enabled         | On        | Włącza wiersz do dopasowywania klientów i skompilowanych zasad.                                                                                         |
+| Pole      | Domyślnie | Opis                                                                                                                                                    |
+|-----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface | LAN       | Skonfigurowany interfejs pfSense, którego bieżące podsieci IPv4 i IPv6 identyfikują sieć. Bez LAN wybierany jest pierwszy wolny interfejs inny niż WAN. |
+| Enabled   | On        | Włącza wiersz do dopasowywania klientów i skompilowanych zasad.                                                                                         |
 
 Każdy interfejs może pojawić się tylko raz. Niedostępny zapisany interfejs pozostaje widoczny do poprawienia zamiast zostać odrzucony.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| Pole                     | Domyślnie  | Opis                                                                                                                                    |
-|--------------------------|------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| Name                     | Empty      | Lokalna etykieta wyświetlana w zasadach i Status.                                                                                       |
-| Identified By            | IP address | Wybiera IP address, DHCP static mapping lub MAC address.                                                                                |
-| IP Address / MAC Address | Empty      | Dokładny identyfikator, gdy wybrano IP address lub MAC address. Etykieta zależy od wybranej metody.                                     |
-| DHCP Static Mapping      | Empty      | Istniejące mapowanie wybrane w przypadku użycia tej metody identyfikacji.                                                               |
-| Lists                    | Empty      | Dodatkowe listy DNS blokujące to urządzenie.                                                                                            |
-| Allowed Domains          | Empty      | Jeden wyjątek urządzenia w wierszu; każdy zezwala na dokładną domenę i wszystkie jej poddomeny przed każdą decyzją sieciową i globalną. |
-| Enabled                  | On         | Włącza wiersz do dopasowywania klientów i skompilowanych zasad.                                                                         |
+| Pole                | Domyślnie               | Opis                                                                                                                       |
+|---------------------|-------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty                   | Lokalna etykieta wyświetlana w zasadach i Status.                                                                          |
+| Identifiers → Type  | Jeden wiersz IP address | Wybiera IP address, DHCP static mapping lub MAC address dla każdego wiersza, który można dodać lub usunąć.                 |
+| Identifiers → Value | Empty                   | Dokładny adres IP lub MAC albo istniejące statyczne mapowanie DHCP. Wymagany jest co najmniej jeden wiersz identyfikatora. |
+| Enabled             | On                      | Włącza wiersz do dopasowywania klientów i skompilowanych zasad.                                                            |
 
-Mapowania statyczne używają skonfigurowanego adresu oraz bieżących adresów zaobserwowanych dla adresu MAC mapowania. Wiersz MAC używa bieżących danych ARP, NDP i dzierżaw DHCP.
+Wszystkie wiersze identyfikatorów należą do tego samego urządzenia i współdzielą jego ustawienia. Mapowania statyczne używają skonfigurowanego adresu oraz bieżących adresów zaobserwowanych dla adresu MAC mapowania. Wiersz MAC używa bieżących danych ARP, NDP i dzierżaw DHCP. Adresy osiągane przez kilka identyfikatorów tego samego urządzenia nie są konfliktami.
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Mapowania statyczne używają skonfigurowanego adresu oraz bieżących adresów 
 |----------------------|-----------|----------------------------------------------------------------------------------------------------------|
 | Description          | Empty     | Lokalna etykieta reguły.                                                                                 |
 | Lists                | Any       | Dopasowuje dowolną listę lub tylko wybrane skonfigurowane listy.                                         |
-| Clients              | Everyone  | Dopasowuje wszystkich albo wybrane zakresy sieci i urządzeń.                                             |
+| Clients              | Everyone  | Dopasowuje wszystkich albo wybrane sieci i urządzenia.                                                   |
 | Repeat After         | 60        | Liczba minut, po których ta sama reguła, klient, domena i lista mogą ponownie powiadomić; zakres 1–1440. |
 | WebGUI Notice        | On        | Dodaje powiadomienie pfSense po dopasowaniu reguły.                                                      |
 | Remote Notifications | On        | Używa skonfigurowanych usług powiadomień pfSense po dopasowaniu reguły.                                  |

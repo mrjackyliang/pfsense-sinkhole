@@ -49,54 +49,56 @@ Rebind Exceptions에는 도메인을 최대 100개까지 입력할 수 있습니
 | Update Checks        | Weekly | 새 GitHub 릴리스 확인 일정으로 Daily, Weekly, Monthly 또는 Never를 선택합니다. |
 | Remote Notifications | Off    | 각 새 버전 알림을 pfSense에 구성된 원격 서비스로도 전송합니다.                      |
 
-각 새 버전은 로컬 pfSense 알림 하나를 만듭니다. **About → Check Now**는 일정을 변경하지 않고 동일한 제한된 릴리스 확인을 즉시 실행합니다.
+예약 확인에서 찾은 각 새 버전은 로컬 pfSense 알림 하나를 만듭니다. **About → Check Now**는 일정을 변경하지 않고 동일한 제한된 릴리스 확인을 실행하며 알림을 만들지 않고 이후 예약 확인이 해당 버전을 다시 알리지 않도록 합니다.
 
 ## Lists \{#lists}
 
-| 필드              | 기본값   | 설명                                                   |
-|-----------------|-------|------------------------------------------------------|
-| Name            | Empty | 할당, 알림 및 Status에서 사용하는 로컬 레이블입니다.                    |
-| URL             | Empty | 자격 증명이 포함되지 않은 HTTP 또는 HTTPS 출처입니다.                  |
-| Enabled         | On    | 할당된 경우 업데이트와 컴파일된 정책에 출처를 포함합니다.                     |
-| Global          | Off   | 장치 및 네트워크 판단 후 모든 클라이언트에 목록을 적용합니다.                  |
-| Allowed Domains | Empty | 한 줄당 전역 허용 도메인 하나이며 각 항목은 정확한 도메인과 모든 하위 도메인을 허용합니다. |
+| 필드      | 기본값   | 설명                                      |
+|---------|-------|-----------------------------------------|
+| Name    | Empty | Blocking, 알림 및 Status에서 사용하는 로컬 레이블입니다. |
+| URL     | Empty | 자격 증명이 포함되지 않은 HTTP 또는 HTTPS 출처입니다.     |
+| Enabled | On    | 사용되는 경우 업데이트와 컴파일된 정책에 출처를 포함합니다.       |
 
 **Add from Catalog**는 필요할 때 AdGuard Home 목록 레지스트리와 pfBlockerNG 피드 카탈로그를 검색합니다. 결과를 추가하면 URL을 직접 입력했을 때와 같은 일반 행이 생성됩니다.
 
 우회 피드는 이 카탈로그에서 제외됩니다.
 
+## Blocking \{#blocking}
+
+각 컨텍스트(Global, 네트워크 하나 또는 장치 하나)에는 고유한 두 필드가 있습니다.
+
+| 필드              | 기본값   | 설명                                                                          |
+|-----------------|-------|-----------------------------------------------------------------------------|
+| Lists           | Empty | 이 컨텍스트에서 차단하는 DNS 목록입니다. Global 목록은 장치 및 네트워크 판단 후 모든 클라이언트에 적용됩니다.         |
+| Allowed Domains | Empty | 한 줄당 예외 하나이며 각 예외는 이 컨텍스트와 더 넓은 모든 컨텍스트의 목록보다 먼저 정확한 도메인과 모든 하위 도메인을 허용합니다. |
+
 ## 서비스 \{#services}
 
-각 범위의 서비스 선택은 기본적으로 비어 있습니다. 전용 Bypass 보호가 담당하는 레지스트리 서비스는 Services에서 숨겨지고 저장된 선택에서도 제거됩니다. Private Relay는 Bypass 탭에서만 구성합니다.
+각 컨텍스트의 서비스 선택은 기본적으로 비어 있습니다. 전용 Bypass 보호가 담당하는 레지스트리 서비스는 Services에서 숨겨지고 저장된 선택에서도 제거됩니다. Private Relay는 Bypass 탭에서만 구성합니다.
 
 ## SafeSearch \{#safesearch}
 
-각 범위의 SafeSearch 선택은 기본적으로 비어 있습니다. 각 범위에서 Google, YouTube(Moderate 또는 Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex, Pixabay를 고정하거나 Qwant를 차단할 수 있습니다. 이름과 안전 호스트 목록은 [SafeSearch](/docs/configure/safesearch)에 있습니다.
+각 컨텍스트의 SafeSearch 선택은 기본적으로 비어 있습니다. 각 컨텍스트에서 Google, YouTube(Moderate 또는 Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex, Pixabay를 고정하거나 Qwant를 차단할 수 있습니다. 이름과 안전 호스트 목록은 [SafeSearch](/docs/configure/safesearch)에 있습니다.
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| 필드              | 기본값   | 설명                                                                                             |
-|-----------------|-------|------------------------------------------------------------------------------------------------|
-| Interface       | LAN   | 현재 IPv4 및 IPv6 서브넷으로 네트워크를 식별하는 구성된 pfSense 인터페이스입니다. LAN이 없으면 사용 가능한 첫 번째 비 WAN 인터페이스가 선택됩니다. |
-| Lists           | Empty | 네트워크의 클라이언트를 차단하는 추가 DNS 목록입니다.                                                                |
-| Allowed Domains | Empty | 한 줄당 네트워크 예외 하나이며 각 예외는 해당 네트워크 목록과 모든 전역 정책보다 먼저 정확한 도메인과 모든 하위 도메인을 허용합니다.                   |
-| Enabled         | On    | 클라이언트 일치와 컴파일된 정책에 이 행을 포함합니다.                                                                 |
+| 필드        | 기본값 | 설명                                                                                             |
+|-----------|-----|------------------------------------------------------------------------------------------------|
+| Interface | LAN | 현재 IPv4 및 IPv6 서브넷으로 네트워크를 식별하는 구성된 pfSense 인터페이스입니다. LAN이 없으면 사용 가능한 첫 번째 비 WAN 인터페이스가 선택됩니다. |
+| Enabled   | On  | 클라이언트 일치와 컴파일된 정책에 이 행을 포함합니다.                                                                 |
 
 각 인터페이스는 한 번만 나타날 수 있습니다. 사용할 수 없게 된 저장 인터페이스도 삭제되지 않고 수정할 수 있도록 표시됩니다.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| 필드                       | 기본값        | 설명                                                                    |
-|--------------------------|------------|-----------------------------------------------------------------------|
-| Name                     | Empty      | 정책과 Status에 표시되는 로컬 레이블입니다.                                           |
-| Identified By            | IP address | IP address, DHCP static mapping 또는 MAC address를 선택합니다.                |
-| IP Address / MAC Address | Empty      | IP address 또는 MAC address를 선택했을 때 사용할 정확한 식별자입니다. 레이블은 선택한 방식을 따릅니다.  |
-| DHCP Static Mapping      | Empty      | 해당 식별 방법을 사용할 때 선택하는 기존 매핑입니다.                                        |
-| Lists                    | Empty      | 이 장치를 차단하는 추가 DNS 목록입니다.                                              |
-| Allowed Domains          | Empty      | 한 줄당 장치 예외 하나이며 각 예외는 모든 네트워크 및 전역 판단보다 먼저 정확한 도메인과 모든 하위 도메인을 허용합니다. |
-| Enabled                  | On         | 클라이언트 일치와 컴파일된 정책에 이 행을 포함합니다.                                        |
+| 필드                  | 기본값             | 설명                                                                          |
+|---------------------|-----------------|-----------------------------------------------------------------------------|
+| Name                | Empty           | 정책과 Status에 표시되는 로컬 레이블입니다.                                                 |
+| Identifiers → Type  | IP address 행 하나 | 추가하거나 삭제할 수 있는 각 행에서 IP address, DHCP static mapping 또는 MAC address를 선택합니다. |
+| Identifiers → Value | Empty           | 정확한 IP 또는 MAC 주소이거나 기존 DHCP 정적 매핑입니다. 식별자 행이 하나 이상 필요합니다.                   |
+| Enabled             | On              | 클라이언트 일치와 컴파일된 정책에 이 행을 포함합니다.                                              |
 
-정적 매핑은 구성된 주소와 해당 매핑의 MAC에서 관찰한 현재 주소를 함께 사용합니다. MAC 행은 현재 ARP, NDP 및 DHCP 임대 데이터를 사용합니다.
+모든 식별자 행은 동일한 장치로 확인되며 해당 장치의 설정을 공유합니다. 정적 매핑은 구성된 주소와 해당 매핑의 MAC에서 관찰한 현재 주소를 함께 사용합니다. MAC 행은 현재 ARP, NDP 및 DHCP 임대 데이터를 사용합니다. 같은 장치의 여러 식별자를 통해 찾은 주소는 충돌이 아닙니다.
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Rebind Exceptions에는 도메인을 최대 100개까지 입력할 수 있습니
 |----------------------|----------|-------------------------------------------------------|
 | Description          | Empty    | 규칙의 로컬 레이블입니다.                                        |
 | Lists                | Any      | 모든 목록 또는 선택한 구성 목록만 일치시킵니다.                           |
-| Clients              | Everyone | 모든 클라이언트 또는 선택한 네트워크 및 장치 범위를 일치시킵니다.                 |
+| Clients              | Everyone | 모든 클라이언트 또는 선택한 네트워크 및 장치를 일치시킵니다.                    |
 | Repeat After         | 60       | 같은 규칙, 클라이언트, 도메인 및 목록이 다시 알림을 보낼 때까지의 분이며 1~1440입니다. |
 | WebGUI Notice        | On       | 규칙이 일치하면 pfSense 알림을 추가합니다.                           |
 | Remote Notifications | On       | 규칙이 일치하면 pfSense에 구성된 알림 서비스를 사용합니다.                  |

@@ -59,8 +59,8 @@ Dozwolona nazwa zapytania pozostaje dozwolona. Zapobiega to zastąpieniu jawnej 
 
 ## SafeSearch nie działa \{#safesearch-does-not-apply}
 
-1. Sprawdź, czy zakres sieci lub urządzenia klienta jest włączony na karcie **Scopes** i czy wyszukiwarka jest zaznaczona na karcie **SafeSearch** dla tego zakresu lub dla Global.
-2. Sprawdź w **Status → SafeSearch** adresy bezpiecznego hosta i ostatni błąd. Host bez adresów utrzymuje blokadę swojej wyszukiwarki w zakresie, dopóki zapytanie się nie powiedzie.
+1. Sprawdź, czy sieć lub urządzenie klienta jest włączone na karcie **Clients** i czy wyszukiwarka jest zaznaczona na karcie **SafeSearch** dla tej sieci lub tego urządzenia albo dla Global.
+2. Sprawdź w **Status → SafeSearch** adresy bezpiecznego hosta i ostatni błąd. Host bez adresów utrzymuje blokadę swojej wyszukiwarki w tym kontekście, dopóki zapytanie się nie powiedzie.
 3. Sprawdź, czy po zapisaniu **Compile Needed** i **Deployment Needed** mają wartość `No`.
 4. Sprawdź, czy klient nie używa szyfrowanego DNS ani innego resolvera; [Ochrona przed omijaniem](/docs/configure/bypass-protection) utrzymuje wybrane interfejsy na ścieżce DNS Sinkhole.
 
@@ -68,10 +68,10 @@ Przeglądarka może przez kilka minut przechowywać w pamięci podręcznej zwyk�
 
 ## Urządzenie otrzymuje niewłaściwe zasady \{#a-device-gets-the-wrong-policy}
 
-- Uruchom `/usr/local/sbin/sinkhole --refresh-clients` i sprawdź **Status → Scopes**.
-- Sprawdź, czy wiersz sieci pokazuje bieżące podsieci interfejsu, a wiersz urządzenia bieżące adresy urządzenia.
+- Uruchom `/usr/local/sbin/sinkhole --refresh-clients` i sprawdź **Status → Clients**.
+- Sprawdź, czy wiersz sieci pokazuje bieżące podsieci interfejsu, a wiersz urządzenia wszystkie skonfigurowane identyfikatory i bieżące adresy urządzenia.
 - Usuń każdą wartość **Conflict**, ponieważ pierwsze urządzenie w kolejności tabeli wygrywa współdzielony adres.
-- W przypadku mapowania statycznego sprawdź zarówno skonfigurowany adres, jak i bieżące adresy zaobserwowane dla jego adresu MAC.
+- Dla każdego identyfikatora mapowania statycznego sprawdź skonfigurowany adres i bieżące adresy zaobserwowane dla jego adresu MAC. Adresy znalezione przez dwa identyfikatory tego samego urządzenia nie są konfliktami.
 
 Czasy dzierżaw ISC mogą być w GMT lub w czasie lokalnym zapory, zależnie od ustawienia czasu dzierżawy interfejsu, natomiast czasy dzierżaw Kea są już lokalne. Sinkhole stosuje tę semantykę pfSense podczas określania, czy dzierżawa jest bieżąca.
 

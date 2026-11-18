@@ -59,8 +59,8 @@ Un nome di query consentito rimane consentito. Ciò impedisce a una destinazione
 
 ## SafeSearch non si applica \{#safesearch-does-not-apply}
 
-1. Verifica che l’ambito di rete o di dispositivo del client sia attivo in **Scopes** e che il motore sia spuntato per quell’ambito o per Global in **SafeSearch**.
-2. Controlla in **Status → SafeSearch** gli indirizzi dell’host sicuro e l’ultimo errore. Un host senza indirizzi mantiene il suo motore bloccato per l’ambito finché una risoluzione non riesce.
+1. Verifica che la rete o il dispositivo del client sia attivo in **Clients** e che il motore sia spuntato per quella rete o quel dispositivo, oppure per Global, in **SafeSearch**.
+2. Controlla in **Status → SafeSearch** gli indirizzi dell’host sicuro e l’ultimo errore. Un host senza indirizzi mantiene il suo motore bloccato per quel contesto finché una risoluzione non riesce.
 3. Verifica che **Compile Needed** e **Deployment Needed** mostrino `No` dopo il salvataggio.
 4. Verifica che il client non usi DNS cifrato o un altro resolver; la [protezione Bypass](/docs/configure/bypass-protection) mantiene le interfacce selezionate sul percorso DNS di Sinkhole.
 
@@ -68,10 +68,10 @@ Un browser può conservare in cache per qualche minuto l’indirizzo normale di 
 
 ## Un dispositivo riceve i criteri errati \{#a-device-gets-the-wrong-policy}
 
-- Esegui `/usr/local/sbin/sinkhole --refresh-clients` e controlla **Status → Scopes**.
-- Verifica che la riga di rete mostri le sottoreti correnti dell’interfaccia e che la riga del dispositivo mostri gli indirizzi correnti.
+- Esegui `/usr/local/sbin/sinkhole --refresh-clients` e controlla **Status → Clients**.
+- Verifica che la riga di rete mostri le sottoreti correnti dell’interfaccia e che la riga del dispositivo mostri tutti gli identificatori configurati e i relativi indirizzi correnti.
 - Risolvi qualsiasi valore **Conflict**, perché il primo dispositivo nell’ordine della tabella prevale per un indirizzo condiviso.
-- Per un mapping statico, controlla sia l’indirizzo configurato sia gli indirizzi correnti osservati per il MAC.
+- Per ogni identificatore di mapping statico, controlla l’indirizzo configurato e gli indirizzi correnti osservati per il MAC. Gli indirizzi trovati tramite due identificatori dello stesso dispositivo non sono conflitti.
 
 Le scadenze dei lease ISC possono essere in GMT o nell’ora locale del firewall in base all’impostazione dell’interfaccia, mentre le scadenze dei lease Kea sono già locali. Sinkhole segue questa semantica di pfSense quando decide se un lease è corrente.
 

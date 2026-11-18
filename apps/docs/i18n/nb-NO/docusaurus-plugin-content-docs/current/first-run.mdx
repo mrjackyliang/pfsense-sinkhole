@@ -31,21 +31,21 @@ Sinkhole nekter å lagre **Enable** mens pfBlockerNG er installert og aktivert, 
 
 1. Åpne **Lists**, og legg til URL-en til en kilde du stoler på, eller åpne **Add from Catalog** for å søke i de to katalogene ved behov.
 2. Gi kilden et lokalt navn, og la **Enabled** være valgt slik at Sinkhole laster den ned.
-3. Velg **Global** bare når listen skal gjelde etter alle enhets- og nettverksregler.
-4. Legg til eventuelle globale **Allowed Domains**, ett domene per linje, når en kjent falsk positiv skal slippes gjennom.
+3. Åpne **Blocking**, bli værende på **Global**, og velg listen bare når den skal gjelde etter alle enhets- og nettverksregler.
+4. Legg til eventuelle globale **Allowed Domains** på samme side, ett domene per linje, når en kjent falsk positiv skal slippes gjennom.
 
 Sinkhole anbefaler ingen kilde. [Lister og lagrede kopier](/docs/configure/lists) forklarer de støttede formatene og hvordan katalogresultater blir vanlige listerader.
 
-<img src={listsTab} alt="Fanen Lists viser fem demoblokkeringslister med kolonnene Global og Used By, og to globalt tillatte domener" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Fanen Lists viser fem demoblokkeringslister med kolonnen Used By" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-## Legg til valgfrie omfang \{#add-optional-scopes}
+## Legg til valgfrie nettverk og enheter \{#add-optional-networks-and-devices}
 
-Åpne **Scopes** når et nettverk eller en enhet trenger policy utover det globale nivået:
+Åpne **Clients** når et nettverk eller en enhet trenger policy utover Global-nivået:
 
-- Legg til et **Network** for ett konfigurert pfSense-grensesnitt, og velg deretter listene og de tillatte domenene.
-- Legg til en **Device** etter IP-adresse, statisk DHCP-tilordning eller MAC-adresse, og velg deretter listene og de tillatte domenene.
+- Legg til et **Network** for ett konfigurert pfSense-grensesnitt.
+- Legg til en **Device** med én eller flere IP-adresser, statiske DHCP-tilordninger eller MAC-adresser.
 
-En enhet arver nettverket den befinner seg i, og nettverket arver globale lister. [Omfang og tillatte domener](/docs/configure/scopes) viser avgjørelsesrekkefølgen som bestemmer om et navn slippes gjennom eller blokkeres.
+Åpne deretter **Blocking**, velg nettverket eller enheten i kontekstraden, og velg listene og de tillatte domenene. En enhet arver nettverket den befinner seg i, og nettverket arver Global-lister. [Klienter og blokkering](/docs/configure/scopes) viser avgjørelsesrekkefølgen som bestemmer om et navn slippes gjennom eller blokkeres.
 
 ## Aktiver og oppdater \{#enable-and-update}
 

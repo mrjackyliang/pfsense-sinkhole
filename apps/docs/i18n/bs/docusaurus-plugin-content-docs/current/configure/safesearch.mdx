@@ -7,7 +7,7 @@ keywords:
   - safesearch
   - sigurna pretraga
   - youtube ograničeni način rada
-  - mrežni opseg
+  - mrežno filtriranje
 tags:
   - configure
   - safesearch
@@ -22,17 +22,17 @@ Koristite **Firewall → Sinkhole → SafeSearch** da pretraživače zadržite u
 
 1. Zaključava sigurni način rada na nivou mreže, pa i odjavljeni preglednik, novi uređaj ili privatni prozor i dalje dobijaju filtrirane rezultate.
 2. Obuhvata svaku Googleovu domenu za pojedinačne države, a ne samo `google.com`, pa prelazak na `google.co.uk` ne zaobilazi zaštitu.
-3. Prati iste opsege kao liste za blokiranje, pa dječiji VLAN može dobiti SafeSearch dok ostatak mreže ne dobija.
+3. Koristi iste kontekste Global, mreže i uređaja kao liste za blokiranje, pa dječiji VLAN može dobiti SafeSearch dok ostatak mreže ne dobija.
 
-## Odaberite opseg i pretraživače \{#choose-a-scope-and-engines}
+## Odaberite kontekst i pretraživače \{#choose-a-context-and-engines}
 
-1. U polju **Scope** odaberite **Global**, konfiguriranu mrežu ili konfigurirani uređaj.
+1. Odaberite **Global**, mrežu ili uređaj u [redu konteksta](/docs/configure/scopes#contexts) ispod glavnih kartica.
 2. Označite svaki pretraživač koji želite zaključati i za YouTube odaberite **Moderate** ili **Strict**.
 3. Odaberite **Save**.
 
-Mreža ili uređaj mora postojati na kartici **Scopes** prije nego što se pojavi ovdje. Spremanje odmah razrješava svaki sigurni host i primjenjuje promjenu u pozadini.
+Mreža ili uređaj mora postojati na kartici **Clients** prije nego što se pojavi u redu konteksta. Spremanje odmah razrješava svaki sigurni host i primjenjuje promjenu u pozadini. **All** navodi svaki kontekst koji zaključava barem jedan pretraživač; odaberite red da uredite taj kontekst.
 
-<img src={safesearchTab} alt="Kartica SafeSearch za opseg demonstracijskog tableta sa zaključanim SafeSearchom za Google, Bing, DuckDuckGo i Brave Search, YouTubeom postavljenim na Strict i sigurnim adresama u upotrebi" width={1024} height={1322} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={safesearchTab} alt="Kartica SafeSearch za demonstracijski tablet sa zaključanim SafeSearchom za Google, Bing, DuckDuckGo i Brave Search, YouTubeom postavljenim na Strict i sigurnim adresama u upotrebi" width={1024} height={1476} style={{maxWidth: '100%', height: 'auto'}} />
 
 | Pretraživač  | Nazivi na koje se odgovara                                                                 | Sigurni host                                                                  |
 |--------------|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
@@ -47,26 +47,26 @@ Mreža ili uređaj mora postojati na kartici **Scopes** prije nego što se pojav
 | Pixabay      | `pixabay.com`, `www.pixabay.com`                                                           | `safesearch.pixabay.com`                                                      |
 | Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                            | Nema; Qwant se blokira                                                        |
 
-Qwant ne objavljuje SafeSearch host, pa njegov odabir blokira Qwant za taj opseg.
+Qwant ne objavljuje SafeSearch host, pa njegov odabir blokira Qwant za taj kontekst.
 
-## Kako se opsezi kombinuju \{#how-scopes-combine}
+## Kako se konteksti kombinuju \{#how-contexts-combine}
 
 Klijent dobija kombinaciju svih pretraživača odabranih za **Global**, za mrežu na kojoj se nalazi i za svoj uređaj. Kada se YouTube pojavi s oba nivoa, prednost ima **Strict**.
 
-SafeSearch se primjenjuje nakon blokiranja. Naziv koji lista ili blokirana usluga blokira za klijenta ostaje blokiran, a dopuštene domene ne isključuju SafeSearch. Kao i svaki klijent bez opsega, vlastiti upiti zaštitnog zida dobijaju pretraživače odabrane za **Global**.
+SafeSearch se primjenjuje nakon blokiranja. Naziv koji lista ili blokirana usluga blokira za klijenta ostaje blokiran, a dopuštene domene ne isključuju SafeSearch. Kao i svaki klijent izvan svih mreža i uređaja, vlastiti upiti zaštitnog zida dobijaju pretraživače odabrane za **Global**.
 
 ## Kako funkcioniše odgovor \{#how-the-answer-works}
 
 Za odabrani pretraživač Sinkhole na njegov naziv odgovara CNAME zapisom prema sigurnom hostu i adresama tog hosta, istim odgovorom koji daje ručno napisan Unbound view. Ostale vrste zapisa, poput HTTPS zapisa, dobijaju samo CNAME, pa preglednik ne može koristiti nagovještaje koji vode mimo sigurnog hosta.
 
-Sinkhole razrješava adrese svakog sigurnog hosta pri spremanju i pri svakom ažuriranju lista, a kada razrješavanje ne uspije, zadržava posljednje ispravne adrese. Pretraživač čiji sigurni host nikada nije vratio adresu blokiran je za svoje opsege dok razrješavanje ne uspije.
+Sinkhole razrješava adrese svakog sigurnog hosta pri spremanju i pri svakom ažuriranju lista, a kada razrješavanje ne uspije, zadržava posljednje ispravne adrese. Pretraživač čiji sigurni host nikada nije vratio adresu blokiran je za svoje kontekste dok razrješavanje ne uspije.
 
-SafeSearch odgovori nikada se ne čuvaju u predmemoriji Resolvera, pa odgovor jednog klijenta nikada ne stiže do klijenta izvan opsega.
+SafeSearch odgovori nikada se ne čuvaju u predmemoriji Resolvera, pa odgovor jednog klijenta nikada ne stiže do klijenta izvan tog konteksta.
 
 ## Provjerite SafeSearch \{#verify-safesearch}
 
 1. Otvorite **Status** i potvrdite da panel **SafeSearch** prikazuje svaki sigurni host s adresama i bez greške.
-2. S klijenta u opsegu potražite naziv pretraživača, npr. `nslookup www.google.com`, i potvrdite da odgovor navodi sigurni host.
-3. S klijenta izvan opsega potvrdite da isti upit vraća uobičajeni odgovor pretraživača.
+2. S klijenta u kontekstu potražite naziv pretraživača, npr. `nslookup www.google.com`, i potvrdite da odgovor navodi sigurni host.
+3. S klijenta izvan konteksta potvrdite da isti upit vraća uobičajeni odgovor pretraživača.
 
 Šifrirani DNS koji klijent šalje drugdje zaobilazi svako DNS pravilo, uključujući SafeSearch. [Zaštita od zaobilaženja](/docs/configure/bypass-protection) zadržava odabrane interfejse na Sinkholeovoj DNS putanji.

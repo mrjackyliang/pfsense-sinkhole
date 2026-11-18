@@ -1,10 +1,11 @@
 ---
 id: scopes
-title: Opsezi i dopuštene domene
-description: Dodijelite liste i dopuštene domene globalnim, interfejsnim i uređajskim opsezima, a zatim slijedite tačan redoslijed najodređenije odluke za svaki DNS upit.
+title: Klijenti i blokiranje
+description: Definišite mreže i uređaje na kartici Clients, na kartici Blocking odaberite liste i dopuštene domene za Global, svaku mrežu i svaki uređaj, a zatim slijedite tačan redoslijed najodređenije odluke za svaki DNS upit.
 keywords:
   - sinkhole for pfsense
-  - opsezi
+  - klijenti
+  - blokiranje
   - vlan blokiranje
   - pravila uređaja
   - dopuštene domene
@@ -17,44 +18,65 @@ tags:
 import deviceEditor from './_assets_/scopes-2.png';
 import scopesTab from './_assets_/scopes-1.png';
 
-Dodijelite liste i dopuštene domene na globalnom, mrežnom i uređajskom nivou, tako da svaki klijent dobije pravila namijenjena njegovoj trenutnoj lokaciji.
+Definišite svaku mrežu i svaki uređaj jednom na kartici **Clients**, a zatim na kartici **Blocking** odaberite šta svaki od njih blokira. Svaki klijent dobija pravila namijenjena njegovoj trenutnoj lokaciji.
 
-## Zašto koristiti opsege? \{#why-use-scopes}
+## Zašto koristiti mreže i uređaje? \{#why-use-networks-and-devices}
 
 1. Daje svakom interfejsu pfSensea ili VLAN-u vlastita pravila, uz zadržavanje globalnih pravila za sve.
 2. Daje jednom uređaju određeniju odluku bez potrebe za zasebnim DNS serverom.
 3. Omogućava dopuštenim domenama ispravljanje lažno pozitivnih rezultata na odgovarajućem nivou bez uklanjanja cijele liste.
 4. Drži adrese klijenata odvojeno od kompajliranih lista, tako da promjene DHCP-a, susjeda ili interfejsa ne učitavaju ponovo Unbound.
 
-## Globalni opseg \{#global-scope}
+## Konteksti \{#contexts}
 
-Lista s odabranim **Global** primjenjuje se na svakog klijenta nakon odluka uređaja i mreže. Globalne dopuštene domene unose se na kartici **Lists** i propuštaju navedenu domenu i njene poddomene kroz globalne liste.
+Blocking, Services, SafeSearch, Alerts, Bypass i IP dijele drugi red kartica ispod glavnih kartica:
 
-Klijent koji ne odgovara nijednom omogućenom opsegu mreže ili uređaja dobija samo ovaj nivo.
+| Kartica  | Šta stranica uređuje                                                                                                    |
+|----------|-------------------------------------------------------------------------------------------------------------------------|
+| All      | Ništa. Tabela samo za čitanje navodi svaki kontekst koji ima vlastite postavke; odaberite red da otvorite taj kontekst. |
+| Global   | Postavke za svakog klijenta.                                                                                            |
+| Networks | Jednu mrežu. Red mrežnih čipova bira koju.                                                                              |
+| Devices  | Jedan uređaj. Red čipova uređaja bira koji, a polje za pretragu sužava čipove po nazivu.                                |
 
-## Mrežni opsezi \{#network-scopes}
+Traka ispod reda navodi šta uređujete, na primjer **Editing: Network: IOT · applies to clients on IOT** ili **Editing: Device: Tablet · this device only**. Svaki kontekst prikazuje samo vlastite postavke; ništa naslijeđeno iz šireg konteksta ne pojavljuje se u njegovom obrascu.
 
-Otvorite **Firewall → Sinkhole → Scopes**, a zatim odaberite **Add** ispod tabele Networks. Uređivač prema zadanim postavkama bira LAN ili prvi dostupni interfejs koji nije WAN i izostavlja interfejse koji već imaju mrežni opseg. Klijent pripada toj mreži kada je njegova adresa unutar jedne od trenutnih IPv4 ili IPv6 podmreža interfejsa.
+Odabrani kontekst prati vas s kartice na karticu dok ne odaberete drugi. Onemogućena mreža ili uređaj i dalje se može uređivati, a upozorenje navodi da se njegove postavke ne primjenjuju ni na jednog klijenta dok se ponovo ne omogući.
 
-Svaki mrežni red bira dodatne liste, dopuštene domene i je li opseg omogućen. Spremanje vraća na Scopes; odaberite olovku ili dvaput kliknite red da biste ga uredili. Uređaj koji prelazi između mreža dobija pravila mreže kojoj odgovara njegova trenutna adresa.
+## Definišite mreže \{#define-networks}
 
-<img src={scopesTab} alt="Kartica Scopes prikazuje mrežni opseg LAN i tri demonstracijska uređaja identifikovana IP ili MAC adresom s njihovim trenutnim adresama" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+Otvorite **Firewall → Sinkhole → Clients**, a zatim odaberite **Add** ispod tabele Networks. Uređivač prema zadanim postavkama bira LAN ili prvi dostupni interfejs koji nije WAN i izostavlja interfejse koji već imaju mrežu. Klijent pripada toj mreži kada je njegova adresa unutar jedne od trenutnih IPv4 ili IPv6 podmreža interfejsa.
 
-## Opsezi uređaja \{#device-scopes}
+Svaki mrežni red ima interfejs i potvrdni okvir **Enabled**. Spremanje vraća na Clients; odaberite olovku ili dvaput kliknite red da biste ga uredili. Uređaj koji prelazi između mreža dobija pravila mreže kojoj odgovara njegova trenutna adresa.
 
-Odaberite **Add** ispod tabele Devices, unesite naziv i izaberite jedan način identifikacije. Uređivač prikazuje samo polje identifikatora koje se odnosi na odabrani način:
+<img src={scopesTab} alt="Kartica Clients prikazuje mrežu LAN i tri demonstracijska uređaja identifikovana IP ili MAC adresom s njihovim trenutnim adresama" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-| Način               | Adrese koje se koriste za uređaj                                             |
-|---------------------|------------------------------------------------------------------------------|
-| IP address          | Konfigurirana IPv4 ili IPv6 adresa.                                          |
-| DHCP static mapping | Njegova konfigurirana adresa i trenutne adrese opažene za MAC tog mapiranja. |
-| MAC address         | Trenutne adrese ARP-a, NDP-a i DHCP zakupa za taj MAC.                       |
+## Definišite uređaje \{#define-devices}
 
-Red uređaja bira njegove liste, dopuštene domene i omogućeno stanje. Spremanje vraća na Scopes; odaberite olovku ili dvaput kliknite red da biste ga uredili. Pozadinski posao osvježava trenutne podmreže i adrese uređaja svake minute dok DNS blokiranje ima omogućeni mrežni ili uređajski opseg, ili dok Bypass DNS zaštita zahtijeva prepoznavanje klijenta. Sync paketa pokreće isto osvježavanje samo pod tim uslovom.
+Odaberite **Add** ispod tabele Devices, unesite naziv i dodajte jedan ili više redova identifikatora. Svaki red sadrži vrstu i vrijednost koja odgovara toj vrsti:
 
-Povucite donji ugao okvira **Lists** da ga povećate kada imate mnogo lista.
+| Vrsta identifikatora | Adrese koje se koriste za uređaj                                             |
+|----------------------|------------------------------------------------------------------------------|
+| IP address           | Konfigurirana IPv4 ili IPv6 adresa.                                          |
+| DHCP static mapping  | Njegova konfigurirana adresa i trenutne adrese opažene za MAC tog mapiranja. |
+| MAC address          | Trenutne adrese ARP-a, NDP-a i DHCP zakupa za taj MAC.                       |
 
-<img src={deviceEditor} alt="Stranica Edit Device za demonstracijski tablet identifikovan IP adresom, s jednom odabranom listom i jednom dozvoljenom domenom" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
+Koristite **Add Identifier** i dugmad kante za smeće za održavanje redova. Uređaj mora imati najmanje jedan identifikator. Svaka adresa pronađena preko bilo kojeg identifikatora pripada istom uređaju i zato dijeli jedan skup postavki i jedno omogućeno stanje. Spremanje vraća na Clients; odaberite olovku ili dvaput kliknite red da biste ga uredili. Pozadinski posao osvježava trenutne podmreže i adrese uređaja svake minute dok DNS blokiranje ima omogućenu mrežu ili uređaj, ili dok Bypass DNS zaštita zahtijeva prepoznavanje klijenta. Sync paketa pokreće isto osvježavanje samo pod tim uslovom.
+
+Brisanjem mreže ili uređaja na kartici Clients brišu se i njegove postavke na karticama Blocking, Services, SafeSearch, Bypass i IP.
+
+<img src={deviceEditor} alt="Stranica Edit Device za demonstracijski tablet identifikovan IP adresom i MAC adresom" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Odaberite liste i dopuštene domene \{#choose-lists-and-allowed-domains}
+
+Otvorite **Firewall → Sinkhole → Blocking** i odaberite kontekst:
+
+- **Global** bira liste koje se primjenjuju na svakog klijenta nakon odluka uređaja i mreže i sadrži globalne dopuštene domene.
+- **Networks** bira dodatne liste i dopuštene domene za klijente na odabranoj mreži.
+- **Devices** bira dodatne liste i dopuštene domene za odabrani uređaj.
+
+Svaki kontekst ima okvir **Lists** i okvir **Allowed Domains** s jednom domenom po redu. Odaberite **Save** da primijenite taj kontekst. Povucite donji ugao okvira **Lists** da ga povećate kada imate mnogo lista. Same liste se dodaju i uređuju na kartici [Lists](/docs/configure/lists).
+
+**All** prikazuje jedan red za svaki kontekst koji ima liste ili dopuštene domene, s nazivima njegovih lista i brojem dopuštenih domena.
 
 ## Redoslijed odlučivanja \{#decision-order}
 
@@ -67,7 +89,7 @@ Najodređeniji odgovarajući nivo odlučuje o svakom upitu ovim tačnim redoslij
 5. **Global allowed domains** — Odmah dopušta kada se podudara globalni izuzetak.
 6. **Global lists** — Blokira kada se podudara globalna lista.
 
-Upit prolazi kada nijedan korak ne donese odluku. Dopuštene domene nekog nivoa nadjačavaju liste naslijeđene s manje određenih nivoa, ali ne nadjačavaju liste na određenijem nivou koji je već donio odluku.
+Upit prolazi kada nijedan korak ne donese odluku. Klijent koji ne odgovara nijednoj omogućenoj mreži ni uređaju dobija samo globalne korake. Dopuštene domene nekog nivoa nadjačavaju liste naslijeđene s manje određenih nivoa, ali ne nadjačavaju liste na određenijem nivou koji je već donio odluku.
 
 ## Ponašanje dopuštenih domena \{#allowed-domain-behavior}
 
@@ -79,11 +101,11 @@ Svaki unos dopuštene domene primjenjuje se na tačnu domenu i svaku poddomenu. 
 
 ## Sukobi adresa \{#address-conflicts}
 
-Kada dva reda uređaja polažu pravo na istu trenutnu adresu, prvi uređaj po redoslijedu u tabeli ima prednost. **Status → Scopes** prikazuje adresu pod **Conflict** za svaki pogođeni red, kako bi se redoslijed ili identifikatori mogli ispraviti.
+Više identifikatora istog uređaja može dosegnuti istu adresu bez sukoba. Kada dva različita uređaja polažu pravo na istu trenutnu adresu, prednost ima prvi uređaj u tabeli Clients. Tabela Clients i **Status → Clients** prikazuju adresu pod **Conflict** za svaki pogođeni red, kako bi se redoslijed ili identifikatori mogli ispraviti.
 
-## Provjerite opseg \{#verify-a-scope}
+## Provjerite mrežu ili uređaj \{#verify-a-network-or-device}
 
 1. Pokrenite `/usr/local/sbin/sinkhole --refresh-clients` ili pričekajte minutno osvježavanje.
-2. Otvorite **Status → Scopes** i potvrdite trenutne podmreže mreže i trenutne adrese uređaja.
-3. Pošaljite upit za naziv s klijenta u tom opsegu i uporedite rezultat s navedenim redoslijedom odlučivanja.
+2. Otvorite **Status → Clients** i potvrdite trenutne podmreže mreže i trenutne adrese uređaja.
+3. Pošaljite upit za naziv s klijenta na toj mreži ili s tog uređaja i uporedite rezultat s navedenim redoslijedom odlučivanja.
 4. Prije oslanjanja na ponašanje specifično za uređaj provjerite postoji li sukob adresa.

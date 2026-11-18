@@ -480,6 +480,461 @@ RULES;
         );
         sinkholeTestAssertSame(false, str_contains($rules, 'pass '), 'The anchor must contain no pass rule.');
     },
+    'IP context storage round trips exact settings and removes one context' => static function (): void {
+        $listIdentifier = '11111111111111111111111111111111';
+        $networkIdentifier = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        $deviceIdentifier = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        sinkholeStubReset([
+            'installedpackages' => ['sinkhole' => ['ip' => [
+                'lists' => ['item' => [[
+                    'id' => $listIdentifier,
+                    'descr' => 'Invented source',
+                    'url' => 'https://example.test/ip.txt',
+                    'family' => 'both',
+                    'enabled' => 'on',
+                ]]],
+            ]]],
+        ]);
+        $globalSettings = [
+            'enabled' => true,
+            'interfaces' => ['lan'],
+            'directions' => ['outbound'],
+            'list_ids' => [$listIdentifier],
+            'countries' => ['AA'],
+            'account_id' => '12345',
+            'license_key' => 'invented-license',
+            'allowlist' => ['trusted_alias'],
+        ];
+
+        IpConfiguration::storeContext('global', $globalSettings);
+
+        foreach ([
+            'network:' . $networkIdentifier => ['inbound'],
+            'device:' . $deviceIdentifier => ['outbound'],
+        ] as $context => $directions) {
+            IpConfiguration::storeContext($context, [
+                'enabled' => true,
+                'directions' => $directions,
+                'list_ids' => [$listIdentifier],
+                'countries' => ['BB'],
+                'allowlist' => ['192.0.2.5'],
+            ]);
+        }
+
+        $section = config_get_path('installedpackages/sinkhole/ip', []);
+        $rows = config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+        $global = IpConfiguration::forContext(
+            $section,
+            $rows,
+            'global',
+            ['lan' => 'LAN'],
+            ['trusted_alias' => 'trusted_alias'],
+        );
+        $network = IpConfiguration::forContext(
+            $section,
+            $rows,
+            'network:' . $networkIdentifier,
+            ['lan' => 'LAN'],
+            ['trusted_alias' => 'trusted_alias'],
+        );
+        $device = IpConfiguration::forContext(
+            $section,
+            $rows,
+            'device:' . $deviceIdentifier,
+            ['lan' => 'LAN'],
+            ['trusted_alias' => 'trusted_alias'],
+        );
+
+        sinkholeTestAssertSame(['lan'], $global['interfaces'], 'Global must retain Apply-to interfaces.');
+        sinkholeTestAssertSame([$listIdentifier], $global['list_ids'], 'Global must retain its source selection.');
+        sinkholeTestAssertSame(['inbound'], $network['directions'], 'Network directions must round trip independently.');
+        sinkholeTestAssertSame(['outbound'], $device['directions'], 'Device directions must round trip independently.');
+        sinkholeTestAssertSame(
+            false,
+            array_key_exists('interfaces', $network) || array_key_exists('license_key', $network),
+            'Child contexts must not expose package-wide interfaces or credentials.',
+        );
+        sinkholeTestAssertSame(
+            ['network:' . $networkIdentifier, 'device:' . $deviceIdentifier],
+            IpConfiguration::contextKeys(),
+            'Every stored child context must be listed in storage order.',
+        );
+        sinkholeTestAssertSame(
+            [
+                'ip_enabled',
+                'ip_interfaces',
+                'ip_directions',
+                'ip_list_ids',
+                'ip_countries',
+                'maxmind_account_id',
+                'maxmind_license_key',
+                'clear_maxmind_license_key',
+                'ip_allowlist',
+            ],
+            IpConfiguration::fieldsForContext('global'),
+            'Only Global must expose package-wide IP fields.',
+        );
+        sinkholeTestAssertSame(
+            [
+                'ip_enabled',
+                'ip_directions',
+                'ip_list_ids',
+                'ip_countries',
+                'ip_allowlist',
+            ],
+            IpConfiguration::fieldsForContext('network:' . $networkIdentifier),
+            'A network must expose only exact-context policy fields.',
+        );
+        $submitted = IpConfiguration::submitContext(
+            'network:' . $networkIdentifier,
+            [
+                'ip_enabled' => 'on',
+                'ip_directions' => ['inbound'],
+                'ip_list_ids' => [$listIdentifier],
+                'ip_countries' => "BB\n",
+                'ip_allowlist' => "192.0.2.10\n",
+            ],
+            ['lan' => 'LAN'],
+            ['trusted_alias' => 'trusted_alias'],
+            $network,
+            $global,
+        );
+        sinkholeTestAssertSame([], $submitted['errors'], 'A valid child form submission must pass.');
+        sinkholeTestAssertSame(
+            [$listIdentifier],
+            $submitted['settings']['list_ids'],
+            'A child submission must normalize its source selection.',
+        );
+
+        IpConfiguration::removeContext('device:' . $deviceIdentifier);
+
+        sinkholeTestAssertSame(
+            ['network:' . $networkIdentifier],
+            IpConfiguration::contextKeys(),
+            'Removing a device must leave the network context untouched.',
+        );
+        sinkholeTestAssertSame(
+            null,
+            IpConfiguration::forContext(
+                config_get_path('installedpackages/sinkhole/ip', []),
+                config_get_path('installedpackages/sinkhole/ip_contexts/item', []),
+                'device:' . $deviceIdentifier,
+            ),
+            'A removed context must no longer have exact settings.',
+        );
+    },
+    'removing a package-wide IP source prunes every exact-context selection' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+        $removedIdentifier = '11111111111111111111111111111111';
+        $retainedIdentifier = '22222222222222222222222222222222';
+        $networkIdentifier = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+        try {
+            sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+                'ip' => [
+                    'list_ids' => ['item' => [$removedIdentifier]],
+                ],
+                'ip_contexts' => ['item' => [[
+                    'context' => 'network:' . $networkIdentifier,
+                    'enabled' => '',
+                    'directions' => ['item' => []],
+                    'list_ids' => ['item' => [$removedIdentifier, $retainedIdentifier]],
+                    'countries' => ['item' => []],
+                    'allowlist' => ['item' => []],
+                ]]],
+            ]]]);
+            $paths = sinkholeIpTestPaths($root);
+            $adapter = new PfSenseAdapter(
+                $paths,
+                new StateStore($paths->stateFile, $paths->statusFile),
+            );
+            $adapter->saveIpConfiguration([
+                'enabled' => '',
+                'interfaces' => ['item' => []],
+                'directions' => ['item' => []],
+                'lists' => ['item' => [[
+                    'id' => $retainedIdentifier,
+                    'descr' => 'Invented retained source',
+                    'url' => 'https://example.test/retained.txt',
+                    'family' => 'ipv4',
+                    'enabled' => 'on',
+                ]]],
+                'countries' => ['item' => []],
+                'account_id' => '',
+                'license_key' => '',
+                'allowlist' => ['item' => []],
+            ]);
+
+            sinkholeTestAssertSame(
+                [],
+                config_get_path('installedpackages/sinkhole/ip/list_ids/item', []),
+                'A deleted source must leave the Global selection.',
+            );
+            sinkholeTestAssertSame(
+                [$retainedIdentifier],
+                config_get_path('installedpackages/sinkhole/ip_contexts/item/0/list_ids/item', []),
+                'A deleted source must leave child selections without disturbing retained IDs.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'IP context migration copies once enables only Apply-to clients and never overwrites' => static function (): void {
+        $listIdentifier = '11111111111111111111111111111111';
+        $lanNetwork = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        $optNetwork = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        $lanDevice = 'cccccccccccccccccccccccccccccccc';
+        $optDevice = 'dddddddddddddddddddddddddddddddd';
+        $existingRow = [
+            'context' => 'network:' . $optNetwork,
+            'enabled' => 'on',
+            'directions' => ['item' => ['inbound']],
+            'list_ids' => ['item' => []],
+            'countries' => ['item' => []],
+            'allowlist' => ['item' => ['198.51.100.8']],
+        ];
+        $globalSection = [
+            'enabled' => 'on',
+            'interfaces' => ['item' => ['lan']],
+            'directions' => ['item' => ['inbound', 'outbound']],
+            'lists' => ['item' => [[
+                'id' => $listIdentifier,
+                'descr' => 'Invented source',
+                'url' => 'https://example.test/ip.txt',
+                'family' => 'both',
+                'enabled' => 'on',
+            ]]],
+            'countries' => ['item' => ['AA']],
+            'account_id' => '12345',
+            'license_key' => 'invented-license',
+            'allowlist' => ['item' => ['192.0.2.9']],
+        ];
+        sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+            'ip' => $globalSection,
+            'ip_contexts' => ['item' => [$existingRow]],
+            'networks' => ['item' => [
+                ['id' => $lanNetwork, 'interface' => 'lan', 'enabled' => 'on'],
+                ['id' => $optNetwork, 'interface' => 'opt1', 'enabled' => 'on'],
+            ]],
+            'devices' => ['item' => [
+                [
+                    'id' => $lanDevice,
+                    'identifiers' => ['item' => [[
+                        'type' => 'static_mapping',
+                        'value' => '00:11:22:33:44:55',
+                        'interface' => 'lan',
+                    ]]],
+                    'enabled' => 'on',
+                ],
+                [
+                    'id' => $optDevice,
+                    'identifiers' => ['item' => [[
+                        'type' => 'static_mapping',
+                        'value' => '00:11:22:33:44:66',
+                        'interface' => 'opt1',
+                    ]]],
+                    'enabled' => 'on',
+                ],
+            ]],
+        ]]]);
+
+        sinkholeTestAssertSame(true, pfsensePackageSinkholeMigrateIpContexts(), 'The first migration must run.');
+        $migratedSection = config_get_path('installedpackages/sinkhole/ip', []);
+        $migratedRows = config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+        $sectionWithoutMarker = $migratedSection;
+        unset($sectionWithoutMarker[IpConfiguration::CONTEXT_MIGRATION_FIELD]);
+
+        sinkholeTestAssertSame($globalSection, $sectionWithoutMarker, 'Migration must leave every Global setting unchanged.');
+        sinkholeTestAssertSame(
+            IpConfiguration::CONTEXT_MIGRATION_VERSION,
+            $migratedSection[IpConfiguration::CONTEXT_MIGRATION_FIELD],
+            'Migration must store its one-time version flag.',
+        );
+        sinkholeTestAssertSame($existingRow, $migratedRows[0], 'A pre-existing row must never be overwritten.');
+        $rowsByContext = [];
+
+        foreach ($migratedRows as $row) {
+            $rowsByContext[$row['context']] = $row;
+        }
+
+        sinkholeTestAssertSame('on', $rowsByContext['network:' . $lanNetwork]['enabled'], 'A selected network must stay enabled.');
+        sinkholeTestAssertSame('on', $rowsByContext['device:' . $lanDevice]['enabled'], 'A device identifier on a selected interface must stay enabled.');
+        sinkholeTestAssertSame('', $rowsByContext['device:' . $optDevice]['enabled'], 'A device outside Apply-to must be copied disabled.');
+        sinkholeTestAssertSame([$listIdentifier], $rowsByContext['network:' . $lanNetwork]['list_ids']['item'], 'Migration must copy enabled source IDs.');
+        sinkholeTestAssertSame(
+            ['inbound', 'outbound'],
+            $rowsByContext['network:' . $lanNetwork]['directions']['item'],
+            'Migration must copy directions independently.',
+        );
+        sinkholeTestAssertSame(
+            ['AA'],
+            $rowsByContext['device:' . $lanDevice]['countries']['item'],
+            'Migration must copy country selections independently.',
+        );
+        sinkholeTestAssertSame(
+            ['192.0.2.9'],
+            $rowsByContext['device:' . $lanDevice]['allowlist']['item'],
+            'Migration must copy each per-context Allowlist.',
+        );
+
+        config_set_path('installedpackages/sinkhole/ip/enabled', '');
+        sinkholeTestAssertSame(false, pfsensePackageSinkholeMigrateIpContexts(), 'The migration must never run twice.');
+        sinkholeTestAssertSame(
+            $migratedRows,
+            config_get_path('installedpackages/sinkhole/ip_contexts/item', []),
+            'A later migration call must not change any row.',
+        );
+    },
+    'context tables use negation precedence and direction-specific client matches' => static function (): void {
+        global $sinkholeStubInterfaceAddresses;
+        global $sinkholeStubInterfaces;
+
+        $root = sinkholeTestTemporaryDirectory();
+
+        try {
+            $networkIdentifier = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+            $deviceIdentifier = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+            sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+                'ip' => [
+                    'enabled' => 'on',
+                    'interfaces' => ['item' => ['lan']],
+                    'directions' => ['item' => ['inbound', 'outbound']],
+                    'lists' => ['item' => []],
+                    'list_ids' => ['item' => []],
+                    'countries' => ['item' => []],
+                    'account_id' => '',
+                    'license_key' => '',
+                    'allowlist' => ['item' => []],
+                ],
+                'ip_contexts' => ['item' => [
+                    [
+                        'context' => 'network:' . $networkIdentifier,
+                        'enabled' => 'on',
+                        'directions' => ['item' => ['outbound']],
+                        'list_ids' => ['item' => []],
+                        'countries' => ['item' => []],
+                        'allowlist' => ['item' => []],
+                    ],
+                    [
+                        'context' => 'device:' . $deviceIdentifier,
+                        'enabled' => 'on',
+                        'directions' => ['item' => ['inbound']],
+                        'list_ids' => ['item' => []],
+                        'countries' => ['item' => []],
+                        'allowlist' => ['item' => []],
+                    ],
+                ]],
+                'networks' => ['item' => [[
+                    'id' => $networkIdentifier,
+                    'descr' => 'LAN clients',
+                    'interface' => 'lan',
+                    'lists' => ['item' => []],
+                    'allowed_domains' => ['item' => []],
+                    'enabled' => 'on',
+                ]]],
+                'devices' => ['item' => [[
+                    'id' => $deviceIdentifier,
+                    'descr' => 'Invented device',
+                    'identifiers' => ['item' => [[
+                        'type' => 'ip',
+                        'value' => '192.0.2.25',
+                        'interface' => '',
+                    ]]],
+                    'lists' => ['item' => []],
+                    'allowed_domains' => ['item' => []],
+                    'enabled' => 'on',
+                ]]],
+            ]]]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN'];
+            $sinkholeStubInterfaceAddresses = [
+                'lan' => [
+                    'ipv4' => '192.0.2.1',
+                    'ipv4_prefix' => 24,
+                ],
+            ];
+            $paths = sinkholeIpTestPaths($root);
+            $clientMap = json_encode([
+                'schema_version' => 2,
+                'devices' => ['192.0.2.25' => $deviceIdentifier],
+            ], JSON_THROW_ON_ERROR);
+            mkdir(dirname($paths->runtimeClientMapFile), 0700, true);
+            file_put_contents($paths->runtimeClientMapFile, $clientMap);
+            $adapter = new PfSenseAdapter(
+                $paths,
+                new StateStore($paths->stateFile, $paths->statusFile),
+            );
+            $anchorText = $adapter->ipAnchorText();
+            $globalTables = IpRuleConfiguration::contextTables(
+                'global',
+                $paths->ipTableIpv4File,
+                $paths->ipTableIpv6File,
+            );
+            $networkTables = IpRuleConfiguration::contextTables(
+                'network:' . $networkIdentifier,
+                $paths->ipTableIpv4File,
+                $paths->ipTableIpv6File,
+            );
+            $deviceTables = IpRuleConfiguration::contextTables(
+                'device:' . $deviceIdentifier,
+                $paths->ipTableIpv4File,
+                $paths->ipTableIpv6File,
+            );
+
+            sinkholeTestAssertSame(
+                "!192.0.2.25\n",
+                file_get_contents($globalTables['ipv4']['client_file']),
+                'Global must drop a subnet that a network context owns exactly, not hold it both included and negated.',
+            );
+            sinkholeTestAssertSame(
+                "192.0.2.0/24\n!192.0.2.25\n",
+                file_get_contents($networkTables['ipv4']['client_file']),
+                'A network must exclude enabled device contexts on its subnet.',
+            );
+            sinkholeTestAssertSame(
+                "192.0.2.25\n",
+                file_get_contents($deviceTables['ipv4']['client_file']),
+                'A device table must contain its resolved ClientMap addresses.',
+            );
+            sinkholeTestAssertContains(
+                'block drop in quick inet from <'
+                    . $networkTables['ipv4']['client_table']
+                    . '> to <'
+                    . $networkTables['ipv4']['block_table']
+                    . '>',
+                $anchorText,
+                'Outbound must match the context table as source.',
+            );
+            sinkholeTestAssertContains(
+                'block drop in quick inet from <'
+                    . $deviceTables['ipv4']['block_table']
+                    . '> to <'
+                    . $deviceTables['ipv4']['client_table']
+                    . '>',
+                $anchorText,
+                'Inbound must match the context table as destination.',
+            );
+            sinkholeTestAssertSame(
+                false,
+                str_contains($anchorText, 'sinkhole_block_v4')
+                    || str_contains($anchorText, 'sinkhole_block_v6')
+                    || str_contains($anchorText, 'pass '),
+                'Context rules must reference only hashed context tables and contain no pass.',
+            );
+
+            foreach ([$globalTables, $networkTables, $deviceTables] as $tables) {
+                foreach (['ipv4', 'ipv6'] as $family) {
+                    foreach (['client_table', 'block_table'] as $tableField) {
+                        sinkholeTestAssertTrue(
+                            strlen($tables[$family][$tableField]) <= 31,
+                            'Every hashed context table must fit pf table-name limits.',
+                        );
+                    }
+                }
+            }
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
     'empty IP list fields survive every pfSense XML writer shape' => static function (): void {
         $root = sinkholeTestTemporaryDirectory();
         $shapes = [
@@ -1022,6 +1477,11 @@ RULES;
                 new GeoLite2(),
                 new IpStatusStore($paths->ipStatusFile),
             ))->run();
+            $globalTables = IpRuleConfiguration::contextTables(
+                'global',
+                $paths->ipTableIpv4File,
+                $paths->ipTableIpv6File,
+            );
 
             sinkholeTestAssertSame('warning', $result['status'], 'A failed refresh with saved data must warn.');
             sinkholeTestAssertSame("192.0.2.0/24\n", file_get_contents($paths->ipListFile($identifier)), 'The failed refresh must retain the last-good copy.');
@@ -1044,16 +1504,123 @@ RULES;
                 'The update job must load the complete anchor from its fixed file.',
             );
             sinkholeTestAssertContains(
-                "/sbin/pfctl -a 'sinkhole/ip' -t 'sinkhole_block_v4' -T replace -f '"
-                    . $paths->ipTableIpv4File . "'",
+                "/sbin/pfctl -a 'sinkhole/ip' -t '"
+                    . $globalTables['ipv4']['block_table']
+                    . "' -T replace -f '"
+                    . $globalTables['ipv4']['block_file']
+                    . "'",
                 implode("\n", $sinkholeStubCommands),
-                'The updater must replace the existing IPv4 table through the stub.',
+                'The updater must replace the Global IPv4 context table through the stub.',
             );
             sinkholeTestAssertContains(
-                "/sbin/pfctl -a 'sinkhole/ip' -t 'sinkhole_block_v6' -T replace -f '"
-                    . $paths->ipTableIpv6File . "'",
+                "/sbin/pfctl -a 'sinkhole/ip' -t '"
+                    . $globalTables['ipv6']['block_table']
+                    . "' -T replace -f '"
+                    . $globalTables['ipv6']['block_file']
+                    . "'",
                 implode("\n", $sinkholeStubCommands),
-                'The updater must replace the existing IPv6 table through the stub.',
+                'The updater must replace the Global IPv6 context table through the stub.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'IP updater writes independent block files from each context source selection' => static function (): void {
+        global $sinkholeStubInterfaceAddresses;
+        global $sinkholeStubInterfaces;
+        global $sinkholeStubRealInterfaces;
+
+        $root = sinkholeTestTemporaryDirectory();
+        $globalListIdentifier = '11111111111111111111111111111111';
+        $networkListIdentifier = '22222222222222222222222222222222';
+        $networkIdentifier = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        $globalUrl = 'https://example.test/global-context.txt';
+        $networkUrl = 'https://example.test/network-context.txt';
+
+        try {
+            $paths = sinkholeIpTestPaths($root);
+            sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+                'ip' => [
+                    'enabled' => 'on',
+                    'interfaces' => ['item' => ['lan']],
+                    'directions' => ['item' => ['outbound']],
+                    'lists' => ['item' => [
+                        [
+                            'id' => $globalListIdentifier,
+                            'descr' => 'Invented Global feed',
+                            'url' => $globalUrl,
+                            'family' => 'ipv4',
+                            'enabled' => 'on',
+                        ],
+                        [
+                            'id' => $networkListIdentifier,
+                            'descr' => 'Invented network feed',
+                            'url' => $networkUrl,
+                            'family' => 'ipv4',
+                            'enabled' => 'on',
+                        ],
+                    ]],
+                    'list_ids' => ['item' => [$globalListIdentifier]],
+                    'countries' => ['item' => []],
+                    'account_id' => '',
+                    'license_key' => '',
+                    'allowlist' => ['item' => []],
+                ],
+                'ip_contexts' => ['item' => [[
+                    'context' => 'network:' . $networkIdentifier,
+                    'enabled' => 'on',
+                    'directions' => ['item' => ['inbound']],
+                    'list_ids' => ['item' => [$networkListIdentifier]],
+                    'countries' => ['item' => []],
+                    'allowlist' => ['item' => []],
+                ]]],
+                'networks' => ['item' => [[
+                    'id' => $networkIdentifier,
+                    'descr' => 'LAN clients',
+                    'interface' => 'lan',
+                    'lists' => ['item' => []],
+                    'allowed_domains' => ['item' => []],
+                    'enabled' => 'on',
+                ]]],
+            ]]]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN'];
+            $sinkholeStubInterfaceAddresses = ['lan' => [
+                'ipv4' => '192.0.2.1',
+                'ipv4_prefix' => 24,
+            ]];
+            $sinkholeStubRealInterfaces = ['lan' => 'igc0'];
+            $result = (new IpUpdater(
+                new PfSenseAdapter(
+                    $paths,
+                    new StateStore($paths->stateFile, $paths->statusFile),
+                ),
+                new SinkholeIpFixtureDownloadClient([
+                    $globalUrl => "198.51.100.0/24\n",
+                    $networkUrl => "203.0.113.0/24\n",
+                ]),
+                new IpParser(),
+                new IpListStore($paths),
+                $paths,
+                new GeoLite2(),
+                new IpStatusStore($paths->ipStatusFile),
+            ))->run();
+            $networkTables = IpRuleConfiguration::contextTables(
+                'network:' . $networkIdentifier,
+                $paths->ipTableIpv4File,
+                $paths->ipTableIpv6File,
+            );
+
+            sinkholeTestAssertSame('completed', $result['status'], 'Both package-wide sources must refresh.');
+            sinkholeTestAssertSame(2, $result['ipv4'], 'Status counts must include both context block tables.');
+            sinkholeTestAssertSame(
+                "198.51.100.0/24\n",
+                file_get_contents($paths->ipTableIpv4File),
+                'Global must contain only its selected source.',
+            );
+            sinkholeTestAssertSame(
+                "203.0.113.0/24\n",
+                file_get_contents($networkTables['ipv4']['block_file']),
+                'The network must contain only its independently selected source.',
             );
         } finally {
             sinkholeTestRemoveTemporaryDirectory($root);
@@ -1346,7 +1913,7 @@ RULES;
             $sinkholeStubCommands = [];
             $anchorStatus = $adapter->ipAnchorStatus();
             sinkholeTestAssertSame(true, $anchorStatus['loaded'], 'Status must report the current anchor as loaded.');
-            sinkholeTestAssertSame(1, $anchorStatus['rule_count'], 'Status must report the loaded block-rule count.');
+            sinkholeTestAssertSame(2, $anchorStatus['rule_count'], 'Status must report both family-specific context rules.');
             sinkholeTestAssertSame(2, $anchorStatus['ipv4_entries'], 'Status must report the IPv4 table-file size.');
             sinkholeTestAssertSame(1, $anchorStatus['ipv6_entries'], 'Status must report the IPv6 table-file size.');
 
@@ -1430,7 +1997,11 @@ RULES;
             sinkholeTestAssertTrue(!str_contains(implode("\n", $sinkholeStubLogs), $secret), 'Logs must redact the license key.');
             sinkholeTestAssertTrue(is_string($status) && !str_contains($status, $secret), 'Status must redact the license key.');
             sinkholeTestAssertTrue(is_string($metadata) && !str_contains($metadata, $secret), 'Saved IP-list metadata must redact the license key.');
-            sinkholeTestAssertTrue(is_string($page) && str_contains($page, "'password',\n    '',"), 'The saved key must never become the password input value.');
+            sinkholeTestAssertTrue(
+                is_string($page)
+                    && preg_match("/'maxmind_license_key',\\n\\s+[^\\n]+,\\n\\s+'password',\\n\\s+'',\\n/", $page) === 1,
+                'The saved key must never become the password input value.',
+            );
             sinkholeTestAssertTrue(!file_exists($paths->geoLite2MetadataFile), 'No credential may be cached when countries are not configured.');
 
             $invalid = IpConfiguration::partition(['license_key' => "bad\n"], [], []);
@@ -1466,6 +2037,17 @@ RULES;
             ] as $path) {
                 file_put_contents($path, 'invented');
             }
+            $contextTables = IpRuleConfiguration::contextTables(
+                'network:' . str_repeat('a', 32),
+                $paths->ipTableIpv4File,
+                $paths->ipTableIpv6File,
+            );
+
+            foreach (['ipv4', 'ipv6'] as $family) {
+                foreach (['client_file', 'block_file'] as $fileField) {
+                    file_put_contents($contextTables[$family][$fileField], 'invented');
+                }
+            }
 
             $adapter = new PfSenseAdapter($paths, new StateStore($paths->stateFile, $paths->statusFile));
             $sinkholeStubIpAnchorLoaded = true;
@@ -1480,6 +2062,16 @@ RULES;
             sinkholeTestAssertSame(false, file_exists($paths->ipTableIpv4File), 'Runtime table files must be removed.');
             sinkholeTestAssertSame(false, file_exists($paths->ipAnchorFile), 'Removal must delete the anchor file.');
             sinkholeTestAssertSame(false, file_exists($paths->ipAnchorDigestFile), 'Removal must delete the anchor digest.');
+
+            foreach (['ipv4', 'ipv6'] as $family) {
+                foreach (['client_file', 'block_file'] as $fileField) {
+                    sinkholeTestAssertSame(
+                        false,
+                        file_exists($contextTables[$family][$fileField]),
+                        'Removal must delete every hashed context table file.',
+                    );
+                }
+            }
         } finally {
             sinkholeTestRemoveTemporaryDirectory($root);
         }

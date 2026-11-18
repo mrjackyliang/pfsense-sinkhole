@@ -49,54 +49,56 @@ Un champ vide n’écrit rien et conserve la valeur par défaut du Resolver. [R�
 | Update Checks        | Weekly            | Choisit Daily, Weekly, Monthly ou Never pour rechercher de nouvelles versions GitHub.           |
 | Remote Notifications | Off               | Envoie aussi chaque avis de nouvelle version par les services distants configurés dans pfSense. |
 
-Chaque nouvelle version crée un avis pfSense local. **About → Check Now** exécute immédiatement le même contrôle borné sans modifier le calendrier.
+Chaque nouvelle version trouvée par un contrôle planifié crée un avis pfSense local. **About → Check Now** exécute le même contrôle borné sans modifier le calendrier, ne dépose aucun avis et empêche un contrôle planifié ultérieur d’annoncer cette version.
 
 ## Lists \{#lists}
 
-| Champ           | Valeur par défaut | Description                                                                                               |
-|-----------------|-------------------|-----------------------------------------------------------------------------------------------------------|
-| Name            | Empty             | Libellé local utilisé dans les attributions, les alertes et Status.                                       |
-| URL             | Empty             | Source HTTP ou HTTPS sans identifiants intégrés.                                                          |
-| Enabled         | On                | Inclut la source dans les mises à jour et la politique compilée lorsqu’elle est attribuée.                |
-| Global          | Off               | Applique la liste à chaque client après les décisions d’appareil et de réseau.                            |
-| Allowed Domains | Empty             | Un domaine global autorisé par ligne ; chaque entrée autorise le domaine exact et tous ses sous-domaines. |
+| Champ   | Valeur par défaut | Description                                                                               |
+|---------|-------------------|-------------------------------------------------------------------------------------------|
+| Name    | Empty             | Libellé local utilisé dans Blocking, les alertes et Status.                               |
+| URL     | Empty             | Source HTTP ou HTTPS sans identifiants intégrés.                                          |
+| Enabled | On                | Inclut la source dans les mises à jour et la politique compilée lorsqu’elle est utilisée. |
 
 **Add from Catalog** recherche à la demande dans le registre de listes d’AdGuard Home et le catalogue de flux de pfBlockerNG. L’ajout d’un résultat crée la même ligne ordinaire que la saisie manuelle de son URL.
 
 Les flux de contournement sont exclus de ce catalogue.
 
+## Blocking \{#blocking}
+
+Chaque contexte (Global, un réseau ou un appareil) possède ses deux propres champs :
+
+| Champ           | Valeur par défaut | Description                                                                                                                                           |
+|-----------------|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Lists           | Empty             | Listes DNS qui bloquent dans ce contexte. Les listes Global s’appliquent à chaque client après les décisions d’appareil et de réseau.                 |
+| Allowed Domains | Empty             | Une exception par ligne ; chacune autorise le domaine exact et tous ses sous-domaines avant les listes de ce contexte et de tout contexte plus large. |
+
 ## Services \{#services}
 
-Les sélections de services sont vides par défaut pour chaque portée. Un service du registre couvert par une protection Bypass dédiée est masqué dans Services et supprimé des sélections enregistrées ; Private Relay se configure uniquement dans l'onglet Bypass.
+Les sélections de services sont vides par défaut pour chaque contexte. Un service du registre couvert par une protection Bypass dédiée est masqué dans Services et supprimé des sélections enregistrées ; Private Relay se configure uniquement dans l'onglet Bypass.
 
 ## SafeSearch \{#safesearch}
 
-Les sélections SafeSearch sont vides par défaut pour chaque portée. Chaque portée peut verrouiller Google, YouTube (Moderate ou Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex et Pixabay, ou bloquer Qwant. [SafeSearch](/docs/configure/safesearch) liste les noms et les hôtes sécurisés.
+Les sélections SafeSearch sont vides par défaut pour chaque contexte. Chaque contexte peut verrouiller Google, YouTube (Moderate ou Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex et Pixabay, ou bloquer Qwant. [SafeSearch](/docs/configure/safesearch) liste les noms et les hôtes sécurisés.
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| Champ           | Valeur par défaut | Description                                                                                                                                                          |
-|-----------------|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | LAN               | Interface pfSense configurée dont les sous-réseaux IPv4 et IPv6 actuels identifient le réseau. Sans LAN, la première interface libre autre que WAN est sélectionnée. |
-| Lists           | Empty             | Listes DNS supplémentaires qui bloquent les clients du réseau.                                                                                                       |
-| Allowed Domains | Empty             | Une exception réseau par ligne ; chacune autorise le domaine exact et tous ses sous-domaines avant les listes de ce réseau et toute la politique globale.            |
-| Enabled         | On                | Inclut la ligne dans la correspondance des clients et la politique compilée.                                                                                         |
+| Champ     | Valeur par défaut | Description                                                                                                                                                          |
+|-----------|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface | LAN               | Interface pfSense configurée dont les sous-réseaux IPv4 et IPv6 actuels identifient le réseau. Sans LAN, la première interface libre autre que WAN est sélectionnée. |
+| Enabled   | On                | Inclut la ligne dans la correspondance des clients et la politique compilée.                                                                                         |
 
 Chaque interface ne peut apparaître qu’une fois. Une interface enregistrée devenue indisponible reste visible pour être corrigée au lieu d’être supprimée.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| Champ                    | Valeur par défaut | Description                                                                                                                              |
-|--------------------------|-------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| Name                     | Empty             | Libellé local affiché dans la politique et Status.                                                                                       |
-| Identified By            | IP address        | Choisit IP address, DHCP static mapping ou MAC address.                                                                                  |
-| IP Address / MAC Address | Empty             | Identifiant exact lorsque IP address ou MAC address est sélectionné. Le libellé suit la méthode sélectionnée.                            |
-| DHCP Static Mapping      | Empty             | Association existante choisie lorsque cette méthode d’identification est utilisée.                                                       |
-| Lists                    | Empty             | Listes DNS supplémentaires qui bloquent cet appareil.                                                                                    |
-| Allowed Domains          | Empty             | Une exception d’appareil par ligne ; chacune autorise le domaine exact et tous ses sous-domaines avant toute décision réseau ou globale. |
-| Enabled                  | On                | Inclut la ligne dans la correspondance des clients et la politique compilée.                                                             |
+| Champ               | Valeur par défaut    | Description                                                                                                     |
+|---------------------|----------------------|-----------------------------------------------------------------------------------------------------------------|
+| Name                | Empty                | Libellé local affiché dans la politique et Status.                                                              |
+| Identifiers → Type  | Une ligne IP address | Choisit IP address, DHCP static mapping ou MAC address pour chaque ligne qui peut être ajoutée ou supprimée.    |
+| Identifiers → Value | Empty                | Adresse IP ou MAC exacte, ou association statique DHCP existante. Au moins une ligne d’identifiant est requise. |
+| Enabled             | On                   | Inclut la ligne dans la correspondance des clients et la politique compilée.                                    |
 
-Les associations statiques utilisent leur adresse configurée et les adresses actuelles observées pour leur MAC. Une ligne MAC utilise les données actuelles ARP, NDP et des baux DHCP.
+Toutes les lignes d’identifiant correspondent au même appareil et partagent ses paramètres. Les associations statiques utilisent leur adresse configurée et les adresses actuelles observées pour leur MAC. Une ligne MAC utilise les données actuelles ARP, NDP et des baux DHCP. Les adresses atteintes par plusieurs identifiants du même appareil ne sont pas des conflits.
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Les associations statiques utilisent leur adresse configurée et les adresses ac
 |----------------------|-------------------|-------------------------------------------------------------------------------------------------------------------|
 | Description          | Empty             | Libellé local de la règle.                                                                                        |
 | Lists                | Any               | Correspond à toute liste ou uniquement aux listes configurées sélectionnées.                                      |
-| Clients              | Everyone          | Correspond à tous les clients ou uniquement aux portées réseau et appareil sélectionnées.                         |
+| Clients              | Everyone          | Correspond à tous les clients ou uniquement aux réseaux et appareils sélectionnés.                                |
 | Repeat After         | 60                | Minutes avant que la même règle, le même client, domaine et liste puissent notifier à nouveau ; accepte 1 à 1440. |
 | WebGUI Notice        | On                | Ajoute un avis pfSense lorsque la règle correspond.                                                               |
 | Remote Notifications | On                | Utilise les services de notification configurés dans pfSense lorsque la règle correspond.                         |

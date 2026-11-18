@@ -49,7 +49,7 @@ Sinkhole과 pfBlockerNG는 DNS를 동시에 필터링할 수 없습니다. pfBlo
 ## 사용자가 제어하는 항목 \{#what-stays-under-your-control}
 
 - **Lists** — 신뢰하는 출처를 URL로 추가하거나 중립적인 <Terminology title="URL을 찾아다니지 않고 잘 알려진 차단 목록 찾기" to="/docs/reference/terminology#lists-and-scopes">인기 목록 검색</Terminology>으로 찾습니다. Sinkhole은 어떤 목록도 게시하거나 추천하지 않습니다.
-- **Scopes** — 전역 목록, 한 pfSense 인터페이스나 VLAN의 목록, IP 주소·DHCP 정적 매핑·MAC 주소로 식별한 장치의 목록을 선택합니다.
+- **클라이언트와 차단** — 한 pfSense 인터페이스나 VLAN에 대한 네트워크와 하나 이상의 IP 주소·DHCP 정적 매핑·MAC 주소로 식별한 장치를 정의한 다음 Global, 각 네트워크 및 각 장치의 목록을 선택합니다.
 - **Allowed domains** — 전체 목록을 제거하지 않고 전역, 네트워크 또는 장치 수준에서 도메인과 그 하위 도메인을 허용합니다.
 - **SafeSearch** — 범위마다 안전 모드로 고정할 검색 엔진과 YouTube를 Moderate 또는 Strict 중 무엇으로 할지 선택합니다.
 - **Alerts** — 로컬 WebGUI 알림을 만들거나 pfSense에 구성된 원격 알림 서비스를 사용할 목록과 클라이언트 조합을 선택합니다.
@@ -71,6 +71,6 @@ WebGUI는 pfSense에서 선택한 언어를 따르며 영어와 그 밖의 pfSen
 ## 다음 단계 \{#next-steps}
 
 - **[패키지 설치](/docs/installation)** — 안정 릴리스 패키지를 검증하고 설치합니다.
-- **[Sinkhole 설정](/docs/first-run)** — 첫 번째 목록을 추가하고 범위를 선택한 다음 활성 세대를 확인합니다.
-- **[범위 이해](/docs/configure/scopes)** — 장치, 네트워크, 전역 순서로 이루어지는 정확한 판단 절차를 확인합니다.
+- **[Sinkhole 설정](/docs/first-run)** — 첫 번째 목록을 추가하고 차단할 위치를 선택한 다음 활성 세대를 확인합니다.
+- **[클라이언트와 차단 이해](/docs/configure/scopes)** — 장치, 네트워크, 전역 순서로 이루어지는 정확한 판단 절차를 확인합니다.
 - **[안전 모델 검토](/docs/safety/how-updates-work)** — 저장된 사본과 원자적 배포가 DNS 가용성을 유지하는 방식을 확인합니다.

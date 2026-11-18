@@ -31,21 +31,21 @@ Sinkhole se niega a guardar **Enable** mientras pfBlockerNG esté instalado y ac
 
 1. Abra **Lists** y añada la URL de una fuente en la que confíe, o abra **Add from Catalog** para buscar en los dos catálogos bajo demanda.
 2. Asigne un nombre local a la fuente y mantenga **Enabled** seleccionado para que Sinkhole la descargue.
-3. Seleccione **Global** solo cuando la lista deba aplicarse después de todas las reglas de dispositivo y red.
-4. Añada los **Allowed Domains** globales necesarios, uno por línea, cuando deba permitirse un falso positivo conocido.
+3. Abra **Blocking**, quédese en **Global** y seleccione la lista solo cuando deba aplicarse después de todas las reglas de dispositivo y red.
+4. Añada en la misma página los **Allowed Domains** globales necesarios, uno por línea, cuando deba permitirse un falso positivo conocido.
 
 Sinkhole no recomienda ninguna fuente. [Listas y copias guardadas](/docs/configure/lists) explica los formatos aceptados y cómo los resultados del catálogo se convierten en filas de lista ordinarias.
 
-<img src={listsTab} alt="Pestaña Lists con cinco listas de bloqueo de demostración, sus columnas Global y Used By, y dos dominios permitidos globales" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Pestaña Lists con cinco listas de bloqueo de demostración y su columna Used By" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-## Añadir ámbitos opcionales \{#add-optional-scopes}
+## Añadir redes y dispositivos opcionales \{#add-optional-networks-and-devices}
 
-Abra **Scopes** cuando una red o un dispositivo necesite una política adicional al nivel global:
+Abra **Clients** cuando una red o un dispositivo necesite una política adicional al nivel Global:
 
-- Añada un **Network** para una interfaz de pfSense configurada y seleccione sus listas y dominios permitidos.
-- Añada un **Device** por dirección IP, asignación DHCP estática o dirección MAC y seleccione sus listas y dominios permitidos.
+- Añada un **Network** para una interfaz de pfSense configurada.
+- Añada un **Device** con una o más direcciones IP, asignaciones DHCP estáticas o direcciones MAC.
 
-Un dispositivo hereda la red en la que se encuentra actualmente, y la red hereda las listas globales. [Ámbitos y dominios permitidos](/docs/configure/scopes) muestra el orden de decisión que determina si un nombre se permite o se bloquea.
+Después abra **Blocking**, elija la red o el dispositivo en la fila de contextos y seleccione sus listas y dominios permitidos. Un dispositivo hereda la red en la que se encuentra actualmente, y la red hereda las listas de Global. [Clientes y bloqueo](/docs/configure/scopes) muestra el orden de decisión que determina si un nombre se permite o se bloquea.
 
 ## Activar y actualizar \{#enable-and-update}
 

@@ -18,19 +18,22 @@ Do diagnostyki i tych samych trybów konserwacji, które uruchamiają cron i Web
 
 ## Tryby poleceń \{#command-modes}
 
-| Polecenie                    | Działanie                                                                                           |
-|------------------------------|-----------------------------------------------------------------------------------------------------|
-| `sinkhole --update`          | Uruchamia zaplanowaną ścieżkę aktualizacji list DNS, Bypass i włączonych list IP/krajów.            |
-| `sinkhole --manual`          | Uruchamia pełną aktualizację ręczną używaną przez **Status → Update Now**.                          |
-| `sinkhole --apply`           | Stosuje zapisaną konfigurację w tle i wykonuje tylko wymagane operacje pobierania.                  |
-| `sinkhole --refresh-clients` | Przebudowuje podsieci i adresy urządzeń w mapie klientów.                                           |
-| `sinkhole --alerts`          | Odczytuje zdarzenia blokowania i przetwarza pasujące reguły alertów.                                |
-| `sinkhole --redirect-check`  | Uzgadnia żądane reguły przekierowania zwykłego DNS oraz niezależnie załadowane kotwice Bypass i IP. |
-| `sinkhole --check-updates`   | Sprawdza najnowsze wydanie GitHub i synchronizuje powiadomienie o aktualizacji.                     |
-| `sinkhole --self-update`     | Pobiera, weryfikuje, kontroluje i instaluje najnowsze wydanie oczekujące w kolejce.                 |
-| `sinkhole --help`            | Wyświetla obsługiwany wiersz użycia.                                                                |
+| Polecenie                              | Działanie                                                                                           |
+|----------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `sinkhole --update`                    | Uruchamia zaplanowaną ścieżkę aktualizacji list DNS, Bypass i włączonych list IP/krajów.            |
+| `sinkhole --manual`                    | Uruchamia pełną aktualizację ręczną używaną przez **Status → Update Now**.                          |
+| `sinkhole --apply`                     | Stosuje zapisaną konfigurację w tle i wykonuje tylko wymagane operacje pobierania.                  |
+| `sinkhole --refresh-clients`           | Przebudowuje podsieci i adresy urządzeń w mapie klientów.                                           |
+| `sinkhole --alerts`                    | Odczytuje zdarzenia blokowania i przetwarza pasujące reguły alertów.                                |
+| `sinkhole --redirect-check`            | Uzgadnia żądane reguły przekierowania zwykłego DNS oraz niezależnie załadowane kotwice Bypass i IP. |
+| `sinkhole --check-updates`             | Sprawdza najnowsze wydanie GitHub i synchronizuje zaplanowane powiadomienie o aktualizacji.         |
+| `sinkhole --check-updates --no-notice` | Sprawdza wydanie bez powiadomienia i zapisuje nowszą wersję jako zgłoszoną.                         |
+| `sinkhole --self-update`               | Czeka na aktualizację list, IP lub Bypass, a następnie weryfikuje i instaluje wydanie z kolejki.    |
+| `sinkhole --help`                      | Wyświetla obsługiwany wiersz użycia.                                                                |
 
-W automatyzacji używaj zainstalowanej ścieżki, na przykład `/usr/local/sbin/sinkhole --refresh-clients`. Tryby wzajemnie się wykluczają, a aktualizacja list DNS/Bypass/IP lub automatyczna aktualizacja, która zastanie zajętą wspólną blokadę aktualizacji, kończy się bez uruchamiania konkurencyjnej operacji.
+W automatyzacji używaj zainstalowanej ścieżki, na przykład `/usr/local/sbin/sinkhole --refresh-clients`. Tryby wzajemnie się wykluczają, a `--no-notice` jest prawidłowe tylko z `--check-updates`.
+
+Kontrole wydań czekają do 30 sekund na blokadę wydania i nie zajmują blokady zadań pakietu. Automatyczna aktualizacja najpierw zajmuje blokadę wydania, a następnie czeka do 30 minut, aż trwająca aktualizacja list DNS, Bypass lub IP zwolni blokadę zadań pakietu.
 
 ## Trwałe pliki w `/cf/conf/sinkhole` \{#persistent-files}
 
@@ -73,7 +76,8 @@ Pamięci podręczne katalogów i wygenerowane tabele IP są odtwarzalnymi danymi
 
 | Ścieżka                         | Przeznaczenie                                                                           |
 |---------------------------------|-----------------------------------------------------------------------------------------|
-| `sinkhole-update.lock`          | Wspólna długotrwała blokada aktualizacji list, IP i pakietu.                            |
+| `sinkhole-update.lock`          | Wspólna długotrwała blokada zadań list, Bypass, IP i instalacji pakietu.                |
+| `sinkhole-release.lock`         | Blokada koordynacji kontroli wydań i automatycznej aktualizacji.                        |
 | `sinkhole-runtime.lock`         | Krótka blokada kompilacji, aktywacji i integracji z Resolver.                           |
 | `sinkhole-clients.lock`         | Blokada odświeżania mapy klientów.                                                      |
 | `sinkhole-alerts.lock`          | Blokada przetwarzania alertów.                                                          |

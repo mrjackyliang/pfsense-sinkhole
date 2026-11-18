@@ -1,7 +1,7 @@
 ---
 id: lists
 title: 清單和已儲存副本
-description: 通過 URL 或目錄新增 DNS 清單，使用 hosts、域名和 adblock 風格格式，控制全局策略，並在失敗時保留最後一份有效副本。
+description: 通過 URL 或目錄新增 DNS 清單，使用 hosts、域名和 adblock 風格格式，並在失敗時保留最後一份有效副本。
 keywords:
   - sinkhole for pfsense
   - 封鎖清單
@@ -21,7 +21,7 @@ import catalogSearch from './_assets_/lists-2.png';
 ## 為什麼使用已儲存清單？ \{#why-use-saved-lists}
 
 1. 讓 DNS 不依賴清單主機，因此緩慢或失敗的下載不會中斷名稱解析。
-2. 每個來源只下載一次，因此同一份已儲存副本可以用於全局、網路和設備作用域。
+2. 每個來源只下載一次，因此同一份已儲存副本可以用於 Global、每個網路和每台設備。
 3. 新下載或解析失敗時保留上一份有效副本，因此損壞的輸入不會替換可用策略。
 4. 在後台更新清單，因此 Resolver 重啓或重新載入永遠不必等待網路。
 
@@ -29,14 +29,15 @@ import catalogSearch from './_assets_/lists-2.png';
 
 打開 **Firewall → Sinkhole → Lists**，選擇封鎖清單表格下方的 **Add**，然後在編輯頁面填寫 **Add Block List**：
 
-| 字段      | 說明                        |
-|---------|---------------------------|
-| Name    | 在分配、警報和 Status 中顯示的本地標籤。  |
-| URL     | 不包含嵌入憑據的 HTTP 或 HTTPS 來源。 |
-| Enabled | 下載來源，並使其可供已分配的作用域使用。      |
-| Global  | 在設備和網路決定之後，將來源應用於每個用戶端。   |
+| 字段      | 說明                                   |
+|---------|--------------------------------------|
+| Name    | 在 Blocking、Alerts 和 Status 中顯示的本地標籤。 |
+| URL     | 不包含嵌入憑據的 HTTP 或 HTTPS 來源。            |
+| Enabled | 下載來源，讓 Blocking 可以使用它。               |
 
 儲存後會返回 Lists 分頁，並啟動同一條經過驗證的後台套用路徑。選擇某行的鉛筆圖示或雙擊該行即可編輯。停用的行仍保留設定，但會在表格中顯示為灰色，更新程式和編譯策略也不會使用它。
+
+Lists 只是清單管理器。哪些清單套用於 Global、某個網路或某台設備，需在 [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains) 中選擇；**Used By** 欄會計入 Global 以及每個選取該清單的網路和設備。
 
 ## 可接受的 DNS 格式 \{#accepted-dns-formats}
 
@@ -60,7 +61,7 @@ Sinkhole 接受以下標準格式，並將有效名稱規範化為一個已儲�
 
 每張卡片顯示清單名稱、維護者或類別（以目前未作為分組依據的一項為準）、來源目錄、兩行說明、主頁以及 **Add** 或 **Added** 狀態。卡片不顯示評分、徽章或推薦。選擇 **Add** 會建立一個普通清單行，其 URL 可像任何手動輸入的來源一樣分配。
 
-新清單（包括從目錄新增的清單）一開始不會勾選 **Global**，因此在您勾選 Global 或在某個作用域中選取它們之前，不會封鎖任何內容。
+新清單（包括從目錄新增的清單）在您於 Blocking 中為 Global、某個網路或某台設備選取它們之前，不會封鎖任何內容。
 
 每張卡片的 **Contents** 行顯示 **Domains**。新增目錄結果時，其目錄名稱保持不變。
 
@@ -72,7 +73,7 @@ Sinkhole 接受以下標準格式，並將有效名稱規範化為一個已儲�
 
 ## 設定全局允許域名 \{#set-global-allowed-domains}
 
-清單和目錄面板下方的 **Allowed Domains** 部分定義全域例外。每一行允許該網域及其子網域通過繼承的全域清單。選擇該部分下方的 **Save** 以套用這項頁面級設定。
+全域例外位於 **Blocking → Global** 的 **Allowed Domains** 方塊中。每一行允許該網域及其子網域通過全域清單。選擇 **Save** 以套用它們。
 
 全局允許域名在設備和網路規則之後檢查，因此不能覆蓋已在更具體的設備或網路層級封鎖查詢的清單。
 

@@ -31,7 +31,7 @@ Apri **Firewall → Sinkhole → Status** per visualizzare questi pannelli:
 | Lists                   | URL della lista DNS, numero di voci salvate, ultimo aggiornamento riuscito e ultimo errore.                                                                                        |
 | Popular-List Catalogs   | Ultimo recupero e ultimo errore per le fonti di catalogo AdGuard Home e pfBlockerNG.                                                                                               |
 | Invalid Saved Rows      | Righe di lista non valide che rimangono disponibili per la riparazione; mostrato solo quando esistono.                                                                             |
-| Scopes                  | Ora ed errore di ricostruzione della mappa dei client, seguiti da pannelli Networks e Devices separati.                                                                            |
+| Clients                 | Ora ed errore di ricostruzione della mappa dei client, seguiti da pannelli Networks e Devices separati.                                                                            |
 | Blocked Services        | Recupero del registro, ultimo errore e servizi selezionati per ambito.                                                                                                             |
 | SafeSearch              | Motori per ambito e, per ogni host sicuro, indirizzi, ultimo controllo ed errore.                                                                                                  |
 | Alerts                  | Ultima esecuzione, eventi letti o obsoleti, notifiche inviate o trattenute, eventi scartati e ultimo errore.                                                                       |
@@ -62,17 +62,17 @@ Quando Sinkhole è disabilitato intenzionalmente, **Deployment Needed** mostra `
 
 ## Stato di compilazione e distribuzione \{#compile-and-deployment-state}
 
-| Campo                            | Significato                                                                                                                                                                                                                     |
-|----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Compiled Names                   | Nomi nell’indice di blocco DNS distribuito (liste e servizi bloccati) più i nomi nell’indice Bypass, rispetto al limite di 10.000.000 di nomi.                                                                                  |
-| Compile Needed                   | I criteri salvati sono cambiati o l’ultima compilazione non è terminata correttamente.                                                                                                                                          |
-| Compiled Generation              | Identificatore prodotto dall’ultima compilazione riuscita.                                                                                                                                                                      |
-| Deployment Needed                | Il contenuto compilato non è quello distribuito per Unbound oppure l’integrazione è inattiva.                                                                                                                                   |
-| Deployed Generation              | Identificatore nel manifesto runtime attualmente distribuito.                                                                                                                                                                   |
-| Loaded Generation                | Identificatore che il modulo Unbound segnala come caricato.                                                                                                                                                                     |
-| Update Running                   | Mostrato solo mentre un processo attivo detiene il lock condiviso degli aggiornamenti: un aggiornamento DNS, Bypass o IP, un’applicazione delle impostazioni, un controllo o aggiornamento del pacchetto, oppure una rimozione. |
-| Removal in Progress              | Mostrato solo mentre il marcatore persistente di rimozione è impostato e l’integrazione viene ritirata.                                                                                                                         |
-| DNS Resolver Python Script Owner | Valore corrente dell’unico slot `python_script` del Resolver oppure `None`.                                                                                                                                                     |
+| Campo                            | Significato                                                                                                                                                                                                                 |
+|----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compiled Names                   | Nomi nell’indice di blocco DNS distribuito (liste e servizi bloccati) più i nomi nell’indice Bypass, rispetto al limite di 10.000.000 di nomi.                                                                              |
+| Compile Needed                   | I criteri salvati sono cambiati o l’ultima compilazione non è terminata correttamente.                                                                                                                                      |
+| Compiled Generation              | Identificatore prodotto dall’ultima compilazione riuscita.                                                                                                                                                                  |
+| Deployment Needed                | Il contenuto compilato non è quello distribuito per Unbound oppure l’integrazione è inattiva.                                                                                                                               |
+| Deployed Generation              | Identificatore nel manifesto runtime attualmente distribuito.                                                                                                                                                               |
+| Loaded Generation                | Identificatore che il modulo Unbound segnala come caricato.                                                                                                                                                                 |
+| Update Running                   | Mostrato solo mentre un processo attivo detiene il lock condiviso delle attività del pacchetto: un aggiornamento DNS, Bypass o IP, un’applicazione delle impostazioni, un’installazione del pacchetto oppure una rimozione. |
+| Removal in Progress              | Mostrato solo mentre il marcatore persistente di rimozione è impostato e l’integrazione viene ritirata.                                                                                                                     |
+| DNS Resolver Python Script Owner | Valore corrente dell’unico slot `python_script` del Resolver oppure `None`.                                                                                                                                                 |
 
 La pagina mostra un riquadro di avviso quando compilazione o distribuzione sono in sospeso, incluso il motivo registrato. Identificatori compilato, distribuito e caricato corrispondenti indicano che i criteri salvati hanno raggiunto il modulo in esecuzione.
 
@@ -80,7 +80,7 @@ La pagina mostra un riquadro di avviso quando compilazione o distribuzione sono 
 
 ## Stato degli ambiti e degli avvisi \{#scope-and-alert-state}
 
-Il riepilogo Scopes riporta lo stato di ricostruzione della mappa dei client. I pannelli separati **Networks** e **Devices** riportano i CIDR correnti di ogni interfaccia e gli indirizzi correnti di ogni dispositivo. Un conflitto indica un indirizzo rivendicato da più dispositivi; il primo nell’ordine della tabella possiede quell’indirizzo per i criteri.
+Il riepilogo Clients riporta lo stato di ricostruzione della mappa dei client. I pannelli separati **Networks** e **Devices** riportano i CIDR correnti di ogni interfaccia e tutti gli identificatori configurati e gli indirizzi correnti di ogni dispositivo. Un conflitto indica un indirizzo rivendicato da più dispositivi; il primo nell’ordine della tabella possiede quell’indirizzo per i criteri. Due identificatori dello stesso dispositivo possono raggiungere un indirizzo senza creare un conflitto.
 
 Il pannello **Alerts** descrive solo l’ultima attività eseguita ogni minuto. **Notifications held back** include la soppressione dovuta ai limiti o agli avvisi non letti, mentre **Events dropped by module** indica che la coda limitata degli eventi in memoria o su disco era piena.
 

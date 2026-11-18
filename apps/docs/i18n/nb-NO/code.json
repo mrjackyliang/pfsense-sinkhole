@@ -105,19 +105,19 @@
     "message": "Sinkhole-sider"
   },
   "home.showcase.scopes.label": {
-    "message": "Omfang"
+    "message": "Klienter og blokkering"
   },
   "home.showcase.scopes.heading": {
     "message": "Egne regler for hvert nettverk og hver enhet"
   },
   "home.showcase.scopes.description": {
-    "message": "Gi et nettverk eller én enkelt enhet egne lister og tillatte domener. Hver DNS-forespørsel følger det mest spesifikke omfanget som passer."
+    "message": "Definer hvert nettverk og hver enhet én gang under Klienter, og gi dem deretter egne lister og tillatte domener under Blokkering. Hver DNS-forespørsel følger det mest spesifikke treffet: først enheten, så nettverket, så de globale innstillingene."
   },
   "home.showcase.scopes.link": {
-    "message": "Sett opp omfang"
+    "message": "Sett opp klienter og blokkering"
   },
   "home.showcase.scopes.alt": {
-    "message": "Sinkhole-siden Omfang med et nettverksomfang for LAN og tre enhetsomfang"
+    "message": "Sinkhole-siden Klienter med et LAN-nettverk og tre enheter"
   },
   "home.showcase.services.label": {
     "message": "Tjenester"
@@ -138,16 +138,16 @@
     "message": "Se hva som er lastet inn og hva som er utdatert"
   },
   "home.showcase.status.description": {
-    "message": "Status viser hver liste med antall oppføringer og siste oppdatering, i tillegg til omfangene, nettverkene og enhetene Sinkhole bruker akkurat nå."
+    "message": "Status viser hver liste med antall oppføringer og siste oppdatering, i tillegg til nettverkene og enhetene Sinkhole bruker akkurat nå."
   },
   "home.showcase.status.link": {
     "message": "Les om Status-siden"
   },
   "home.showcase.status.alt": {
-    "message": "Sinkhole-siden Status med panelene for lister, omfang, nettverk og enheter"
+    "message": "Sinkhole-siden Status med panelene for lister, nettverk og enheter"
   },
   "home.showcase.scopes.title": {
-    "message": "pfSense.home.arpa - Brannmur: Sinkhole: Omfang"
+    "message": "pfSense.home.arpa - Brannmur: Sinkhole: Klienter"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Brannmur: Sinkhole: Tjenester"

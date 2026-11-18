@@ -59,8 +59,8 @@ Un nombre de consulta permitido permanece permitido. Esto impide que un destino 
 
 ## SafeSearch no se aplica \{#safesearch-does-not-apply}
 
-1. Confirme que el ámbito de red o de dispositivo del cliente está activado en **Scopes** y que el buscador está marcado en **SafeSearch** para ese ámbito o para Global.
-2. Revise en **Status → SafeSearch** las direcciones del host seguro y el último error. Un host sin direcciones mantiene su buscador bloqueado para el ámbito hasta que una resolución tenga éxito.
+1. Confirme que la red o el dispositivo del cliente está activado en **Clients** y que el buscador está marcado en **SafeSearch** para esa red o ese dispositivo, o para Global.
+2. Revise en **Status → SafeSearch** las direcciones del host seguro y el último error. Un host sin direcciones mantiene su buscador bloqueado para ese contexto hasta que una resolución tenga éxito.
 3. Confirme que **Compile Needed** y **Deployment Needed** muestran `No` después de guardar.
 4. Confirme que el cliente no usa DNS cifrado ni otro resolver; la [protección contra evasiones](/docs/configure/bypass-protection) mantiene las interfaces seleccionadas en la ruta DNS de Sinkhole.
 
@@ -68,10 +68,10 @@ Un navegador puede conservar en caché la dirección normal de un buscador duran
 
 ## Un dispositivo recibe la política incorrecta \{#a-device-gets-the-wrong-policy}
 
-- Ejecute `/usr/local/sbin/sinkhole --refresh-clients` y examine **Status → Scopes**.
-- Confirme que la fila de red muestra las subredes actuales de la interfaz y que la fila del dispositivo muestra sus direcciones actuales.
+- Ejecute `/usr/local/sbin/sinkhole --refresh-clients` y examine **Status → Clients**.
+- Confirmá que la fila de red muestra las subredes actuales de la interfaz y que la fila del dispositivo muestra todos los identificadores configurados y sus direcciones actuales.
 - Resuelva cualquier valor **Conflict**, porque el primer dispositivo en el orden de la tabla gana una dirección compartida.
-- Para una asignación estática, compruebe tanto su dirección configurada como las direcciones actuales observadas para su MAC.
+- Para cada identificador de asignación estática, comprobá su dirección configurada y las direcciones actuales observadas para su MAC. Las direcciones encontradas mediante dos identificadores del mismo dispositivo no son conflictos.
 
 Las horas de finalización de las concesiones ISC pueden estar en GMT o en la hora local del firewall según la configuración de la interfaz, mientras que las horas de Kea ya son locales. Sinkhole sigue esa semántica de pfSense al decidir si una concesión es actual.
 

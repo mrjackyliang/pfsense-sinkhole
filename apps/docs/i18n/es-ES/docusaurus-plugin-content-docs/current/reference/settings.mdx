@@ -49,54 +49,56 @@ Un campo vacío no escribe nada y conserva el valor predeterminado del Resolver.
 | Update Checks        | Weekly         | Selecciona comprobaciones Daily, Weekly, Monthly o Never para nuevas versiones de GitHub.         |
 | Remote Notifications | Off            | También envía cada aviso de nueva versión mediante los servicios remotos configurados en pfSense. |
 
-Cada versión nueva crea un aviso local de pfSense. **About → Check Now** ejecuta de inmediato la misma comprobación limitada sin cambiar el horario.
+Cada versión nueva encontrada por una comprobación programada crea un aviso local de pfSense. **About → Check Now** ejecuta la misma comprobación limitada sin cambiar el horario, no crea ningún aviso e impide que una comprobación programada posterior anuncie esa versión.
 
 ## Lists \{#lists}
 
-| Campo           | Predeterminado | Descripción                                                                                            |
-|-----------------|----------------|--------------------------------------------------------------------------------------------------------|
-| Name            | Empty          | Etiqueta local usada en asignaciones, alertas y Status.                                                |
-| URL             | Empty          | Fuente HTTP o HTTPS sin credenciales incrustadas.                                                      |
-| Enabled         | On             | Incluye la fuente en las actualizaciones y en la política compilada cuando está asignada.              |
-| Global          | Off            | Aplica la lista a todos los clientes después de las decisiones de dispositivo y red.                   |
-| Allowed Domains | Empty          | Un dominio permitido global por línea; cada entrada permite el dominio exacto y todos sus subdominios. |
+| Campo   | Predeterminado | Descripción                                                                        |
+|---------|----------------|------------------------------------------------------------------------------------|
+| Name    | Empty          | Etiqueta local usada en Blocking, alertas y Status.                                |
+| URL     | Empty          | Fuente HTTP o HTTPS sin credenciales incrustadas.                                  |
+| Enabled | On             | Incluye la fuente en las actualizaciones y en la política compilada cuando se usa. |
 
 **Add from Catalog** busca bajo demanda en el registro de listas de AdGuard Home y el catálogo de fuentes de pfBlockerNG. Añadir un resultado crea la misma fila ordinaria que introducir su URL manualmente.
 
 Las fuentes de bypass se excluyen de este catálogo.
 
-## Servicios \{#services}
+## Blocking \{#blocking}
 
-Las selecciones de servicios están vacías de forma predeterminada para cada ámbito. Un servicio del registro cubierto por una protección de Bypass específica se oculta de Servicios y se elimina de las selecciones guardadas; Private Relay se configura solo en la pestaña Bypass.
-
-## SafeSearch \{#safesearch}
-
-Las selecciones de SafeSearch están vacías de forma predeterminada para cada ámbito. Cada ámbito puede fijar Google, YouTube (Moderate o Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex y Pixabay, o bloquear Qwant. [SafeSearch](/docs/configure/safesearch) enumera los nombres y los hosts seguros.
-
-## Network Scopes \{#network-scopes}
+Cada contexto (Global, una red o un dispositivo) tiene sus propios dos campos:
 
 | Campo           | Predeterminado | Descripción                                                                                                                                              |
 |-----------------|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | LAN            | Interfaz de pfSense configurada cuyas subredes IPv4 e IPv6 actuales identifican la red. Sin LAN, se selecciona la primera interfaz libre que no sea WAN. |
-| Lists           | Empty          | Listas DNS adicionales que bloquean clientes en la red.                                                                                                  |
-| Allowed Domains | Empty          | Una excepción de red por línea; cada una permite el dominio exacto y todos sus subdominios antes que las listas de esa red y toda la política global.    |
-| Enabled         | On             | Incluye la fila en la coincidencia de clientes y la política compilada.                                                                                  |
+| Lists           | Empty          | Listas DNS que bloquean en este contexto. Las listas globales se aplican a todos los clientes después de las decisiones de dispositivo y red.            |
+| Allowed Domains | Empty          | Una excepción por línea; cada una permite el dominio exacto y todos sus subdominios antes que las listas de este contexto y de cada contexto más amplio. |
+
+## Servicios \{#services}
+
+Las selecciones de servicios están vacías de forma predeterminada para cada contexto. Un servicio del registro cubierto por una protección de Bypass específica se oculta de Servicios y se elimina de las selecciones guardadas; Private Relay se configura solo en la pestaña Bypass.
+
+## SafeSearch \{#safesearch}
+
+Las selecciones de SafeSearch están vacías de forma predeterminada para cada contexto. Cada contexto puede fijar Google, YouTube (Moderate o Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex y Pixabay, o bloquear Qwant. [SafeSearch](/docs/configure/safesearch) enumera los nombres y los hosts seguros.
+
+## Networks \{#networks}
+
+| Campo     | Predeterminado | Descripción                                                                                                                                              |
+|-----------|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface | LAN            | Interfaz de pfSense configurada cuyas subredes IPv4 e IPv6 actuales identifican la red. Sin LAN, se selecciona la primera interfaz libre que no sea WAN. |
+| Enabled   | On             | Incluye la fila en la coincidencia de clientes y la política compilada.                                                                                  |
 
 Cada interfaz solo puede aparecer una vez. Una interfaz guardada que ya no esté disponible sigue visible para corregirla en vez de descartarse.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| Campo                    | Predeterminado | Descripción                                                                                                                                |
-|--------------------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| Name                     | Empty          | Etiqueta local mostrada en la política y Status.                                                                                           |
-| Identified By            | IP address     | Selecciona IP address, DHCP static mapping o MAC address.                                                                                  |
-| IP Address / MAC Address | Empty          | Identificador exacto cuando se selecciona IP address o MAC address. La etiqueta sigue el método seleccionado.                              |
-| DHCP Static Mapping      | Empty          | Asignación existente seleccionada cuando se usa ese método de identificación.                                                              |
-| Lists                    | Empty          | Listas DNS adicionales que bloquean este dispositivo.                                                                                      |
-| Allowed Domains          | Empty          | Una excepción de dispositivo por línea; cada una permite el dominio exacto y todos sus subdominios antes de cada decisión de red y global. |
-| Enabled                  | On             | Incluye la fila en la coincidencia de clientes y la política compilada.                                                                    |
+| Campo               | Predeterminado         | Descripción                                                                                                          |
+|---------------------|------------------------|----------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty                  | Etiqueta local mostrada en la política y Status.                                                                     |
+| Identifiers → Type  | Una fila de IP address | Selecciona IP address, DHCP static mapping o MAC address en cada fila que se puede añadir o quitar.                  |
+| Identifiers → Value | Empty                  | Dirección IP o MAC exacta, o una asignación estática DHCP existente. Se requiere al menos una fila de identificador. |
+| Enabled             | On                     | Incluye la fila en la coincidencia de clientes y la política compilada.                                              |
 
-Las asignaciones estáticas usan su dirección configurada y las direcciones actuales observadas para la MAC de la asignación. Una fila MAC usa los datos actuales de ARP, NDP y concesiones DHCP.
+Todas las filas de identificadores corresponden al mismo dispositivo y comparten su configuración. Las asignaciones estáticas usan su dirección configurada y las direcciones actuales observadas para la MAC de la asignación. Una fila MAC usa los datos actuales de ARP, NDP y concesiones DHCP. Las direcciones alcanzadas por varios identificadores del mismo dispositivo no son conflictos.
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Las asignaciones estáticas usan su dirección configurada y las direcciones act
 |----------------------|----------------|--------------------------------------------------------------------------------------------------------|
 | Description          | Empty          | Etiqueta local de la regla.                                                                            |
 | Lists                | Any            | Coincide con cualquier lista o solo con las listas configuradas seleccionadas.                         |
-| Clients              | Everyone       | Coincide con todos o con los ámbitos de red y dispositivo seleccionados.                               |
+| Clients              | Everyone       | Coincide con todos o con las redes y los dispositivos seleccionados.                                   |
 | Repeat After         | 60             | Minutos antes de que la misma regla, cliente, dominio y lista vuelvan a notificar; acepta de 1 a 1440. |
 | WebGUI Notice        | On             | Añade un aviso de pfSense cuando coincide la regla.                                                    |
 | Remote Notifications | On             | Usa los servicios de notificación configurados de pfSense cuando coincide la regla.                    |

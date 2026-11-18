@@ -49,7 +49,7 @@ Sinkhole og pfBlockerNG kan ikke filtrere DNS samtidig. Sinkhole forblir inaktiv
 ## Dette forblir under din kontroll \{#what-stays-under-your-control}
 
 - **Lists** — Legg til kilder du stoler på via URL, eller finn dem med det nøytrale <Terminology title="Finn kjente blokkeringslister uten å lete etter URL-er" to="/docs/reference/terminology#lists-and-scopes">søket etter populære lister</Terminology>. Sinkhole publiserer eller anbefaler ingen liste.
-- **Scopes** — Velg globale lister, lister for ett pfSense-grensesnitt eller VLAN og lister for en enhet identifisert med IP-adresse, statisk DHCP-tilordning eller MAC-adresse.
+- **Klienter og blokkering** — Definer et nettverk for ett pfSense-grensesnitt eller VLAN og en enhet som identifiseres med én eller flere IP-adresser, statiske DHCP-tilordninger og MAC-adresser, og velg deretter listene for Global, hvert nettverk og hver enhet.
 - **Allowed domains** — Tillat et domene og underdomenene på globalt nivå, nettverksnivå eller enhetsnivå uten å fjerne en hel liste.
 - **SafeSearch** — Velg hvilke søkemotorer som låses i sikker modus for hvert omfang, og om YouTube skal være Moderate eller Strict.
 - **Alerts** — Velg kombinasjonene av lister og klienter som oppretter lokale WebGUI-varsler eller bruker de konfigurerte eksterne varslingstjenestene i pfSense.
@@ -71,7 +71,7 @@ Dokumentasjonssiden tilbyr engelsk og de 17 andre pfSense-språkvariantene. Over
 ## Neste trinn \{#next-steps}
 
 - **[Installer pakken](/docs/installation)** — Kontroller og installer den stabile utgivelsespakken.
-- **[Konfigurer Sinkhole](/docs/first-run)** — Legg til en første liste, velg omfanget og kontroller den aktive generasjonen.
-- **[Forstå omfang](/docs/configure/scopes)** — Følg den nøyaktige avgjørelsesrekkefølgen for enhet, nettverk og globalt nivå.
+- **[Konfigurer Sinkhole](/docs/first-run)** — Legg til en første liste, velg hvor den blokkerer, og kontroller den aktive generasjonen.
+- **[Forstå klienter og blokkering](/docs/configure/scopes)** — Følg den nøyaktige avgjørelsesrekkefølgen for enhet, nettverk og globalt nivå.
 - **[Se gjennom sikkerhetsmodellen](/docs/safety/how-updates-work)** — Se hvordan lagrede kopier og atomisk distribusjon holder DNS tilgjengelig.
 

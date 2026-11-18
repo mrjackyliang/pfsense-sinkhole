@@ -9,6 +9,7 @@ use PfSense\Sinkhole\Runtime\Compiler;
 use PfSense\Sinkhole\Runtime\FileSystem;
 use PfSense\Sinkhole\Runtime\PackagePaths;
 use PfSense\Sinkhole\Runtime\PfSenseAdapter;
+use PfSense\Sinkhole\Runtime\RestoreHeal;
 use PfSense\Sinkhole\Runtime\RestoreHealReleaseNotVerifiableException;
 use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Runtime\StateStore;
@@ -207,6 +208,7 @@ require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole.inc');
  * @return PackagePaths
  *
  * @since 1.0.0
+ * @since 1.2.4
  */
 function sinkholeAdapterTestPaths(string $root): PackagePaths
 {
@@ -223,6 +225,7 @@ function sinkholeAdapterTestPaths(string $root): PackagePaths
         'runtime_root_directory' => $root . '/runtime',
         'module_source_file' => $sourceDirectory . '/sinkhole_unbound.py',
         'update_lock_file' => $root . '/sinkhole-update.lock',
+        'release_lock_file' => $root . '/sinkhole-release.lock',
         'runtime_lock_file' => $root . '/sinkhole-runtime.lock',
         'client_lock_file' => $root . '/sinkhole-clients.lock',
         'alert_lock_file' => $root . '/sinkhole-alerts.lock',
@@ -535,7 +538,7 @@ sinkholeTestRun([
             sinkholeTestAssertSame(
                 array_map(
                     static fn (string $key): string => \PfSense\Sinkhole\Runtime\Translator::translateForLocale($locale, $key),
-                    ['general', 'lists', 'services', 'safesearch', 'scopes', 'alerts', 'bypass', 'ip', 'status', 'about'],
+                    ['general', 'clients', 'lists', 'blocking_tab', 'services', 'safesearch', 'alerts', 'bypass', 'ip', 'status', 'about'],
                 ),
                 array_column(pfsensePackageSinkholeTabs('status'), 0),
                 'Every shared page tab must render for ' . $locale . '.',
@@ -964,24 +967,25 @@ sinkholeTestRun([
         sinkholeTestAssertSame('root', $restoreItems[0]['who'] ?? null, 'Recovery must run as root.');
         $command = (string) ($restoreItems[0]['command'] ?? '');
 
-        foreach ([
-            UpdateManager::RESTORE_HEAL_MARKER,
-            '/usr/sbin/daemon -f /bin/sh -c',
-            UpdateManager::PACKAGE_SYNC_FLAG,
-            '/usr/local/sbin/pkg info -e $p',
-            '/usr/local/sbin/pkg add -f',
-            '/sbin/sha256 -q',
-            UpdateManager::DOWNLOAD_PREFIX . 'v1.2.2/pfSense-pkg-Sinkhole-1.2.2.pkg',
-            $firstSha256,
-        ] as $expectedCommandPart) {
-            sinkholeTestAssertContains(
-                $expectedCommandPart,
-                $command,
-                'The recovery command must contain ' . $expectedCommandPart . '.',
-            );
-        }
+        sinkholeTestAssertSame(
+            ': sinkhole-restore-heal; /usr/sbin/daemon -f -p /var/run/sinkhole-restore-heal.pid /bin/sh -c '
+                . escapeshellarg(RestoreHeal::SCRIPT)
+                . " rh 'pfSense-pkg-Sinkhole' 'mrjackyliang/pfsense-sinkhole' '"
+                . $firstSha256
+                . "' '1.2.2' 'sinkhole'",
+            $command,
+            'The recovery command must be the shared recovery program with Sinkhole\'s arguments.',
+        );
+        sinkholeTestAssertSame(
+            'p=$1;r=$2;h=$3;v=$4;g=$5-restore-heal;d=/conf/$5/restore-heal;n=$p-$v.pkg;c=$d/$n;t=$c.tmp;L(){ /usr/bin/logger -t $g "$1 $v";};[ -e /conf/needs_package_sync ]&&{ L deferred;exit 0;};/usr/local/sbin/pkg info -e $p&&exit 0;k(){ [ "$(/sbin/sha256 -q $1 2>/dev/null)" = $h ];};if k $c;then L cache;else /bin/rm -f $t;L fetch;/bin/mkdir -p $d&&/usr/bin/fetch -q -T 30 -o $t https://github.com/$r/releases/download/v$v/$n||{ /bin/rm -f $t;L fetch-failed;exit 1;};k $t||{ /bin/rm -f $t;L checksum-failed;exit 1;};/bin/rm -f $d/*.pkg;/bin/mv -f $t $c||{ L cache-failed;exit 1;};fi;L install;/usr/local/sbin/pkg add -f $c >/dev/null 2>&1||{ L install-failed;exit 1;};L installed',
+            RestoreHeal::SCRIPT,
+            'The recovery program must match the shared Nova program byte for byte.',
+        );
+
+        $longMetadata = UpdateManager::restoreHealMetadataFromChecksum('10.10.10', $firstSha256);
+        sinkholeTestAssertTrue(is_array($longMetadata), 'A two-digit release must produce recovery metadata.');
         sinkholeTestAssertTrue(
-            strlen($command) < 1000,
+            strlen(pfsensePackageSinkholeBuildRestoreHealCommand($longMetadata)) < 1000,
             'The recovery command must fit FreeBSD cron\'s command buffer.',
         );
 
@@ -1059,7 +1063,7 @@ sinkholeTestRun([
         ));
         sinkholeTestAssertSame(1, count($refreshedRestoreItems), 'Refresh must replace rather than duplicate recovery.');
         sinkholeTestAssertContains(
-            'v1.2.3/pfSense-pkg-Sinkhole-1.2.3.pkg',
+            "' '1.2.3' 'sinkhole'",
             (string) ($refreshedRestoreItems[0]['command'] ?? ''),
             'Refresh must pin the newly installed release.',
         );
@@ -1165,7 +1169,44 @@ sinkholeTestRun([
         sinkholeTestAssertSame(1, $sinkholeStubConfigureCronCount, 'A definite 404 must apply cron once.');
         sinkholeTestAssertSame([], $sinkholeStubLogs, 'A definite 404 is not a transient failure.');
     },
-    'restore-heal cron removal honors deliberate uninstall restore and Keep Settings' => static function (): void {
+    'restore-heal cron replaces an older-format entry for the installed version' => static function (): void {
+        $metadata = UpdateManager::restoreHealMetadataFromChecksum('1.2.3', str_repeat('d', 64));
+        sinkholeTestAssertTrue(is_array($metadata), 'The legacy fixture needs valid recovery metadata.');
+        sinkholeStubReset([
+            'cron' => [
+                'item' => [[
+                    'minute' => '*/15',
+                    'hour' => '*',
+                    'mday' => '*',
+                    'month' => '*',
+                    'wday' => '*',
+                    'who' => 'root',
+                    'command' => UpdateManager::RESTORE_HEAL_MARKER
+                        . " /usr/sbin/daemon -f /bin/sh -c 'l(){ /usr/bin/logger -t sinkhole \"\$1\";};p=pfSense-pkg-Sinkhole;v=1.2.3;h="
+                        . str_repeat('d', 64)
+                        . ";'",
+                ]],
+            ],
+        ]);
+        $lookupCount = 0;
+
+        pfsensePackageSinkholeInstallRestoreHealCron(
+            static function () use (&$lookupCount, $metadata): array {
+                $lookupCount++;
+
+                return $metadata;
+            },
+            '1.2.3',
+        );
+
+        sinkholeTestAssertSame(1, $lookupCount, 'An older-format entry must count as stale.');
+        sinkholeTestAssertSame(
+            [pfsensePackageSinkholeBuildRestoreHealCommand($metadata)],
+            array_column(config_get_path('cron/item', []), 'command'),
+            'An older-format entry must be replaced by the current command.',
+        );
+    },
+    'restore-heal cron removal follows only the restore flag, never Keep Settings' => static function (): void {
         $directory = sinkholeTestTemporaryDirectory();
 
         try {
@@ -1177,28 +1218,73 @@ sinkholeTestRun([
             sinkholeStubReset([]);
             pfsensePackageSinkholeReconcileRestoreHealCron($metadata);
 
-            pfsensePackageSinkholeRemoveRestoreHealCron(true, $directory . '/missing');
-            sinkholeTestAssertSame(
-                1,
-                count(config_get_path('cron/item', [])),
-                'Keep Settings must retain recovery.',
-            );
+            $cacheDirectory = $directory . '/restore-heal';
+            mkdir($cacheDirectory, 0700);
+            file_put_contents($cacheDirectory . '/pfSense-pkg-Sinkhole-1.2.2.pkg', 'package');
 
             $restoreFlag = $directory . '/needs_package_sync';
             file_put_contents($restoreFlag, "restore\n");
-            pfsensePackageSinkholeRemoveRestoreHealCron(false, $restoreFlag);
+            pfsensePackageSinkholeRemoveRestoreHealCron($restoreFlag, $cacheDirectory);
             sinkholeTestAssertSame(
                 1,
                 count(config_get_path('cron/item', [])),
                 'A restore-driven removal must retain recovery.',
             );
+            sinkholeTestAssertTrue(
+                is_file($cacheDirectory . '/pfSense-pkg-Sinkhole-1.2.2.pkg'),
+                'A restore-driven removal must retain the package cache.',
+            );
 
             unlink($restoreFlag);
-            pfsensePackageSinkholeRemoveRestoreHealCron(false, $restoreFlag);
+            pfsensePackageSinkholeRemoveRestoreHealCron($restoreFlag, $cacheDirectory);
             sinkholeTestAssertSame(
                 [],
                 config_get_path('cron/item', []),
-                'A deliberate uninstall without Keep Settings must remove recovery.',
+                'A deliberate uninstall must remove recovery whatever Keep Settings says.',
+            );
+            sinkholeTestAssertTrue(
+                file_exists($cacheDirectory) === false,
+                'A deliberate uninstall must remove the package cache.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'restore-heal cache keeps only the current verified package' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $cacheDirectory = $directory . '/restore-heal';
+            $source = $directory . '/download.pkg';
+            file_put_contents($source, 'verified package');
+            mkdir($cacheDirectory, 0700);
+            file_put_contents($cacheDirectory . '/pfSense-pkg-Sinkhole-1.2.2.pkg', 'old version');
+            file_put_contents($cacheDirectory . '/pfSense-pkg-Sinkhole-1.2.4.pkg.tmp', 'interrupted');
+
+            RestoreHeal::storeVerifiedPackage($source, 'pfSense-pkg-Sinkhole', '1.2.4', $cacheDirectory);
+
+            sinkholeTestAssertSame(
+                ['pfSense-pkg-Sinkhole-1.2.4.pkg'],
+                array_values(array_diff(scandir($cacheDirectory), ['.', '..'])),
+                'Storing a verified package must keep only the current version.',
+            );
+            sinkholeTestAssertSame(
+                'verified package',
+                file_get_contents($cacheDirectory . '/pfSense-pkg-Sinkhole-1.2.4.pkg'),
+                'The cache must hold the verified file.',
+            );
+            sinkholeTestAssertSame(
+                '0600',
+                substr(sprintf('%o', fileperms($cacheDirectory . '/pfSense-pkg-Sinkhole-1.2.4.pkg')), -4),
+                'The cached package must be readable by root only.',
+            );
+
+            file_put_contents($cacheDirectory . '/pfSense-pkg-Sinkhole-1.2.3.pkg', 'old version');
+            RestoreHeal::pruneCache('pfSense-pkg-Sinkhole', '1.2.4', $cacheDirectory);
+            sinkholeTestAssertSame(
+                ['pfSense-pkg-Sinkhole-1.2.4.pkg'],
+                array_values(array_diff(scandir($cacheDirectory), ['.', '..'])),
+                'A new pin must prune other cached versions.',
             );
         } finally {
             sinkholeTestRemoveTemporaryDirectory($directory);
@@ -2300,15 +2386,22 @@ sinkholeTestRun([
                     ],
                     'alerts' => [],
                     'bypass' => [
-                        'interfaces' => [],
-                        'block_encrypted_dns' => false,
-                        'disable_firefox_doh' => false,
-                        'disable_private_relay' => false,
-                        'discovery' => 'off',
+                        'lists' => [],
+                        'global' => [
+                            'enabled' => false,
+                            'block_encrypted_dns' => false,
+                            'disable_firefox_doh' => false,
+                            'disable_private_relay' => false,
+                            'discovery' => 'off',
+                            'block_tor' => false,
+                            'block_vpn' => false,
+                            'lists' => [],
+                            'interfaces' => [],
+                        ],
+                        'networks' => [],
+                        'devices' => [],
                         'discovery_hostname' => '',
                         'discovery_port' => 0,
-                        'block_tor' => false,
-                        'block_vpn' => false,
                     ],
                 ], JSON_THROW_ON_ERROR) . PHP_EOL,
             );
@@ -3504,6 +3597,68 @@ sinkholeTestRun([
             sinkholeTestRemoveTemporaryDirectory($directory);
         }
     },
+    'scope save migrates a legacy single device identifier' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $deviceIdentifier = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+            sinkholeStubReset([
+                'installedpackages' => [
+                    'sinkhole' => [
+                        'devices' => ['item' => [[
+                            'id' => $deviceIdentifier,
+                            'descr' => 'Legacy Device',
+                            'identifier_type' => 'ip',
+                            'identifier' => '192.0.2.25',
+                            'interface' => '',
+                            'lists' => '',
+                            'allowed_domains' => '',
+                            'enabled' => 'on',
+                        ]]],
+                    ],
+                ],
+                'unbound' => ['enable' => ''],
+                'system' => [],
+            ]);
+            $paths = sinkholeAdapterTestPaths($directory);
+            $adapter = new PfSenseAdapter($paths, new StateStore($paths->stateFile));
+            pfsensePackageSinkholeAdapter($adapter);
+            $configuration = $adapter->getScopePartitions();
+
+            sinkholeTestAssertSame(
+                [['type' => 'ip', 'value' => '192.0.2.25', 'interface' => '']],
+                $configuration['devices'][$deviceIdentifier]['identifiers'],
+                'A legacy single identifier must read as a one-item list.',
+            );
+
+            pfsensePackageSinkholeSaveScopes(
+                $configuration['networks'],
+                $configuration['devices'],
+                $configuration['invalid_networks'],
+                $configuration['invalid_devices'],
+            );
+            $storedDevice = config_get_path('installedpackages/sinkhole/devices/item/0');
+
+            sinkholeTestAssertSame(
+                ['item' => [[
+                    'type' => 'ip',
+                    'value' => '192.0.2.25',
+                    'interface' => '',
+                ]]],
+                $storedDevice['identifiers'],
+                'The next save must write the repeated identifier shape.',
+            );
+            sinkholeTestAssertSame(
+                false,
+                array_key_exists('identifier', $storedDevice)
+                    || array_key_exists('identifier_type', $storedDevice)
+                    || array_key_exists('interface', $storedDevice),
+                'The migrated save must drop every legacy identifier field.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
     'scope saves round trip repeated items and compile' => static function (): void {
         global $sinkholeStubInterfaces;
 
@@ -3592,9 +3747,10 @@ sinkholeTestRun([
                 $deviceIdentifier => [
                     'id' => $deviceIdentifier,
                     'name' => 'Jacky’s Café iPhone',
-                    'identifier_type' => 'ip',
-                    'identifier' => '192.0.2.25',
-                    'interface' => '',
+                    'identifiers' => [
+                        ['type' => 'ip', 'value' => '192.0.2.25', 'interface' => ''],
+                        ['type' => 'mac', 'value' => '00:11:22:33:44:55', 'interface' => ''],
+                    ],
                     'lists' => [$listIdentifiers[1], $listIdentifiers[2]],
                     'allowed_domains' => [
                         'device-one.example.test',
@@ -3647,6 +3803,11 @@ sinkholeTestRun([
                 'Device list selections must survive pfSense XML serialization.',
             );
             sinkholeTestAssertSame(
+                ['item' => $devices[$deviceIdentifier]['identifiers']],
+                config_get_path('installedpackages/sinkhole/devices/item/0/identifiers'),
+                'Every device identifier must survive pfSense XML serialization under item.',
+            );
+            sinkholeTestAssertSame(
                 ['device-one.example.test', 'device-two.example.test'],
                 config_get_path(
                     'installedpackages/sinkhole/devices/item/0/allowed_domains/item',
@@ -3675,6 +3836,11 @@ sinkholeTestRun([
                 $devices[$deviceIdentifier]['allowed_domains'],
                 $scopeConfiguration['devices'][$deviceIdentifier]['allowed_domains'],
                 'The device reader must unwrap repeated allowed-domain items.',
+            );
+            sinkholeTestAssertSame(
+                $devices[$deviceIdentifier]['identifiers'],
+                $scopeConfiguration['devices'][$deviceIdentifier]['identifiers'],
+                'The device reader must unwrap every repeated identifier row.',
             );
             sinkholeTestAssertSame(
                 1,
@@ -4053,6 +4219,7 @@ sinkholeTestRun([
             foreach ([
                 $paths->alertLockFile,
                 $paths->clientLockFile,
+                $paths->releaseLockFile,
                 $paths->runtimeLockFile,
                 $paths->statusFile,
                 $paths->statusLockFile,
@@ -4140,6 +4307,13 @@ sinkholeTestRun([
                 is_file($paths->persistentDirectory . '/saved.test'),
                 'A timed-out alert owner may keep only persistent data.',
             );
+            foreach ([$paths->updateLockFile, $paths->releaseLockFile] as $removedLockFile) {
+                sinkholeTestAssertSame(
+                    false,
+                    file_exists($removedLockFile),
+                    'A completed uninstall must remove both released update lock files.',
+                );
+            }
             sinkholeTestAssertTrue(
                 count(array_filter(
                     $sinkholeStubLogs,

@@ -47,7 +47,7 @@ CLIENT_LOOKUP_CACHE_SIZE: Final[int] = 4_096
 NAME_LOOKUP_CACHE_SIZE: Final[int] = 4_096
 MANIFEST_SCHEMA_VERSION: Final[int] = 4
 CLIENT_MAP_SCHEMA_VERSION: Final[int] = 2
-STASH_VERSION: Final[int] = 6
+STASH_VERSION: Final[int] = 7
 MAXIMUM_SAFESEARCH_NAMES: Final[int] = 5_000
 MAXIMUM_SAFESEARCH_CHOICES: Final[int] = 32
 MAXIMUM_SAFESEARCH_ADDRESSES: Final[int] = 16
@@ -265,6 +265,10 @@ class SinkholeData:
         "bypass_domains",
         "bypass_interfaces",
         "bypass_enabled_mask",
+        "bypass_global_policy",
+        "bypass_network_policies",
+        "bypass_device_policies",
+        "bypass_any_discovery",
         "disable_firefox_doh",
         "disable_private_relay",
         "discovery",
@@ -301,6 +305,9 @@ class SinkholeData:
         discovery: str,
         discovery_hostname: str,
         discovery_port: int,
+        bypass_global_policy: dict[str, Any] | None,
+        bypass_network_policies: dict[str, dict[str, Any]],
+        bypass_device_policies: dict[str, dict[str, Any]],
         list_count: int,
         list_ids_by_bit: tuple[str, ...],
         alert_rules: tuple[
@@ -334,8 +341,25 @@ class SinkholeData:
         self.bypass_domains = bypass_domains
         self.bypass_interfaces = bypass_interfaces
         self.bypass_enabled_mask = bypass_enabled_mask
-        self.disable_firefox_doh = disable_firefox_doh
-        self.disable_private_relay = disable_private_relay
+        self.bypass_global_policy = bypass_global_policy
+        self.bypass_network_policies = bypass_network_policies
+        self.bypass_device_policies = bypass_device_policies
+        policies = tuple(bypass_network_policies.values()) + tuple(
+            bypass_device_policies.values()
+        )
+
+        if bypass_global_policy is not None:
+            policies = (bypass_global_policy,) + policies
+
+        self.disable_firefox_doh = disable_firefox_doh or any(
+            policy["disable_firefox_doh"] for policy in policies
+        )
+        self.disable_private_relay = disable_private_relay or any(
+            policy["disable_private_relay"] for policy in policies
+        )
+        self.bypass_any_discovery = any(
+            policy["discovery"] != "off" for policy in policies
+        )
         self.discovery = discovery
         self.discovery_hostname = discovery_hostname
         self.discovery_port = discovery_port
@@ -431,29 +455,37 @@ class SinkholeData:
         self,
         name: str,
         interface_name: str | None,
+        device_id: str | None = None,
+        network_id: str | None = None,
     ) -> str | None:
-        """Return the mandatory interface-scoped signal answer, if any."""
+        """Return the mandatory most-specific client signal answer, if any.
 
-        if name == DDR_NAME and self.discovery != "off":
-            if interface_name not in self.bypass_interfaces:
+        Since:
+            1.3.0
+        """
+
+        policy = self._bypass_policy(device_id, network_id, interface_name)
+
+        if name == DDR_NAME and self.bypass_any_discovery:
+            if policy is None or policy["discovery"] == "off":
                 return "nxdomain"
 
-            if self.discovery == "nodata":
+            if policy["discovery"] == "nodata":
                 return "nodata"
 
-            if self.discovery == "advertise":
+            if policy["discovery"] == "advertise":
                 return "svcb"
 
-        if interface_name not in self.bypass_interfaces:
+        if policy is None:
             return None
 
-        if self.disable_firefox_doh and (
+        if policy["disable_firefox_doh"] and (
             name == FIREFOX_DOH_SIGNAL
             or name.endswith("." + FIREFOX_DOH_SIGNAL)
         ):
             return "nxdomain"
 
-        if self.disable_private_relay and name in PRIVATE_RELAY_SIGNALS:
+        if policy["disable_private_relay"] and name in PRIVATE_RELAY_SIGNALS:
             return "nxdomain"
 
         return None
@@ -462,13 +494,50 @@ class SinkholeData:
         self,
         name: str,
         interface_name: str | None,
+        device_id: str | None = None,
+        network_id: str | None = None,
     ) -> bool:
-        """Return whether an effective Bypass List blocks this interface client."""
+        """Return whether the most-specific Bypass policy blocks this name.
+
+        Since:
+            1.3.0
+        """
+
+        policy = self._bypass_policy(device_id, network_id, interface_name)
 
         return (
-            interface_name in self.bypass_interfaces
-            and self.bypass_mask(name) & self.bypass_enabled_mask != 0
+            policy is not None
+            and self.bypass_mask(name) & policy["mask"] != 0
         )
+
+    def _bypass_policy(
+        self,
+        device_id: str | None,
+        network_id: str | None,
+        interface_name: str | None,
+    ) -> dict[str, Any] | None:
+        """Select device, network, then interface-bounded Global settings.
+
+        Since:
+            1.3.0
+        """
+
+        if device_id is not None:
+            policy = self.bypass_device_policies.get(device_id)
+
+            if policy is not None:
+                return policy
+
+        if network_id is not None:
+            policy = self.bypass_network_policies.get(network_id)
+
+            if policy is not None:
+                return policy
+
+        if interface_name in self.bypass_interfaces:
+            return self.bypass_global_policy
+
+        return None
 
     def has_bypass_policy_name(self, name: str) -> bool:
         """Return whether cache storage could bypass an interface decision."""
@@ -483,7 +552,7 @@ class SinkholeData:
                 )
             )
             or (self.disable_private_relay and name in PRIVATE_RELAY_SIGNALS)
-            or (self.discovery != "off" and name == DDR_NAME)
+            or (self.bypass_any_discovery and name == DDR_NAME)
         )
 
     def decision(
@@ -774,19 +843,223 @@ def _mask_for_bypass_kinds(value: str, enabled_mask: int) -> int:
 
 def _load_bypass_manifest(
     value: Any,
-) -> tuple[
-    frozenset[str],
-    int,
-    bool,
-    bool,
-    str,
-    str,
-    int,
-]:
-    """Validate interface-scoped Bypass answer metadata."""
+) -> dict[str, Any]:
+    """Validate per-context Bypass policies and legacy Global generations.
+
+    Since:
+        1.3.0
+    """
 
     if not isinstance(value, dict):
         raise ValueError("the manifest Bypass configuration is invalid")
+
+    if "global" not in value:
+        return _load_legacy_bypass_manifest(value)
+
+    list_records = value.get("lists")
+
+    if not isinstance(list_records, dict):
+        raise ValueError("the manifest Bypass source map is invalid")
+
+    bits: dict[str, int] = {}
+    kinds: dict[str, str] = {}
+
+    for identifier, record in list_records.items():
+        if (
+            not isinstance(identifier, str)
+            or re.fullmatch(r"[a-f0-9]{32}", identifier) is None
+            or not isinstance(record, dict)
+            or record.get("kind") not in BYPASS_KIND_BITS
+        ):
+            raise ValueError("the manifest Bypass source map is invalid")
+
+        bit = record.get("bit")
+
+        if (
+            not isinstance(bit, int)
+            or isinstance(bit, bool)
+            or bit < 0
+            or bit >= len(list_records)
+            or bit in bits.values()
+        ):
+            raise ValueError("a manifest Bypass source bit is invalid")
+
+        bits[identifier] = bit
+        kinds[identifier] = record["kind"]
+
+    global_value = value.get("global")
+
+    if not isinstance(global_value, dict):
+        raise ValueError("the Global Bypass policy is invalid")
+
+    interfaces = global_value.get("interfaces")
+
+    if (
+        not isinstance(interfaces, list)
+        or any(
+            not isinstance(interface, str)
+            or re.fullmatch(r"[a-z0-9_.:-]{1,64}", interface, re.IGNORECASE)
+            is None
+            for interface in interfaces
+        )
+        or len(set(interfaces)) != len(interfaces)
+    ):
+        raise ValueError("the manifest Bypass interfaces are invalid")
+
+    global_policy = _load_bypass_policy(global_value, bits, kinds, "Global")
+    network_policies = _load_bypass_policy_group(
+        value.get("networks"),
+        bits,
+        kinds,
+        "network",
+    )
+    device_policies = _load_bypass_policy_group(
+        value.get("devices"),
+        bits,
+        kinds,
+        "device",
+    )
+    hostname = value.get("discovery_hostname")
+    port = value.get("discovery_port")
+    policies = tuple(network_policies.values()) + tuple(device_policies.values())
+
+    if global_policy is not None:
+        policies = (global_policy,) + policies
+
+    advertises = any(policy["discovery"] == "advertise" for policy in policies)
+
+    if not isinstance(hostname, str) or not isinstance(port, int) or isinstance(port, bool):
+        raise ValueError("the manifest Discovery endpoint is invalid")
+
+    if advertises:
+        if _normalize_compiled_name(hostname) != hostname or port != 853:
+            raise ValueError("the manifest Discovery endpoint is invalid")
+    elif hostname != "" and (_normalize_compiled_name(hostname) != hostname or port != 853):
+        raise ValueError("the inactive Discovery endpoint is invalid")
+    elif hostname == "" and port != 0:
+        raise ValueError("the inactive Discovery endpoint is invalid")
+
+    return {
+        "interfaces": frozenset(interfaces),
+        "global_policy": global_policy,
+        "network_policies": network_policies,
+        "device_policies": device_policies,
+        "hostname": hostname,
+        "port": port,
+        "valid_bits": frozenset(bits.values()),
+        "legacy_enabled_mask": 0,
+        "legacy": False,
+    }
+
+
+def _load_bypass_policy(
+    value: Any,
+    bits: dict[str, int],
+    kinds: dict[str, str],
+    description: str,
+) -> dict[str, Any] | None:
+    """Validate one compiled Bypass context and calculate its source mask.
+
+    Since:
+        1.3.0
+    """
+
+    if not isinstance(value, dict) or not isinstance(value.get("enabled"), bool):
+        raise ValueError(f"the {description} Bypass policy is invalid")
+
+    boolean_fields = (
+        "block_encrypted_dns",
+        "disable_firefox_doh",
+        "disable_private_relay",
+        "block_tor",
+        "block_vpn",
+    )
+
+    if any(not isinstance(value.get(field), bool) for field in boolean_fields):
+        raise ValueError(f"the {description} Bypass flags are invalid")
+
+    discovery = value.get("discovery")
+
+    if discovery not in ("off", "nodata", "advertise"):
+        raise ValueError(f"the {description} Discovery configuration is invalid")
+
+    mask = _scope_mask(value.get("lists"), bits, description + " Bypass")
+
+    for identifier in value["lists"]:
+        kind = kinds[identifier]
+        enabled = (
+            value["block_encrypted_dns"]
+            if kind == "encrypted_dns"
+            else value["block_tor"]
+            if kind == "tor"
+            else value["block_vpn"]
+        )
+
+        if enabled is False:
+            raise ValueError("a Bypass policy selects a disabled source kind")
+
+    active = value["enabled"]
+
+    if not active and (
+        mask != 0
+        or any(value[field] for field in boolean_fields)
+        or discovery != "off"
+    ):
+        raise ValueError("a disabled Bypass policy contains active settings")
+
+    if not active:
+        return None
+
+    return {
+        "mask": mask,
+        "disable_firefox_doh": value["disable_firefox_doh"],
+        "disable_private_relay": value["disable_private_relay"],
+        "discovery": discovery,
+    }
+
+
+def _load_bypass_policy_group(
+    value: Any,
+    bits: dict[str, int],
+    kinds: dict[str, str],
+    kind: str,
+) -> dict[str, dict[str, Any]]:
+    """Validate one network or device Bypass policy map.
+
+    Since:
+        1.3.0
+    """
+
+    if not isinstance(value, dict):
+        raise ValueError(f"the {kind} Bypass policy map is invalid")
+
+    policies: dict[str, dict[str, Any]] = {}
+
+    for identifier, policy_value in value.items():
+        if not isinstance(identifier, str) or re.fullmatch(r"[a-f0-9]{32}", identifier) is None:
+            raise ValueError(f"the {kind} Bypass policy map is invalid")
+
+        policy = _load_bypass_policy(
+            policy_value,
+            bits,
+            kinds,
+            f"{kind} {identifier}",
+        )
+
+        if policy is None:
+            raise ValueError(f"the {kind} Bypass policy is unexpectedly disabled")
+
+        policies[identifier] = policy
+
+    return policies
+
+
+def _load_legacy_bypass_manifest(value: dict[str, Any]) -> dict[str, Any]:
+    """Load schema-4 Global-only Bypass metadata during rolling upgrades.
+
+    Since:
+        1.3.0
+    """
 
     interfaces = value.get("interfaces")
 
@@ -842,15 +1115,30 @@ def _load_bypass_manifest(
     if value["block_vpn"]:
         enabled_mask |= BYPASS_KIND_BITS["vpn"]
 
-    return (
-        frozenset(interfaces),
-        enabled_mask,
-        value["disable_firefox_doh"],
-        value["disable_private_relay"],
-        discovery,
-        hostname,
-        port,
+    active = (
+        enabled_mask != 0
+        or value["disable_firefox_doh"]
+        or value["disable_private_relay"]
+        or discovery != "off"
     )
+    policy = {
+        "mask": enabled_mask,
+        "disable_firefox_doh": value["disable_firefox_doh"],
+        "disable_private_relay": value["disable_private_relay"],
+        "discovery": discovery,
+    } if active else None
+
+    return {
+        "interfaces": frozenset(interfaces),
+        "global_policy": policy,
+        "network_policies": {},
+        "device_policies": {},
+        "hostname": hostname,
+        "port": port,
+        "valid_bits": frozenset(),
+        "legacy_enabled_mask": enabled_mask,
+        "legacy": True,
+    }
 
 
 def _safesearch_addresses(value: Any, version: int) -> tuple[str, ...]:
@@ -1365,15 +1653,7 @@ def _load_data(stop_event: threading.Event | None = None) -> SinkholeData:
     ):
         raise ValueError("the manifest Bypass domain count is invalid")
 
-    (
-        bypass_interfaces,
-        bypass_enabled_mask,
-        disable_firefox_doh,
-        disable_private_relay,
-        discovery,
-        discovery_hostname,
-        discovery_port,
-    ) = _load_bypass_manifest(manifest.get("bypass"))
+    bypass_configuration = _load_bypass_manifest(manifest.get("bypass"))
     safesearch = _load_safesearch_manifest(manifest.get("safesearch"))
 
     manifest_lists = manifest.get("lists")
@@ -1463,11 +1743,23 @@ def _load_data(stop_event: threading.Event | None = None) -> SinkholeData:
     )
 
     try:
+        def bypass_decoder(value: str) -> int:
+            if bypass_configuration["legacy"]:
+                return _mask_for_bypass_kinds(
+                    value,
+                    bypass_configuration["legacy_enabled_mask"],
+                )
+
+            return _mask_for_bits(
+                value,
+                bypass_configuration["valid_bits"],
+            )
+
         bypass_domains = _load_name_index(
             bypass_index_manifest,
             bypass_index_path,
             manifest_bypass_domain_count,
-            lambda value: _mask_for_bypass_kinds(value, bypass_enabled_mask),
+            bypass_decoder,
             "Bypass domain",
             stop_event,
         )
@@ -1508,13 +1800,20 @@ def _load_data(stop_event: threading.Event | None = None) -> SinkholeData:
         device_allowed=device_allowed,
         device_masks=device_masks,
         bypass_domains=bypass_domains,
-        bypass_interfaces=bypass_interfaces,
-        bypass_enabled_mask=bypass_enabled_mask,
-        disable_firefox_doh=disable_firefox_doh,
-        disable_private_relay=disable_private_relay,
-        discovery=discovery,
-        discovery_hostname=discovery_hostname,
-        discovery_port=discovery_port,
+        bypass_interfaces=bypass_configuration["interfaces"],
+        bypass_enabled_mask=bypass_configuration["legacy_enabled_mask"],
+        disable_firefox_doh=False,
+        disable_private_relay=False,
+        discovery=(
+            bypass_configuration["global_policy"]["discovery"]
+            if bypass_configuration["global_policy"] is not None
+            else "off"
+        ),
+        discovery_hostname=bypass_configuration["hostname"],
+        discovery_port=bypass_configuration["port"],
+        bypass_global_policy=bypass_configuration["global_policy"],
+        bypass_network_policies=bypass_configuration["network_policies"],
+        bypass_device_policies=bypass_configuration["device_policies"],
         list_count=len(bits),
         list_ids_by_bit=tuple(
             identifier
@@ -1640,8 +1939,8 @@ def _read_client_map_document() -> dict[str, Any]:
 def _client_map_from_document(document: dict[str, Any], data: Any) -> ClientMapData:
     """Validate addresses and ignore IDs absent from the active manifest."""
 
-    known_networks = set(data.network_masks)
-    known_devices = set(data.device_masks)
+    known_networks = set(data.network_masks) | set(data.bypass_network_policies)
+    known_devices = set(data.device_masks) | set(data.bypass_device_policies)
     known_interfaces = set(data.bypass_interfaces)
     networks: list[tuple[Any, str]] = []
     interfaces: list[tuple[Any, str]] = []
@@ -2739,7 +3038,12 @@ def _moddone_policy(
                 )
             elif (
                 decision != "allow"
-                and data.bypass_blocks_name(owner, interface_name)
+                and data.bypass_blocks_name(
+                    owner,
+                    interface_name,
+                    device_id,
+                    network_id,
+                )
             ):
                 blocked = (
                     client_address,
@@ -3083,6 +3387,8 @@ def operate(module_id: int, event: int, qstate: Any, qdata: Any) -> bool:
             bypass_action = data.bypass_signal_action(
                 query_name,
                 interface_name,
+                device_id,
+                network_id,
             )
 
             if bypass_action is not None:
@@ -3117,7 +3423,12 @@ def operate(module_id: int, event: int, qstate: Any, qdata: Any) -> bool:
 
             if (
                 decision != "allow"
-                and data.bypass_blocks_name(query_name, interface_name)
+                and data.bypass_blocks_name(
+                    query_name,
+                    interface_name,
+                    device_id,
+                    network_id,
+                )
             ):
                 return _finish_blocked_query(module_id, qstate)
 

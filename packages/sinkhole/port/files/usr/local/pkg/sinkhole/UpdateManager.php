@@ -9,6 +9,8 @@ use RuntimeException;
 use Throwable;
 
 require_once(__DIR__ . '/PackagePaths.php');
+require_once(__DIR__ . '/FileLock.php');
+require_once(__DIR__ . '/RestoreHeal.php');
 require_once(__DIR__ . '/Translator.php');
 
 /**
@@ -21,6 +23,109 @@ require_once(__DIR__ . '/Translator.php');
  */
 final class RestoreHealReleaseNotVerifiableException extends RuntimeException
 {
+}
+
+/**
+ * Release Update Lock Runner.
+ *
+ * Release checks serialize with one another without blocking on package tasks.
+ * Self-update takes the release lock before waiting for the package task lock.
+ *
+ * @since 1.3.0
+ */
+final class ReleaseUpdateLockRunner
+{
+    /** @var int @since 1.3.0 */
+    public const RELEASE_LOCK_TIMEOUT_SECONDS = 30;
+
+    /** @var int @since 1.3.0 */
+    public const PACKAGE_LOCK_TIMEOUT_SECONDS = 1800;
+
+    /**
+     * Release Update Lock Runner - Constructor.
+     *
+     * Tests can shorten both bounded waits without changing production behavior.
+     *
+     * @param FileLock $releaseLock - Release check and install lock.
+     * @param FileLock|null $packageLock - Long-running package task lock for self-update.
+     * @param string $statusFile - Background update status path.
+     * @param int $releaseLockTimeoutSeconds - Maximum release lock wait.
+     * @param int $packageLockTimeoutSeconds - Maximum package task wait.
+     *
+     * @since 1.3.0
+     */
+    public function __construct(
+        private readonly FileLock $releaseLock,
+        private readonly ?FileLock $packageLock,
+        private readonly string $statusFile = PackagePaths::UPDATE_STATUS_FILE,
+        private readonly int $releaseLockTimeoutSeconds = self::RELEASE_LOCK_TIMEOUT_SECONDS,
+        private readonly int $packageLockTimeoutSeconds = self::PACKAGE_LOCK_TIMEOUT_SECONDS,
+    ) {
+    }
+
+    /**
+     * Release Update Lock Runner - Run.
+     *
+     * Checks take only the release lock. Installs take release then package, and
+     * always release package before release when the operation ends.
+     *
+     * @param bool $selfUpdate - Whether the operation installs the release.
+     * @param callable(): array $operation - Locked release operation.
+     *
+     * @return array{completed: bool, message: string|null, state: array|null}
+     *
+     * @since 1.3.0
+     */
+    public function run(bool $selfUpdate, callable $operation): array
+    {
+        try {
+            if ($this->releaseLock->acquire($this->releaseLockTimeoutSeconds) === false) {
+                $message = Translator::translate('release_operation_running');
+
+                if ($selfUpdate) {
+                    UpdateManager::failQueuedSelfUpdate($message, $this->statusFile);
+                }
+
+                return [
+                    'completed' => false,
+                    'message' => $message,
+                    'state' => null,
+                ];
+            }
+
+            if ($selfUpdate && $this->packageLock === null) {
+                throw new RuntimeException('Self-update requires the package task lock.');
+            }
+
+            if ($selfUpdate && $this->packageLock->acquire() === false) {
+                UpdateManager::markQueuedSelfUpdateWaiting(
+                    Translator::translate('update_waiting_for_task'),
+                    $this->statusFile,
+                );
+
+                if ($this->packageLock->acquire($this->packageLockTimeoutSeconds) === false) {
+                    $message = Translator::translate('update_task_still_running');
+
+                    UpdateManager::failQueuedSelfUpdate($message, $this->statusFile);
+
+                    return [
+                        'completed' => false,
+                        'message' => $message,
+                        'state' => null,
+                    ];
+                }
+            }
+
+            return [
+                'completed' => true,
+                'message' => null,
+                'state' => $operation(),
+            ];
+        } finally {
+            $this->packageLock?->release();
+            $this->releaseLock->release();
+        }
+    }
 }
 
 /**
@@ -205,17 +310,19 @@ final class UpdateManager
      * Update Manager - Check.
      *
      * Fetches the latest release, preserves normalized state, and creates at most
-     * one notice for each newly observed version.
+     * one notice for each newly observed version when the caller requests one.
      *
      * @param bool $remoteNotifications - Whether remote notice delivery is enabled.
+     * @param bool $fileNotice - Whether to file a new-version notice.
      *
      * @return array
      *
      * @throws Throwable When release or state processing fails.
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
-    public function check(bool $remoteNotifications): array
+    public function check(bool $remoteNotifications, bool $fileNotice): array
     {
         $this->clearStatus();
 
@@ -238,6 +345,7 @@ final class UpdateManager
                 $this->installedVersion,
                 $release['version'],
                 $remoteNotifications,
+                $fileNotice,
             );
 
             self::writeJsonAtomically($this->updatesFile, $state);
@@ -556,6 +664,51 @@ final class UpdateManager
             'message' => self::translate('update_starting'),
             'version' => $version,
             'started_at' => $timestamp,
+            'updated_at' => $timestamp,
+            'finished_at' => null,
+        ]);
+    }
+
+    /**
+     * Update Manager - Mark Queued Self Update Waiting.
+     *
+     * Preserves the queued version and start time while the release operation
+     * waits for a list, IP, or Bypass update to release the package lock.
+     *
+     * @param string $message - Complete localized waiting message.
+     * @param string $path - Status file path.
+     *
+     * @return void
+     *
+     * @since 1.3.0
+     */
+    public static function markQueuedSelfUpdateWaiting(
+        string $message,
+        string $path = PackagePaths::UPDATE_STATUS_FILE,
+    ): void {
+        $timestamp = gmdate(DATE_ATOM);
+        $queuedState = null;
+
+        try {
+            if (is_readable($path)) {
+                $queuedState = self::readJsonObject(
+                    $path,
+                    self::translate('saved_self_update_status_unreadable'),
+                );
+            }
+        } catch (Throwable) {
+            // A fresh running state safely replaces malformed queued state.
+        }
+
+        self::writeJsonAtomically($path, [
+            'state' => 'running',
+            'message' => $message,
+            'version' => is_array($queuedState)
+                ? ($queuedState['version'] ?? null)
+                : null,
+            'started_at' => is_array($queuedState)
+                ? ($queuedState['started_at'] ?? $timestamp)
+                : $timestamp,
             'updated_at' => $timestamp,
             'finished_at' => null,
         ]);
@@ -1288,6 +1441,12 @@ final class UpdateManager
                 ));
             }
 
+            try {
+                RestoreHeal::storeVerifiedPackage($packagePath, self::PACKAGE_NAME, $version);
+            } catch (Throwable $cacheThrowable) {
+                $this->logFailure($cacheThrowable);
+            }
+
             $state = $this->saveReleaseState(
                 $release,
                 $version,
@@ -1376,23 +1535,26 @@ final class UpdateManager
     /**
      * Update Manager - Synchronize Notice.
      *
-     * Each remote version creates at most one bell notice. The explicit opt-in is
-     * inverted for pfSense's local-only file_notice() argument.
+     * Each remote version creates at most one bell notice when requested. Manual
+     * checks record the version as notified without filing or remotely sending it.
      *
      * @param array $state - Update state.
      * @param string $installedVersion - Installed version.
      * @param string $latestVersion - Latest release version.
      * @param bool $remoteNotifications - Whether remote delivery is enabled.
+     * @param bool $fileNotice - Whether to file a new-version notice.
      *
      * @return array
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public static function synchronizeNotice(
         array $state,
         string $installedVersion,
         string $latestVersion,
         bool $remoteNotifications,
+        bool $fileNotice,
     ): array {
         if (self::isNewerVersion($installedVersion, $latestVersion) === false) {
             if (function_exists('close_notice')) {
@@ -1406,6 +1568,12 @@ final class UpdateManager
             return $state;
         }
 
+        $state['notified_version'] = $latestVersion;
+
+        if ($fileNotice === false) {
+            return $state;
+        }
+
         \file_notice(
             self::NOTICE_ID,
             self::translate('sinkhole_version_available', [$latestVersion]),
@@ -1414,7 +1582,6 @@ final class UpdateManager
             1,
             $remoteNotifications === false,
         );
-        $state['notified_version'] = $latestVersion;
 
         return $state;
     }
@@ -1926,6 +2093,7 @@ final class UpdateManager
             $effectiveVersion,
             $release['version'],
             $remoteNotifications,
+            true,
         );
 
         self::writeJsonAtomically($this->updatesFile, $state);

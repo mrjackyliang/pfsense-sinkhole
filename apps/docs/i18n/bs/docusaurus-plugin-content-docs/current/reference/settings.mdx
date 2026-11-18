@@ -49,54 +49,56 @@ Prazno polje ništa ne upisuje i zadržava zadanu vrijednost Resolvera. [Postavk
 | Update Checks        | Weekly | Bira provjere novih GitHub izdanja Daily, Weekly, Monthly ili Never.                      |
 | Remote Notifications | Off    | Šalje i svaku obavijest o novoj verziji putem udaljenih usluga konfiguriranih u pfSenseu. |
 
-Svaka nova verzija kreira jednu lokalnu obavijest pfSensea. **About → Check Now** odmah pokreće istu ograničenu provjeru izdanja bez promjene rasporeda.
+Svaka nova verzija pronađena zakazanom provjerom kreira jednu lokalnu obavijest pfSensea. **About → Check Now** pokreće istu ograničenu provjeru bez promjene rasporeda, ne kreira obavijest i sprečava da kasnija zakazana provjera najavi tu verziju.
 
 ## Lists \{#lists}
 
-| Polje           | Zadano | Opis                                                                                        |
-|-----------------|--------|---------------------------------------------------------------------------------------------|
-| Name            | Empty  | Lokalna oznaka koju koriste dodjele, upozorenja i Status.                                   |
-| URL             | Empty  | HTTP ili HTTPS izvor bez ugrađenih vjerodajnica.                                            |
-| Enabled         | On     | Uključuje izvor u ažuriranja i kompajlirana pravila kada je dodijeljen.                     |
-| Global          | Off    | Primjenjuje listu na svakog klijenta nakon odluka uređaja i mreže.                          |
-| Allowed Domains | Empty  | Jedna globalna dopuštena domena po redu; svaki unos dopušta tačnu domenu i svaku poddomenu. |
+| Polje   | Zadano | Opis                                                                 |
+|---------|--------|----------------------------------------------------------------------|
+| Name    | Empty  | Lokalna oznaka koju koriste Blocking, upozorenja i Status.           |
+| URL     | Empty  | HTTP ili HTTPS izvor bez ugrađenih vjerodajnica.                     |
+| Enabled | On     | Uključuje izvor u ažuriranja i kompajlirana pravila kada se koristi. |
 
 **Add from Catalog** na zahtjev pretražuje registar lista AdGuard Homea i katalog izvora pfBlockerNG-a. Dodavanje rezultata kreira isti obični red kao i ručni unos URL-a.
 
 Izvori za zaobilaženje isključeni su iz ovog kataloga.
 
+## Blocking \{#blocking}
+
+Svaki kontekst (Global, jedna mreža ili jedan uređaj) ima vlastita dva polja:
+
+| Polje           | Zadano | Opis                                                                                                                      |
+|-----------------|--------|---------------------------------------------------------------------------------------------------------------------------|
+| Lists           | Empty  | DNS liste koje blokiraju u ovom kontekstu. Globalne liste primjenjuju se na svakog klijenta nakon odluka uređaja i mreže. |
+| Allowed Domains | Empty  | Jedan izuzetak po redu; svaki dopušta tačnu domenu i svaku poddomenu prije lista ovog konteksta i svakog šireg konteksta. |
+
 ## Usluge \{#services}
 
-Odabiri usluga su prema zadanim postavkama prazni za svaki opseg. Usluga registra obuhvaćena posebnom Bypass zaštitom skrivena je iz Usluga i uklanja se iz spremljenih odabira; Private Relay se konfigurira samo na kartici Bypass.
+Odabiri usluga su prema zadanim postavkama prazni za svaki kontekst. Usluga registra obuhvaćena posebnom Bypass zaštitom skrivena je iz Usluga i uklanja se iz spremljenih odabira; Private Relay se konfigurira samo na kartici Bypass.
 
 ## SafeSearch \{#safesearch}
 
-SafeSearch odabiri su prema zadanim postavkama prazni za svaki opseg. Svaki opseg može zaključati Google, YouTube (Moderate ili Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex i Pixabay, ili blokirati Qwant. [SafeSearch](/docs/configure/safesearch) navodi nazive i sigurne hostove.
+SafeSearch odabiri su prema zadanim postavkama prazni za svaki kontekst. Svaki kontekst može zaključati Google, YouTube (Moderate ili Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex i Pixabay, ili blokirati Qwant. [SafeSearch](/docs/configure/safesearch) navodi nazive i sigurne hostove.
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| Polje           | Zadano | Opis                                                                                                                                                  |
-|-----------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | LAN    | Konfigurirani interfejs pfSensea čije trenutne IPv4 i IPv6 podmreže identificiraju mrežu. Bez LAN-a odabire se prvi slobodni interfejs koji nije WAN. |
-| Lists           | Empty  | Dodatne DNS liste koje blokiraju klijente u mreži.                                                                                                    |
-| Allowed Domains | Empty  | Jedan mrežni izuzetak po redu; svaki dopušta tačnu domenu i svaku poddomenu prije lista te mreže i svih globalnih pravila.                            |
-| Enabled         | On     | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                                                       |
+| Polje     | Zadano | Opis                                                                                                                                                  |
+|-----------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface | LAN    | Konfigurirani interfejs pfSensea čije trenutne IPv4 i IPv6 podmreže identificiraju mrežu. Bez LAN-a odabire se prvi slobodni interfejs koji nije WAN. |
+| Enabled   | On     | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                                                       |
 
 Svaki interfejs može se pojaviti samo jednom. Nedostupan sačuvani interfejs ostaje vidljiv za ispravak umjesto da se odbaci.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| Polje                    | Zadano     | Opis                                                                                                               |
-|--------------------------|------------|--------------------------------------------------------------------------------------------------------------------|
-| Name                     | Empty      | Lokalna oznaka prikazana u pravilima i Statusu.                                                                    |
-| Identified By            | IP address | Bira IP address, DHCP static mapping ili MAC address.                                                              |
-| IP Address / MAC Address | Empty      | Tačan identifikator kada je odabran IP address ili MAC address. Oznaka prati odabranu metodu.                      |
-| DHCP Static Mapping      | Empty      | Postojeće mapiranje odabrano kada se koristi taj način identifikacije.                                             |
-| Lists                    | Empty      | Dodatne DNS liste koje blokiraju ovaj uređaj.                                                                      |
-| Allowed Domains          | Empty      | Jedan izuzetak uređaja po redu; svaki dopušta tačnu domenu i svaku poddomenu prije svake mrežne i globalne odluke. |
-| Enabled                  | On         | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                    |
+| Polje               | Zadano              | Opis                                                                                                           |
+|---------------------|---------------------|----------------------------------------------------------------------------------------------------------------|
+| Name                | Empty               | Lokalna oznaka prikazana u pravilima i Statusu.                                                                |
+| Identifiers → Type  | Jedan red IP adrese | Za svaki red koji se može dodati ili ukloniti bira IP address, DHCP static mapping ili MAC address.            |
+| Identifiers → Value | Empty               | Tačna IP ili MAC adresa, ili postojeće DHCP statičko mapiranje. Potreban je najmanje jedan red identifikatora. |
+| Enabled             | On                  | Čini red dijelom podudaranja klijenata i kompajliranih pravila.                                                |
 
-Statička mapiranja koriste svoju konfiguriranu adresu i trenutne adrese opažene za MAC mapiranja. MAC red koristi trenutne podatke ARP-a, NDP-a i DHCP zakupa.
+Svi redovi identifikatora pripadaju istom uređaju i dijele njegove postavke. Statička mapiranja koriste svoju konfiguriranu adresu i trenutne adrese opažene za MAC mapiranja. MAC red koristi trenutne podatke ARP-a, NDP-a i DHCP zakupa. Adrese pronađene preko više identifikatora istog uređaja nisu sukobi.
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Statička mapiranja koriste svoju konfiguriranu adresu i trenutne adrese opažen
 |----------------------|----------|---------------------------------------------------------------------------------------------------|
 | Description          | Empty    | Lokalna oznaka pravila.                                                                           |
 | Lists                | Any      | Podudara bilo koju listu ili samo odabrane konfigurirane liste.                                   |
-| Clients              | Everyone | Podudara sve ili odabrane mrežne i uređajske opsege.                                              |
+| Clients              | Everyone | Podudara sve ili odabrane mreže i uređaje.                                                        |
 | Repeat After         | 60       | Minute prije ponovne obavijesti za isto pravilo, klijenta, domenu i listu; prihvata od 1 do 1440. |
 | WebGUI Notice        | On       | Dodaje obavijest pfSensea kada se pravilo podudara.                                               |
 | Remote Notifications | On       | Koristi usluge obavijesti konfigurirane u pfSenseu kada se pravilo podudara.                      |

@@ -27,20 +27,22 @@ import alertRuleEditor from './_assets_/alerts-1.png';
 
 ## Kreirajte pravilo \{#create-a-rule}
 
-Otvorite **Firewall → Sinkhole → Alerts**, odaberite **Add** ispod tabele pravila upozorenja, a zatim popunite **Add Alert Rule** na stranici uređivača:
+Otvorite **Firewall → Sinkhole → Alerts**. [Red konteksta](/docs/configure/scopes#contexts) filtrira tabelu: **Global** navodi pravila za **Everyone**, mreža ili uređaj navodi pravila koja ih odabiru, a **All** navodi svako pravilo. Pravilo i dalje može odabrati više mreža i uređaja odjednom.
 
-| Polje                | Opis                                                                                           |
-|----------------------|------------------------------------------------------------------------------------------------|
-| Description          | Lokalni naziv pravila prikazan u tekstu obavijesti i sažecima.                                 |
-| Any block list       | Podudara blokiranje s bilo koje liste umjesto samo s odabranih lista.                          |
-| Chosen block lists   | Liste koje mogu zadovoljiti pravilo kada je **Any** isključen.                                 |
-| Everyone             | Podudara svakog klijenta umjesto samo odabranih mreža i uređaja.                               |
-| Chosen networks      | Mrežni opsezi koji mogu zadovoljiti pravilo kada je **Everyone** isključen.                    |
-| Chosen devices       | Opsezi uređaja koji mogu zadovoljiti pravilo kada je **Everyone** isključen.                   |
-| Repeat after         | Minute prije nego ista kombinacija pravila, klijenta, domene i liste ponovo pošalje obavijest. |
-| WebGUI notice        | Dodaje lokalnu Sinkhole obavijest u pfSense.                                                   |
-| Remote notifications | Koristi udaljene usluge konfigurirane u pfSenseu.                                              |
-| Enabled              | Omogućava da se blokirani odgovori podudaraju s ovim pravilom.                                 |
+Odaberite **Add** ispod tabele pravila upozorenja, a zatim popunite **Add Alert Rule** na stranici uređivača:
+
+| Polje                | Opis                                                                                                                         |
+|----------------------|------------------------------------------------------------------------------------------------------------------------------|
+| Description          | Lokalni naziv pravila prikazan u tekstu obavijesti i sažecima.                                                               |
+| Any block list       | Podudara blokiranje s bilo koje liste umjesto samo s odabranih lista.                                                        |
+| Chosen block lists   | Liste koje mogu zadovoljiti pravilo kada je **Any** isključen.                                                               |
+| Everyone             | Podudara svakog klijenta umjesto samo odabranih mreža i uređaja.                                                             |
+| Chosen networks      | Mreže s kartice Clients koje mogu zadovoljiti pravilo kada je **Everyone** isključen.                                        |
+| Chosen devices       | Uređaji s kartice Clients, prikazani sa svim identifikatorima, koji mogu zadovoljiti pravilo kada je **Everyone** isključen. |
+| Repeat after         | Minute prije nego ista kombinacija pravila, klijenta, domene i liste ponovo pošalje obavijest.                               |
+| WebGUI notice        | Dodaje lokalnu Sinkhole obavijest u pfSense.                                                                                 |
+| Remote notifications | Koristi udaljene usluge konfigurirane u pfSenseu.                                                                            |
+| Enabled              | Omogućava da se blokirani odgovori podudaraju s ovim pravilom.                                                               |
 
 Polje odabranih lista skriveno je dok je odabrano **Any block list**, a polja mreža i uređaja skrivena su dok je odabrano **Everyone**. Spremanje vraća na Alerts; odaberite olovku ili dvaput kliknite red da biste ga uredili.
 
@@ -75,7 +77,7 @@ Lokalna funkcija obavijesti pfSensea zapisuje `New alert found: <message>` u sis
 
 ## Provjerite upozorenje \{#verify-an-alert}
 
-1. Potvrdite da su pravilo, odabrana lista i odabrani opseg klijenta omogućeni.
+1. Potvrdite da su pravilo, odabrana lista i odabrana mreža ili uređaj omogućeni.
 2. Na Statusu potvrdite da je klijent trenutno mapiran na predviđenu mrežu ili uređaj.
 3. Pošaljite upit za naziv koji odabrana lista blokira i provjerite konfigurirani kanal pfSensea.
 4. Ako druga obavijest ne stigne, uporedite pokušaj s periodom ponavljanja pravila i fiksnim ograničenjima.

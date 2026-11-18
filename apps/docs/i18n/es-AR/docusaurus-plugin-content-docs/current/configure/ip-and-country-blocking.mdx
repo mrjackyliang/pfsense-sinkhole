@@ -35,9 +35,31 @@ Abra **Firewall → Sinkhole → IP** y seleccione **Enable** solo después de e
 | Inbound    | Bloquea paquetes que llegan desde una dirección de origen incluida, normalmente en una WAN.                  |
 | Outbound   | Bloquea paquetes que llegan dirigidos a una dirección de destino incluida, normalmente en redes de clientes. |
 
-El ancla contiene reglas `block drop in quick` y ninguna regla pass. Sinkhole la referencia mediante la posición temprana de reglas de paquete de pfSense para que los bloqueos se ejecuten antes que las reglas pass-quick ordinarias. La página muestra primero los paneles de listas IP y catálogos, seguidos de las opciones IP y de país comunes a la página, con **Save** debajo del panel.
+El ancla contiene reglas `block drop in quick` y ninguna regla pass. Sinkhole la referencia mediante la posición temprana de reglas de paquete de pfSense para que los bloqueos se ejecuten antes que las reglas pass-quick ordinarias. En **Global**, la página muestra primero los paneles de listas IP y catálogos, seguidos de las opciones IP y de país, con **Save** debajo del panel.
 
-<img src={ipTab} alt="Pestaña IP con dos listas IP de demostración, los botones para agregar y agregar desde el catálogo, y el bloqueo de IP y países activado en LAN en ambas direcciones" width={1024} height={1409} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Pestaña IP con dos listas IP de demostración, los botones para agregar y agregar desde el catálogo, y el bloqueo de IP y países activado en LAN en ambas direcciones" width={1024} height={1668} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Configurar el bloqueo por red y dispositivo \{#set-blocking-per-network-and-device}
+
+La fila debajo de las pestañas elige qué se edita: **All**, **Global**, una red o un dispositivo. La línea debajo de ella indica a qué clientes se aplican esas opciones. Cada elección muestra solo sus propias opciones; nunca se muestran las opciones de una elección más amplia.
+
+Un cliente sigue las opciones más específicas que existan: primero las de su dispositivo, luego las de su red y, por último, las de Global. Se omite una red o un dispositivo que esté desactivado en la pestaña Clients.
+
+Solo **Global** contiene:
+
+- **Interfaces**, donde se aplica el bloqueo de Global.
+- **MaxMind Account ID** y **MaxMind License Key**.
+- Los orígenes de listas IP, **Add from Catalog** y las actualizaciones de listas.
+
+Global y cada red o dispositivo contienen **Enable**, **Directions**, **IP Lists** (los orígenes que se usan allí), **Countries** e **IP Allowlist**. En una red o un dispositivo, **Outbound** impide que sus clientes lleguen a un destino incluido e **Inbound** impide que un origen incluido llegue a sus clientes. Los países de una red o un dispositivo usan la cuenta de MaxMind de Global.
+
+Una red o un dispositivo sin opciones propias muestra una línea, como "No configurado para esta red; se aplica Global.", encima de un formulario vacío. Un dispositivo nombra allí su red cuando esa red tiene opciones propias. Al guardar el formulario se crean las opciones, y **Remove settings for this network** o **Remove settings for this device** las elimina para que vuelvan a aplicarse las opciones más amplias. Eliminar una red o un dispositivo en la pestaña Clients también elimina sus opciones.
+
+**All** enumera Global y cada red y dispositivo con opciones propias, junto con sus sentidos, países y cantidad de listas IP. Seleccione una fila para editarla.
+
+Al actualizar Sinkhole a 1.3.0, las opciones existentes permanecen en Global y se copian en cada red y dispositivo. A partir de entonces, cada copia es independiente. Una copia se activa solo si la interfaz de la red, o una interfaz de uno de los identificadores del dispositivo, estaba seleccionada en **Interfaces**; todas las demás copias se guardan desactivadas, de modo que no se bloquea ningún cliente que antes no se bloqueara.
+
+Cada red o dispositivo con opciones activadas obtiene su propia tabla de clientes en el ancla `sinkhole/ip`. Las direcciones de un dispositivo se quitan de la tabla de su red y de la de Global, y las subredes de una red, de la de Global, de modo que un cliente solo queda bloqueado por sus opciones más específicas.
 
 ## Añadir listas IP \{#add-ip-lists}
 

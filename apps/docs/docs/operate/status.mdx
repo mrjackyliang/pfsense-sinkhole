@@ -31,7 +31,7 @@ Open **Firewall → Sinkhole → Status** to see these panels:
 | Lists                   | DNS-list URL, saved entry count, last successful update, and last error.                                                                                    |
 | Popular-List Catalogs   | Last fetch and last error for the AdGuard Home and pfBlockerNG catalog sources.                                                                             |
 | Invalid Saved Rows      | Malformed list rows that remain available for repair; shown only when such rows exist.                                                                      |
-| Scopes                  | Client-map rebuild time and error, followed by separate Networks and Devices panels.                                                                        |
+| Clients                 | Client-map rebuild time and error, followed by separate Networks and Devices panels.                                                                        |
 | Blocked Services        | Registry fetch, last error, and services selected per scope.                                                                                                |
 | SafeSearch              | Engines per scope and each safe host's addresses, last check, and error.                                                                                    |
 | Alerts                  | Last run, events read or stale, notifications sent or held back, dropped events, and last error.                                                            |
@@ -62,17 +62,17 @@ When Sinkhole is deliberately disabled, **Deployment Needed** is `No`, **Loaded 
 
 ## Compile and Deployment State \{#compile-and-deployment-state}
 
-| Field                            | Meaning                                                                                                                                            |
-|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| Compiled Names                   | Names in the deployed DNS-blocking index (lists and Blocked Services) plus names in the Bypass index, against the 10,000,000-name limit.           |
-| Compile Needed                   | Saved policy changed or the last compile didn't complete successfully.                                                                             |
-| Compiled Generation              | Identifier produced by the most recent successful compile.                                                                                         |
-| Deployment Needed                | Compiled content isn't the content deployed for Unbound, or integration is inactive.                                                               |
-| Deployed Generation              | Identifier in the currently deployed runtime manifest.                                                                                             |
-| Loaded Generation                | Identifier the Unbound module reports it loaded.                                                                                                   |
-| Update Running                   | Shown only while a live process owns the shared update lock: a DNS, Bypass, or IP update, a settings apply, a package check or update, or removal. |
-| Removal in Progress              | Shown only while the durable removal marker is set and integration is being withdrawn.                                                             |
-| DNS Resolver Python Script Owner | Current value of the Resolver's single `python_script` slot, or `None`.                                                                            |
+| Field                            | Meaning                                                                                                                                          |
+|----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compiled Names                   | Names in the deployed DNS-blocking index (lists and Blocked Services) plus names in the Bypass index, against the 10,000,000-name limit.         |
+| Compile Needed                   | Saved policy changed or the last compile didn't complete successfully.                                                                           |
+| Compiled Generation              | Identifier produced by the most recent successful compile.                                                                                       |
+| Deployment Needed                | Compiled content isn't the content deployed for Unbound, or integration is inactive.                                                             |
+| Deployed Generation              | Identifier in the currently deployed runtime manifest.                                                                                           |
+| Loaded Generation                | Identifier the Unbound module reports it loaded.                                                                                                 |
+| Update Running                   | Shown only while a live process owns the shared package task lock: a DNS, Bypass, or IP update, a settings apply, a package install, or removal. |
+| Removal in Progress              | Shown only while the durable removal marker is set and integration is being withdrawn.                                                           |
+| DNS Resolver Python Script Owner | Current value of the Resolver's single `python_script` slot, or `None`.                                                                          |
 
 The page shows a warning box when compile or deployment is pending, including the recorded reason. Matching compiled, deployed, and loaded identifiers show that saved policy reached the running module.
 
@@ -80,7 +80,7 @@ The page shows a warning box when compile or deployment is pending, including th
 
 ## Scope and Alert State \{#scope-and-alert-state}
 
-The Scopes summary reports the client-map rebuild state. The separate **Networks** and **Devices** panels report each interface's current CIDRs and each device's current addresses. A conflict names an address claimed by multiple devices; the first device in table order owns that address for policy.
+The Clients summary reports the client-map rebuild state. The separate **Networks** and **Devices** panels report each interface's current CIDRs and every configured identifier and current address for each device. A conflict names an address claimed by multiple devices; the first device in table order owns that address for policy. Two identifiers in the same device can reach one address without creating a conflict.
 
 The **Alerts** panel describes only the most recent minute job. **Notifications held back** includes cap or unread-notice suppression, while **Events dropped by module** indicates that the bounded in-memory or on-disk event queue filled.
 

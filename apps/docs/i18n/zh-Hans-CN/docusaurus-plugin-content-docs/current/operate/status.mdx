@@ -31,7 +31,7 @@ import summaryStatus from './_assets_/status-2.png';
 | Lists                   | DNS 列表 URL、已保存条目数、上次成功更新和上次错误。                                                |
 | Popular-List Catalogs   | AdGuard Home 和 pfBlockerNG 目录来源的上次获取时间和上次错误。                                  |
 | Invalid Saved Rows      | 仍可修复的格式错误列表行；仅在存在这些行时显示。                                                      |
-| Scopes                  | 客户端映射重建时间和错误，随后是独立的 Networks 和 Devices 面板。                                    |
+| Clients                 | 客户端映射重建时间和错误，随后是独立的 Networks 和 Devices 面板。                                    |
 | Blocked Services        | 注册表获取、上次错误，以及每个作用域所选的服务。                                                      |
 | SafeSearch              | 每个作用域的搜索引擎，以及每个安全主机的地址、上次检查时间和错误。                                             |
 | Alerts                  | 上次运行、已读取或过期事件、已发送或暂缓通知、已丢弃事件和上次错误。                                            |
@@ -70,7 +70,7 @@ Summary 中最后一行 **Sinkhole** 是最快的 Resolver 集成检查：
 | Deployment Needed                | 已编译内容不是为 Unbound 部署的内容，或集成处于非活动状态。                                     |
 | Deployed Generation              | 当前已部署运行时清单中的标识符。                                                       |
 | Loaded Generation                | Unbound 模块报告已加载的标识符。                                                   |
-| Update Running                   | 仅当某个活动进程持有共享更新锁时显示：DNS、Bypass 或 IP 更新、设置应用、软件包检查或更新，或删除。               |
+| Update Running                   | 仅当某个活动进程持有共享软件包任务锁时显示：DNS、Bypass 或 IP 更新、设置应用、软件包安装或删除。                |
 | Removal in Progress              | 仅当设置了持久删除标记并正在撤销集成时显示。                                                 |
 | DNS Resolver Python Script Owner | Resolver 唯一 `python_script` 插槽的当前值，或 `None`。                           |
 
@@ -80,7 +80,7 @@ Summary 中最后一行 **Sinkhole** 是最快的 Resolver 集成检查：
 
 ## 作用域和警报状态 \{#scope-and-alert-state}
 
-Scopes 摘要报告客户端映射重建状态。独立的 **Networks** 和 **Devices** 面板报告每个接口的当前 CIDR 和每个设备的当前地址。冲突会指出由多个设备声明的地址；按表格顺序出现的第一个设备拥有该地址的策略。
+Clients 摘要报告客户端映射重建状态。独立的 **Networks** 和 **Devices** 面板报告每个接口的当前 CIDR，以及每个设备所有已配置的标识符和当前地址。冲突会指出由多个设备声明的地址；按表格顺序出现的第一个设备拥有该地址的策略。同一设备的两个标识符可以找到同一地址而不会产生冲突。
 
 **Alerts** 面板只描述最近一次每分钟任务。**Notifications held back** 包括上限或未读通知抑制，**Events dropped by module** 则表示有界内存或磁盘事件队列已满。
 

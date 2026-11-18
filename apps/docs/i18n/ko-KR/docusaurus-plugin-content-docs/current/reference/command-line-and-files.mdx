@@ -18,19 +18,22 @@ tags:
 
 ## 명령 모드 \{#command-modes}
 
-| 명령                           | 동작                                                   |
-|------------------------------|------------------------------------------------------|
-| `sinkhole --update`          | 예약된 DNS, Bypass 및 활성화된 IP/국가 목록 업데이트 경로를 실행합니다.      |
-| `sinkhole --manual`          | **Status → Update Now**에서 사용하는 전체 수동 업데이트를 실행합니다.    |
-| `sinkhole --apply`           | 저장된 구성을 백그라운드에서 적용하고 필요한 다운로드 작업만 수행합니다.             |
-| `sinkhole --refresh-clients` | 클라이언트 맵의 네트워크 서브넷과 장치 주소를 재구성합니다.                    |
-| `sinkhole --alerts`          | 차단 이벤트를 읽고 일치하는 알림 규칙을 처리합니다.                        |
-| `sinkhole --redirect-check`  | 원하는 일반 DNS 리디렉션 규칙과 독립적으로 로드된 Bypass 및 IP 앵커를 조정합니다. |
-| `sinkhole --check-updates`   | 최신 GitHub 릴리스를 확인하고 업데이트 알림을 동기화합니다.                 |
-| `sinkhole --self-update`     | 대기 중인 최신 릴리스를 다운로드, 검증, 검사 및 설치합니다.                  |
-| `sinkhole --help`            | 지원되는 사용법 줄을 출력합니다.                                   |
+| 명령                                     | 동작                                                        |
+|----------------------------------------|-----------------------------------------------------------|
+| `sinkhole --update`                    | 예약된 DNS, Bypass 및 활성화된 IP/국가 목록 업데이트 경로를 실행합니다.           |
+| `sinkhole --manual`                    | **Status → Update Now**에서 사용하는 전체 수동 업데이트를 실행합니다.         |
+| `sinkhole --apply`                     | 저장된 구성을 백그라운드에서 적용하고 필요한 다운로드 작업만 수행합니다.                  |
+| `sinkhole --refresh-clients`           | 클라이언트 맵의 네트워크 서브넷과 장치 주소를 재구성합니다.                         |
+| `sinkhole --alerts`                    | 차단 이벤트를 읽고 일치하는 알림 규칙을 처리합니다.                             |
+| `sinkhole --redirect-check`            | 원하는 일반 DNS 리디렉션 규칙과 독립적으로 로드된 Bypass 및 IP 앵커를 조정합니다.      |
+| `sinkhole --check-updates`             | 최신 GitHub 릴리스를 확인하고 예약 업데이트 알림을 동기화합니다.                   |
+| `sinkhole --check-updates --no-notice` | 알림 없이 릴리스를 확인하고 새 버전을 이미 알린 것으로 기록합니다.                    |
+| `sinkhole --self-update`               | 실행 중인 목록, IP 또는 Bypass 업데이트를 기다린 후 대기 중인 릴리스를 검증하고 설치합니다. |
+| `sinkhole --help`                      | 지원되는 사용법 줄을 출력합니다.                                        |
 
-자동화에서는 `/usr/local/sbin/sinkhole --refresh-clients`와 같이 설치된 경로를 사용합니다. 모드는 상호 배타적이며 공유 업데이트 잠금이 이미 유지된 경우 DNS/Bypass/IP 목록 업데이트 또는 자체 업데이트는 경쟁 작업을 시작하지 않고 종료됩니다.
+자동화에서는 `/usr/local/sbin/sinkhole --refresh-clients`와 같이 설치된 경로를 사용합니다. 모드는 상호 배타적이며 `--no-notice`는 `--check-updates`와 함께 사용할 때만 유효합니다.
+
+릴리스 확인은 릴리스 잠금을 최대 30초 동안 기다리며 패키지 작업 잠금을 사용하지 않습니다. 자체 업데이트는 릴리스 잠금을 먼저 획득한 다음 실행 중인 DNS, Bypass 또는 IP 목록 업데이트가 패키지 작업 잠금을 해제할 때까지 최대 30분 동안 기다립니다.
 
 ## `/cf/conf/sinkhole`의 영구 파일 \{#persistent-files}
 
@@ -71,22 +74,23 @@ tags:
 
 ## `/var/run`의 임시 파일 \{#transient-files}
 
-| 경로                              | 용도                                            |
-|---------------------------------|-----------------------------------------------|
-| `sinkhole-update.lock`          | 장시간 실행되는 목록, IP 및 패키지 업데이트의 공유 잠금입니다.         |
-| `sinkhole-runtime.lock`         | 짧은 컴파일, 활성화 및 Resolver 통합 잠금입니다.              |
-| `sinkhole-clients.lock`         | 클라이언트 맵 새로 고침 잠금입니다.                          |
-| `sinkhole-alerts.lock`          | 알림 처리 잠금입니다.                                  |
-| `sinkhole-redirect-check.lock`  | 리디렉션 분 단위 검사 잠금입니다.                           |
-| `sinkhole-redirect-check.json`  | 두 번 관찰하는 리디렉션 검사에서 사용하는 첫 번째 불일치 관찰입니다.       |
-| `sinkhole-status.json`          | 현재 업데이트, 컴파일, 배포, 클라이언트 및 알림 상태입니다.           |
-| `sinkhole-status.json.lock`     | 상태 파일 조정 잠금입니다.                               |
-| `sinkhole-update.log`           | Status Update Log에 표시되는 가장 최근 목록 업데이트의 단계입니다. |
-| `sinkhole-ip-anchor.conf`       | `sinkhole/ip` 앵커에 대해 현재 생성된 규칙입니다.            |
-| `sinkhole-ip-anchor.sha256`     | 생성된 IP 정책과 로드된 IP 정책을 비교하는 다이제스트입니다.          |
-| `sinkhole-ip-status.json`       | IP 목록, GeoLite2, 테이블 및 앵커 상태입니다.              |
-| `sinkhole-bypass-anchor.conf`   | `sinkhole/bypass` 앵커의 현재 생성된 규칙입니다.           |
-| `sinkhole-bypass-anchor.sha256` | 생성된 Bypass 정책과 로드된 정책을 비교하는 다이제스트입니다.         |
+| 경로                              | 용도                                             |
+|---------------------------------|------------------------------------------------|
+| `sinkhole-update.lock`          | 장시간 실행되는 목록, Bypass, IP 및 패키지 설치 작업의 공유 잠금입니다. |
+| `sinkhole-release.lock`         | 릴리스 확인과 자체 업데이트 조정 잠금입니다.                      |
+| `sinkhole-runtime.lock`         | 짧은 컴파일, 활성화 및 Resolver 통합 잠금입니다.               |
+| `sinkhole-clients.lock`         | 클라이언트 맵 새로 고침 잠금입니다.                           |
+| `sinkhole-alerts.lock`          | 알림 처리 잠금입니다.                                   |
+| `sinkhole-redirect-check.lock`  | 리디렉션 분 단위 검사 잠금입니다.                            |
+| `sinkhole-redirect-check.json`  | 두 번 관찰하는 리디렉션 검사에서 사용하는 첫 번째 불일치 관찰입니다.        |
+| `sinkhole-status.json`          | 현재 업데이트, 컴파일, 배포, 클라이언트 및 알림 상태입니다.            |
+| `sinkhole-status.json.lock`     | 상태 파일 조정 잠금입니다.                                |
+| `sinkhole-update.log`           | Status Update Log에 표시되는 가장 최근 목록 업데이트의 단계입니다.  |
+| `sinkhole-ip-anchor.conf`       | `sinkhole/ip` 앵커에 대해 현재 생성된 규칙입니다.             |
+| `sinkhole-ip-anchor.sha256`     | 생성된 IP 정책과 로드된 IP 정책을 비교하는 다이제스트입니다.           |
+| `sinkhole-ip-status.json`       | IP 목록, GeoLite2, 테이블 및 앵커 상태입니다.               |
+| `sinkhole-bypass-anchor.conf`   | `sinkhole/bypass` 앵커의 현재 생성된 규칙입니다.            |
+| `sinkhole-bypass-anchor.sha256` | 생성된 Bypass 정책과 로드된 정책을 비교하는 다이제스트입니다.          |
 
 잠금 파일은 작업을 조정합니다. 파일이 존재한다는 사실만으로 실행 중인 프로세스가 잠금을 보유한다고 단정할 수 없습니다. 오래된 잠금으로 판단하기 전에 Status와 명령 출력을 확인합니다.
 

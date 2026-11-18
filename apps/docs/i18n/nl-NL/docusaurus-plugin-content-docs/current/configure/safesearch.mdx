@@ -7,7 +7,7 @@ keywords:
   - safesearch
   - veilig zoeken
   - beperkte modus van youtube
-  - netwerkscope
+  - netwerkfiltering
 tags:
   - configure
   - safesearch
@@ -22,17 +22,17 @@ Gebruik **Firewall → Sinkhole → SafeSearch** om zoekmachines voor een netwer
 
 1. Vergrendelt de veilige modus op netwerkniveau, zodat een niet-aangemelde browser, een nieuw apparaat of een privévenster nog steeds gefilterde resultaten krijgt.
 2. Dekt elk landendomein van Google af, niet alleen `google.com`, zodat overschakelen naar `google.co.uk` de vergrendeling niet omzeilt.
-3. Volgt dezelfde scopes als blokkeerlijsten, zodat een VLAN voor kinderen SafeSearch kan krijgen terwijl de rest van het netwerk dat niet krijgt.
+3. Gebruikt dezelfde Global-, netwerk- en apparaatcontexten als blokkeerlijsten, zodat een VLAN voor kinderen SafeSearch kan krijgen terwijl de rest van het netwerk dat niet krijgt.
 
-## Een scope en zoekmachines kiezen \{#choose-a-scope-and-engines}
+## Een context en zoekmachines kiezen \{#choose-a-context-and-engines}
 
-1. Selecteer **Global**, een geconfigureerd netwerk of een geconfigureerd apparaat in **Scope**.
+1. Kies **Global**, een netwerk of een apparaat in de [contextrij](/docs/configure/scopes#contexts) onder de hoofdtabbladen.
 2. Vink elke zoekmachine aan die u wilt vergrendelen en kies **Moderate** of **Strict** voor YouTube.
 3. Selecteer **Save**.
 
-Een netwerk of apparaat moet op **Scopes** bestaan voordat het hier verschijnt. Bij het opslaan wordt elke veilige host meteen opgezocht en wordt de wijziging op de achtergrond toegepast.
+Een netwerk of apparaat moet op **Clients** bestaan voordat het in de contextrij verschijnt. Bij het opslaan wordt elke veilige host meteen opgezocht en wordt de wijziging op de achtergrond toegepast. **All** toont elke context die minstens één zoekmachine vergrendelt; selecteer een rij om die context te bewerken.
 
-<img src={safesearchTab} alt="Tabblad SafeSearch voor een demotabletscope met SafeSearch vergrendeld voor Google, Bing, DuckDuckGo en Brave Search, YouTube op Strict en de veilige adressen die in gebruik zijn" width={1024} height={1322} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={safesearchTab} alt="Tabblad SafeSearch voor een demotablet met SafeSearch vergrendeld voor Google, Bing, DuckDuckGo en Brave Search, YouTube op Strict en de veilige adressen die in gebruik zijn" width={1024} height={1476} style={{maxWidth: '100%', height: 'auto'}} />
 
 | Zoekmachine  | Beantwoorde namen                                                                               | Veilige host                                                                 |
 |--------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
@@ -47,26 +47,26 @@ Een netwerk of apparaat moet op **Scopes** bestaan voordat het hier verschijnt. 
 | Pixabay      | `pixabay.com`, `www.pixabay.com`                                                                | `safesearch.pixabay.com`                                                     |
 | Qwant        | `qwant.com`, `www.qwant.com`, `api.qwant.com`, `lite.qwant.com`                                 | Geen; Qwant wordt geblokkeerd                                                |
 
-Qwant publiceert geen SafeSearch-host, dus als u Qwant kiest, wordt Qwant voor die scope geblokkeerd.
+Qwant publiceert geen SafeSearch-host, dus als u Qwant kiest, wordt Qwant voor die context geblokkeerd.
 
-## Hoe scopes worden gecombineerd \{#how-scopes-combine}
+## Hoe contexten worden gecombineerd \{#how-contexts-combine}
 
 Een client krijgt alle zoekmachines die zijn gekozen voor **Global**, voor het netwerk waarop de client zich bevindt en voor het apparaat, samengevoegd. Wanneer YouTube met beide niveaus voorkomt, wint **Strict**.
 
-SafeSearch wordt na het blokkeren toegepast. Een naam die door een lijst of geblokkeerde service voor de client wordt geblokkeerd, blijft geblokkeerd, en toegestane domeinen schakelen SafeSearch niet uit. Net als elke client zonder scope krijgen de eigen lookups van de firewall de zoekmachines die voor **Global** zijn gekozen.
+SafeSearch wordt na het blokkeren toegepast. Een naam die door een lijst of geblokkeerde service voor de client wordt geblokkeerd, blijft geblokkeerd, en toegestane domeinen schakelen SafeSearch niet uit. Net als elke client buiten elk netwerk en apparaat krijgen de eigen lookups van de firewall de zoekmachines die voor **Global** zijn gekozen.
 
 ## Hoe het antwoord werkt \{#how-the-answer-works}
 
 Voor een gekozen zoekmachine beantwoordt Sinkhole de naam van de zoekmachine met een CNAME naar de veilige host plus de adressen van de veilige host, hetzelfde antwoord dat een handmatig geschreven Unbound-view geeft. Andere recordtypen, zoals HTTPS-records, krijgen alleen de CNAME, zodat een browser geen hints kan gebruiken die om de veilige host heen leiden.
 
-Sinkhole zoekt de adressen van elke veilige host op wanneer u opslaat en bij elke lijstupdate, en behoudt de laatste geldige adressen wanneer een lookup mislukt. Een zoekmachine waarvan de veilige host nog nooit een adres heeft teruggegeven, wordt voor de bijbehorende scopes geblokkeerd totdat een lookup slaagt.
+Sinkhole zoekt de adressen van elke veilige host op wanneer u opslaat en bij elke lijstupdate, en behoudt de laatste geldige adressen wanneer een lookup mislukt. Een zoekmachine waarvan de veilige host nog nooit een adres heeft teruggegeven, wordt voor de bijbehorende contexten geblokkeerd totdat een lookup slaagt.
 
-SafeSearch-antwoorden worden nooit in de cache van de Resolver opgeslagen, zodat het antwoord voor de ene client nooit een client buiten de scope bereikt.
+SafeSearch-antwoorden worden nooit in de cache van de Resolver opgeslagen, zodat het antwoord voor de ene client nooit een client buiten die context bereikt.
 
 ## SafeSearch controleren \{#verify-safesearch}
 
 1. Open **Status** en controleer of het paneel **SafeSearch** elke veilige host met adressen en zonder fout toont.
-2. Zoek vanaf een client binnen de scope een naam van een zoekmachine op, zoals `nslookup www.google.com`, en controleer of het antwoord de veilige host noemt.
-3. Controleer vanaf een client buiten de scope of dezelfde lookup het normale antwoord van de zoekmachine geeft.
+2. Zoek vanaf een client binnen de context een naam van een zoekmachine op, zoals `nslookup www.google.com`, en controleer of het antwoord de veilige host noemt.
+3. Controleer vanaf een client buiten de context of dezelfde lookup het normale antwoord van de zoekmachine geeft.
 
 Versleutelde DNS die een client naar een andere bestemming stuurt, omzeilt elk DNS-beleid, inclusief SafeSearch. [Beveiliging tegen omzeiling](/docs/configure/bypass-protection) houdt geselecteerde interfaces op het DNS-pad van Sinkhole.

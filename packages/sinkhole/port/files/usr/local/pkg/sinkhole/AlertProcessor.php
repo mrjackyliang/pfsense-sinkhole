@@ -7,11 +7,13 @@ namespace PfSense\Sinkhole\Runtime;
 use Closure;
 use JsonException;
 use PfSense\Sinkhole\Domain\DomainParser;
+use PfSense\Sinkhole\Domain\ScopeConfiguration;
 use RuntimeException;
 use Throwable;
 
 require_once(__DIR__ . '/AtomicFile.php');
 require_once(__DIR__ . '/DomainParser.php');
+require_once(__DIR__ . '/ScopeConfiguration.php');
 require_once(__DIR__ . '/FileSystem.php');
 require_once(__DIR__ . '/PackagePaths.php');
 require_once(__DIR__ . '/StateStore.php');
@@ -819,6 +821,7 @@ final class AlertProcessor
      * @return string
      *
      * @since 1.0.0
+     * @since 1.3.0
      * @private
      */
     private function detailMessage(
@@ -832,7 +835,10 @@ final class AlertProcessor
         $clientDescription = $event['client'];
 
         if (is_string($event['device']) && isset($devices[$event['device']])) {
-            $clientDescription = (string) ($devices[$event['device']]['name'] ?? $event['client']);
+            $clientDescription = $this->deviceDescription(
+                $devices[$event['device']],
+                $interfaces,
+            );
         }
 
         $networkDescription = Translator::translate('unknown_network');
@@ -860,6 +866,52 @@ final class AlertProcessor
         }
 
         return Translator::translate('alert_detail_direct', $arguments);
+    }
+
+    /**
+     * Alert Processor - Device Description.
+     *
+     * Includes every configured identifier so notices and remote notifications
+     * identify multi-adapter devices without requiring a trip to the Scopes page.
+     *
+     * @param array $device - Normalized device row.
+     * @param array<string, string> $interfaces - Interface names and descriptions.
+     *
+     * @return string
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private function deviceDescription(array $device, array $interfaces): string
+    {
+        $typeLabels = [
+            ScopeConfiguration::DEVICE_IP => Translator::translate('ip_address'),
+            ScopeConfiguration::DEVICE_STATIC_MAPPING => Translator::translate('dhcp_static_mapping'),
+            ScopeConfiguration::DEVICE_MAC => Translator::translate('mac_address'),
+        ];
+        $identifierLabels = [];
+
+        foreach ($device['identifiers'] ?? [] as $identifier) {
+            if (!is_array($identifier)) {
+                continue;
+            }
+
+            $type = (string) ($identifier['type'] ?? '');
+            $value = (string) ($identifier['value'] ?? '');
+
+            if ($type === ScopeConfiguration::DEVICE_STATIC_MAPPING) {
+                $interface = (string) ($identifier['interface'] ?? '');
+                $value = ($interfaces[$interface] ?? $interface) . ' / ' . $value;
+            }
+
+            $identifierLabels[] = ($typeLabels[$type] ?? $type) . ': ' . $value;
+        }
+
+        $name = (string) ($device['name'] ?? '');
+
+        return ($identifierLabels === [])
+            ? $name
+            : $name . ' — ' . implode(', ', $identifierLabels);
     }
 
     /**

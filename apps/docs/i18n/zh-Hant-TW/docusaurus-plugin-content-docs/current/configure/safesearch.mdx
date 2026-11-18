@@ -7,7 +7,7 @@ keywords:
   - safesearch
   - 安全搜尋
   - youtube 嚴格篩選模式
-  - 網路作用域
+  - 網路過濾
 tags:
   - configure
   - safesearch
@@ -22,17 +22,17 @@ import safesearchTab from './_assets_/safesearch-1.png';
 
 1. 在網路層級鎖定安全模式，因此未登入的瀏覽器、新設備或私密視窗仍會取得過濾後的結果。
 2. 涵蓋所有 Google 國家/地區網域，而不只是 `google.com`，因此改用 `google.co.uk` 也無法繞過。
-3. 與封鎖清單使用相同的作用域，因此可以只為兒童 VLAN 啟用 SafeSearch，而網路的其他部分不受影響。
+3. 與封鎖清單使用相同的 Global、網路和設備情境，因此可以只為兒童 VLAN 啟用 SafeSearch，而網路的其他部分不受影響。
 
-## 選擇作用域和搜尋引擎 \{#choose-a-scope-and-engines}
+## 選擇情境和搜尋引擎 \{#choose-a-context-and-engines}
 
-1. 在 **Scope** 中選擇 **Global**、一個已設定的網路或一個已設定的設備。
+1. 在主分頁下方的[情境列](/docs/configure/scopes#contexts)中選擇 **Global**、一個網路或一台設備。
 2. 勾選要鎖定的每個搜尋引擎，並為 YouTube 選擇 **Moderate** 或 **Strict**。
 3. 選擇 **Save**。
 
-網路或設備必須先存在於 **Scopes** 中，才會出現在這裡。儲存時會立即查詢每個安全主機，並在背景套用變更。
+網路或設備必須先存在於 **Clients** 中，才會出現在情境列中。儲存時會立即查詢每個安全主機，並在背景套用變更。**All** 列出每個至少鎖定一個搜尋引擎的情境；選擇某列即可編輯該情境。
 
-<img src={safesearchTab} alt="SafeSearch 選項卡顯示演示平板作用域已為 Google、Bing、DuckDuckGo 和 Brave Search 鎖定 SafeSearch，YouTube 設為 Strict，並列出正在使用的安全位址" width={1024} height={1302} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={safesearchTab} alt="SafeSearch 選項卡顯示演示平板已為 Google、Bing、DuckDuckGo 和 Brave Search 鎖定 SafeSearch，YouTube 設為 Strict，並列出正在使用的安全位址" width={1024} height={1456} style={{maxWidth: '100%', height: 'auto'}} />
 
 | 搜尋引擎         | 回應的名稱                                                                | 安全主機                                                                     |
 |--------------|----------------------------------------------------------------------|--------------------------------------------------------------------------|
@@ -47,26 +47,26 @@ import safesearchTab from './_assets_/safesearch-1.png';
 | Pixabay      | `pixabay.com`、`www.pixabay.com`                                      | `safesearch.pixabay.com`                                                 |
 | Qwant        | `qwant.com`、`www.qwant.com`、`api.qwant.com`、`lite.qwant.com`         | 無；Qwant 會被封鎖                                                             |
 
-Qwant 沒有公布 SafeSearch 主機，因此選擇它會為該作用域封鎖 Qwant。
+Qwant 沒有公布 SafeSearch 主機，因此選擇它會為該情境封鎖 Qwant。
 
-## 作用域如何合併 \{#how-scopes-combine}
+## 情境如何合併 \{#how-contexts-combine}
 
 用戶端會取得為 **Global**、其所在網路和其設備所選的全部搜尋引擎的合集。當 YouTube 同時出現兩個等級時，以 **Strict** 為準。
 
-SafeSearch 在封鎖之後套用。清單或已封鎖的服務為該用戶端封鎖的名稱仍維持封鎖，允許網域也不會關閉 SafeSearch。與任何沒有作用域的用戶端一樣，防火牆本身的查詢會取得為 **Global** 所選的搜尋引擎。
+SafeSearch 在封鎖之後套用。清單或已封鎖的服務為該用戶端封鎖的名稱仍維持封鎖，允許網域也不會關閉 SafeSearch。與任何不屬於任何網路或設備的用戶端一樣，防火牆本身的查詢會取得為 **Global** 所選的搜尋引擎。
 
 ## 回應如何運作 \{#how-the-answer-works}
 
 對於已選擇的搜尋引擎，Sinkhole 會將該引擎的名稱回應為指向安全主機的 CNAME，並附上安全主機的地址，與手寫的 Unbound 檢視所給出的回應相同。其他記錄類型（例如 HTTPS 記錄）只會收到 CNAME，因此瀏覽器無法利用提示繞過安全主機。
 
-Sinkhole 會在儲存時以及每次清單更新時查詢每個安全主機的地址，查詢失敗時保留最後一次有效的地址。如果某個搜尋引擎的安全主機從未傳回過地址，該引擎會在其作用域內遭到封鎖，直到查詢成功。
+Sinkhole 會在儲存時以及每次清單更新時查詢每個安全主機的地址，查詢失敗時保留最後一次有效的地址。如果某個搜尋引擎的安全主機從未傳回過地址，該引擎會在其情境內遭到封鎖，直到查詢成功。
 
-SafeSearch 回應永遠不會存入 Resolver 的快取，因此一個用戶端的回應絕不會傳給作用域以外的用戶端。
+SafeSearch 回應永遠不會存入 Resolver 的快取，因此一個用戶端的回應絕不會傳給該情境以外的用戶端。
 
 ## 驗證 SafeSearch \{#verify-safesearch}
 
 1. 開啟 **Status**，確認 **SafeSearch** 面板列出每個安全主機及其地址，且沒有錯誤。
-2. 在作用域內的用戶端上查詢一個搜尋引擎名稱，例如 `nslookup www.google.com`，並確認回應指向安全主機。
-3. 在作用域外的用戶端上，確認同樣的查詢傳回該引擎的正常回應。
+2. 在該情境內的用戶端上查詢一個搜尋引擎名稱，例如 `nslookup www.google.com`，並確認回應指向安全主機。
+3. 在該情境外的用戶端上，確認同樣的查詢傳回該引擎的正常回應。
 
 用戶端送往其他地方的加密 DNS 會跳過所有 DNS 原則，包括 SafeSearch。[防止繞過](/docs/configure/bypass-protection)可讓所選介面維持在 Sinkhole 的 DNS 路徑上。

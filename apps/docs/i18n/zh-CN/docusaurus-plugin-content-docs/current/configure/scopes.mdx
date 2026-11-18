@@ -1,10 +1,11 @@
 ---
 id: scopes
-title: 作用域和允许的域名
-description: 将列表和允许的域名分配给全局、接口和设备作用域，然后按照每个 DNS 查询的准确最具体决定顺序处理。
+title: 客户端和阻止
+description: 在 Clients 中定义网络和设备，在 Blocking 中为全局、每个网络和每台设备选择列表和允许的域名，然后按照每个 DNS 查询的准确最具体决定顺序处理。
 keywords:
   - sinkhole for pfsense
-  - 作用域
+  - 客户端
+  - 阻止
   - vlan 阻止
   - 设备策略
   - 允许的域名
@@ -17,44 +18,65 @@ tags:
 import deviceEditor from './_assets_/scopes-2.png';
 import scopesTab from './_assets_/scopes-1.png';
 
-在全局、网络和设备层级分配列表和允许的域名，让每个客户端获得适合其当前位置的策略。
+在 **Clients** 中定义每个网络和设备一次，然后在 **Blocking** 中选择每个网络和设备要阻止的内容。每个客户端都会获得适合其当前位置的策略。
 
-## 为什么使用作用域？ \{#why-use-scopes}
+## 为什么使用网络和设备？ \{#why-use-networks-and-devices}
 
 1. 为每个 pfSense 接口或 VLAN 提供自己的策略，同时为所有人保留全局规则。
 2. 为一台设备提供更具体的决定，而不需要单独的 DNS 服务器。
 3. 允许域名可以在误报相关的层级纠正误报，无需放弃整份列表。
 4. 将客户端地址与编译列表分开，因此 DHCP、邻居或接口变化不会重新加载 Unbound。
 
-## 全局作用域 \{#global-scope}
+## 上下文 \{#contexts}
 
-选中 **Global** 的列表会在设备和网络决定之后应用于每个客户端。全局允许域名在 **Lists** 选项卡中输入，并允许指定域名及其子域名通过全局列表。
+Blocking、Services、SafeSearch、Alerts、Bypass 和 IP 在主选项卡下方共用第二行选项卡：
 
-未匹配任何已启用网络或设备作用域的客户端只会获得此层级。
+| 选项卡      | 页面编辑的内容                                  |
+|----------|------------------------------------------|
+| All      | 不编辑任何内容。只读表格列出每个拥有自身设置的上下文；选择某行即可打开该上下文。 |
+| Global   | 适用于每个客户端的设置。                             |
+| Networks | 一个网络。由一行网络标签选择具体网络。                      |
+| Devices  | 一台设备。由一行设备标签选择具体设备，搜索框可按名称筛选标签。          |
 
-## 网络作用域 \{#network-scopes}
+该行下方的横幅会显示你正在编辑的内容，例如 **Editing: Network: IOT · applies to clients on IOT** 或 **Editing: Device: Tablet · this device only**。每个上下文只显示自身的设置；从更宽泛上下文继承的内容不会出现在其表单中。
 
-打开 **Firewall → Sinkhole → Scopes**，然后选择 Networks 表格下方的 **Add**。编辑器默认选择 LAN；如果没有 LAN，则选择第一个可用的非 WAN 接口，并省略已有网络作用域的接口。当客户端地址位于该接口当前 IPv4 或 IPv6 子网之一时，该客户端属于该网络。
+所选上下文会在各选项卡之间保持不变，直到你选择另一个上下文。已停用的网络或设备仍可编辑，并会显示警告，说明在重新启用之前其设置不适用于任何客户端。
 
-每个网络行选择额外列表、允许的域名以及是否启用作用域。保存后会返回 Scopes；选择铅笔图标或双击某行即可编辑。在网络之间移动的设备会获得其当前地址所匹配网络的策略。
+## 定义网络 \{#define-networks}
 
-<img src={scopesTab} alt="Scopes 选项卡显示一个 LAN 网络作用域，以及三个按 IP 或 MAC 地址识别的演示设备及其当前地址" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+打开 **Firewall → Sinkhole → Clients**，然后选择 Networks 表格下方的 **Add**。编辑器默认选择 LAN；如果没有 LAN，则选择第一个可用的非 WAN 接口，并省略已有网络的接口。当客户端地址位于该接口当前 IPv4 或 IPv6 子网之一时，该客户端属于该网络。
 
-## 设备作用域 \{#device-scopes}
+每个网络行包含一个接口和一个 **Enabled** 复选框。保存后会返回 Clients；选择铅笔图标或双击某行即可编辑。在网络之间移动的设备会获得其当前地址所匹配网络的策略。
 
-选择 Devices 表格下方的 **Add**，提供名称并选择一种识别方式。编辑器只显示与所选方式对应的标识符字段：
+<img src={scopesTab} alt="Clients 选项卡显示一个 LAN 网络，以及三个按 IP 或 MAC 地址识别的演示设备及其当前地址" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-| 方式                  | 用于设备的地址                        |
+## 定义设备 \{#define-devices}
+
+选择 Devices 表格下方的 **Add**，提供名称并添加一个或多个标识符行。每行包含一种类型及该类型对应的值：
+
+| 标识符类型               | 用于设备的地址                        |
 |---------------------|--------------------------------|
 | IP address          | 配置的 IPv4 或 IPv6 地址。            |
 | DHCP static mapping | 配置的地址，加上为该映射 MAC 观察到的当前地址。     |
 | MAC address         | 该 MAC 当前的 ARP、NDP 和 DHCP 租约地址。 |
 
-设备行选择其列表、允许的域名和启用状态。保存后会返回 Scopes；选择铅笔图标或双击某行即可编辑。仅当 DNS 阻止具有已启用的网络或设备作用域，或 Bypass DNS 保护需要识别客户端时，后台作业才会每分钟刷新当前子网和设备地址。软件包 Sync 也只会在相同条件下启动此刷新。
+使用 **Add Identifier** 和垃圾桶按钮管理各行。设备必须至少有一个标识符。通过任一标识符找到的地址都解析到同一设备，因此共享同一组设置和同一个启用状态。保存后会返回 Clients；选择铅笔图标或双击某行即可编辑。仅当 DNS 阻止具有已启用的网络或设备，或 Bypass DNS 保护需要识别客户端时，后台作业才会每分钟刷新当前子网和设备地址。软件包 Sync 也只会在相同条件下启动此刷新。
 
-列表较多时，拖动 **Lists** 框的底角即可将其拉高。
+在 Clients 中删除网络或设备时，也会删除其 Blocking、Services、SafeSearch、Bypass 和 IP 设置。
 
-<img src={deviceEditor} alt="按 IP 地址识别的演示平板的 Edit Device 页面，包含一个已选列表和一个允许域名" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={deviceEditor} alt="按 IP 地址和 MAC 地址识别的演示平板的 Edit Device 页面" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 选择列表和允许的域名 \{#choose-lists-and-allowed-domains}
+
+打开 **Firewall → Sinkhole → Blocking** 并选择一个上下文：
+
+- **Global** 选择在设备和网络决定之后应用于每个客户端的列表，并保存全局允许的域名。
+- **Networks** 为所选网络上的客户端选择额外的列表和允许的域名。
+- **Devices** 为所选设备选择额外的列表和允许的域名。
+
+每个上下文都有一个 **Lists** 框和一个每行一个域名的 **Allowed Domains** 框。选择 **Save** 即可应用该上下文。列表较多时，拖动 **Lists** 框的底角即可将其拉高。列表本身在 [Lists](/docs/configure/lists) 选项卡中添加和编辑。
+
+**All** 为每个拥有列表或允许域名的上下文显示一行，包含其列表名称和允许域名数量。
 
 ## 决定顺序 \{#decision-order}
 
@@ -67,7 +89,7 @@ import scopesTab from './_assets_/scopes-1.png';
 5. **Global allowed domains** — 全局例外匹配时立即允许。
 6. **Global lists** — 全局列表匹配时阻止。
 
-没有任何步骤作出决定时，查询会通过。某层级的允许域名会覆盖从较不具体层级继承的列表，但不会覆盖已经在更具体层级作出决定的列表。
+没有任何步骤作出决定时，查询会通过。未匹配任何已启用网络或设备的客户端只会经过 Global 步骤。某层级的允许域名会覆盖从较不具体层级继承的列表，但不会覆盖已经在更具体层级作出决定的列表。
 
 ## 允许域名的行为 \{#allowed-domain-behavior}
 
@@ -79,11 +101,11 @@ import scopesTab from './_assets_/scopes-1.png';
 
 ## 地址冲突 \{#address-conflicts}
 
-当两个设备行声明同一个当前地址时，表格顺序中的第一台设备获胜。**Status → Scopes** 会在每个受影响行的 **Conflict** 下显示该地址，以便修正顺序或标识符。
+同一设备的多个标识符可以找到同一地址而不会产生冲突。当两个不同设备声明同一个当前地址时，Clients 表格中的第一台设备获胜。Clients 表格和 **Status → Clients** 会在每个受影响行的 **Conflict** 下显示该地址，以便修正顺序或标识符。
 
-## 验证作用域 \{#verify-a-scope}
+## 验证网络或设备 \{#verify-a-network-or-device}
 
 1. 运行 `/usr/local/sbin/sinkhole --refresh-clients`，或等待每分钟刷新。
-2. 打开 **Status → Scopes**，确认网络的当前子网和设备的当前地址。
-3. 从该作用域中的客户端查询一个名称，并将结果与上述决定顺序比较。
+2. 打开 **Status → Clients**，确认网络的当前子网和设备的当前地址。
+3. 从该网络或设备上的客户端查询一个名称，并将结果与上述决定顺序比较。
 4. 在依靠设备特定行为前检查地址冲突。

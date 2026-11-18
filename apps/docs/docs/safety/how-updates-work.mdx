@@ -52,7 +52,9 @@ An existing `sinkhole/ip` anchor can receive a table-only `pfctl -T replace` aft
 
 The default list update frequency is Daily. Hourly, Every 6 hours, Daily, and Weekly schedules use stable randomized minute components so the firewall doesn't move its job time on every save.
 
-DNS, Bypass, and IP/country updates, settings applies, package checks and self-updates, and removal cleanup coordinate through `/var/run/sinkhole-update.lock`. A package check or Update action doesn't wait: if another operation holds the lock, it stops with `Another package operation is already running.` and can be retried once that operation ends.
+DNS, Bypass, and IP/country updates, settings applies, package installation, and removal cleanup coordinate through `/var/run/sinkhole-update.lock`. Release checks and self-updates coordinate separately through `/var/run/sinkhole-release.lock`, and checks never take the package task lock.
+
+Self-update takes the release lock before the package task lock. It waits up to 30 minutes for a running list, IP, or Bypass update while the About progress line reports the wait.
 
 ## Catalog Refreshes Are Separate \{#catalog-refreshes-are-separate}
 

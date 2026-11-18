@@ -30,7 +30,7 @@ That setup worked, but every firewall restart or reload meant about ten minutes 
 
 Sinkhole runs as a Python module inside pfSense's DNS Resolver and answers a blocked name with `0.0.0.0` and `::`.
 
-- **Lists for every scope** — Global lists apply to everyone. A network scope adds lists for one interface or VLAN, and a device scope adds lists for one device, matched by IP address, DHCP static mapping, or MAC address.
+- **Lists for every scope** — Global lists apply to everyone. A network scope adds lists for one interface or VLAN, and a device scope adds one shared set of lists for a device matched by one or more IP addresses, DHCP static mappings, and MAC addresses.
 - **Allowed domains at every level** — A false positive is fixed where it matters, without dropping a whole list.
 - **Saved copies of every list** — DNS answers from the last good data right after a DNS Resolver restart or a reboot, RAM-disk installs included. A failed download keeps the previous copy.
 - **Alerts you choose** — A pfSense notification arrives only for the lists, networks, and devices an alert rule selects, once per device and domain.

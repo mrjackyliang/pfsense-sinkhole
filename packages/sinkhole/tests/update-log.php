@@ -377,7 +377,7 @@ sinkholeTestRun([
                 'Downloading GeoLite2 Country data from download.maxmind.com.',
                 'GeoLite2 Country update failed; using the last good copy if one exists: '
                     . 'Invented transport failure for download.maxmind.com with [redacted]',
-                'Loaded the IP blocking rules with 1 IPv4 and 0 IPv6 table entries.',
+                'Loaded the IP blocking rules with 1 IPv4 and 0 IPv6 context table entries.',
             ] as $milestone) {
                 sinkholeTestAssertContains(
                     $milestone,

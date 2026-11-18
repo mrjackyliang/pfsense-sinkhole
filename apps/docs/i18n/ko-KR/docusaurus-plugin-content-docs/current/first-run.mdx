@@ -31,21 +31,21 @@ pfBlockerNG가 설치되어 활성화되어 있거나 다른 Python 스크립트
 
 1. **Lists**를 열고 신뢰하는 출처의 URL을 추가하거나 **Add from Catalog**를 열어 필요할 때만 가져오는 두 카탈로그를 검색합니다.
 2. 출처에 로컬 이름을 지정하고 Sinkhole이 다운로드하도록 **Enabled**를 선택한 상태로 둡니다.
-3. 모든 장치 및 네트워크 규칙 다음에 목록을 적용해야 하는 경우에만 **Global**을 선택합니다.
-4. 알려진 오탐을 허용해야 하면 전역 **Allowed Domains**에 한 줄당 한 도메인을 추가합니다.
+3. **Blocking**을 열고 **Global**에 머문 상태에서, 모든 장치 및 네트워크 규칙 다음에 목록을 적용해야 하는 경우에만 목록을 선택합니다.
+4. 알려진 오탐을 허용해야 하면 같은 페이지의 전역 **Allowed Domains**에 한 줄당 한 도메인을 추가합니다.
 
 Sinkhole은 어떤 출처도 추천하지 않습니다. [목록과 저장된 사본](/docs/configure/lists)에서는 허용되는 형식과 카탈로그 결과가 일반 목록 행으로 추가되는 방식을 설명합니다.
 
-<img src={listsTab} alt="Global 및 Used By 열이 있는 데모 차단 목록 5개와 전역 허용 도메인 2개를 표시하는 Lists 탭" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Used By 열이 있는 데모 차단 목록 5개를 표시하는 Lists 탭" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-## 선택적 범위 추가 \{#add-optional-scopes}
+## 선택적 네트워크와 장치 추가 \{#add-optional-networks-and-devices}
 
-네트워크나 장치에 전역 수준 이외의 정책이 필요하면 **Scopes**를 엽니다.
+네트워크나 장치에 Global 수준 이외의 정책이 필요하면 **Clients**를 엽니다.
 
-- 구성된 pfSense 인터페이스 하나에 대해 **Network**를 추가한 다음 해당 목록과 허용 도메인을 선택합니다.
-- IP 주소, DHCP 정적 매핑 또는 MAC 주소로 **Device**를 추가한 다음 해당 목록과 허용 도메인을 선택합니다.
+- 구성된 pfSense 인터페이스 하나에 대해 **Network**를 추가합니다.
+- 하나 이상의 IP 주소, DHCP 정적 매핑 또는 MAC 주소로 **Device**를 추가합니다.
 
-장치는 현재 속한 네트워크를 상속하고 네트워크는 전역 목록을 상속합니다. [범위와 허용 도메인](/docs/configure/scopes)에서는 이름을 허용할지 차단할지 결정하는 판단 순서를 설명합니다.
+그런 다음 **Blocking**을 열고 컨텍스트 행에서 네트워크나 장치를 선택한 뒤 해당 목록과 허용 도메인을 선택합니다. 장치는 현재 속한 네트워크를 상속하고 네트워크는 Global 목록을 상속합니다. [클라이언트와 차단](/docs/configure/scopes)에서는 이름을 허용할지 차단할지 결정하는 판단 순서를 설명합니다.
 
 ## 활성화 및 업데이트 \{#enable-and-update}
 

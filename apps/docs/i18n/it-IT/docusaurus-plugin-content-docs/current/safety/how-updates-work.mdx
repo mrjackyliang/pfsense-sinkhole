@@ -52,7 +52,9 @@ Un anchor `sinkhole/ip` esistente può ricevere solo un `pfctl -T replace` delle
 
 La frequenza predefinita di aggiornamento delle liste è Daily. Le pianificazioni Hourly, Every 6 hours, Daily e Weekly usano componenti casuali stabili per i minuti, così il firewall non sposta l’ora dell’attività a ogni salvataggio.
 
-Gli aggiornamenti DNS, Bypass e IP/paesi, le applicazioni delle impostazioni, i controlli e gli aggiornamenti automatici del pacchetto e la pulizia durante la rimozione si coordinano tramite `/var/run/sinkhole-update.lock`. Un controllo del pacchetto o un’azione Update non attende: se un’altra operazione detiene il lock, si interrompe con `Another package operation is already running.` e può essere ripetuto al termine di quell’operazione.
+Gli aggiornamenti DNS, Bypass e IP/paesi, le applicazioni delle impostazioni, l’installazione del pacchetto e la pulizia durante la rimozione si coordinano tramite `/var/run/sinkhole-update.lock`. I controlli delle release e gli aggiornamenti automatici si coordinano separatamente tramite `/var/run/sinkhole-release.lock`, e i controlli non acquisiscono mai il lock delle attività del pacchetto.
+
+L’aggiornamento automatico acquisisce il lock delle release prima del lock delle attività del pacchetto. Attende fino a 30 minuti che termini un aggiornamento di liste, IP o Bypass mentre la riga di avanzamento di About mostra l’attesa.
 
 ## Gli aggiornamenti dei cataloghi sono separati \{#catalog-refreshes-are-separate}
 

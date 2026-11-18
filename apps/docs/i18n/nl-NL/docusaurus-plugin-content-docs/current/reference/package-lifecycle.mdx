@@ -40,7 +40,9 @@ Na een volledig configuratieherstel op dezelfde firewall kan pfSense melden dat 
 
 Een uitgebrachte build slaat ook één met een controlesom vastgezette hersteltaak op in `config.xml`. Op een nieuwe firewall zonder Sinkhole-bestanden wacht de losgekoppelde taak tot de pfSense-pakketsynchronisatie klaar is, verifieert en installeert de exacte release die de taak heeft gemaakt en sluit daarna elke 15 minuten zonder wijzigingen af zodra Sinkhole aanwezig is.
 
-Keep Settings bewaart deze hersteltaak tijdens een bewuste verwijdering. Schakel Keep Settings uit voordat u Sinkhole verwijdert als het verwijderd moet blijven.
+De taak bewaart onder `/cf/conf/sinkhole/restore-heal` een met een controlesom geverifieerde kopie van die release, afkomstig uit de eigen download of uit een via **About** geïnstalleerde update, zodat Sinkhole na herstel op dezelfde firewall zonder internettoegang opnieuw kan worden geïnstalleerd. Er wordt maar één uitvoering tegelijk verwerkt; een uitvoering die begint terwijl een andere nog downloadt of installeert, wordt onmiddellijk afgesloten. Elke stap wordt in het systeemlogboek onder `sinkhole-restore-heal` vastgelegd: `deferred` zolang pfSense nog pakketten herstelt, daarna `cache` of `fetch`, `install` en `installed`, of `fetch-failed`, `checksum-failed`, `cache-failed` of `install-failed` wanneer een stap mislukt.
+
+Bij een bewuste verwijdering worden de hersteltaak en de gecachte kopie verwijderd, ongeacht of **Keep Settings** aan of uit staat; alleen een verwijdering tijdens configuratieherstel behoudt ze.
 
 ## Waarom een pfSense-upgrade Sinkhole behoudt \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
@@ -70,7 +72,7 @@ Wanneer **Keep Settings** is ingeschakeld, blijven de configuratie en de opgesla
 
 1. Controleer of **Firewall → Sinkhole** niet meer aanwezig is.
 2. Controleer of het Python-script en de volgorde van de DNS Resolver overeenkomen met de waarden van vóór Sinkhole.
-3. Als Keep Settings was uitgeschakeld, controleert u of er geen Sinkhole-cronvermeldingen achterblijven. Controleer in alle gevallen of er geen blok voor de omleiding van gewone DNS, `sinkhole/bypass`-anker of `sinkhole/ip`-anker achterblijft.
+3. Controleer of er geen Sinkhole-cronvermeldingen achterblijven, waaronder de hersteltaak `sinkhole-restore-heal`, en of er geen blok voor de omleiding van gewone DNS, geen `sinkhole/bypass`-anker en geen `sinkhole/ip`-anker achterblijven.
 4. Als Keep Settings was uitgeschakeld, controleert u of `/cf/conf/sinkhole` ontbreekt.
 
 Als een update actief was, vraagt de verwijderingsmarkering deze tussen begrensde fasen te stoppen voordat permanente gegevens worden aangeraakt. Bij verwijdering wordt de eerste opschoonfout vastgelegd terwijl de overige onafhankelijke opschoonstappen nog steeds worden geprobeerd.

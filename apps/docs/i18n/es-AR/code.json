@@ -105,19 +105,19 @@
     "message": "Páginas de Sinkhole"
   },
   "home.showcase.scopes.label": {
-    "message": "Ámbitos"
+    "message": "Clientes y bloqueo"
   },
   "home.showcase.scopes.heading": {
     "message": "Reglas distintas para cada red y dispositivo"
   },
   "home.showcase.scopes.description": {
-    "message": "Asigna a una red o a un solo dispositivo sus propias listas y dominios permitidos. Cada consulta DNS sigue el ámbito más específico que le corresponde."
+    "message": "Define cada red y cada dispositivo una sola vez en Clientes y después asígnales sus propias listas y dominios permitidos en Bloqueo. Cada consulta DNS sigue la coincidencia más específica: primero el dispositivo, luego su red y por último la configuración global."
   },
   "home.showcase.scopes.link": {
-    "message": "Configurar ámbitos"
+    "message": "Configurar clientes y bloqueo"
   },
   "home.showcase.scopes.alt": {
-    "message": "Página Ámbitos de Sinkhole con un ámbito de red LAN y tres ámbitos de dispositivo"
+    "message": "Página Clientes de Sinkhole con una red LAN y tres dispositivos"
   },
   "home.showcase.services.label": {
     "message": "Servicios"
@@ -141,16 +141,16 @@
     "message": "Qué está cargado y qué está desactualizado"
   },
   "home.showcase.status.description": {
-    "message": "Estado muestra cada lista con su cantidad de entradas y su última actualización, además de los ámbitos, redes y dispositivos que Sinkhole aplica en este momento."
+    "message": "Estado muestra cada lista con su cantidad de entradas y su última actualización, además de las redes y dispositivos que Sinkhole aplica en este momento."
   },
   "home.showcase.status.link": {
     "message": "Conocer la página Estado"
   },
   "home.showcase.status.alt": {
-    "message": "Página Estado de Sinkhole con los paneles de listas, ámbitos, redes y dispositivos"
+    "message": "Página Estado de Sinkhole con los paneles de listas, redes y dispositivos"
   },
   "home.showcase.scopes.title": {
-    "message": "pfSense.home.arpa - Cortafuegos: Sinkhole: Ámbitos"
+    "message": "pfSense.home.arpa - Cortafuegos: Sinkhole: Clientes"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Cortafuegos: Sinkhole: Servicios"

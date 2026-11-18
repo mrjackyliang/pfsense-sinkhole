@@ -52,7 +52,9 @@ Et eksisterende `sinkhole/ip`-anker kan motta en ren tabelloppdatering med `pfct
 
 Standardfrekvensen for listeoppdatering er Daily. Tidsplanene Hourly, Every 6 hours, Daily og Weekly bruker stabile tilfeldige minuttkomponenter, slik at brannmuren ikke flytter kjøretidspunktet for jobben ved hver lagring.
 
-DNS-, Bypass- og IP/land-oppdateringer, anvendelse av innstillinger, pakkekontroller og automatiske pakkeoppdateringer samt opprydding ved fjerning koordineres gjennom `/var/run/sinkhole-update.lock`. En pakkekontroll eller handlingen Update venter ikke: Hvis en annen operasjon holder låsen, stopper den med `Another package operation is already running.` og kan prøves på nytt når den operasjonen er ferdig.
+DNS-, Bypass- og IP/land-oppdateringer, anvendelse av innstillinger, pakkeinstallasjon og opprydding ved fjerning koordineres gjennom `/var/run/sinkhole-update.lock`. Utgivelseskontroller og automatiske pakkeoppdateringer koordineres separat gjennom `/var/run/sinkhole-release.lock`, og kontroller tar aldri låsen for pakkeoppgaver.
+
+Automatisk pakkeoppdatering tar utgivelseslåsen før låsen for pakkeoppgaver. Den venter i opptil 30 minutter på en aktiv liste-, IP- eller Bypass-oppdatering mens fremdriftslinjen i About viser ventingen.
 
 ## Katalogoppdateringer er separate \{#catalog-refreshes-are-separate}
 

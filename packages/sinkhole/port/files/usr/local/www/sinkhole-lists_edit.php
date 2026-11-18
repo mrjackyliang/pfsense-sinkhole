@@ -115,12 +115,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_list'])) {
             throw new ValidationException('block_list_missing');
         }
 
+        // Global use is chosen on Blocking; editing a list keeps it.
         $row = ListConfiguration::normalizeRow(
             $identifier,
             (string) ($_POST['list_name'] ?? ''),
             (string) ($_POST['list_url'] ?? ''),
             isset($_POST['list_enabled']),
-            isset($_POST['list_global']),
+            match (true) {
+                $isInvalidEdit => $matchingRows[0]['global'],
+                $isNew => false,
+                default => $lists[$identifier]['global'],
+            },
         );
 
         if ($isInvalidEdit) {
@@ -146,7 +151,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_list'])) {
             'name' => (string) ($_POST['list_name'] ?? ''),
             'url' => (string) ($_POST['list_url'] ?? ''),
             'enabled' => isset($_POST['list_enabled']),
-            'global' => isset($_POST['list_global']),
         ];
     }
 }
@@ -217,19 +221,11 @@ $enabledInput = new Form_Checkbox(
     pfsensePackageSinkholeTranslate('block_list_enabled_help'),
     ($editing === null) ? true : $editing['enabled'],
 );
-$globalInput = new Form_Checkbox(
-    'list_global',
-    pfsensePackageSinkholeTranslate('global'),
-    pfsensePackageSinkholeTranslate('block_list_global_help'),
-    ($editing === null) ? false : $editing['global'],
-);
-
 $nameInput->setHelp(pfsensePackageSinkholeTranslate('block_list_name_help'));
 $urlInput->setHelp(pfsensePackageSinkholeTranslate('block_list_url_help'));
 $section->addInput($nameInput);
 $section->addInput($urlInput);
 $section->addInput($enabledInput);
-$section->addInput($globalInput);
 $form->addGlobal($identifierInput);
 $form->addGlobal($invalidPositionInput);
 $form->add($section);

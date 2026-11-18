@@ -18,19 +18,22 @@ Use the fixed `/usr/local/sbin/sinkhole` command for diagnostics and the same ma
 
 ## Command Modes \{#command-modes}
 
-| Command                      | Behavior                                                                                       |
-|------------------------------|------------------------------------------------------------------------------------------------|
-| `sinkhole --update`          | Runs the scheduled DNS, Bypass, and enabled IP/country list update path.                       |
-| `sinkhole --manual`          | Runs the full manual update used by **Status → Update Now**.                                   |
-| `sinkhole --apply`           | Applies saved configuration in the background and performs only the download work it requires. |
-| `sinkhole --refresh-clients` | Rebuilds network subnets and device addresses in the client map.                               |
-| `sinkhole --alerts`          | Reads block events and processes matching alert rules.                                         |
-| `sinkhole --redirect-check`  | Reconciles wanted plain-DNS redirect rules and the independently loaded Bypass and IP anchors. |
-| `sinkhole --check-updates`   | Checks the latest GitHub release and synchronizes the update notice.                           |
-| `sinkhole --self-update`     | Downloads, verifies, inspects, and installs the latest queued release.                         |
-| `sinkhole --help`            | Prints the supported usage line.                                                               |
+| Command                                | Behavior                                                                                       |
+|----------------------------------------|------------------------------------------------------------------------------------------------|
+| `sinkhole --update`                    | Runs the scheduled DNS, Bypass, and enabled IP/country list update path.                       |
+| `sinkhole --manual`                    | Runs the full manual update used by **Status → Update Now**.                                   |
+| `sinkhole --apply`                     | Applies saved configuration in the background and performs only the download work it requires. |
+| `sinkhole --refresh-clients`           | Rebuilds network subnets and device addresses in the client map.                               |
+| `sinkhole --alerts`                    | Reads block events and processes matching alert rules.                                         |
+| `sinkhole --redirect-check`            | Reconciles wanted plain-DNS redirect rules and the independently loaded Bypass and IP anchors. |
+| `sinkhole --check-updates`             | Checks the latest GitHub release and synchronizes the scheduled update notice.                 |
+| `sinkhole --check-updates --no-notice` | Checks the release without filing a notice and records a newer version as notified.            |
+| `sinkhole --self-update`               | Waits for a running list, IP, or Bypass update, then verifies and installs the queued release. |
+| `sinkhole --help`                      | Prints the supported usage line.                                                               |
 
-Use the installed path in automation, for example `/usr/local/sbin/sinkhole --refresh-clients`. Modes are mutually exclusive, and a DNS/Bypass/IP list update or self-update that finds the shared update lock already held exits without starting a competing operation.
+Use the installed path in automation, for example `/usr/local/sbin/sinkhole --refresh-clients`. Modes are mutually exclusive, and `--no-notice` is valid only with `--check-updates`.
+
+Release checks wait up to 30 seconds for the release lock and do not take the package task lock. Self-update takes the release lock first, then waits up to 30 minutes for a running DNS, Bypass, or IP list update to release the package task lock.
 
 ## Persistent Files Under `/cf/conf/sinkhole` \{#persistent-files}
 
@@ -75,7 +78,8 @@ Catalog caches and generated IP tables are reproducible working data. The alert 
 
 | Path                            | Purpose                                                                |
 |---------------------------------|------------------------------------------------------------------------|
-| `sinkhole-update.lock`          | Shared long-running list, IP, and package-update lock.                 |
+| `sinkhole-update.lock`          | Shared long-running list, Bypass, IP, and package-install task lock.   |
+| `sinkhole-release.lock`         | Release-check and self-update coordination lock.                       |
 | `sinkhole-runtime.lock`         | Short compilation, activation, and Resolver-integration lock.          |
 | `sinkhole-clients.lock`         | Client-map refresh lock.                                               |
 | `sinkhole-alerts.lock`          | Alert-processing lock.                                                 |

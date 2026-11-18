@@ -52,7 +52,9 @@ Un ancla `sinkhole/ip` existente puede recibir solo un `pfctl -T replace` de sus
 
 La frecuencia predeterminada de actualización de listas es Daily. Los horarios Hourly, Every 6 hours, Daily y Weekly usan componentes de minuto aleatorios estables para que el firewall no cambie la hora del trabajo cada vez que se guarda.
 
-Las actualizaciones DNS, de Bypass y de IP/país, las aplicaciones de la configuración, las comprobaciones y actualizaciones automáticas del paquete y la limpieza de la eliminación se coordinan mediante `/var/run/sinkhole-update.lock`. Una comprobación del paquete o una acción Update no espera: si otra operación tiene el bloqueo, se detiene con `Another package operation is already running.` y se puede reintentar cuando esa operación termine.
+Las actualizaciones DNS, de Bypass y de IP/país, las aplicaciones de la configuración, la instalación del paquete y la limpieza de la eliminación se coordinan mediante `/var/run/sinkhole-update.lock`. Las comprobaciones de versiones y las actualizaciones automáticas se coordinan por separado mediante `/var/run/sinkhole-release.lock`, y las comprobaciones nunca adquieren el bloqueo de tareas del paquete.
+
+La actualización automática adquiere el bloqueo de versiones antes que el bloqueo de tareas del paquete. Espera hasta 30 minutos a que termine una actualización de listas, IP o Bypass mientras la línea de progreso de About muestra la espera.
 
 ## Las actualizaciones de catálogos son independientes \{#catalog-refreshes-are-separate}
 

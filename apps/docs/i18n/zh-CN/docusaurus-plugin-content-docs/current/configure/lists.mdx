@@ -1,7 +1,7 @@
 ---
 id: lists
 title: 列表和已保存副本
-description: 通过 URL 或目录添加 DNS 列表，使用 hosts、域名和 adblock 风格格式，控制全局策略，并在失败时保留最后一份有效副本。
+description: 通过 URL 或目录添加 DNS 列表，使用 hosts、域名和 adblock 风格格式，并在失败时保留最后一份有效副本。
 keywords:
   - sinkhole for pfsense
   - 阻止列表
@@ -21,7 +21,7 @@ import catalogSearch from './_assets_/lists-2.png';
 ## 为什么使用已保存列表？ \{#why-use-saved-lists}
 
 1. 让 DNS 不依赖列表主机，因此缓慢或失败的下载不会中断名称解析。
-2. 每个来源只下载一次，因此同一份已保存副本可以用于全局、网络和设备作用域。
+2. 每个来源只下载一次，因此同一份已保存副本可以用于 Global、每个网络和每台设备。
 3. 新下载或解析失败时保留上一份有效副本，因此损坏的输入不会替换可用策略。
 4. 在后台更新列表，因此 Resolver 重启或重新加载永远不必等待网络。
 
@@ -29,14 +29,15 @@ import catalogSearch from './_assets_/lists-2.png';
 
 打开 **Firewall → Sinkhole → Lists**，选择阻止列表表格下方的 **Add**，然后在编辑页面填写 **Add Block List**：
 
-| 字段      | 说明                        |
-|---------|---------------------------|
-| Name    | 在分配、警报和 Status 中显示的本地标签。  |
-| URL     | 不包含嵌入凭据的 HTTP 或 HTTPS 来源。 |
-| Enabled | 下载来源，并使其可供已分配的作用域使用。      |
-| Global  | 在设备和网络决定之后，将来源应用于每个客户端。   |
+| 字段      | 说明                                   |
+|---------|--------------------------------------|
+| Name    | 在 Blocking、Alerts 和 Status 中显示的本地标签。 |
+| URL     | 不包含嵌入凭据的 HTTP 或 HTTPS 来源。            |
+| Enabled | 下载来源，以便 Blocking 可以使用它。              |
 
 保存后会返回 Lists 选项卡，并启动同一条经过验证的后台应用路径。选择某行的铅笔图标或双击该行即可编辑。禁用的行仍保留配置，但会在表格中显示为灰色，更新程序和编译策略也不会使用它。
+
+Lists 只是列表管理器。哪些列表应用于 Global、某个网络或某台设备，需在 [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains) 中选择；**Used By** 列会计入 Global 以及每个选择该列表的网络和设备。
 
 ## 可接受的 DNS 格式 \{#accepted-dns-formats}
 
@@ -60,7 +61,7 @@ Sinkhole 接受以下标准格式，并将有效名称规范化为一个已保�
 
 每张卡片显示列表名称、维护者或类别（以当前未作为分组依据的一项为准）、源目录、两行说明、主页以及 **Add** 或 **Added** 状态。卡片不显示评分、徽章或推荐。选择 **Add** 会创建一个普通列表行，其 URL 可像任何手动输入的来源一样分配。
 
-新列表（包括从目录添加的列表）初始时不选中 **Global**，因此在您选中 Global 或在某个作用域中选择它们之前，不会阻止任何内容。
+新列表（包括从目录添加的列表）在您于 Blocking 中为 Global、某个网络或某台设备选择它们之前，不会阻止任何内容。
 
 每张卡片的 **Contents** 行显示 **Domains**。添加目录结果时，其目录名称保持不变。
 
@@ -72,7 +73,7 @@ Sinkhole 接受以下标准格式，并将有效名称规范化为一个已保�
 
 ## 设置全局允许域名 \{#set-global-allowed-domains}
 
-列表和目录面板下方的 **Allowed Domains** 部分定义全局例外。每一行允许该域名及其子域名通过继承的全局列表。选择该部分下方的 **Save** 以应用这项页面级设置。
+全局例外位于 **Blocking → Global** 的 **Allowed Domains** 框中。每一行允许该域名及其子域名通过全局列表。选择 **Save** 以应用它们。
 
 全局允许域名在设备和网络规则之后检查，因此不能覆盖已在更具体的设备或网络层级阻止查询的列表。
 

@@ -52,7 +52,7 @@ In modalità Python, pfBlockerNG DNSBL usa lo stesso slot per script Python di S
 ## Requisiti di rete \{#network-requirements}
 
 - Gli ambiti di rete usano le sottoreti IPv4 e IPv6 correnti delle interfacce pfSense configurate.
-- I dispositivi identificati tramite indirizzo MAC o mapping statico dipendono dai dati correnti ARP, NDP, dei lease DHCP, dei mapping statici e delle interfacce.
+- Ogni dispositivo può avere più indirizzi IP, indirizzi MAC e mapping statici. Gli identificatori MAC e di mapping statico dipendono dai dati correnti ARP, NDP, dei lease DHCP, dei mapping statici e delle interfacce.
 - Il reindirizzamento del DNS in chiaro in **Bypass** richiede una famiglia di indirizzi sull’interfaccia selezionata e un listener corrispondente del Resolver.
 - I client reindirizzati devono comunque essere consentiti dalle impostazioni di controllo accessi del Resolver.
 

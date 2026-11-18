@@ -1,10 +1,11 @@
 ---
 id: scopes
-title: Omfang og tillatte domener
-description: Tilordne lister og tillatte domener til globale omfang, grensesnittsomfang og enhetsomfang, og følg deretter den nøyaktige rekkefølgen fra mest spesifikk for hver DNS-spørring.
+title: Klienter og blokkering
+description: Definer nettverk og enheter på Clients, velg listene og de tillatte domenene for Global, hvert nettverk og hver enhet på Blocking, og følg deretter den nøyaktige rekkefølgen fra mest spesifikk for hver DNS-spørring.
 keywords:
   - sinkhole for pfsense
-  - omfang
+  - klienter
+  - blokkering
   - vlan-blokkering
   - enhetspolicy
   - tillatte domener
@@ -17,44 +18,65 @@ tags:
 import deviceEditor from './_assets_/scopes-2.png';
 import scopesTab from './_assets_/scopes-1.png';
 
-Tilordne lister og tillatte domener på globalt nivå, nettverksnivå og enhetsnivå, slik at hver klient får policyen som er ment for den gjeldende plasseringen.
+Definer hvert nettverk og hver enhet én gang på **Clients**, og velg deretter hva hver av dem blokkerer på **Blocking**. Hver klient får policyen som er ment for den gjeldende plasseringen.
 
-## Hvorfor bruke omfang? \{#why-use-scopes}
+## Hvorfor bruke nettverk og enheter? \{#why-use-networks-and-devices}
 
 1. Gir hvert pfSense-grensesnitt eller VLAN en egen policy, samtidig som globale regler beholdes for alle.
 2. Gir én enhet en mer spesifikk avgjørelse uten å kreve en egen DNS-server.
 3. Lar tillatte domener rette falske positiver på nivået der det er relevant, uten å fjerne en hel liste.
 4. Holder klientadresser atskilt fra kompilerte lister, slik at endringer i DHCP, naboer eller grensesnitt ikke laster Unbound på nytt.
 
-## Globalt omfang \{#global-scope}
+## Kontekster \{#contexts}
 
-En liste der **Global** er valgt, gjelder for alle klienter etter avgjørelser for enhet og nettverk. Globale tillatte domener angis på fanen **Lists** og slipper det navngitte domenet og underdomenene gjennom globale lister.
+Blocking, Services, SafeSearch, Alerts, Bypass og IP deler en andre rad med faner under hovedfanene:
 
-En klient som ikke samsvarer med et aktivert nettverks- eller enhetsomfang, mottar bare dette nivået.
+| Fane     | Hva siden redigerer                                                                                                     |
+|----------|-------------------------------------------------------------------------------------------------------------------------|
+| All      | Ingenting. En skrivebeskyttet tabell viser hver kontekst som har egne innstillinger; velg en rad for å åpne konteksten. |
+| Global   | Innstillingene for alle klienter.                                                                                       |
+| Networks | Ett nettverk. En rad med nettverksbrikker velger hvilket.                                                               |
+| Devices  | Én enhet. En rad med enhetsbrikker velger hvilken, og søkeboksen begrenser brikkene etter navn.                         |
 
-## Nettverksomfang \{#network-scopes}
+Et banner under raden viser hva du redigerer, for eksempel **Editing: Network: IOT · applies to clients on IOT** eller **Editing: Device: Tablet · this device only**. Hver kontekst viser bare sine egne innstillinger; ingenting som er arvet fra en bredere kontekst, vises i skjemaet.
 
-Åpne **Firewall → Sinkhole → Scopes**, og velg deretter **Add** under tabellen Networks. Redigeringsprogrammet bruker LAN som standard, eller det første tilgjengelige grensesnittet som ikke er WAN, og utelater grensesnitt som allerede har et nettverksomfang. En klient tilhører nettverket når adressen er innenfor et av de gjeldende IPv4- eller IPv6-delnettene til grensesnittet.
+Den valgte konteksten følger deg fra fane til fane til du velger en annen. Et deaktivert nettverk eller en deaktivert enhet kan fortsatt redigeres, og en advarsel sier at innstillingene ikke gjelder for noen klient før den aktiveres igjen.
 
-Hver nettverksrad velger tilleggslister, tillatte domener og om omfanget er aktivert. Når du lagrer, går du tilbake til Scopes. Velg blyanten eller dobbeltklikk en rad for å redigere den. En enhet som flyttes mellom nettverk, mottar policyen for nettverket som samsvarer med den gjeldende adressen.
+## Definer nettverk \{#define-networks}
 
-<img src={scopesTab} alt="Fanen Scopes viser et LAN-nettverksomfang og tre demoenheter identifisert med IP- eller MAC-adresse med gjeldende adresser" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+Åpne **Firewall → Sinkhole → Clients**, og velg deretter **Add** under tabellen Networks. Redigeringsprogrammet bruker LAN som standard, eller det første tilgjengelige grensesnittet som ikke er WAN, og utelater grensesnitt som allerede har et nettverk. En klient tilhører nettverket når adressen er innenfor et av de gjeldende IPv4- eller IPv6-delnettene til grensesnittet.
 
-## Enhetsomfang \{#device-scopes}
+Hver nettverksrad har et grensesnitt og en **Enabled**-avmerkingsboks. Når du lagrer, går du tilbake til Clients. Velg blyanten eller dobbeltklikk en rad for å redigere den. En enhet som flyttes mellom nettverk, mottar policyen for nettverket som samsvarer med den gjeldende adressen.
 
-Velg **Add** under tabellen Devices, oppgi et navn og velg én identifikasjonsmetode. Redigeringsprogrammet viser bare identifikatorfeltet som gjelder for den valgte metoden:
+<img src={scopesTab} alt="Fanen Clients viser et LAN-nettverk og tre demoenheter identifisert med IP- eller MAC-adresse med gjeldende adresser" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-| Metode              | Adresser som brukes for enheten                                                                        |
+## Definer enheter \{#define-devices}
+
+Velg **Add** under tabellen Devices, oppgi et navn og legg til én eller flere identifikatorrader. Hver rad har en type og verdien som gjelder for den typen:
+
+| Identifikatortype   | Adresser som brukes for enheten                                                                        |
 |---------------------|--------------------------------------------------------------------------------------------------------|
 | IP address          | Den konfigurerte IPv4- eller IPv6-adressen.                                                            |
 | DHCP static mapping | Den konfigurerte adressen pluss gjeldende adresser som er observert for MAC-adressen til tilordningen. |
 | MAC address         | Gjeldende ARP-, NDP- og DHCP-leieadresser for denne MAC-adressen.                                      |
 
-Enhetsraden velger listene, de tillatte domenene og aktiveringsstatusen. Når du lagrer, går du tilbake til Scopes. Velg blyanten eller dobbeltklikk en rad for å redigere den. En bakgrunnsjobb oppdaterer gjeldende delnett og enhetsadresser hvert minutt når DNS-blokkering har et aktivert nettverks- eller enhetsomfang, eller når Bypass DNS-beskyttelse trenger klientgjenkjenning. Pakke-Sync starter den samme oppdateringen bare under denne betingelsen.
+Bruk **Add Identifier** og papirkurvknappene til å vedlikeholde radene. En enhet må ha minst én identifikator. Alle adresser som nås gjennom en av identifikatorene, tilhører den samme enheten og deler derfor ett sett med innstillinger og én aktiveringsstatus. Når du lagrer, går du tilbake til Clients. Velg blyanten eller dobbeltklikk en rad for å redigere den. En bakgrunnsjobb oppdaterer gjeldende delnett og enhetsadresser hvert minutt når DNS-blokkering har et aktivert nettverk eller en aktivert enhet, eller når Bypass DNS-beskyttelse trenger klientgjenkjenning. Pakke-Sync starter den samme oppdateringen bare under denne betingelsen.
 
-Dra i det nederste hjørnet av **Lists**-boksen for å gjøre den høyere når du har mange lister.
+Når du sletter et nettverk eller en enhet på Clients, slettes også innstillingene for Blocking, Services, SafeSearch, Bypass og IP.
 
-<img src={deviceEditor} alt="Siden Edit Device for et demonettbrett identifisert med IP-adresse, med én valgt liste og ett tillatt domene" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={deviceEditor} alt="Siden Edit Device for et demonettbrett identifisert med en IP-adresse og en MAC-adresse" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Velg lister og tillatte domener \{#choose-lists-and-allowed-domains}
+
+Åpne **Firewall → Sinkhole → Blocking**, og velg en kontekst:
+
+- **Global** velger listene som gjelder for alle klienter etter avgjørelser for enhet og nettverk, og inneholder de globale tillatte domenene.
+- **Networks** velger tilleggslistene og de tillatte domenene for klienter på det valgte nettverket.
+- **Devices** velger tilleggslistene og de tillatte domenene for den valgte enheten.
+
+Hver kontekst har en **Lists**-boks og en **Allowed Domains**-boks med ett domene per linje. Velg **Save** for å bruke konteksten. Dra i det nederste hjørnet av **Lists**-boksen for å gjøre den høyere når du har mange lister. Selve listene legges til og redigeres på fanen [Lists](/docs/configure/lists).
+
+**All** viser én rad per kontekst som har lister eller tillatte domener, med listenavnene og antall tillatte domener.
 
 ## Avgjørelsesrekkefølge \{#decision-order}
 
@@ -67,7 +89,7 @@ Det mest spesifikke samsvarende nivået avgjør hver spørring i denne nøyaktig
 5. **Global allowed domains** — Tillat umiddelbart når det globale unntaket samsvarer.
 6. **Global lists** — Blokker når en global liste samsvarer.
 
-Spørringen slippes gjennom når ingen trinn avgjør den. Tillatte domener på et nivå overstyrer lister som er arvet fra mindre spesifikke nivåer, men de overstyrer ikke lister på et mer spesifikt nivå som allerede har avgjort.
+Spørringen slippes gjennom når ingen trinn avgjør den. En klient som ikke samsvarer med et aktivert nettverk eller en aktivert enhet, får bare de globale trinnene. Tillatte domener på et nivå overstyrer lister som er arvet fra mindre spesifikke nivåer, men de overstyrer ikke lister på et mer spesifikt nivå som allerede har avgjort.
 
 ## Virkemåten til tillatte domener \{#allowed-domain-behavior}
 
@@ -79,12 +101,11 @@ Hver oppføring for et tillatt domene gjelder for det nøyaktige domenet og alle
 
 ## Adressekonflikter \{#address-conflicts}
 
-Når to enhetsrader krever samme gjeldende adresse, vinner den første enheten i tabellrekkefølgen. **Status → Scopes** viser adressen under **Conflict** for hver berørte rad, slik at rekkefølgen eller identifikatorene kan rettes.
+Flere identifikatorer i samme enhet kan nå samme adresse uten å skape en konflikt. Når to forskjellige enheter krever samme gjeldende adresse, vinner den første enheten i Clients-tabellen. Clients-tabellen og **Status → Clients** viser adressen under **Conflict** for hver berørte rad, slik at rekkefølgen eller identifikatorene kan rettes.
 
-## Kontroller et omfang \{#verify-a-scope}
+## Kontroller et nettverk eller en enhet \{#verify-a-network-or-device}
 
 1. Kjør `/usr/local/sbin/sinkhole --refresh-clients`, eller vent på minuttoppdateringen.
-2. Åpne **Status → Scopes**, og bekreft nettverkets gjeldende delnett og enhetens gjeldende adresser.
-3. Slå opp et navn fra en klient i dette omfanget, og sammenlign resultatet med avgjørelsesrekkefølgen ovenfor.
+2. Åpne **Status → Clients**, og bekreft nettverkets gjeldende delnett og enhetens gjeldende adresser.
+3. Slå opp et navn fra en klient på dette nettverket eller denne enheten, og sammenlign resultatet med avgjørelsesrekkefølgen ovenfor.
 4. Kontroller om det finnes en adressekonflikt før du stoler på enhetsspesifikk virkemåte.
-

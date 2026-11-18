@@ -31,21 +31,21 @@ import listsTab from './_assets_/first-run-1.png';
 
 1. 打開 **Lists**，新增您信任的來源 URL；也可以打開 **Add from Catalog** 搜索兩個按需目錄。
 2. 為來源指定本地名稱，並保持 **Enabled** 選中，讓 Sinkhole 下載它。
-3. 僅當該清單應在所有設備和網路規則之後應用時，才選中 **Global**。
-4. 如果需要放行已知的誤報，請新增任意全局 **Allowed Domains**，每行一個域名。
+3. 打開 **Blocking**，停留在 **Global**，僅當該清單應在所有設備和網路規則之後應用時才選擇它。
+4. 如果需要放行已知的誤報，請在同一頁面新增任意全局 **Allowed Domains**，每行一個域名。
 
 Sinkhole 不推薦任何來源。[清單和已儲存副本](/docs/configure/lists)說明可接受的格式，以及目錄結果如何成為普通清單行。
 
-<img src={listsTab} alt="Lists 選項卡顯示五個演示封鎖清單及其 Global 和 Used By 欄，以及兩個全域允許網域" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Lists 選項卡顯示五個演示封鎖清單及其 Used By 欄" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-## 新增可選作用域 \{#add-optional-scopes}
+## 新增可選網路和設備 \{#add-optional-networks-and-devices}
 
-當某個網路或設備需要全局層級以外的策略時，打開 **Scopes**：
+當某個網路或設備需要 Global 層級以外的策略時，打開 **Clients**：
 
-- 為一個已配置的 pfSense 介面新增 **Network**，然後選擇其清單和允許的域名。
-- 通過 IP 地址、DHCP 靜態映射或 MAC 地址新增 **Device**，然後選擇其清單和允許的域名。
+- 為一個已配置的 pfSense 介面新增 **Network**。
+- 使用一或多個 IP 位址、DHCP 靜態對應或 MAC 位址新增 **Device**。
 
-設備會繼承其當前所在網路，而網路會繼承全局清單。[作用域和允許的域名](/docs/configure/scopes)展示名稱被放行或封鎖時採用的決定順序。
+然後打開 **Blocking**，在情境列中選擇該網路或設備，並選擇其清單和允許的域名。設備會繼承其當前所在網路，而網路會繼承 Global 清單。[用戶端和封鎖](/docs/configure/scopes)展示名稱被放行或封鎖時採用的決定順序。
 
 ## 啓用並更新 \{#enable-and-update}
 

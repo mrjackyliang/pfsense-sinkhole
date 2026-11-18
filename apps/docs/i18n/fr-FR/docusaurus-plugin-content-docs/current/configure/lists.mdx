@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Listes et copies enregistrées
-description: Ajoutez des listes DNS par URL ou catalogue, utilisez les formats hosts, domaine et adblock, contrôlez la politique globale et conservez les dernières copies valides.
+description: Ajoutez des listes DNS par URL ou catalogue, utilisez les formats hosts, domaine et adblock, et conservez les dernières copies valides.
 keywords:
   - sinkhole for pfsense
   - listes de blocage
@@ -21,7 +21,7 @@ Ajoutez des sources de listes fiables et laissez Sinkhole conserver sur le pare-
 ## Pourquoi utiliser des listes enregistrées ? \{#why-use-saved-lists}
 
 1. Maintient le DNS indépendant d’un hébergeur de liste afin qu’un téléchargement lent ou en échec n’interrompe pas la résolution de noms.
-2. Télécharge chaque source une seule fois afin que la même copie enregistrée serve les portées globales, réseau et appareil.
+2. Télécharge chaque source une seule fois afin que la même copie enregistrée serve Global, chaque réseau et chaque appareil.
 3. Conserve la copie valide précédente en cas d’échec d’un nouveau téléchargement ou de son analyse afin qu’une entrée défectueuse ne remplace pas une politique fonctionnelle.
 4. Met les listes à jour en arrière-plan afin qu’un redémarrage ou un rechargement du Resolver n’attende jamais le réseau.
 
@@ -29,14 +29,15 @@ Ajoutez des sources de listes fiables et laissez Sinkhole conserver sur le pare-
 
 Ouvrez **Firewall → Sinkhole → Lists**, sélectionnez **Add** sous la table des listes de blocage, puis remplissez **Add Block List** dans la page d’édition :
 
-| Champ   | Description                                                                           |
-|---------|---------------------------------------------------------------------------------------|
-| Name    | Libellé local affiché dans les attributions, les alertes et Status.                   |
-| URL     | Source HTTP ou HTTPS sans identifiants intégrés.                                      |
-| Enabled | Télécharge la source et la rend disponible aux portées auxquelles elle est attribuée. |
-| Global  | Applique la source à tous les clients après les décisions d’appareil et de réseau.    |
+| Champ   | Description                                               |
+|---------|-----------------------------------------------------------|
+| Name    | Libellé local affiché dans Blocking, Alerts et Status.    |
+| URL     | Source HTTP ou HTTPS sans identifiants intégrés.          |
+| Enabled | Télécharge la source afin que Blocking puisse l’utiliser. |
 
 L’enregistrement revient à l’onglet Lists et lance le même chemin d’application validé en arrière-plan. Sélectionnez le crayon d’une ligne ou double-cliquez dessus pour la modifier. Une ligne désactivée reste configurée, mais apparaît atténuée dans la table et n’est utilisée ni par la mise à jour ni par la politique compilée.
+
+Lists n’est que le gestionnaire de listes. Les listes qui s’appliquent à Global, à un réseau ou à un appareil se choisissent dans [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), et la colonne **Used By** compte Global ainsi que chaque réseau et appareil qui sélectionne la liste.
 
 ## Formats DNS acceptés \{#accepted-dns-formats}
 
@@ -60,19 +61,19 @@ Les résultats apparaissent sous forme de cartes. Utilisez ensemble les contrôl
 
 Chaque carte affiche le nom de la liste, son responsable ou sa catégorie, le catalogue source, une description sur deux lignes, la page d’accueil et l’état **Add** ou **Added**. Les cartes n’affichent aucune note, aucun badge ni recommandation. **Add** crée une ligne de liste ordinaire dont l’URL peut être attribuée comme toute source saisie manuellement.
 
-Les nouvelles listes, y compris celles ajoutées depuis le catalogue, commencent avec **Global** décoché ; elles ne bloquent donc rien tant que vous ne cochez pas Global ou ne les sélectionnez pas dans une portée.
+Les nouvelles listes, y compris celles ajoutées depuis le catalogue, ne bloquent rien tant que vous ne les sélectionnez pas pour Global, un réseau ou un appareil dans Blocking.
 
 La ligne **Contents** de chaque carte indique **Domains**. L’ajout d’un résultat du catalogue conserve son nom de catalogue inchangé.
 
 Les copies des catalogues sont mises en cache sous `/var/db` pendant un jour. Une actualisation en échec conserve la dernière copie valide du catalogue et affiche l’erreur de récupération dans Status.
 
-<img src={catalogSearch} alt="Panneau Add from Catalog de l’onglet Lists avec les contrôles de recherche du catalogue et l’état de récupération" width={1024} height={920} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Panneau Add from Catalog de l’onglet Lists avec les contrôles de recherche du catalogue et l’état de récupération" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 Les flux attribués à la protection contre le contournement Encrypted DNS, Tor ou VPN n'apparaissent pas ici. Ils sont disponibles uniquement avec **Add from Catalog** dans l'onglet Bypass.
 
 ## Définir les domaines autorisés globaux \{#set-global-allowed-domains}
 
-La section **Allowed Domains** sous les panneaux de listes et de catalogues définit les exceptions globales. Chaque ligne autorise ce domaine et ses sous-domaines à travers les listes globales héritées. Sélectionnez **Save** sous cette section pour appliquer le réglage commun à la page.
+Les exceptions globales se trouvent dans **Blocking → Global**, dans la zone **Allowed Domains**. Chaque ligne autorise ce domaine et ses sous-domaines à travers les listes globales. Sélectionnez **Save** pour les appliquer.
 
 Un domaine autorisé global est vérifié après les règles d’appareil et de réseau. Il ne peut donc pas remplacer une liste qui a déjà bloqué la requête à un niveau appareil ou réseau plus précis.
 

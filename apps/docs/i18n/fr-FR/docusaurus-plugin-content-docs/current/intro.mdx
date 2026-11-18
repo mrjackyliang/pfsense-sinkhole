@@ -49,7 +49,7 @@ Sinkhole et pfBlockerNG ne peuvent pas filtrer le DNS en même temps. Sinkhole r
 ## Ce qui reste sous votre contrôle \{#what-stays-under-your-control}
 
 - **Lists** — Ajoutez par URL les sources auxquelles vous faites confiance ou trouvez-les grâce à la <Terminology title="Trouvez des listes connues sans chercher d’URL" to="/docs/reference/terminology#lists-and-scopes">recherche de listes populaires</Terminology> neutre. Sinkhole ne publie ni ne recommande aucune liste.
-- **Scopes** — Choisissez des listes globales, des listes pour une interface pfSense ou un VLAN et des listes pour un appareil identifié par adresse IP, association DHCP statique ou adresse MAC.
+- **Clients et blocage** — Définissez un réseau pour une interface pfSense ou un VLAN et un appareil identifié par une ou plusieurs adresses IP, associations DHCP statiques et adresses MAC, puis choisissez les listes de Global, de chaque réseau et de chaque appareil.
 - **Allowed domains** — Autorisez un domaine et ses sous-domaines au niveau global, réseau ou appareil sans retirer une liste entière.
 - **SafeSearch** — Choisissez les moteurs de recherche verrouillés en mode sécurisé pour chaque portée, et si YouTube est en Moderate ou Strict.
 - **Alerts** — Choisissez les combinaisons de listes et de clients qui créent des avis WebGUI locaux ou utilisent les services de notification distants configurés dans pfSense.
@@ -71,6 +71,6 @@ Le site de documentation fournit l’anglais et les 17 autres locales pfSense. L
 ## Étapes suivantes \{#next-steps}
 
 - **[Installer le paquet](/docs/installation)** — Vérifiez et installez le paquet stable de la version publiée.
-- **[Configurer Sinkhole](/docs/first-run)** — Ajoutez une première liste, choisissez sa portée et vérifiez la génération active.
-- **[Comprendre les portées](/docs/configure/scopes)** — Suivez l’ordre de décision exact pour l’appareil, le réseau et le niveau global.
+- **[Configurer Sinkhole](/docs/first-run)** — Ajoutez une première liste, choisissez où elle bloque et vérifiez la génération active.
+- **[Comprendre Clients et Blocking](/docs/configure/scopes)** — Suivez l’ordre de décision exact pour l’appareil, le réseau et le niveau global.
 - **[Examiner le modèle de sécurité](/docs/safety/how-updates-work)** — Découvrez comment les copies enregistrées et le déploiement atomique maintiennent le DNS disponible.

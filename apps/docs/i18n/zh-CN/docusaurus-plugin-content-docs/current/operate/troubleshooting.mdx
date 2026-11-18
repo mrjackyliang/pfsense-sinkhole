@@ -59,8 +59,8 @@ Unbound 会先于 Python 模块应答内置的 `test.`、`invalid.`、`onion.` �
 
 ## SafeSearch 未生效 \{#safesearch-does-not-apply}
 
-1. 确认客户端的网络或设备作用域已在 **Scopes** 中启用，并且已在 **SafeSearch** 中为该作用域或 Global 勾选了该搜索引擎。
-2. 在 **Status → SafeSearch** 中查看安全主机的地址和最后一次错误。没有地址的主机会让其搜索引擎在该作用域内保持阻止，直到查找成功。
+1. 确认客户端的网络或设备已在 **Clients** 中启用，并且已在 **SafeSearch** 中为该网络或设备（或 Global）勾选了该搜索引擎。
+2. 在 **Status → SafeSearch** 中查看安全主机的地址和最后一次错误。没有地址的主机会让其搜索引擎在该上下文内保持阻止，直到查找成功。
 3. 保存后确认 **Compile Needed** 和 **Deployment Needed** 均为 `No`。
 4. 确认客户端没有使用加密 DNS 或其他解析器；[防绕过保护](/docs/configure/bypass-protection)可让所选接口保持在 Sinkhole 的 DNS 路径上。
 
@@ -68,10 +68,10 @@ Unbound 会先于 Python 模块应答内置的 `test.`、`invalid.`、`onion.` �
 
 ## 设备获得了错误策略 \{#a-device-gets-the-wrong-policy}
 
-- 运行 `/usr/local/sbin/sinkhole --refresh-clients` 并检查 **Status → Scopes**。
-- 确认网络行显示接口的当前子网，设备行显示其当前地址。
+- 运行 `/usr/local/sbin/sinkhole --refresh-clients` 并检查 **Status → Clients**。
+- 确认网络行显示接口的当前子网，设备行显示所有已配置的标识符及其当前地址。
 - 解决所有 **Conflict** 值，因为按表格顺序出现的第一个设备会赢得共享地址。
-- 对于静态映射，请同时检查其配置地址以及为其 MAC 观察到的当前地址。
+- 对于每个静态映射标识符，请检查其配置地址以及为其 MAC 观察到的当前地址。通过同一设备的两个标识符找到的地址不属于冲突。
 
 ISC 租约时间可能采用 GMT 或防火墙本地时间，具体取决于接口的租约时间设置；Kea 租约时间已经是本地时间。Sinkhole 在判断租约是否为当前租约时遵循这些 pfSense 语义。
 

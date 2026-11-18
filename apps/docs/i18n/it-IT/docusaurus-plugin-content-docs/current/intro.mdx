@@ -49,7 +49,7 @@ Sinkhole e pfBlockerNG non possono filtrare il DNS contemporaneamente. Sinkhole 
 ## Cosa rimane sotto il tuo controllo \{#what-stays-under-your-control}
 
 - **Lists** — Aggiungi tramite URL le fonti che ritieni affidabili o trovale con la <Terminology title="Trova liste di blocco note senza cercare URL" to="/docs/reference/terminology#lists-and-scopes">ricerca di liste popolari</Terminology> neutrale. Sinkhole non pubblica né consiglia alcuna lista.
-- **Scopes** — Scegli liste globali, liste per un’interfaccia pfSense o una VLAN e liste per un dispositivo identificato tramite indirizzo IP, mapping DHCP statico o indirizzo MAC.
+- **Client e blocco** — Definisci una rete per un’interfaccia pfSense o una VLAN e un dispositivo identificato da uno o più indirizzi IP, mapping DHCP statici e indirizzi MAC, quindi scegli le liste di Global, di ogni rete e di ogni dispositivo.
 - **Allowed domains** — Consenti un dominio e i relativi sottodomini a livello globale, di rete o di dispositivo senza rimuovere un’intera lista.
 - **SafeSearch** — Scegli quali motori di ricerca bloccare nelle loro modalità sicure per ogni ambito e se YouTube è Moderate o Strict.
 - **Alerts** — Scegli le combinazioni di lista e client che creano avvisi WebGUI locali o usano i servizi di notifica remoti configurati in pfSense.
@@ -71,6 +71,6 @@ Il sito della documentazione offre l’inglese e le altre 17 impostazioni locali
 ## Passaggi successivi \{#next-steps}
 
 - **[Installare il pacchetto](/docs/installation)** — Verifica e installa il pacchetto stabile della release.
-- **[Configurare Sinkhole](/docs/first-run)** — Aggiungi una prima lista, scegline l’ambito e verifica la generazione attiva.
-- **[Comprendere gli ambiti](/docs/configure/scopes)** — Segui l’ordine decisionale esatto per dispositivo, rete e livello globale.
+- **[Configurare Sinkhole](/docs/first-run)** — Aggiungi una prima lista, scegli dove blocca e verifica la generazione attiva.
+- **[Comprendere Clients e Blocking](/docs/configure/scopes)** — Segui l’ordine decisionale esatto per dispositivo, rete e livello globale.
 - **[Esaminare il modello di sicurezza](/docs/safety/how-updates-work)** — Scopri come le copie salvate e la distribuzione atomica mantengono disponibile il DNS.

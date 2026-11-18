@@ -112,7 +112,16 @@ final class Updater
             ) {
                 try {
                     $bypassResult = $this->bypassUpdater->run($apply && !$manual);
-                    $this->recordBypassUpdateWarning(null);
+                    $repairWarning = is_string($bypassResult['warning'] ?? null)
+                        ? $bypassResult['warning']
+                        : null;
+
+                    if ($repairWarning !== null) {
+                        $this->platformAdapter->log($repairWarning);
+                        $this->updateLog?->line($repairWarning);
+                    }
+
+                    $this->recordBypassUpdateWarning($repairWarning);
                 } catch (Throwable $throwable) {
                     $warning = 'Bypass update failed; DNS and IP updates continued: '
                         . substr(str_replace(["\r", "\n"], ' ', $throwable->getMessage()), 0, 500);

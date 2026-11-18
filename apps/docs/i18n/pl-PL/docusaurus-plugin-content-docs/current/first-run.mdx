@@ -31,21 +31,21 @@ Sinkhole odmawia zapisania **Enable**, gdy pfBlockerNG jest zainstalowany i wł�
 
 1. Otwórz **Lists** i dodaj adres URL zaufanego źródła albo otwórz **Add from Catalog**, aby przeszukać dwa katalogi na żądanie.
 2. Nadaj źródłu lokalną nazwę i pozostaw **Enabled** zaznaczone, aby Sinkhole je pobierał.
-3. Zaznacz **Global** tylko wtedy, gdy lista ma być stosowana po wszystkich regułach urządzenia i sieci.
-4. Dodaj globalne **Allowed Domains**, po jednej domenie w wierszu, jeśli znany wynik fałszywie dodatni ma być przepuszczany.
+3. Otwórz **Blocking**, pozostań na **Global** i wybierz listę tylko wtedy, gdy ma być stosowana po wszystkich regułach urządzenia i sieci.
+4. Na tej samej stronie dodaj globalne **Allowed Domains**, po jednej domenie w wierszu, jeśli znany wynik fałszywie dodatni ma być przepuszczany.
 
 Sinkhole nie poleca żadnego źródła. [Listy i zapisane kopie](/docs/configure/lists) objaśnia obsługiwane formaty oraz sposób przekształcania wyników katalogu w zwykłe wiersze list.
 
-<img src={listsTab} alt="Karta Lists pokazująca pięć demonstracyjnych list blokowania z kolumnami Global i Used By oraz dwie globalnie dozwolone domeny" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Karta Lists pokazująca pięć demonstracyjnych list blokowania z kolumną Used By" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-## Dodawanie opcjonalnych zakresów \{#add-optional-scopes}
+## Dodawanie opcjonalnych sieci i urządzeń \{#add-optional-networks-and-devices}
 
-Otwórz **Scopes**, gdy sieć lub urządzenie potrzebuje zasad innych niż poziom globalny:
+Otwórz **Clients**, gdy sieć lub urządzenie potrzebuje zasad wykraczających poza poziom Global:
 
-- Dodaj **Network** dla jednego skonfigurowanego interfejsu pfSense, a następnie wybierz jego listy i dozwolone domeny.
-- Dodaj **Device** według adresu IP, statycznego mapowania DHCP lub adresu MAC, a następnie wybierz jego listy i dozwolone domeny.
+- Dodaj **Network** dla jednego skonfigurowanego interfejsu pfSense.
+- Dodaj **Device** z co najmniej jednym adresem IP, statycznym mapowaniem DHCP lub adresem MAC.
 
-Urządzenie dziedziczy sieć, w której aktualnie się znajduje, a sieć dziedziczy listy globalne. [Zakresy i dozwolone domeny](/docs/configure/scopes) przedstawia kolejność decyzji określającą, czy nazwa jest przepuszczana, czy blokowana.
+Następnie otwórz **Blocking**, wybierz sieć lub urządzenie w wierszu kontekstu i wybierz jego listy oraz dozwolone domeny. Urządzenie dziedziczy sieć, w której aktualnie się znajduje, a sieć dziedziczy listy Global. [Klienci i blokowanie](/docs/configure/scopes) przedstawia kolejność decyzji określającą, czy nazwa jest przepuszczana, czy blokowana.
 
 ## Włączanie i aktualizowanie \{#enable-and-update}
 

@@ -27,20 +27,22 @@ Send bare varsler for blokkerte svar der listen og klienten samsvarer med en akt
 
 ## Opprett en regel \{#create-a-rule}
 
-Åpne **Firewall → Sinkhole → Alerts**, velg **Add** under tabellen med varslingsregler, og fyll deretter ut **Add Alert Rule** på redigeringssiden:
+Åpne **Firewall → Sinkhole → Alerts**. [Kontekstraden](/docs/configure/scopes#contexts) filtrerer tabellen: **Global** viser reglene for **Everyone**, et nettverk eller en enhet viser reglene som velger det, og **All** viser alle regler. En regel kan fortsatt velge flere nettverk og enheter samtidig.
 
-| Felt                 | Beskrivelse                                                                           |
-|----------------------|---------------------------------------------------------------------------------------|
-| Description          | Lokalt regelnavn som vises i varseltekst og oppsummeringer.                           |
-| Any block list       | Samsvarer med en blokkering fra hvilken som helst liste, ikke bare de valgte listene. |
-| Chosen block lists   | Lister som kan oppfylle regelen når **Any** er avslått.                               |
-| Everyone             | Samsvarer med alle klienter, ikke bare valgte nettverk og enheter.                    |
-| Chosen networks      | Nettverksomfang som kan oppfylle regelen når **Everyone** er avslått.                 |
-| Chosen devices       | Enhetsomfang som kan oppfylle regelen når **Everyone** er avslått.                    |
-| Repeat after         | Minutter før samme regel, klient, domene og liste kan varsle på nytt.                 |
-| WebGUI notice        | Legger til et lokalt Sinkhole-varsel i pfSense.                                       |
-| Remote notifications | Bruker de eksterne tjenestene som er konfigurert i pfSense.                           |
-| Enabled              | Lar blokkerte svar samsvare med denne regelen.                                        |
+Velg **Add** under tabellen med varslingsregler, og fyll deretter ut **Add Alert Rule** på redigeringssiden:
+
+| Felt                 | Beskrivelse                                                                                                |
+|----------------------|------------------------------------------------------------------------------------------------------------|
+| Description          | Lokalt regelnavn som vises i varseltekst og oppsummeringer.                                                |
+| Any block list       | Samsvarer med en blokkering fra hvilken som helst liste, ikke bare de valgte listene.                      |
+| Chosen block lists   | Lister som kan oppfylle regelen når **Any** er avslått.                                                    |
+| Everyone             | Samsvarer med alle klienter, ikke bare valgte nettverk og enheter.                                         |
+| Chosen networks      | Nettverk fra Clients som kan oppfylle regelen når **Everyone** er avslått.                                 |
+| Chosen devices       | Enheter fra Clients, vist med alle identifikatorene, som kan oppfylle regelen når **Everyone** er avslått. |
+| Repeat after         | Minutter før samme regel, klient, domene og liste kan varsle på nytt.                                      |
+| WebGUI notice        | Legger til et lokalt Sinkhole-varsel i pfSense.                                                            |
+| Remote notifications | Bruker de eksterne tjenestene som er konfigurert i pfSense.                                                |
+| Enabled              | Lar blokkerte svar samsvare med denne regelen.                                                             |
 
 Feltet for valgte lister er skjult mens **Any block list** er valgt, og nettverks- og enhetsfeltene er skjult mens **Everyone** er valgt. Når du lagrer, går du tilbake til Alerts. Velg blyanten eller dobbeltklikk en rad for å redigere den.
 
@@ -75,7 +77,7 @@ Den lokale varslingsfunksjonen i pfSense skriver `New alert found: <message>` ti
 
 ## Kontroller et varsel \{#verify-an-alert}
 
-1. Bekreft at regelen, den valgte listen og det valgte klientomfanget er aktivert.
+1. Bekreft at regelen, den valgte listen og det valgte nettverket eller den valgte enheten er aktivert.
 2. Bekreft i Status at klienten for øyeblikket er tilordnet det tilsiktede nettverket eller den tilsiktede enheten.
 3. Slå opp et navn som den valgte listen blokkerer, og kontroller den konfigurerte pfSense-kanalen.
 4. Hvis det ikke kommer et varsel nummer to, sammenligner du forsøket med gjentakelsesvinduet og de faste grensene i regelen.

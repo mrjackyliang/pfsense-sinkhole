@@ -31,7 +31,7 @@ Les statusen for lagrede lister, omfang, varsler, Bypass, IP, kompilering, distr
 | Lists                   | URL for DNS-liste, antall lagrede oppføringer, siste vellykkede oppdatering og siste feil.                                                                     |
 | Popular-List Catalogs   | Siste henting og siste feil for katalogkildene AdGuard Home og pfBlockerNG.                                                                                    |
 | Invalid Saved Rows      | Feilformede listerader som fortsatt er tilgjengelige for reparasjon. Vises bare når slike rader finnes.                                                        |
-| Scopes                  | Tidspunkt og feil for gjenoppbygging av klientkartet, etterfulgt av separate paneler for Networks og Devices.                                                  |
+| Clients                 | Tidspunkt og feil for gjenoppbygging av klientkartet, etterfulgt av separate paneler for Networks og Devices.                                                  |
 | Blocked Services        | Registerhenting, siste feil og valgte tjenester per omfang.                                                                                                    |
 | SafeSearch              | Motorer per omfang og hver trygge verts adresser, siste kontroll og feil.                                                                                      |
 | Alerts                  | Siste kjøring, leste eller utdaterte hendelser, sendte eller tilbakeholdte varsler, forkastede hendelser og siste feil.                                        |
@@ -62,17 +62,17 @@ Når Sinkhole er deaktivert med hensikt, er **Deployment Needed** `No`, **Loaded
 
 ## Tilstand for kompilering og distribusjon \{#compile-and-deployment-state}
 
-| Felt                             | Betydning                                                                                                                                                                                 |
-|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Compiled Names                   | Navn i den distribuerte DNS-blokkeringsindeksen (lister og blokkerte tjenester) pluss navn i Bypass-indeksen, opp mot grensen på 10 000 000 navn.                                         |
-| Compile Needed                   | Lagret policy er endret, eller den siste kompileringen ble ikke fullført.                                                                                                                 |
-| Compiled Generation              | Identifikator produsert av den siste vellykkede kompileringen.                                                                                                                            |
-| Deployment Needed                | Kompilert innhold er ikke innholdet som er distribuert for Unbound, eller integrasjonen er inaktiv.                                                                                       |
-| Deployed Generation              | Identifikator i det distribuerte kjøretidsmanifestet.                                                                                                                                     |
-| Loaded Generation                | Identifikator som Unbound-modulen rapporterer som lastet.                                                                                                                                 |
-| Update Running                   | Vises bare mens en aktiv prosess eier den delte oppdateringslåsen: en DNS-, Bypass- eller IP-oppdatering, en innstillingsanvendelse, en pakkekontroll eller -oppdatering, eller fjerning. |
-| Removal in Progress              | Vises bare mens den vedvarende fjerningsmarkøren er satt og integrasjonen trekkes tilbake.                                                                                                |
-| DNS Resolver Python Script Owner | Gjeldende verdi for den eneste `python_script`-plassen i Resolver, eller `None`.                                                                                                          |
+| Felt                             | Betydning                                                                                                                                                                       |
+|----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compiled Names                   | Navn i den distribuerte DNS-blokkeringsindeksen (lister og blokkerte tjenester) pluss navn i Bypass-indeksen, opp mot grensen på 10 000 000 navn.                               |
+| Compile Needed                   | Lagret policy er endret, eller den siste kompileringen ble ikke fullført.                                                                                                       |
+| Compiled Generation              | Identifikator produsert av den siste vellykkede kompileringen.                                                                                                                  |
+| Deployment Needed                | Kompilert innhold er ikke innholdet som er distribuert for Unbound, eller integrasjonen er inaktiv.                                                                             |
+| Deployed Generation              | Identifikator i det distribuerte kjøretidsmanifestet.                                                                                                                           |
+| Loaded Generation                | Identifikator som Unbound-modulen rapporterer som lastet.                                                                                                                       |
+| Update Running                   | Vises bare mens en aktiv prosess eier den delte låsen for pakkeoppgaver: en DNS-, Bypass- eller IP-oppdatering, en innstillingsanvendelse, en pakkeinstallasjon eller fjerning. |
+| Removal in Progress              | Vises bare mens den vedvarende fjerningsmarkøren er satt og integrasjonen trekkes tilbake.                                                                                      |
+| DNS Resolver Python Script Owner | Gjeldende verdi for den eneste `python_script`-plassen i Resolver, eller `None`.                                                                                                |
 
 Siden viser en varslingsboks når kompilering eller distribusjon venter, inkludert den registrerte årsaken. Samsvarende identifikatorer for kompilert, distribuert og lastet viser at lagret policy nådde modulen som kjører.
 
@@ -80,7 +80,7 @@ Siden viser en varslingsboks når kompilering eller distribusjon venter, inklude
 
 ## Tilstand for omfang og varsler \{#scope-and-alert-state}
 
-Sammendraget Scopes rapporterer tilstanden for gjenoppbygging av klientkartet. De separate panelene **Networks** og **Devices** rapporterer gjeldende CIDR-er for hvert grensesnitt og gjeldende adresser for hver enhet. En konflikt navngir en adresse som flere enheter krever. Den første enheten i tabellrekkefølgen eier adressen for policyen.
+Sammendraget Clients rapporterer tilstanden for gjenoppbygging av klientkartet. De separate panelene **Networks** og **Devices** rapporterer gjeldende CIDR-er for hvert grensesnitt og alle konfigurerte identifikatorer og gjeldende adresser for hver enhet. En konflikt navngir en adresse som flere enheter krever. Den første enheten i tabellrekkefølgen eier adressen for policyen. To identifikatorer i samme enhet kan nå én adresse uten å skape en konflikt.
 
 Panelet **Alerts** beskriver bare den siste minuttjobben. **Notifications held back** omfatter undertrykking på grunn av en grense eller et ulest varsel, mens **Events dropped by module** angir at den avgrensede hendelseskøen i minnet eller på disken ble full.
 

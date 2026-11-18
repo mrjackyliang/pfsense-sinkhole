@@ -808,7 +808,9 @@ print($servicesForm);
 <?php endforeach; ?>
 <?php foreach ($scopeDevices as $identifier => $device): ?>
 				<tr>
-					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslate('service_device_scope', [$device['name']]))?></td>
+					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslate('service_device_scope', [
+						pfsensePackageSinkholeDeviceLabel($device, $interfaceLabels),
+					]))?></td>
 					<td><?=htmlspecialchars((string) ($blockedServiceCounts['devices'][$identifier] ?? 0))?></td>
 				</tr>
 <?php endforeach; ?>
@@ -839,7 +841,9 @@ print($servicesForm);
 <?php endforeach; ?>
 <?php foreach ($scopeDevices as $identifier => $device): ?>
 				<tr>
-					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslate('service_device_scope', [$device['name']]))?></td>
+					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslate('service_device_scope', [
+						pfsensePackageSinkholeDeviceLabel($device, $interfaceLabels),
+					]))?></td>
 					<td><?=htmlspecialchars((string) ($safeSearchCounts['devices'][$identifier] ?? 0))?></td>
 				</tr>
 <?php endforeach; ?>
@@ -900,7 +904,7 @@ print($servicesForm);
 <?php endif; ?>
 <?php
 $scopesForm = new Form(false);
-$scopesSection = new Form_Section(pfsensePackageSinkholeTranslate('scopes'));
+$scopesSection = new Form_Section(pfsensePackageSinkholeTranslate('clients'));
 $scopesSection->addInput(new Form_StaticText(
     pfsensePackageSinkholeTranslate('client_map_rebuilt'),
     htmlspecialchars($clientMapRefreshedAt === ''
@@ -950,6 +954,7 @@ print($scopesForm);
 			<thead>
 				<tr>
 					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('name'))?></th>
+					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('identifiers'))?></th>
 					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('current_addresses'))?></th>
 					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('conflict'))?></th>
 					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('enabled'))?></th>
@@ -957,12 +962,16 @@ print($scopesForm);
 			</thead>
 				<tbody>
 <?php if ($scopeDevices === []): ?>
-					<tr><td colspan="4" class="text-muted"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('no_devices_configured'))?></td></tr>
+					<tr><td colspan="5" class="text-muted"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('no_devices_configured'))?></td></tr>
 <?php endif; ?>
 <?php foreach ($scopeDevices as $identifier => $device): ?>
 <?php
     $addresses = $clientDeviceAddresses[$identifier] ?? [];
     $conflicts = $clientConflicts[$identifier] ?? [];
+    $identifierText = implode(', ', pfsensePackageSinkholeDeviceIdentifierLabels(
+        $device,
+        $interfaceLabels,
+    ));
     $deviceRowClasses = [];
 
     if ($conflicts !== []) {
@@ -975,6 +984,7 @@ print($scopesForm);
 ?>
 					<tr<?=($deviceRowClasses === []) ? '' : ' class="' . implode(' ', $deviceRowClasses) . '"'?>>
 						<td><?=htmlspecialchars($device['name'])?></td>
+						<td><?=htmlspecialchars($identifierText)?></td>
 						<td><?=htmlspecialchars($addresses === [] ? pfsensePackageSinkholeTranslate('none') : implode(', ', $addresses))?></td>
 						<td><?=htmlspecialchars($conflicts === [] ? pfsensePackageSinkholeTranslate('none') : implode(', ', $conflicts))?></td>
 						<td><?=htmlspecialchars(pfsensePackageSinkholeTranslateMapped('boolean', $device['enabled'] ? 'true' : 'false'))?></td>

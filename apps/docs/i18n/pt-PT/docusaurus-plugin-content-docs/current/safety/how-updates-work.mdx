@@ -52,7 +52,9 @@ Uma âncora `sinkhole/ip` existente pode receber apenas uma atualização de tab
 
 A frequência predefinida de atualização das listas é Daily. Os agendamentos Hourly, Every 6 hours, Daily e Weekly usam componentes de minutos aleatórios estáveis para que a firewall não altere o horário do trabalho sempre que a configuração for guardada.
 
-As atualizações de DNS, Bypass e IP/países, a aplicação de definições, as verificações e autoatualizações do pacote e a limpeza da remoção são coordenadas por `/var/run/sinkhole-update.lock`. Uma verificação do pacote ou a ação Update não espera: se outra operação mantiver o lock, para com `Another package operation is already running.` e pode ser repetida quando essa operação terminar.
+As atualizações de DNS, Bypass e IP/países, a aplicação de definições, a instalação do pacote e a limpeza da remoção são coordenadas por `/var/run/sinkhole-update.lock`. As verificações de versões e as autoatualizações são coordenadas separadamente por `/var/run/sinkhole-release.lock`, e as verificações nunca adquirem o lock das tarefas do pacote.
+
+A autoatualização adquire o lock de versões antes do lock das tarefas do pacote. Aguarda até 30 minutos por uma atualização de listas, IP ou Bypass em execução enquanto a linha de progresso em About mostra a espera.
 
 ## As atualizações dos catálogos são separadas \{#catalog-refreshes-are-separate}
 

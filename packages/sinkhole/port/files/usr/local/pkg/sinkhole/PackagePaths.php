@@ -92,6 +92,15 @@ final class PackagePaths
     public const UPDATE_CHECK_COMMAND = self::COMMAND . ' --check-updates';
 
     /**
+     * Package Paths - Manual Update Check Command.
+     *
+     * The About page checks releases without filing a redundant notice.
+     *
+     * @since 1.3.0
+     */
+    public const MANUAL_UPDATE_CHECK_COMMAND = self::UPDATE_CHECK_COMMAND . ' --no-notice';
+
+    /**
      * Package Paths - Self Update Command.
      *
      * The About page launches this command as a detached package operation.
@@ -117,6 +126,15 @@ final class PackagePaths
      * @since 1.0.0
      */
     public const UPDATE_LOCK_FILE = '/var/run/sinkhole-update.lock';
+
+    /**
+     * Package Paths - Release Lock File.
+     *
+     * Release checks and installs serialize independently from package tasks.
+     *
+     * @since 1.3.0
+     */
+    public const RELEASE_LOCK_FILE = '/var/run/sinkhole-release.lock';
 
     /**
      * Package Paths - Runtime Lock File.
@@ -468,6 +486,15 @@ final class PackagePaths
     public readonly string $updateLockFile;
 
     /**
+     * Package Paths - Release Lock File Instance.
+     *
+     * @var string
+     *
+     * @since 1.3.0
+     */
+    public readonly string $releaseLockFile;
+
+    /**
      * Package Paths - Runtime Lock File Instance.
      *
      * @var string
@@ -626,6 +653,7 @@ final class PackagePaths
      * @param array<string, string> $overrides - Path overrides.
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public function __construct(array $overrides = [])
     {
@@ -671,6 +699,7 @@ final class PackagePaths
         $this->moduleSourceFile = $overrides['module_source_file'] ?? self::MODULE_SOURCE_FILE;
         $this->command = $overrides['command'] ?? self::COMMAND;
         $this->updateLockFile = $overrides['update_lock_file'] ?? self::UPDATE_LOCK_FILE;
+        $this->releaseLockFile = $overrides['release_lock_file'] ?? self::RELEASE_LOCK_FILE;
         $this->runtimeLockFile = $overrides['runtime_lock_file'] ?? self::RUNTIME_LOCK_FILE;
         $this->clientLockFile = $overrides['client_lock_file'] ?? self::CLIENT_LOCK_FILE;
         $this->alertLockFile = $overrides['alert_lock_file'] ?? self::ALERT_LOCK_FILE;

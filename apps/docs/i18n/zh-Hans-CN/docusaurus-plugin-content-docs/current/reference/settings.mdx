@@ -49,54 +49,56 @@ Rebind Exceptions 最多接受 100 个域名。Expired Answer Lifetime 接受 `0
 | Update Checks        | Weekly | 选择 Daily、Weekly、Monthly 或 Never 检查新 GitHub 版本。 |
 | Remote Notifications | Off    | 还会通过 pfSense 中配置的远程服务发送每个新版本通知。                |
 
-每个新版本会创建一条本地 pfSense 通知。**About → Check Now** 会立即运行同一个有界版本检查，而不更改计划。
+计划检查发现的每个新版本都会创建一条本地 pfSense 通知。**About → Check Now** 会运行同一个有界版本检查而不更改计划，不创建通知，并阻止后续计划检查再次通知该版本。
 
 ## Lists \{#lists}
 
-| 字段              | 默认值   | 说明                            |
-|-----------------|-------|-------------------------------|
-| Name            | Empty | 分配、警报和 Status 使用的本地标签。        |
-| URL             | Empty | 不含嵌入凭据的 HTTP 或 HTTPS 来源。      |
-| Enabled         | On    | 在分配后将来源纳入更新和编译策略。             |
-| Global          | Off   | 在设备和网络决定之后将列表应用于每个客户端。        |
-| Allowed Domains | Empty | 每行一个全局允许域名；每个条目都允许该域名及其所有子域名。 |
+| 字段      | 默认值   | 说明                           |
+|---------|-------|------------------------------|
+| Name    | Empty | Blocking、警报和 Status 使用的本地标签。 |
+| URL     | Empty | 不含嵌入凭据的 HTTP 或 HTTPS 来源。     |
+| Enabled | On    | 被使用时将来源纳入更新和编译策略。            |
 
 **Add from Catalog** 按需搜索 AdGuard Home 列表注册表和 pfBlockerNG 源目录。添加结果会创建与手动输入 URL 相同的普通行。
 
 绕过订阅源会从此目录中排除。
 
+## Blocking \{#blocking}
+
+每个上下文（Global、一个网络或一台设备）都有自己的两个字段：
+
+| 字段              | 默认值   | 说明                                               |
+|-----------------|-------|--------------------------------------------------|
+| Lists           | Empty | 在此上下文中进行阻止的 DNS 列表。Global 列表会在设备和网络决定之后应用于每个客户端。 |
+| Allowed Domains | Empty | 每行一个例外；每个条目都在此上下文的列表以及所有更宽泛上下文的列表之前允许该域名及其所有子域名。 |
+
 ## 服务 \{#services}
 
-每个作用域的服务选择默认为空。由专用 Bypass 防护涵盖的注册表服务会从“服务”中隐藏，并从已保存的选择中移除；Private Relay 只能在 Bypass 标签页配置。
+每个上下文的服务选择默认为空。由专用 Bypass 防护涵盖的注册表服务会从“服务”中隐藏，并从已保存的选择中移除；Private Relay 只能在 Bypass 标签页配置。
 
 ## SafeSearch \{#safesearch}
 
-每个作用域的 SafeSearch 选择默认为空。每个作用域都可以锁定 Google、YouTube（Moderate 或 Strict）、Bing、DuckDuckGo、Brave Search、Startpage、Ecosia、Yandex 和 Pixabay，或阻止 Qwant。[SafeSearch](/docs/configure/safesearch) 列出了各个名称和安全主机。
+每个上下文的 SafeSearch 选择默认为空。每个上下文都可以锁定 Google、YouTube（Moderate 或 Strict）、Bing、DuckDuckGo、Brave Search、Startpage、Ecosia、Yandex 和 Pixabay，或阻止 Qwant。[SafeSearch](/docs/configure/safesearch) 列出了各个名称和安全主机。
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| 字段              | 默认值   | 说明                                                                   |
-|-----------------|-------|----------------------------------------------------------------------|
-| Interface       | LAN   | 其当前 IPv4 和 IPv6 子网用于识别网络的已配置 pfSense 接口。没有 LAN 时，会选择第一个未使用的非 WAN 接口。 |
-| Lists           | Empty | 阻止该网络中客户端的其他 DNS 列表。                                                 |
-| Allowed Domains | Empty | 每行一个网络例外；每个条目都在该网络列表和所有全局策略之前允许该域名及其所有子域名。                           |
-| Enabled         | On    | 使该行参与客户端匹配和编译策略。                                                     |
+| 字段        | 默认值 | 说明                                                                   |
+|-----------|-----|----------------------------------------------------------------------|
+| Interface | LAN | 其当前 IPv4 和 IPv6 子网用于识别网络的已配置 pfSense 接口。没有 LAN 时，会选择第一个未使用的非 WAN 接口。 |
+| Enabled   | On  | 使该行参与客户端匹配和编译策略。                                                     |
 
 每个接口只能出现一次。不可用的已保存接口仍会显示以供修正，而不会被丢弃。
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| 字段                       | 默认值        | 说明                                               |
-|--------------------------|------------|--------------------------------------------------|
-| Name                     | Empty      | 在策略和 Status 中显示的本地标签。                            |
-| Identified By            | IP address | 选择 IP address、DHCP static mapping 或 MAC address。 |
-| IP Address / MAC Address | Empty      | 选择 IP address 或 MAC address 时使用的准确标识符。标签随所选方法变化。 |
-| DHCP Static Mapping      | Empty      | 使用该识别方式时选择的现有映射。                                 |
-| Lists                    | Empty      | 阻止该设备的其他 DNS 列表。                                 |
-| Allowed Domains          | Empty      | 每行一个设备例外；每个条目都在所有网络和全局决定之前允许该域名及其所有子域名。          |
-| Enabled                  | On         | 使该行参与客户端匹配和编译策略。                                 |
+| 字段                  | 默认值             | 说明                                                          |
+|---------------------|-----------------|-------------------------------------------------------------|
+| Name                | Empty           | 在策略和 Status 中显示的本地标签。                                       |
+| Identifiers → Type  | 一个 IP address 行 | 为每个可添加或删除的行选择 IP address、DHCP static mapping 或 MAC address。 |
+| Identifiers → Value | Empty           | 准确的 IP 或 MAC 地址，或现有 DHCP 静态映射。至少需要一个标识符行。                   |
+| Enabled             | On              | 使该行参与客户端匹配和编译策略。                                            |
 
-静态映射会使用其配置地址以及为映射 MAC 观察到的当前地址。MAC 行使用当前 ARP、NDP 和 DHCP 租约数据。
+所有标识符行都解析到同一设备并共享其设置。静态映射会使用其配置地址以及为映射 MAC 观察到的当前地址。MAC 行使用当前 ARP、NDP 和 DHCP 租约数据。通过同一设备的多个标识符找到的地址不属于冲突。
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Rebind Exceptions 最多接受 100 个域名。Expired Answer Lifetime 接受 `0
 |----------------------|----------|--------------------------------------|
 | Description          | Empty    | 规则的本地标签。                             |
 | Lists                | Any      | 匹配任意列表，或只匹配选定的已配置列表。                 |
-| Clients              | Everyone | 匹配所有人，或匹配选定的网络和设备作用域。                |
+| Clients              | Everyone | 匹配所有人，或匹配选定的网络和设备。                   |
 | Repeat After         | 60       | 同一规则、客户端、域名和列表再次通知前的分钟数；接受 1 至 1440。 |
 | WebGUI Notice        | On       | 规则匹配时添加 pfSense 通知。                  |
 | Remote Notifications | On       | 规则匹配时使用 pfSense 配置的通知服务。             |

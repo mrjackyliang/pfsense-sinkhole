@@ -148,9 +148,10 @@ function sinkholePageRenderFixture(string $name): array
         [
             'id' => $deviceOne,
             'descr' => 'Invented enabled device',
-            'identifier_type' => 'ip',
-            'identifier' => '192.0.2.10',
-            'interface' => '',
+            'identifiers' => ['item' => [
+                ['type' => 'ip', 'value' => '192.0.2.10', 'interface' => ''],
+                ['type' => 'mac', 'value' => '02:00:00:00:00:01', 'interface' => ''],
+            ]],
             'lists' => ['item' => [$listOne]],
             'allowed_domains' => ['item' => []],
             'enabled' => 'on',
@@ -158,9 +159,11 @@ function sinkholePageRenderFixture(string $name): array
         [
             'id' => $deviceTwo,
             'descr' => 'Invented disabled device',
-            'identifier_type' => 'mac',
-            'identifier' => '02:00:00:00:00:02',
-            'interface' => '',
+            'identifiers' => ['item' => [[
+                'type' => 'mac',
+                'value' => '02:00:00:00:00:02',
+                'interface' => '',
+            ]]],
             'lists' => ['item' => [$listTwo]],
             'allowed_domains' => ['item' => []],
             'enabled' => '',
@@ -345,7 +348,8 @@ function sinkholePageRenderFixture(string $name): array
                 'path' => ['lists'],
                 'expected_count' => 0,
             ]],
-            'expected' => ['<td colspan="6" class="text-muted">No block lists are configured.</td>'],
+            'expected' => ['<td colspan="5" class="text-muted">No block lists are configured.</td>'],
+            'unexpected' => ['name="allowed_domains"'],
         ]);
     }
 
@@ -369,12 +373,13 @@ function sinkholePageRenderFixture(string $name): array
             'get' => $get,
             'state' => $state,
             'expected' => ['data-sinkhole-test-form'],
+            'unexpected' => ['name="list_global"'],
         ]);
     }
 
-    if ($name === 'scopes-list') {
+    if ($name === 'clients-list') {
         return array_replace($base, [
-            'page' => 'sinkhole-scopes.php',
+            'page' => 'sinkhole-clients.php',
             'state' => [
                 ['path' => ['networks'], 'expected_count' => 2],
                 ['path' => ['devices'], 'expected_count' => 2],
@@ -382,54 +387,157 @@ function sinkholePageRenderFixture(string $name): array
             'expected' => [
                 'Invented enabled device',
                 'Invented disabled device',
-                'sinkhole-scopes_edit.php?type=network&amp;id=' . $networkOne,
-                'sinkhole-scopes_edit.php?type=device&amp;id=' . $deviceOne,
+                'IP Address: 192.0.2.10, MAC Address: 02:00:00:00:00:01',
+                'sinkhole-clients_edit.php?type=network&amp;id=' . $networkOne,
+                'sinkhole-clients_edit.php?type=device&amp;id=' . $deviceOne,
                 'table-rowdblclickedit',
                 'class="disabled"',
             ],
+            'unexpected' => ['Invented enabled list'],
         ]);
     }
 
-    if ($name === 'scopes-empty') {
+    if ($name === 'clients-empty') {
         $emptyConfiguration = $configuration;
         $emptyConfiguration['installedpackages']['sinkhole']['networks']['item'] = [];
         $emptyConfiguration['installedpackages']['sinkhole']['devices']['item'] = [];
 
         return array_replace($base, [
-            'page' => 'sinkhole-scopes.php',
+            'page' => 'sinkhole-clients.php',
             'configuration' => $emptyConfiguration,
             'state' => [
                 ['path' => ['networks'], 'expected_count' => 0],
                 ['path' => ['devices'], 'expected_count' => 0],
             ],
             'expected' => [
-                '<td colspan="5" class="text-muted">No networks are configured.</td>',
-                '<td colspan="7" class="text-muted">No devices are configured.</td>',
+                '<td colspan="3" class="text-muted">No networks are configured.</td>',
+                '<td colspan="5" class="text-muted">No devices are configured.</td>',
             ],
         ]);
     }
 
+    if ($name === 'blocking-global') {
+        return array_replace($base, [
+            'page' => 'sinkhole-blocking.php',
+            'state' => [
+                ['path' => ['context'], 'expected' => 'global'],
+                ['path' => ['contextLists'], 'expected' => [$listOne]],
+            ],
+            'expected' => [
+                'sinkhole-context-kinds',
+                'Editing: Global · applies to every client',
+                'sinkhole-blocking.php?context=network%3A' . $networkOne,
+                'name="blocking_lists[]"',
+                '<option value="' . $listOne . '" selected>',
+                'allowed.example.test</textarea>',
+                'name="context" id="context" type="hidden" value="global"',
+            ],
+        ]);
+    }
+
+    if ($name === 'blocking-network') {
+        return array_replace($base, [
+            'page' => 'sinkhole-blocking.php',
+            'get' => ['context' => 'network:' . $networkTwo],
+            'state' => [
+                ['path' => ['context'], 'expected' => 'network:' . $networkTwo],
+                ['path' => ['contextLists'], 'expected' => [$listTwo]],
+            ],
+            'expected' => [
+                'Editing: Network: OPT1 · applies to clients on OPT1',
+                'This network is disabled on Clients',
+                'OPT1 (disabled)',
+                'sinkhole-context-chips',
+                '<option value="' . $listTwo . '" selected>',
+            ],
+            'unexpected' => ['allowed.example.test'],
+        ]);
+    }
+
+    if ($name === 'blocking-device-saved') {
+        return array_replace($base, [
+            'page' => 'sinkhole-blocking.php',
+            'post' => [
+                'context' => 'device:' . $deviceOne,
+                'save_blocking' => '1',
+                'blocking_lists' => [$listTwo],
+                'blocking_allowed_domains' => "kept.example.test\nsecond.example.test",
+            ],
+            'state' => [
+                ['path' => ['actionClass'], 'expected' => 'success'],
+                ['path' => ['devices', $deviceOne, 'lists'], 'expected' => [$listTwo]],
+                [
+                    'path' => ['devices', $deviceOne, 'allowed_domains'],
+                    'expected' => ['kept.example.test', 'second.example.test'],
+                ],
+                ['path' => ['devices', $deviceOne, 'identifiers'], 'expected_count' => 2],
+            ],
+            'expected_background_commands' => ['/usr/local/sbin/sinkhole --apply'],
+            'expected' => [
+                'id="sinkhole-context-search"',
+                'Editing: Device: Invented enabled device · this device only',
+                'kept.example.test' . PHP_EOL . 'second.example.test</textarea>',
+            ],
+        ]);
+    }
+
+    if ($name === 'blocking-all') {
+        return array_replace($base, [
+            'page' => 'sinkhole-blocking.php',
+            'get' => ['context' => 'all'],
+            'state' => [
+                ['path' => ['overviewRows'], 'expected_count' => 5],
+                ['path' => ['overviewRows', 0, 'key'], 'expected' => 'global'],
+            ],
+            'expected' => [
+                'All · a read-only overview of every context with its own settings',
+                'sinkhole-blocking.php?context=device%3A' . $deviceOne,
+                'Network: LAN',
+            ],
+            'unexpected' => ['name="save_blocking"', 'data-sinkhole-test-form'],
+        ]);
+    }
+
+    if ($name === 'scopes-redirect') {
+        return array_replace($base, [
+            'page' => 'sinkhole-scopes.php',
+        ]);
+    }
+
     if (in_array($name, [
-        'scopes-edit-network-add',
-        'scopes-edit-network',
-        'scopes-edit-device-add',
-        'scopes-edit-device',
+        'clients-edit-network-add',
+        'clients-edit-network',
+        'clients-edit-device-add',
+        'clients-edit-device',
+        'clients-edit-device-invalid',
     ], true)) {
-        $scopeType = str_contains($name, 'device') ? 'device' : 'network';
-        $get = ['type' => $scopeType];
+        $clientType = str_contains($name, 'device') ? 'device' : 'network';
+        $get = ['type' => $clientType];
+        $post = [];
         $editorConfiguration = $configuration;
         $state = [
-            ['path' => ['scopeType'], 'expected' => $scopeType],
+            ['path' => ['clientType'], 'expected' => $clientType],
             ['path' => ['editing'], 'expected' => null],
         ];
 
-        if ($name === 'scopes-edit-network') {
+        if ($name === 'clients-edit-network') {
             $get['id'] = $networkOne;
             $state[1] = ['path' => ['editing', 'id'], 'expected' => $networkOne];
-        } elseif ($name === 'scopes-edit-device') {
+        } elseif ($name === 'clients-edit-device') {
             $get['id'] = $deviceOne;
             $state[1] = ['path' => ['editing', 'id'], 'expected' => $deviceOne];
-        } elseif ($name === 'scopes-edit-network-add') {
+        } elseif ($name === 'clients-edit-device-invalid') {
+            $post = [
+                'client_type' => 'device',
+                'save_device' => '1',
+                'device_name' => 'Duplicate identifiers',
+                'device_identifier_type0' => 'ip',
+                'device_identifier0' => '192.0.2.99',
+                'device_identifier_type1' => 'ip',
+                'device_identifier1' => '192.0.2.99',
+            ];
+            $state[1] = ['path' => ['editing', 'identifiers'], 'expected_count' => 2];
+        } elseif ($name === 'clients-edit-network-add') {
             $editorConfiguration['installedpackages']['sinkhole']['networks']['item'] = [
                 $networkRows[1],
             ];
@@ -438,13 +546,29 @@ function sinkholePageRenderFixture(string $name): array
         }
 
         return array_replace($base, [
-            'page' => 'sinkhole-scopes_edit.php',
+            'page' => 'sinkhole-clients_edit.php',
             'configuration' => $editorConfiguration,
             'get' => $get,
+            'post' => $post,
             'state' => $state,
-            'expected' => ($scopeType === 'device')
-                ? ["hideInput('device_identifier'", "hideInput('device_static_mapping'"]
+            'expected' => ($clientType === 'device')
+                ? array_merge([
+                    'name="device_identifier_type0"',
+                    'name="device_identifier0"',
+                    'name="device_static_mapping0"',
+                    'name="addrow"',
+                    'device-identifier-type',
+                    'device-static-mapping-value',
+                ], in_array($name, ['clients-edit-device', 'clients-edit-device-invalid'], true)
+                    ? [
+                        'name="device_identifier_type1"',
+                        ($name === 'clients-edit-device')
+                            ? 'value="02:00:00:00:00:01"'
+                            : 'Identifier row 2: The device identifier is duplicated in this device.',
+                    ]
+                    : [])
                 : ['data-sinkhole-test-form'],
+            'unexpected' => ['network_lists', 'device_lists', 'allowed_domains'],
         ]);
     }
 
@@ -473,8 +597,12 @@ function sinkholePageRenderFixture(string $name): array
                 'data:image/svg+xml;base64,',
                 'class="chkboxlbl sinkhole-service-choice"',
                 'fa-solid fa-arrows-rotate',
+                'sinkhole-context-kinds',
+                'Devices (2)',
+                'name="context" id="context" type="hidden" value="global"',
             ],
             'unexpected' => [
+                'name="service_scope"',
                 'sinkhole-service-switch',
                 'sinkhole-service-slider',
                 'Invented Private Relay Service',
@@ -483,9 +611,39 @@ function sinkholePageRenderFixture(string $name): array
         ]);
     }
 
+    if ($name === 'safesearch') {
+        return array_replace($base, [
+            'page' => 'sinkhole-safesearch.php',
+            'get' => ['context' => 'device:' . $deviceOne],
+            'state' => [[
+                'path' => ['selectedScope'],
+                'expected' => 'device:' . $deviceOne,
+            ]],
+            'expected' => [
+                'Editing: Device: Invented enabled device · this device only',
+                'name="context" id="context" type="hidden" value="device:' . $deviceOne . '"',
+            ],
+            'unexpected' => ['name="safesearch_scope"'],
+        ]);
+    }
+
+    if ($name === 'alerts-network') {
+        return array_replace($base, [
+            'page' => 'sinkhole-alerts.php',
+            'get' => ['context' => 'network:' . $networkOne],
+            'state' => [[
+                'path' => ['visibleAlerts'],
+                'expected_count' => 1,
+            ]],
+            'expected' => ['Invented disabled alert', 'Editing: Network: LAN · applies to clients on LAN'],
+            'unexpected' => ['Invented enabled alert'],
+        ]);
+    }
+
     if ($name === 'alerts-list') {
         return array_replace($base, [
             'page' => 'sinkhole-alerts.php',
+            'get' => ['context' => 'all'],
             'state' => [[
                 'path' => ['alerts'],
                 'expected_count' => 2,
@@ -496,6 +654,7 @@ function sinkholePageRenderFixture(string $name): array
                 'sinkhole-alerts_edit.php?id=' . $alertOne,
                 'table-rowdblclickedit',
                 'class="disabled"',
+                'Invented enabled device — IP Address: 192.0.2.10, MAC Address: 02:00:00:00:00:01',
             ],
         ]);
     }
@@ -538,6 +697,7 @@ function sinkholePageRenderFixture(string $name): array
                 "hideInput('alert_lists\\\\[\\\\]'",
                 "hideInput('alert_networks\\\\[\\\\]'",
                 "hideInput('alert_devices\\\\[\\\\]'",
+                'Invented enabled device — IP Address: 192.0.2.10, MAC Address: 02:00:00:00:00:01',
             ],
         ]);
     }
@@ -756,6 +916,237 @@ function sinkholePageRenderFixture(string $name): array
             'get' => $get,
             'state' => $state,
             'expected' => ['data-sinkhole-test-form'],
+        ]);
+    }
+
+    $bypassContextRow = [
+        'context' => 'network:' . $networkOne,
+        'enabled' => 'on',
+        'block_tls_quic' => 'on',
+        'block_encrypted_dns' => '',
+        'disable_firefox_doh' => 'on',
+        'disable_private_relay' => '',
+        'discovery' => 'off',
+        'block_tor' => '',
+        'block_vpn' => 'on',
+        'block_vpn_ports' => '',
+        'lists' => ['item' => [$listOne]],
+        'exempt_sources' => ['item' => ['192.0.2.20']],
+        'exempt_destinations' => ['item' => []],
+    ];
+    $ipContextRow = [
+        'context' => 'device:' . $deviceOne,
+        'enabled' => 'on',
+        'directions' => ['item' => ['outbound']],
+        'list_ids' => ['item' => [$listThree]],
+        'countries' => ['item' => []],
+        'allowlist' => ['item' => ['192.0.2.30']],
+    ];
+
+    if ($name === 'bypass-network-unset' || $name === 'bypass-device-unset') {
+        $isDevice = $name === 'bypass-device-unset';
+
+        return array_replace($base, [
+            'page' => 'sinkhole-bypass.php',
+            'get' => [
+                'context' => ($isDevice) ? 'device:' . $deviceOne : 'network:' . $networkOne,
+            ],
+            'state' => [
+                [
+                    'path' => ['contextSettings'],
+                    'expected' => null,
+                ],
+                [
+                    'path' => ['hasOwnSettings'],
+                    'expected' => false,
+                ],
+            ],
+            'expected' => [
+                ($isDevice) ? 'Not set for this device; ' : 'Not set for this network; ',
+                'name="block_tls_quic"',
+                'name="save_bypass"',
+            ],
+            'unexpected' => [
+                'name="remove_context_settings"',
+                'name="redirect_enabled"',
+                'name="bypass_interfaces[]"',
+                'sinkhole-bypass_edit.php?id=',
+                'Invalid Saved Values',
+            ],
+        ]);
+    }
+
+    if ($name === 'bypass-network') {
+        $contextConfiguration = $configuration;
+        $contextConfiguration['installedpackages']['sinkhole']['bypass_contexts'] = [
+            'item' => [$bypassContextRow],
+        ];
+
+        return array_replace($base, [
+            'page' => 'sinkhole-bypass.php',
+            'configuration' => $contextConfiguration,
+            'get' => ['context' => 'network:' . $networkOne],
+            'state' => [[
+                'path' => ['hasOwnSettings'],
+                'expected' => true,
+            ]],
+            'expected' => [
+                'name="block_tls_quic"',
+                'name="block_exempt_sources"',
+                'name="bypass_lists[]"',
+                '<option value="' . $listOne . '" selected>',
+                '192.0.2.20',
+                'name="remove_context_settings"',
+                'Remove settings for this network',
+                'sinkhole-bypass.php?context=network%3A' . $networkOne,
+            ],
+            'unexpected' => [
+                'Not set for this network',
+                'name="redirect_enabled"',
+                'name="bypass_interfaces[]"',
+                'sinkhole-bypass_edit.php?id=',
+                'name="catalog_query"',
+            ],
+        ]);
+    }
+
+    if ($name === 'bypass-all') {
+        $contextConfiguration = $configuration;
+        $contextConfiguration['installedpackages']['sinkhole']['bypass_contexts'] = [
+            'item' => [$bypassContextRow],
+        ];
+
+        return array_replace($base, [
+            'page' => 'sinkhole-bypass.php',
+            'configuration' => $contextConfiguration,
+            'get' => ['context' => 'all'],
+            'state' => [
+                [
+                    'path' => ['context'],
+                    'expected' => 'all',
+                ],
+                [
+                    'path' => ['overviewRows'],
+                    'expected_count' => 2,
+                ],
+                [
+                    'path' => ['overviewRows', 0, 'key'],
+                    'expected' => 'global',
+                ],
+                [
+                    'path' => ['overviewRows', 1, 'key'],
+                    'expected' => 'network:' . $networkOne,
+                ],
+            ],
+            'expected' => [
+                'Bypass Settings by Network and Device',
+                'sinkhole-bypass.php?context=global',
+                'sinkhole-bypass.php?context=network%3A' . $networkOne,
+                'table-rowdblclickedit',
+            ],
+            'unexpected' => [
+                'name="save_bypass"',
+                'name="block_tls_quic"',
+                'sinkhole-bypass_edit.php?id=',
+            ],
+        ]);
+    }
+
+    if ($name === 'ip-network-unset') {
+        return array_replace($base, [
+            'page' => 'sinkhole-ip.php',
+            'get' => ['context' => 'network:' . $networkOne],
+            'state' => [
+                [
+                    'path' => ['contextSettings'],
+                    'expected' => null,
+                ],
+                [
+                    'path' => ['hasOwnSettings'],
+                    'expected' => false,
+                ],
+            ],
+            'expected' => [
+                'Not set for this network; ',
+                'name="save_ip_settings"',
+            ],
+            'unexpected' => [
+                'name="remove_context_settings"',
+                'name="maxmind_account_id"',
+                'name="maxmind_license_key"',
+                'name="ip_interfaces[]"',
+                'sinkhole-ip_edit.php?id=',
+            ],
+        ]);
+    }
+
+    if ($name === 'ip-device') {
+        $contextConfiguration = $configuration;
+        $contextConfiguration['installedpackages']['sinkhole']['ip_contexts'] = [
+            'item' => [$ipContextRow],
+        ];
+
+        return array_replace($base, [
+            'page' => 'sinkhole-ip.php',
+            'configuration' => $contextConfiguration,
+            'get' => ['context' => 'device:' . $deviceOne],
+            'state' => [[
+                'path' => ['hasOwnSettings'],
+                'expected' => true,
+            ]],
+            'expected' => [
+                'name="ip_directions[]"',
+                'name="ip_lists[]"',
+                '<option value="' . $listThree . '" selected>',
+                '192.0.2.30',
+                'name="remove_context_settings"',
+                'Remove settings for this device',
+                'sinkhole-ip.php?context=device%3A' . $deviceOne,
+            ],
+            'unexpected' => [
+                'Not set for this device',
+                'name="maxmind_account_id"',
+                'name="ip_interfaces[]"',
+                'sinkhole-ip_edit.php?id=',
+                'name="catalog_query"',
+            ],
+        ]);
+    }
+
+    if ($name === 'ip-all') {
+        $contextConfiguration = $configuration;
+        $contextConfiguration['installedpackages']['sinkhole']['ip_contexts'] = [
+            'item' => [$ipContextRow],
+        ];
+
+        return array_replace($base, [
+            'page' => 'sinkhole-ip.php',
+            'configuration' => $contextConfiguration,
+            'get' => ['context' => 'all'],
+            'state' => [
+                [
+                    'path' => ['context'],
+                    'expected' => 'all',
+                ],
+                [
+                    'path' => ['overviewRows'],
+                    'expected_count' => 2,
+                ],
+                [
+                    'path' => ['overviewRows', 1, 'key'],
+                    'expected' => 'device:' . $deviceOne,
+                ],
+            ],
+            'expected' => [
+                'IP Settings by Network and Device',
+                'sinkhole-ip.php?context=global',
+                'sinkhole-ip.php?context=device%3A' . $deviceOne,
+                'Outbound',
+            ],
+            'unexpected' => [
+                'name="save_ip_settings"',
+                'sinkhole-ip_edit.php?id=',
+            ],
         ]);
     }
 
@@ -1253,6 +1644,9 @@ function sinkholePageRenderFixture(string $name): array
                 'Present',
                 'Firewall Rules Current',
                 'Invented enabled device',
+                'IP Address: 192.0.2.10, MAC Address: 02:00:00:00:00:01',
+                'Invented enabled device — IP Address: 192.0.2.10, '
+                    . 'MAC Address: 02:00:00:00:00:01',
                 'fa-solid fa-arrows-rotate',
                 'Update Log',
                 '<div class="form-group hidden" id="sinkhole-update-running-row">',
@@ -1742,15 +2136,22 @@ function sinkholePageRenderPrepareActiveRuntime(
         ],
         'alerts' => [],
         'bypass' => [
-            'interfaces' => ['lan'],
-            'block_encrypted_dns' => true,
-            'disable_firefox_doh' => true,
-            'disable_private_relay' => true,
-            'discovery' => 'nodata',
+            'lists' => [],
+            'global' => [
+                'enabled' => true,
+                'block_encrypted_dns' => true,
+                'disable_firefox_doh' => true,
+                'disable_private_relay' => true,
+                'discovery' => 'nodata',
+                'block_tor' => true,
+                'block_vpn' => true,
+                'lists' => [],
+                'interfaces' => ['lan'],
+            ],
+            'networks' => [],
+            'devices' => [],
             'discovery_hostname' => '',
             'discovery_port' => 0,
-            'block_tor' => true,
-            'block_vpn' => true,
         ],
     ];
 
@@ -2567,13 +2968,21 @@ $fixtures = [
     'lists-edit-add',
     'lists-edit',
     'services',
-    'scopes-list',
-    'scopes-empty',
-    'scopes-edit-network-add',
-    'scopes-edit-network',
-    'scopes-edit-device-add',
-    'scopes-edit-device',
+    'safesearch',
+    'clients-list',
+    'clients-empty',
+    'clients-edit-network-add',
+    'clients-edit-network',
+    'clients-edit-device-add',
+    'clients-edit-device',
+    'clients-edit-device-invalid',
+    'blocking-global',
+    'blocking-network',
+    'blocking-device-saved',
+    'blocking-all',
+    'scopes-redirect',
     'alerts-list',
+    'alerts-network',
     'alerts-empty',
     'alerts-edit-add',
     'alerts-edit',
@@ -2584,11 +2993,18 @@ $fixtures = [
     'ip-edit',
     'ip-invalid-values',
     'ip-invalid-settings',
+    'ip-network-unset',
+    'ip-device',
+    'ip-all',
     'bypass-list',
     'bypass-empty',
     'bypass-catalog',
     'bypass-edit-add',
     'bypass-edit',
+    'bypass-network-unset',
+    'bypass-device-unset',
+    'bypass-network',
+    'bypass-all',
     'bypass-redirect-fields',
     'bypass-redirect-collections',
     'bypass-block-exemptions',

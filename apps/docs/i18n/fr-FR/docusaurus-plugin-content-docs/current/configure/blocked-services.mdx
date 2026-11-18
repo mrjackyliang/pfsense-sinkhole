@@ -6,8 +6,8 @@ keywords:
   - sinkhole for pfsense
   - services bloqués
   - blocage de services
-  - portée réseau
-  - portée appareil
+  - blocage par réseau
+  - blocage par appareil
 tags:
   - configure
   - services
@@ -18,15 +18,17 @@ import servicesTab from './_assets_/blocked-services-1.png';
 
 Utilisez **Firewall → Sinkhole → Services** pour bloquer une marque entière sans choisir ni maintenir l’URL d’une liste distincte.
 
-## Choisir une portée \{#choose-a-scope}
+## Choisir un contexte \{#choose-a-context}
 
-Sélectionnez **Global**, un réseau configuré ou un appareil configuré. Recherchez un service, affinez les tuiles avec une puce de groupe, activez ou désactivez les services, puis sélectionnez **Save** sous les cartes de service.
+Choisissez **Global**, un réseau ou un appareil dans la [rangée de contextes](/docs/configure/scopes#contexts) sous les onglets principaux ; la page n’affiche que la sélection propre à ce contexte. Recherchez un service, affinez les tuiles avec une puce de groupe, activez ou désactivez les services, puis sélectionnez **Save** sous les cartes de service.
 
-La sélection est compilée au niveau existant de cette portée. Les domaines autorisés de l’appareil restent prioritaires sur ses règles de service, ceux du réseau sur ses règles de service et les domaines autorisés globaux sur les règles de service globales.
+**All** liste chaque contexte qui bloque au moins un service, avec les noms des services ; sélectionnez une ligne pour modifier ce contexte.
+
+La sélection est compilée au niveau existant de ce contexte. Les domaines autorisés de l’appareil restent prioritaires sur ses règles de service, ceux du réseau sur ses règles de service et les domaines autorisés globaux sur les règles de service globales.
 
 Les services couverts par une protection Bypass dédiée n'apparaissent pas dans la grille, le nombre de groupes ou la recherche. Private Relay se configure uniquement dans l'onglet Bypass.
 
-<img src={servicesTab} alt="Onglet Services filtré sur le groupe Gaming pour une portée d’appareil de démonstration, avec quatre services sélectionnés" width={1024} height={1288} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={servicesTab} alt="Onglet Services filtré sur le groupe Gaming pour un appareil de démonstration, avec quatre services sélectionnés" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Registre et réparation \{#registry-and-repair}
 
@@ -34,4 +36,4 @@ Sinkhole récupère le registre des services d’AdGuard Home uniquement lorsque
 
 Les logos de service sont rendus comme des images Data URI isolées. Un logo manquant ou trop grand est remplacé par une image générique. Si un service enregistré disparaît d’un registre plus récent, Sinkhole conserve son identifiant et l’affiche sous **Needs Repair** ; désactivez-le et enregistrez pour supprimer ce choix.
 
-L’onglet **Status** affiche l’heure de récupération du registre, la dernière erreur et le nombre de services bloqués sélectionnés pour chaque portée configurée.
+L’onglet **Status** affiche l’heure de récupération du registre, la dernière erreur et le nombre de services bloqués sélectionnés pour Global et pour chaque réseau et appareil.

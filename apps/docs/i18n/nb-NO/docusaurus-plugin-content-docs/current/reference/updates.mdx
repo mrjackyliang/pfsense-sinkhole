@@ -22,11 +22,11 @@ Sinkhole kan kontrollere GitHub-utgivelsene, varsle gjennom pfSense og installer
 
 **General → Update Checks** velger Daily, Weekly, Monthly eller Never. Weekly er standard. Sinkhole lagrer stabile tilfeldige tidsplankomponenter, slik at lagring av innstillinger ikke stadig flytter kontrolltidspunktet.
 
-En kontroll registrerer den nyeste versjonen, utgivelsessiden, kontrolltidspunktet og siste feil. **About → Check Now** kjører den samme kontrollen umiddelbart.
+En kontroll registrerer den nyeste versjonen, utgivelsessiden, kontrolltidspunktet og siste feil. **About → Check Now** kjører den samme kontrollen umiddelbart uten å opprette et varsel og registrerer en nyere versjon som allerede varslet.
 
 ## Oppdateringsvarsler \{#update-notices}
 
-Hver nylig oppdagede versjon oppretter ett lokalt pfSense WebGUI-varsel med lenke til fanen About i Sinkhole. Gjentatte kontroller oppretter ikke dupliserte varsler for samme versjon.
+Hver nylig oppdagede versjon fra en planlagt kontroll oppretter ett lokalt pfSense WebGUI-varsel med lenke til fanen About i Sinkhole. Gjentatte kontroller oppretter ikke dupliserte varsler for samme versjon, heller ikke en versjon som allerede er vist av en manuell About-kontroll.
 
 Velg **Remote Notifications** for også å bruke tjenestene som er konfigurert under **System → Advanced → Notifications**. Innstillingen er avslått som standard og påvirker versjonsvarsler, ikke varslingsregler for listeblokkering.
 
@@ -36,7 +36,9 @@ Oppdateringslinjen viser installert versjon, nyeste kontrollerte versjon, siste 
 
 **Update** vises når den registrerte nyeste versjonen er nyere. Siden spør den frakoblede jobben og rapporterer resultatet uten å holde nettleserforespørselen åpen.
 
-<img src={aboutUpdateBar} alt="Fanen About viser en tilgjengelig Sinkhole-oppdatering med kontrollene Update og What's New" width={1024} height={816} style={{maxWidth: '100%', height: 'auto'}} />
+Hvis en liste-, IP- eller Bypass-oppdatering kjører, viser en installasjon fra About at den venter og starter når oppgaven er ferdig. Ventetiden er begrenset til 30 minutter.
+
+<img src={aboutUpdateBar} alt="Fanen About viser en tilgjengelig Sinkhole-oppdatering med kontrollene Update og What's New" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Verifisering før installasjon \{#verification-before-installation}
 
@@ -48,9 +50,9 @@ En tom installert klareringsliste betyr at ingen signatur er påkrevd, men verif
 
 ## Oppdateringslås \{#update-locking}
 
-Pakkekontroll og automatisk oppdatering deler `/var/run/sinkhole-update.lock` med DNS-, Bypass- og IP/land-oppdateringer, anvendelse av innstillinger og opprydding ved fjerning. De venter ikke på låsen: Hvis en annen operasjon holder den, stopper kontrollen eller handlingen **Update** med `Another package operation is already running.`
+Utgivelseskontroller og automatisk oppdatering koordineres gjennom `/var/run/sinkhole-release.lock` og venter i opptil 30 sekunder på en annen kontroll eller installasjon. En utgivelseskontroll tar aldri låsen for pakkeoppgaver og kan derfor kjøre under en liste-, IP- eller Bypass-oppdatering.
 
-Låsen hindrer at pakkefiler endres mens den gjeldende pakken laster ned, analyserer, kompilerer eller bruker policy. Prøv på nytt fra About når Status ikke lenger viser at en oppdatering kjører.
+Automatisk oppdatering tar først utgivelseslåsen og deretter `/var/run/sinkhole-update.lock`. Hvis en liste-, IP- eller Bypass-oppdatering holder låsen for pakkeoppgaver, viser fremdriftslinjen i About ventingen i opptil 30 minutter før installasjonen mislykkes.
 
 ## Manuell pakkeoppdatering \{#manual-package-update}
 

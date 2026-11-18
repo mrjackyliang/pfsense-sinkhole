@@ -52,7 +52,7 @@ pfBlockerNG DNSBL uses the same Python script slot as Sinkhole in Python mode. S
 ## Network Requirements \{#network-requirements}
 
 - Network scopes use the current IPv4 and IPv6 subnets of configured pfSense interfaces.
-- Devices identified by MAC address or static mapping depend on current ARP, NDP, DHCP lease, static-mapping, and interface data.
+- Each device can have several IP addresses, MAC addresses, and static mappings. MAC and static-mapping identifiers depend on current ARP, NDP, DHCP lease, static-mapping, and interface data.
 - The plain-DNS redirect on **Bypass** requires an address family on the selected interface and a matching Resolver listener.
 - Redirected clients still need to be allowed by the Resolver's access-control settings.
 

@@ -30,7 +30,7 @@ Quella configurazione funzionava, ma ogni riavvio o ricaricamento del firewall s
 
 Sinkhole funziona come modulo Python all’interno del DNS Resolver di pfSense e risponde a un nome bloccato con `0.0.0.0` e `::`.
 
-- **Liste per ogni ambito** — Le liste globali valgono per tutti. Un ambito di rete aggiunge liste per un’interfaccia o una VLAN, e un ambito dispositivo aggiunge liste per un dispositivo, identificato tramite indirizzo IP, mappatura statica DHCP o indirizzo MAC.
+- **Liste per ogni ambito** — Le liste globali valgono per tutti. Un ambito di rete aggiunge liste per un’interfaccia o una VLAN, e un ambito dispositivo aggiunge un insieme condiviso di liste per un dispositivo identificato da uno o più indirizzi IP, mappature statiche DHCP e indirizzi MAC.
 - **Domini consentiti a ogni livello** — Un falso positivo si corregge dove conta, senza rinunciare a un’intera lista.
 - **Copie salvate di ogni lista** — Il DNS risponde con gli ultimi dati validi subito dopo un riavvio del DNS Resolver o del sistema, comprese le installazioni su disco RAM. Un download non riuscito mantiene la copia precedente.
 - **Avvisi a tua scelta** — Una notifica pfSense arriva solo per le liste, le reti e i dispositivi selezionati da una regola di avviso, una volta per dispositivo e dominio.

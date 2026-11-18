@@ -20,11 +20,37 @@ Utrzymuj zapytania DNS z wybranych interfejsów klienckich na ścieżkach, któr
 
 ## Wybieranie interfejsów \{#choose-the-interfaces}
 
-Otwórz **Firewall → Sinkhole → Bypass** i wybierz interfejsy w polu **Apply to** przed włączeniem ochrony. Ten pojedynczy wybór dotyczy każdego ustawienia na stronie. Ochrona kontroluje tylko ruch przychodzący od klientów na tych interfejsach; nie wpływa na zapytania samej zapory ani na ruch wychodzący.
+Otwórz **Firewall → Sinkhole → Bypass** i wybierz interfejsy w polu **Apply to** przed włączeniem ochrony. Ten wybór należy do **Global** i określa, gdzie obowiązują ustawienia Global. Ochrona kontroluje tylko ruch przychodzący od klientów na tych interfejsach; nie wpływa na zapytania samej zapory ani na ruch wychodzący.
 
 Dopasowanie sieci i urządzeń używa bieżących podsieci tych interfejsów, tak samo jak zwykłe zakresy Sinkhole. Klient spoza wybranych podsieci nie otrzymuje odpowiedzi DNS Bypass.
 
-<img src={bypassProtection} alt="Karta Bypass z wybranym interfejsem LAN, wyłączonym przekierowaniem zwykłego DNS, włączoną ochroną szyfrowanego DNS i tuneli, opcją Discovery ustawioną na Answer with no records, demonstracyjnym wykluczonym źródłem i miejscem docelowym oraz trzema demonstracyjnymi Bypass Lists" width={1024} height={1659} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Karta Bypass z wybranym interfejsem LAN, wyłączonym przekierowaniem zwykłego DNS, włączoną ochroną szyfrowanego DNS i tuneli, opcją Discovery ustawioną na Answer with no records, demonstracyjnym wykluczonym źródłem i miejscem docelowym oraz trzema demonstracyjnymi Bypass Lists" width={1024} height={1784} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Ustawianie ochrony dla sieci i urządzeń \{#set-protections-per-network-and-device}
+
+Wiersz pod kartami określa, co edytujesz: **All**, **Global**, jedną sieć lub jedno urządzenie. Linia pod nim wskazuje klientów, których dotyczą te ustawienia. Każdy wybór pokazuje tylko własne ustawienia; ustawienia z szerszego wyboru nigdy nie są wyświetlane.
+
+Klient stosuje najbardziej szczegółowe istniejące ustawienia: najpierw ustawienia swojego urządzenia, potem swojej sieci, a na końcu Global. Sieć lub urządzenie wyłączone na karcie Clients są pomijane.
+
+Tylko **Global** zawiera:
+
+- Interfejsy w polu **Apply to**.
+- Przekierowanie **Plain DNS** i jego wyjątki.
+- Źródła Bypass Lists, **Add from Catalog** i aktualizacje list.
+
+Sieć lub urządzenie zawiera:
+
+- **Enable**, które włącza jego ochronę.
+- **Bypass Lists**, czyli włączone źródła, z których korzysta.
+- Ustawienia szyfrowanego DNS, **Discovery**, blokady tuneli i **Block Exemptions**.
+
+Sieć lub urządzenie bez własnych ustawień pokazuje jedną linię, na przykład "Nie ustawiono dla tej sieci; obowiązuje Globalne.", nad pustym formularzem. Urządzenie podaje tam swoją sieć, gdy ta sieć ma własne ustawienia. Zapisanie formularza tworzy ustawienia, a **Remove settings for this network** lub **Remove settings for this device** je usuwa, dzięki czemu ponownie obowiązują szersze ustawienia. Usunięcie sieci lub urządzenia na karcie Clients usuwa także jego ustawienia.
+
+**All** wyświetla Global oraz każdą sieć i każde urządzenie z własnymi ustawieniami wraz z włączoną ochroną. Wybierz wiersz, aby go edytować.
+
+Po uaktualnieniu Sinkhole do wersji 1.3.0 istniejące ustawienia pozostają w Global i są kopiowane do każdej sieci i każdego urządzenia. Od tej chwili każda kopia jest niezależna. Kopia jest włączana tylko wtedy, gdy interfejs sieci lub interfejs jednego z identyfikatorów urządzenia był wybrany w polu **Apply to**; każda inna kopia jest zapisywana jako wyłączona, więc żaden klient, który wcześniej nie był filtrowany, nie zacznie być filtrowany.
+
+Każda sieć lub urządzenie z włączonymi ustawieniami otrzymuje własną tabelę klientów w kotwicy `sinkhole/bypass`. Adresy urządzenia są usuwane z tabeli jego sieci i z tabeli Global, a podsieci sieci z tabeli Global, więc klient jest blokowany tylko przez swoje najbardziej szczegółowe ustawienia. Sinkhole nie dodaje w tym celu reguł przepuszczania.
 
 ## Przekierowywanie zwykłego DNS \{#redirect-plain-dns}
 

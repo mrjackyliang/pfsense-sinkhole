@@ -1,5 +1,22 @@
 # pfsense-pkg-sinkhole
 
+## 1.3.0 - 2026-11-18
+
+### UPDATED
+- A manual Check for Updates on the About tab files no notice, since the About tab already shows the result, and later scheduled checks don't announce that version again.
+- Networks and devices are defined on the new Clients tab, the lists and allowed domains each one uses are on Blocking (which replaces Scopes), and Lists only manages list sources.
+
+### FIXED
+- The allowed-domains boxes show the saved domains without an extra blank line at the end.
+- Uninstalling Sinkhole with Keep Settings on removes its configuration-restore recovery job, so the package stays uninstalled instead of reinstalling itself within 15 minutes.
+- The configuration-restore recovery job keeps a checksum-verified copy of the package, so a restore onto the same firewall can reinstall Sinkhole while offline, and a second run never starts while one is still working.
+- Check for Updates on the About tab works while a list, IP, or Bypass update runs instead of failing with "Another package operation is already running", and an update installed from the About tab waits for that update to finish.
+
+### ADDED
+- A context row on Blocking, Services, SafeSearch, Alerts, Bypass, and IP switches between All, Global, each network, and each device, with a banner that names what you're editing and a choice that follows you between tabs.
+- A device on Clients can hold several IP addresses, MAC addresses, and DHCP static mappings, so a device with more than one network adapter or a rotating private Wi-Fi address needs only one entry.
+- Bypass protection and IP and country blocking have their own settings for Global, each network, and each device, with a device's settings taking precedence over its network's and a network's over Global; upgrading copies the current settings into every network and device.
+
 ## 1.2.3 - 2026-11-18
 
 ### UPDATED

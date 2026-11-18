@@ -31,21 +31,21 @@ Sinkhole odbija sačuvati **Enable** dok je pfBlockerNG instaliran i omogućen i
 
 1. Otvorite **Lists** i dodajte URL pouzdanog izvora ili otvorite **Add from Catalog** kako biste pretražili dva kataloga na zahtjev.
 2. Izvoru dajte lokalni naziv i ostavite **Enabled** odabranim kako bi ga Sinkhole preuzeo.
-3. Odaberite **Global** samo kada se lista treba primijeniti nakon svakog pravila uređaja i mreže.
-4. Dodajte sve globalne **Allowed Domains**, jednu domenu po redu, kada treba propustiti poznati lažno pozitivni rezultat.
+3. Otvorite **Blocking**, ostanite na **Global** i odaberite listu samo kada se treba primijeniti nakon svakog pravila uređaja i mreže.
+4. Na istoj stranici dodajte sve globalne **Allowed Domains**, jednu domenu po redu, kada treba propustiti poznati lažno pozitivni rezultat.
 
 Sinkhole ne preporučuje nijedan izvor. [Liste i sačuvane kopije](/docs/configure/lists) objašnjavaju prihvaćene formate i način na koji rezultati kataloga postaju obični redovi liste.
 
-<img src={listsTab} alt="Kartica Lists prikazuje pet demonstracijskih lista blokiranja s kolonama Global i Used By te dvije globalno dozvoljene domene" width={1024} height={832} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={listsTab} alt="Kartica Lists prikazuje pet demonstracijskih lista blokiranja s kolonom Used By" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-## Dodajte opcionalne opsege \{#add-optional-scopes}
+## Dodajte opcionalne mreže i uređaje \{#add-optional-networks-and-devices}
 
-Otvorite **Scopes** kada mreža ili uređaj trebaju pravila izvan globalnog nivoa:
+Otvorite **Clients** kada mreža ili uređaj trebaju pravila izvan nivoa Global:
 
-- Dodajte **Network** za jedan konfigurirani interfejs pfSensea, a zatim odaberite njegove liste i dopuštene domene.
-- Dodajte **Device** prema IP adresi, DHCP statičkom mapiranju ili MAC adresi, a zatim odaberite njegove liste i dopuštene domene.
+- Dodajte **Network** za jedan konfigurirani interfejs pfSensea.
+- Dodajte **Device** s jednom ili više IP adresa, DHCP statičkih mapiranja ili MAC adresa.
 
-Uređaj nasljeđuje mrežu na kojoj se trenutno nalazi, a mreža nasljeđuje globalne liste. [Opsezi i dopuštene domene](/docs/configure/scopes) prikazuju redoslijed odlučivanja koji određuje hoće li se naziv propustiti ili blokirati.
+Zatim otvorite **Blocking**, odaberite mrežu ili uređaj u redu konteksta i odaberite njegove liste i dopuštene domene. Uređaj nasljeđuje mrežu na kojoj se trenutno nalazi, a mreža nasljeđuje liste iz Global. [Klijenti i blokiranje](/docs/configure/scopes) prikazuju redoslijed odlučivanja koji određuje hoće li se naziv propustiti ili blokirati.
 
 ## Omogućite i ažurirajte \{#enable-and-update}
 

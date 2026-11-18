@@ -30,7 +30,7 @@ Die opzet werkte, maar elke herstart of herlading van de firewall betekende onge
 
 Sinkhole draait als Python-module in de DNS Resolver van pfSense en beantwoordt een geblokkeerde naam met `0.0.0.0` en `::`.
 
-- **Lijsten voor elk bereik** — Globale lijsten gelden voor iedereen. Een netwerkbereik voegt lijsten toe voor één interface of VLAN, en een apparaatbereik voegt lijsten toe voor één apparaat, herkend aan IP-adres, statische DHCP-toewijzing of MAC-adres.
+- **Lijsten voor elk bereik** — Globale lijsten gelden voor iedereen. Een netwerkbereik voegt lijsten toe voor één interface of VLAN, en een apparaatbereik voegt één gedeelde set lijsten toe voor een apparaat dat wordt herkend aan een of meer IP-adressen, statische DHCP-toewijzingen en MAC-adressen.
 - **Toegestane domeinen op elk niveau** — Een fout-positief los je op waar het ertoe doet, zonder een hele lijst te laten vallen.
 - **Opgeslagen kopieën van elke lijst** — DNS antwoordt vanuit de laatste geldige gegevens direct na een herstart van de DNS Resolver of een reboot, ook bij installaties op een RAM-schijf. Een mislukte download behoudt de vorige kopie.
 - **Waarschuwingen die je kiest** — Een pfSense-melding komt alleen voor de lijsten, netwerken en apparaten die een waarschuwingsregel selecteert, één keer per apparaat en domein.

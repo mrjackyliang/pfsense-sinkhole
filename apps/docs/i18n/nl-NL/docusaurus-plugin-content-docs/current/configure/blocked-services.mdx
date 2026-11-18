@@ -6,8 +6,8 @@ keywords:
   - sinkhole voor pfsense
   - geblokkeerde services
   - serviceblokkering
-  - netwerkscope
-  - apparaatscope
+  - netwerkblokkering
+  - apparaatblokkering
 tags:
   - configure
   - services
@@ -18,15 +18,17 @@ import servicesTab from './_assets_/blocked-services-1.png';
 
 Gebruik **Firewall → Sinkhole → Services** wanneer u een volledig merk wilt blokkeren zonder een afzonderlijke lijst-URL te kiezen en te onderhouden.
 
-## Een scope kiezen \{#choose-a-scope}
+## Een context kiezen \{#choose-a-context}
 
-Selecteer **Global**, een geconfigureerd netwerk of een geconfigureerd apparaat. Zoek naar een service, beperk de tegels met een groepschip, schakel services in of uit en selecteer vervolgens **Save** onder de servicekaarten.
+Kies **Global**, een netwerk of een apparaat in de [contextrij](/docs/configure/scopes#contexts) onder de hoofdtabbladen; de pagina toont alleen de eigen selectie van die context. Zoek naar een service, beperk de tegels met een groepschip, schakel services in of uit en selecteer vervolgens **Save** onder de servicekaarten.
 
-De selectie wordt op het bestaande niveau van die scope gecompileerd. Toegestane domeinen van apparaten hebben nog steeds voorrang op serviceregels van apparaten, toegestane domeinen van netwerken hebben nog steeds voorrang op serviceregels van netwerken en globale toegestane domeinen hebben nog steeds voorrang op globale serviceregels.
+**All** toont elke context die minstens één service blokkeert, met de servicenamen; selecteer een rij om die context te bewerken.
+
+De selectie wordt op het bestaande niveau van die context gecompileerd. Toegestane domeinen van apparaten hebben nog steeds voorrang op serviceregels van apparaten, toegestane domeinen van netwerken hebben nog steeds voorrang op serviceregels van netwerken en globale toegestane domeinen hebben nog steeds voorrang op globale serviceregels.
 
 Diensten die onder een specifieke Bypass-beveiliging vallen, verschijnen niet in het raster, de groepstellingen of de zoekresultaten. Private Relay wordt alleen op het tabblad Bypass geconfigureerd.
 
-<img src={servicesTab} alt="Tabblad Services gefilterd op de groep Gaming voor een demoapparaatscope, met vier geselecteerde diensten" width={1024} height={1288} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={servicesTab} alt="Tabblad Services gefilterd op de groep Gaming voor een demoapparaat, met vier geselecteerde diensten" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Register en herstel \{#registry-and-repair}
 
@@ -34,5 +36,5 @@ Sinkhole haalt het serviceregister van AdGuard Home alleen op wanneer deze pagin
 
 Servicelogo's worden als geïsoleerde data-URI-afbeeldingen weergegeven. Ontbrekende of te grote logo's gebruiken een algemene afbeelding. Als een opgeslagen service uit een nieuwer register verdwijnt, behoudt Sinkhole de ID en wordt deze onder **Needs Repair** weergegeven; schakel de service uit en sla op om die keuze te verwijderen.
 
-Het tabblad **Status** toont wanneer het register is opgehaald, de laatste fout en het aantal geblokkeerde services dat voor elke geconfigureerde scope is geselecteerd.
+Het tabblad **Status** toont wanneer het register is opgehaald, de laatste fout en het aantal geblokkeerde services dat voor Global en elk netwerk en apparaat is geselecteerd.
 

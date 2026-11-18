@@ -52,7 +52,7 @@ pfBlockerNG DNSBL verwendet im Python-Modus denselben Python-Skriptplatz wie Sin
 ## Netzwerkanforderungen \{#network-requirements}
 
 - Netzwerk-Scopes verwenden die aktuellen IPv4- und IPv6-Subnetze der konfigurierten pfSense-Schnittstellen.
-- Geräte, die über MAC-Adresse oder statische Zuordnung identifiziert werden, hängen von aktuellen ARP-, NDP-, DHCP-Lease-, statischen Zuordnungs- und Schnittstellendaten ab.
+- Jedes Gerät kann mehrere IP-Adressen, MAC-Adressen und statische Zuordnungen haben. MAC- und statische Zuordnungsidentifikatoren hängen von aktuellen ARP-, NDP-, DHCP-Lease-, statischen Zuordnungs- und Schnittstellendaten ab.
 - Die Klartext-DNS-Umleitung unter **Bypass** benötigt eine Adressfamilie auf der ausgewählten Schnittstelle und einen passenden Listener des Resolvers.
 - Umgeleitete Clients müssen weiterhin durch die Zugriffskontrolle des Resolvers zugelassen sein.
 

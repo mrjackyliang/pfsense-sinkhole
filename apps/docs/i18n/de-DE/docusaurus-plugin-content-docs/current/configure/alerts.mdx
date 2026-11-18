@@ -27,20 +27,22 @@ Sende Benachrichtigungen nur für blockierte Antworten, deren Liste und Client m
 
 ## Regel erstellen \{#create-a-rule}
 
-Öffne **Firewall → Sinkhole → Alerts**, wähle unter der Tabelle der Alarmregeln **Add** aus und fülle anschließend auf der Editorseite **Add Alert Rule** aus:
+Öffne **Firewall → Sinkhole → Alerts**. Die [Kontextzeile](/docs/configure/scopes#contexts) filtert die Tabelle: **Global** listet die Regeln für **Everyone**, ein Netzwerk oder Gerät listet die Regeln, die es auswählen, und **All** listet jede Regel. Eine Regel kann weiterhin mehrere Netzwerke und Geräte gleichzeitig auswählen.
 
-| Feld                 | Beschreibung                                                                                                    |
-|----------------------|-----------------------------------------------------------------------------------------------------------------|
-| Description          | Lokaler Regelname, der in Benachrichtigungstexten und Zusammenfassungen angezeigt wird.                         |
-| Any block list       | Stimmt mit einer Blockierung aus jeder Liste überein, statt nur mit den ausgewählten Listen.                    |
-| Chosen block lists   | Listen, welche die Regel erfüllen können, wenn **Any** deaktiviert ist.                                         |
-| Everyone             | Stimmt mit jedem Client überein, statt nur mit ausgewählten Netzwerken und Geräten.                             |
-| Chosen networks      | Netzwerk-Scopes, welche die Regel erfüllen können, wenn **Everyone** deaktiviert ist.                           |
-| Chosen devices       | Geräte-Scopes, welche die Regel erfüllen können, wenn **Everyone** deaktiviert ist.                             |
-| Repeat after         | Minuten, bevor dieselbe Regel, derselbe Client, dieselbe Domain und dieselbe Liste erneut benachrichtigen kann. |
-| WebGUI notice        | Fügt pfSense einen lokalen Sinkhole-Hinweis hinzu.                                                              |
-| Remote notifications | Verwendet die in pfSense konfigurierten externen Dienste.                                                       |
-| Enabled              | Ermöglicht blockierten Antworten, mit dieser Regel übereinzustimmen.                                            |
+Wähle unter der Tabelle der Alarmregeln **Add** aus und fülle anschließend auf der Editorseite **Add Alert Rule** aus:
+
+| Feld                 | Beschreibung                                                                                                                         |
+|----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Description          | Lokaler Regelname, der in Benachrichtigungstexten und Zusammenfassungen angezeigt wird.                                              |
+| Any block list       | Stimmt mit einer Blockierung aus jeder Liste überein, statt nur mit den ausgewählten Listen.                                         |
+| Chosen block lists   | Listen, welche die Regel erfüllen können, wenn **Any** deaktiviert ist.                                                              |
+| Everyone             | Stimmt mit jedem Client überein, statt nur mit ausgewählten Netzwerken und Geräten.                                                  |
+| Chosen networks      | Netzwerke aus Clients, welche die Regel erfüllen können, wenn **Everyone** deaktiviert ist.                                          |
+| Chosen devices       | Geräte aus Clients, die mit allen Identifikatoren angezeigt werden und die Regel erfüllen können, wenn **Everyone** deaktiviert ist. |
+| Repeat after         | Minuten, bevor dieselbe Regel, derselbe Client, dieselbe Domain und dieselbe Liste erneut benachrichtigen kann.                      |
+| WebGUI notice        | Fügt pfSense einen lokalen Sinkhole-Hinweis hinzu.                                                                                   |
+| Remote notifications | Verwendet die in pfSense konfigurierten externen Dienste.                                                                            |
+| Enabled              | Ermöglicht blockierten Antworten, mit dieser Regel übereinzustimmen.                                                                 |
 
 Das Feld für ausgewählte Listen ist ausgeblendet, solange **Any block list** ausgewählt ist, und die Netzwerk- und Gerätefelder sind ausgeblendet, solange **Everyone** ausgewählt ist. Nach dem Speichern kehrst du zu Alerts zurück; wähle zum Bearbeiten den Stift aus oder doppelklicke auf eine Zeile.
 
@@ -75,7 +77,7 @@ Die lokale Hinweisfunktion von pfSense schreibt `New alert found: <message>` in 
 
 ## Alarm prüfen \{#verify-an-alert}
 
-1. Bestätige, dass die Regel, die ausgewählte Liste und der ausgewählte Client-Scope aktiviert sind.
+1. Bestätige, dass die Regel, die ausgewählte Liste und das ausgewählte Netzwerk oder Gerät aktiviert sind.
 2. Bestätige auf Status, dass der Client derzeit dem vorgesehenen Netzwerk oder Gerät zugeordnet ist.
 3. Frage einen Namen ab, den die ausgewählte Liste blockiert, und prüfe den konfigurierten pfSense-Kanal.
 4. Wenn kein zweiter Hinweis eintrifft, vergleiche den Versuch mit dem Wiederholungsfenster und den festen Grenzen der Regel.

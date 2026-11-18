@@ -30,7 +30,7 @@ Cette configuration fonctionnait, mais chaque redémarrage ou rechargement du pa
 
 Sinkhole s’exécute comme module Python dans le DNS Resolver de pfSense et répond à un nom bloqué par `0.0.0.0` et `::`.
 
-- **Des listes pour chaque portée** — Les listes globales s’appliquent à tout le monde. Une portée réseau ajoute des listes pour une interface ou un VLAN, et une portée appareil ajoute des listes pour un appareil, identifié par adresse IP, mappage statique DHCP ou adresse MAC.
+- **Des listes pour chaque portée** — Les listes globales s’appliquent à tout le monde. Une portée réseau ajoute des listes pour une interface ou un VLAN, et une portée appareil ajoute un ensemble commun de listes pour un appareil identifié par une ou plusieurs adresses IP, mappages statiques DHCP ou adresses MAC.
 - **Des domaines autorisés à chaque niveau** — Un faux positif se corrige là où il compte, sans abandonner une liste entière.
 - **Des copies enregistrées de chaque liste** — Le DNS répond à partir des dernières données valides dès le redémarrage du DNS Resolver ou de la machine, installations sur disque RAM comprises. Un téléchargement échoué conserve la copie précédente.
 - **Les alertes que vous choisissez** — Une notification pfSense n’arrive que pour les listes, réseaux et appareils qu’une règle d’alerte sélectionne, une fois par appareil et par domaine.

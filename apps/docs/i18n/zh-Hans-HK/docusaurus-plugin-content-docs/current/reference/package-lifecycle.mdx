@@ -40,7 +40,9 @@ pfSense 会在启动和每次 WAN 地址改变后调用软件包 Sync。Sinkhole
 
 已發佈的組建還會在 `config.xml` 中儲存一個由校驗和固定的恢復工作。在沒有 Sinkhole 檔案的新防火牆上，該分離工作會等待 pfSense 套件同步完成，驗證並安裝建立該工作的確切版本；當 Sinkhole 已存在時，它每 15 分鐘執行一次並直接結束，不作任何變更。
 
-Keep Settings 會在有意移除時保留此恢復工作。如果 Sinkhole 應保持未安裝狀態，請在移除前關閉 Keep Settings。
+該工作會在 `/cf/conf/sinkhole/restore-heal` 下保留此版本經過校驗和驗證的副本，副本來自工作自行下載的檔案或透過 **About** 安裝的更新，因此在同一防火牆上恢復時，無需互聯網連線即可重新安裝 Sinkhole。一次只能執行一個工作；如果某次執行開始時另一次仍在下載或安裝，它會立即結束。每個步驟都會以 `sinkhole-restore-heal` 的名義記錄在系統日誌中：pfSense 仍在恢復套件時記錄 `deferred`，隨後記錄 `cache` 或 `fetch`、`install` 和 `installed`；步驟失敗時則記錄 `fetch-failed`、`checksum-failed`、`cache-failed` 或 `install-failed`。
+
+有意移除時，無論 **Keep Settings** 開啟還是關閉，都會移除恢復工作及其快取副本；只有在配置恢復期間執行移除才會保留二者。
 
 ## pfSense 升级为何会保留 Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
@@ -70,7 +72,7 @@ pkg delete -f pfSense-pkg-Sinkhole
 
 1. 确认 **Firewall → Sinkhole** 不再显示。
 2. 确认 DNS Resolver 的 Python 脚本和顺序与安装 Sinkhole 之前的值一致。
-3. 如果關閉了 Keep Settings，請確認不存在 Sinkhole cron 項目。無論哪種情況，都請確認不存在普通 DNS 重新導向區塊、`sinkhole/bypass` 錨點或 `sinkhole/ip` 錨點。
+3. 確認沒有任何 Sinkhole cron 項目殘留，包括 `sinkhole-restore-heal` 恢復工作，也沒有普通 DNS 重新導向區塊、`sinkhole/bypass` 錨點或 `sinkhole/ip` 錨點殘留。
 4. 如果关闭了 Keep Settings，请确认 `/cf/conf/sinkhole` 不存在。
 
 如果更新处于活动状态，删除标记会要求它在接触持久数据之前，于有界阶段之间停止。删除过程会记录第一个清理失败，同时仍尝试其余相互独立的清理步骤。

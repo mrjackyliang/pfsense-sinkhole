@@ -6,8 +6,8 @@ keywords:
   - sinkhole for pfsense
   - servizi bloccati
   - blocco dei servizi
-  - ambito di rete
-  - ambito di dispositivo
+  - blocco per rete
+  - blocco per dispositivo
 tags:
   - configure
   - services
@@ -18,15 +18,17 @@ import servicesTab from './_assets_/blocked-services-1.png';
 
 Usa **Firewall → Sinkhole → Services** quando vuoi bloccare un intero marchio senza scegliere e mantenere l’URL di una lista separata.
 
-## Scegliere un ambito \{#choose-a-scope}
+## Scegliere un contesto \{#choose-a-context}
 
-Seleziona **Global**, una rete configurata o un dispositivo configurato. Cerca un servizio, restringi i riquadri con un chip di gruppo, attiva o disattiva i servizi, quindi seleziona **Save** sotto le schede dei servizi.
+Scegli **Global**, una rete o un dispositivo nella [riga dei contesti](/docs/configure/scopes#contexts) sotto le schede principali; la pagina mostra solo la selezione propria di quel contesto. Cerca un servizio, restringi i riquadri con un chip di gruppo, attiva o disattiva i servizi, quindi seleziona **Save** sotto le schede dei servizi.
 
-La selezione viene compilata al livello esistente di quell’ambito. I domini consentiti del dispositivo continuano ad avere la precedenza sulle sue regole di servizio, quelli della rete sulle sue regole di servizio e i domini consentiti globali sulle regole di servizio globali.
+**All** elenca ogni contesto che blocca almeno un servizio, con i nomi dei servizi; seleziona una riga per modificare quel contesto.
+
+La selezione viene compilata al livello esistente di quel contesto. I domini consentiti del dispositivo continuano ad avere la precedenza sulle sue regole di servizio, quelli della rete sulle sue regole di servizio e i domini consentiti globali sulle regole di servizio globali.
 
 I servizi coperti da una protezione Bypass dedicata non compaiono nella griglia, nei conteggi dei gruppi o nella ricerca. Private Relay si configura solo nella scheda Bypass.
 
-<img src={servicesTab} alt="Scheda Services filtrata sul gruppo Gaming per l’ambito di un dispositivo dimostrativo, con quattro servizi selezionati" width={1024} height={1288} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={servicesTab} alt="Scheda Services filtrata sul gruppo Gaming per un dispositivo dimostrativo, con quattro servizi selezionati" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Registro e riparazione \{#registry-and-repair}
 
@@ -34,4 +36,4 @@ Sinkhole recupera il registro dei servizi di AdGuard Home solo quando questa pag
 
 I loghi dei servizi vengono visualizzati come immagini Data URI isolate. Per loghi mancanti o troppo grandi viene usata un’immagine generica. Se un servizio salvato scompare da un registro più recente, Sinkhole ne conserva l’ID e lo mostra in **Needs Repair**; disattivalo e salva per rimuovere la scelta.
 
-La scheda **Status** mostra l’ora di recupero del registro, l’ultimo errore e il numero di servizi bloccati selezionati per ogni ambito configurato.
+La scheda **Status** mostra l’ora di recupero del registro, l’ultimo errore e il numero di servizi bloccati selezionati per Global e per ogni rete e dispositivo.

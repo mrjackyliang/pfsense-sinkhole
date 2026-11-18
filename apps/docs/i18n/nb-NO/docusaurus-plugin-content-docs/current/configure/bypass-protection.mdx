@@ -20,11 +20,37 @@ Hold DNS-forespørsler fra valgte klientgrensesnitt på baner som Sinkhole kan i
 
 ## Velg grensesnittene \{#choose-the-interfaces}
 
-Åpne **Firewall → Sinkhole → Bypass** og velg grensesnitt under **Apply to** før du aktiverer en beskyttelse. Dette ene valget gjelder for alle innstillinger på siden. Beskyttelsen inspiserer bare trafikk som kommer fra klienter på disse grensesnittene. Den påvirker ikke brannmurens egne oppslag eller utgående trafikk.
+Åpne **Firewall → Sinkhole → Bypass** og velg grensesnitt under **Apply to** før du aktiverer en beskyttelse. Dette valget hører til **Global** og bestemmer hvor innstillingene i Global gjelder. Beskyttelsen inspiserer bare trafikk som kommer fra klienter på disse grensesnittene. Den påvirker ikke brannmurens egne oppslag eller utgående trafikk.
 
 Nettverks- og enhetssamsvar bruker de gjeldende delnettene til disse grensesnittene, akkurat som vanlige Sinkhole-omfang. En klient utenfor de valgte delnettene mottar ikke noe Bypass-DNS-svar.
 
-<img src={bypassProtection} alt="Bypass-fanen med LAN valgt, omdirigering av vanlig DNS slått av, beskyttelse for kryptert DNS og tunneler slått på, Discovery satt til Answer with no records, én unntatt demokilde og ett unntatt demomål, og tre demonstrasjonslister for Bypass" width={1024} height={1679} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass-fanen med LAN valgt, omdirigering av vanlig DNS slått av, beskyttelse for kryptert DNS og tunneler slått på, Discovery satt til Answer with no records, én unntatt demokilde og ett unntatt demomål, og tre demonstrasjonslister for Bypass" width={1024} height={1844} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Angi beskyttelse per nettverk og enhet \{#set-protections-per-network-and-device}
+
+Raden under fanene velger hva du redigerer: **All**, **Global**, ett nettverk eller én enhet. Linjen under den viser hvilke klienter innstillingene gjelder for. Hvert valg viser bare sine egne innstillinger. Innstillinger fra et bredere valg vises aldri.
+
+En klient følger de mest spesifikke innstillingene som finnes: først enhetens, deretter nettverkets og til slutt innstillingene i Global. Et nettverk eller en enhet som er slått av på fanen Clients, hoppes over.
+
+Bare **Global** har:
+
+- Grensesnitt under **Apply to**.
+- Omdirigering av **Plain DNS** og unntakene for den.
+- Kilder for Bypass Lists, **Add from Catalog** og listeoppdateringer.
+
+Et nettverk eller en enhet har:
+
+- **Enable**, som slår på beskyttelsen.
+- **Bypass Lists**, de aktiverte kildene som brukes.
+- Innstillingene for kryptert DNS, **Discovery**, tunnelblokkeringene og **Block Exemptions**.
+
+Et nettverk eller en enhet uten egne innstillinger viser én linje, for eksempel "Ikke angitt for dette nettverket; Global gjelder.", over et tomt skjema. En enhet oppgir nettverket sitt der når det nettverket har egne innstillinger. Når du lagrer skjemaet, opprettes innstillingene, og **Remove settings for this network** eller **Remove settings for this device** sletter dem, slik at de bredere innstillingene gjelder igjen. Sletter du et nettverk eller en enhet på fanen Clients, slettes også innstillingene.
+
+**All** viser Global og hvert nettverk og hver enhet med egne innstillinger, sammen med beskyttelsen som er slått på. Velg en rad for å redigere den.
+
+Når Sinkhole oppgraderes til 1.3.0, blir de eksisterende innstillingene værende i Global og kopieres til hvert nettverk og hver enhet. Fra da av er hver kopi uavhengig. En kopi slås bare på når nettverkets grensesnitt, eller et grensesnitt for en av enhetens identifikatorer, var valgt under **Apply to**. Alle andre kopier lagres avslått, slik at ingen klient filtreres som ikke ble filtrert før.
+
+Hvert nettverk og hver enhet med påslåtte innstillinger får sin egen klienttabell i ankeret `sinkhole/bypass`. En enhets adresser fjernes fra nettverkets tabell og fra tabellen i Global, og et nettverks delnett fjernes fra tabellen i Global, slik at en klient bare blokkeres av de mest spesifikke innstillingene. Sinkhole legger ikke til noen pass-regler for dette.
 
 ## Omdiriger vanlig DNS \{#redirect-plain-dns}
 

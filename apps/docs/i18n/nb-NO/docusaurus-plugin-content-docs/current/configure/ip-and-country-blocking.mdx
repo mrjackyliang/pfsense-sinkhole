@@ -35,9 +35,31 @@ Blokker valgte IP-kilder eller -mål uavhengig av DNS-policyen med pakkestyrte t
 | Inbound     | Blokkerer pakker som kommer fra en oppført kildeadresse, vanligvis på et WAN.       |
 | Outbound    | Blokkerer pakker som kommer mot en oppført måladresse, vanligvis på klientnettverk. |
 
-Ankeret inneholder `block drop in quick`-regler og ingen pass-regler. Sinkhole refererer til det gjennom den tidlige posisjonen for pakkeregler i pfSense, slik at blokkeringene kjører før vanlige pass-quick-regler. Siden viser panelene for IP-lister og katalog først, etterfulgt av de sideomfattende innstillingene for IP og land med **Save** under panelet.
+Ankeret inneholder `block drop in quick`-regler og ingen pass-regler. Sinkhole refererer til det gjennom den tidlige posisjonen for pakkeregler i pfSense, slik at blokkeringene kjører før vanlige pass-quick-regler. I **Global** viser siden panelene for IP-lister og katalog først, etterfulgt av innstillingene for IP og land med **Save** under panelet.
 
-<img src={ipTab} alt="Fanen IP viser to IP-demolister med knappene for å legge til og legge til fra katalog, og IP- og landblokkering slått på for LAN i begge retninger" width={1024} height={1392} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Fanen IP viser to IP-demolister med knappene for å legge til og legge til fra katalog, og IP- og landblokkering slått på for LAN i begge retninger" width={1024} height={1651} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Angi blokkering per nettverk og enhet \{#set-blocking-per-network-and-device}
+
+Raden under fanene velger hva du redigerer: **All**, **Global**, ett nettverk eller én enhet. Linjen under den viser hvilke klienter innstillingene gjelder for. Hvert valg viser bare sine egne innstillinger. Innstillinger fra et bredere valg vises aldri.
+
+En klient følger de mest spesifikke innstillingene som finnes: først enhetens, deretter nettverkets og til slutt innstillingene i Global. Et nettverk eller en enhet som er slått av på fanen Clients, hoppes over.
+
+Bare **Global** har:
+
+- **Interfaces**, der blokkeringen i Global gjelder.
+- **MaxMind Account ID** og **MaxMind License Key**.
+- Kilder for IP-lister, **Add from Catalog** og listeoppdateringer.
+
+Global og hvert nettverk eller hver enhet har **Enable**, **Directions**, **IP Lists** (kildene som brukes der), **Countries** og **IP Allowlist**. For et nettverk eller en enhet hindrer **Outbound** klientene i å nå et oppført mål, og **Inbound** hindrer en oppført kilde i å nå klientene. Land i et nettverk eller en enhet bruker MaxMind-kontoen i Global.
+
+Et nettverk eller en enhet uten egne innstillinger viser én linje, for eksempel "Ikke angitt for dette nettverket; Global gjelder.", over et tomt skjema. En enhet oppgir nettverket sitt der når det nettverket har egne innstillinger. Når du lagrer skjemaet, opprettes innstillingene, og **Remove settings for this network** eller **Remove settings for this device** sletter dem, slik at de bredere innstillingene gjelder igjen. Sletter du et nettverk eller en enhet på fanen Clients, slettes også innstillingene.
+
+**All** viser Global og hvert nettverk og hver enhet med egne innstillinger, sammen med retninger, land og antall IP-lister. Velg en rad for å redigere den.
+
+Når Sinkhole oppgraderes til 1.3.0, blir de eksisterende innstillingene værende i Global og kopieres til hvert nettverk og hver enhet. Fra da av er hver kopi uavhengig. En kopi slås bare på når nettverkets grensesnitt, eller et grensesnitt for en av enhetens identifikatorer, var valgt under **Interfaces**. Alle andre kopier lagres avslått, slik at ingen klient blokkeres som ikke ble blokkert før.
+
+Hvert nettverk og hver enhet med påslåtte innstillinger får sin egen klienttabell i ankeret `sinkhole/ip`. En enhets adresser fjernes fra nettverkets tabell og fra tabellen i Global, og et nettverks delnett fjernes fra tabellen i Global, slik at en klient bare blokkeres av de mest spesifikke innstillingene.
 
 ## Legg til IP-lister \{#add-ip-lists}
 

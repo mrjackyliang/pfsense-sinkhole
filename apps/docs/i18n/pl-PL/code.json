@@ -105,19 +105,19 @@
     "message": "Strony Sinkhole"
   },
   "home.showcase.scopes.label": {
-    "message": "Zakresy"
+    "message": "Klienci i blokowanie"
   },
   "home.showcase.scopes.heading": {
     "message": "Różne reguły dla każdej sieci i urządzenia"
   },
   "home.showcase.scopes.description": {
-    "message": "Nadaj sieci lub pojedynczemu urządzeniu własne listy i dozwolone domeny. Każde zapytanie DNS podlega najbardziej szczegółowemu pasującemu zakresowi."
+    "message": "Zdefiniuj każdą sieć i każde urządzenie raz na karcie Klienci, a następnie nadaj im własne listy i dozwolone domeny na karcie Blokowanie. Każde zapytanie DNS podlega najbardziej szczegółowemu dopasowaniu: najpierw urządzenia, potem jego sieci, a na końcu ustawień globalnych."
   },
   "home.showcase.scopes.link": {
-    "message": "Skonfiguruj zakresy"
+    "message": "Skonfiguruj klientów i blokowanie"
   },
   "home.showcase.scopes.alt": {
-    "message": "Strona Zakresy w Sinkhole z zakresem sieci LAN i trzema zakresami urządzeń"
+    "message": "Strona Klienci w Sinkhole z siecią LAN i trzema urządzeniami"
   },
   "home.showcase.services.label": {
     "message": "Usługi"
@@ -141,16 +141,16 @@
     "message": "Wiedz, co jest załadowane, a co nieaktualne"
   },
   "home.showcase.status.description": {
-    "message": "Stan pokazuje każdą listę z liczbą wpisów i datą ostatniej aktualizacji oraz zakresy, sieci i urządzenia, które Sinkhole w tej chwili stosuje."
+    "message": "Stan pokazuje każdą listę z liczbą wpisów i datą ostatniej aktualizacji oraz sieci i urządzenia, które Sinkhole w tej chwili stosuje."
   },
   "home.showcase.status.link": {
     "message": "Przeczytaj o stronie Stan"
   },
   "home.showcase.status.alt": {
-    "message": "Strona Stan w Sinkhole z panelami list, zakresów, sieci i urządzeń"
+    "message": "Strona Stan w Sinkhole z panelami list, sieci i urządzeń"
   },
   "home.showcase.scopes.title": {
-    "message": "pfSense.home.arpa - Zapora: Sinkhole: Zakresy"
+    "message": "pfSense.home.arpa - Zapora: Sinkhole: Klienci"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Zapora: Sinkhole: Usługi"

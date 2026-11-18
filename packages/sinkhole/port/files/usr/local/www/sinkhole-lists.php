@@ -15,7 +15,6 @@ declare(strict_types=1);
 ##|-PRIV
 
 use PfSense\Sinkhole\Domain\Catalog;
-use PfSense\Sinkhole\Domain\DomainParser;
 use PfSense\Sinkhole\Domain\ListConfiguration;
 use PfSense\Sinkhole\Domain\ValidationException;
 use PfSense\Sinkhole\Runtime\CatalogCache;
@@ -28,7 +27,6 @@ require_once('/usr/local/pkg/sinkhole/Catalog.php');
 require_once('/usr/local/pkg/sinkhole/CatalogCache.php');
 require_once('/usr/local/pkg/sinkhole/CatalogPresentation.php');
 require_once('/usr/local/pkg/sinkhole/CurlDownloadClient.php');
-require_once('/usr/local/pkg/sinkhole/DomainParser.php');
 require_once('/usr/local/pkg/sinkhole/ListConfiguration.php');
 
 /**
@@ -164,22 +162,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $actionMessage = pfsensePackageSinkholeTranslate('settings_saved_applying');
             $actionClass = 'success';
-        } elseif (isset($_POST['save_allowed'])) {
-            $allowedResult = DomainParser::normalizeAllowedDomains(
-                (string) ($_POST['allowed_domains'] ?? ''),
-            );
-
-            if (count($allowedResult['invalid_lines']) > 0) {
-                throw new ValidationException(
-                    'allowed_domains_invalid_lines',
-                    [implode(', ', $allowedResult['invalid_lines'])],
-                );
-            }
-
-            $allowedDomains = $allowedResult['domains'];
-            sinkholeListsApply($lists, $allowedDomains, $invalidRows);
-            $actionMessage = pfsensePackageSinkholeTranslate('settings_saved_applying');
-            $actionClass = 'success';
         }
     } catch (Throwable $throwable) {
         $actionMessage = pfsensePackageSinkholeThrowableMessage($throwable);
@@ -268,7 +250,6 @@ if (is_string($actionMessage)) {
 					<tr>
 						<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('name'))?></th>
 						<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('url'))?></th>
-						<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('global'))?></th>
 						<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('used_by'))?></th>
 						<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('enabled'))?></th>
 						<th data-sortable="false"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('actions'))?></th>
@@ -276,7 +257,7 @@ if (is_string($actionMessage)) {
 				</thead>
 				<tbody>
 <?php if ($lists === []): ?>
-					<tr><td colspan="6" class="text-muted"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('no_block_lists_configured'))?></td></tr>
+					<tr><td colspan="5" class="text-muted"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('no_block_lists_configured'))?></td></tr>
 <?php else: ?>
 <?php foreach ($lists as $identifier => $list): ?>
 					<tr<?=($list['enabled']) ? '' : ' class="disabled"'?>>
@@ -286,8 +267,7 @@ if (is_string($actionMessage)) {
 								<?=htmlspecialchars($list['url'])?>
 							</a>
 						</td>
-						<td><?=htmlspecialchars(pfsensePackageSinkholeTranslateMapped('boolean', ($list['global']) ? 'true' : 'false'))?></td>
-						<td><?=htmlspecialchars((string) ($usageCounts[$identifier] ?? 0))?></td>
+						<td><?=htmlspecialchars((string) (($usageCounts[$identifier] ?? 0) + (($list['global']) ? 1 : 0)))?></td>
 						<td><?=htmlspecialchars(pfsensePackageSinkholeTranslateMapped('boolean', ($list['enabled']) ? 'true' : 'false'))?></td>
 						<td class="text-nowrap">
 							<a class="fa-solid fa-pencil"
@@ -596,25 +576,4 @@ $catalogGroupTitle = ($catalogGroupBy === Catalog::GROUP_BY_CATEGORY)
 </div>
 <?php endif; ?>
 <?php
-$allowedButton = new Form_Button(
-    'save_allowed',
-    pfsensePackageSinkholeTranslate('save'),
-    null,
-    'fa-solid fa-save',
-);
-$allowedButton->addClass('btn-primary');
-$allowedForm = new Form($allowedButton);
-$allowedSection = new Form_Section(pfsensePackageSinkholeTranslate('allowed_domains'));
-$allowedInput = new Form_Textarea(
-    'allowed_domains',
-    pfsensePackageSinkholeTranslate('domains'),
-    (count($allowedDomains) > 0) ? implode(PHP_EOL, $allowedDomains) . PHP_EOL : '',
-);
-$allowedInput->setRows(6);
-$allowedInput->setHelp(pfsensePackageSinkholeTranslate('allowed_domains_help'));
-$allowedSection->addInput($allowedInput);
-$allowedForm->add($allowedSection);
-
-print($allowedForm);
-
 include('foot.inc');

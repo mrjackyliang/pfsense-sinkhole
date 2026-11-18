@@ -27,26 +27,28 @@ import alertRuleEditor from './_assets_/alerts-1.png';
 
 ## 创建规则 \{#create-a-rule}
 
-打开 **Firewall → Sinkhole → Alerts**，选择警报规则表格下方的 **Add**，然后在编辑页面填写 **Add Alert Rule**：
+打开 **Firewall → Sinkhole → Alerts**。[上下文行](/docs/configure/scopes#contexts)会筛选表格：**Global** 列出适用于 **Everyone** 的规则，网络或设备列出选择了它的规则，**All** 列出所有规则。一条规则仍可同时选择多个网络和设备。
 
-| 字段                   | 说明                            |
-|----------------------|-------------------------------|
-| Description          | 在通知文本和摘要中显示的本地规则名称。           |
-| Any block list       | 匹配任何列表的阻止，而不是只匹配所选列表。         |
-| Chosen block lists   | **Any** 关闭时可以满足规则的列表。         |
-| Everyone             | 匹配所有客户端，而不是只匹配所选网络和设备。        |
-| Chosen networks      | **Everyone** 关闭时可以满足规则的网络作用域。 |
-| Chosen devices       | **Everyone** 关闭时可以满足规则的设备作用域。 |
-| Repeat after         | 同一规则、客户端、域名和列表再次通知前的分钟数。      |
-| WebGUI notice        | 向 pfSense 添加本地 Sinkhole 通知。   |
-| Remote notifications | 使用 pfSense 中配置的远程服务。          |
-| Enabled              | 允许被阻止应答匹配此规则。                 |
+选择警报规则表格下方的 **Add**，然后在编辑页面填写 **Add Alert Rule**：
+
+| 字段                   | 说明                                              |
+|----------------------|-------------------------------------------------|
+| Description          | 在通知文本和摘要中显示的本地规则名称。                             |
+| Any block list       | 匹配任何列表的阻止，而不是只匹配所选列表。                           |
+| Chosen block lists   | **Any** 关闭时可以满足规则的列表。                           |
+| Everyone             | 匹配所有客户端，而不是只匹配所选网络和设备。                          |
+| Chosen networks      | **Everyone** 关闭时可以满足规则的 Clients 中的网络。           |
+| Chosen devices       | 显示所有标识符且在 **Everyone** 关闭时可以满足规则的 Clients 中的设备。 |
+| Repeat after         | 同一规则、客户端、域名和列表再次通知前的分钟数。                        |
+| WebGUI notice        | 向 pfSense 添加本地 Sinkhole 通知。                     |
+| Remote notifications | 使用 pfSense 中配置的远程服务。                            |
+| Enabled              | 允许被阻止应答匹配此规则。                                   |
 
 选择 **Any block list** 时会隐藏所选列表字段，选择 **Everyone** 时会隐藏网络和设备字段。保存后会返回 Alerts；选择铅笔图标或双击某行即可编辑。
 
 只有当阻止名称的列表之一被该规则选中，而且客户端也被同一规则选中时，阻止才匹配。默认重复窗口为 60 分钟，可接受范围为 1 到 1,440 分钟。
 
-<img src={alertRuleEditor} alt="Edit Alert Rule 页面为一个所选演示设备匹配一个所选列表，重复间隔为 60 分钟，两种发送通道均已开启" width={1024} height={994} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={alertRuleEditor} alt="Edit Alert Rule 页面为一个所选演示设备匹配一个所选列表，重复间隔为 60 分钟，两种发送通道均已开启" width={1024} height={1006} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 发送通道 \{#delivery-channels}
 
@@ -75,7 +77,7 @@ pfSense 的本地通知函数会把 `New alert found: <message>` 写入系统日
 
 ## 验证警报 \{#verify-an-alert}
 
-1. 确认规则、所选列表和所选客户端作用域均已启用。
+1. 确认规则、所选列表和所选网络或设备均已启用。
 2. 在 Status 上确认客户端当前映射到预期网络或设备。
 3. 查询所选列表阻止的名称，并检查已配置的 pfSense 通道。
 4. 如果没有收到第二条通知，请将该尝试与规则的重复窗口和固定上限比较。

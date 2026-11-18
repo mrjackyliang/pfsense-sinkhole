@@ -1,10 +1,11 @@
 ---
 id: scopes
-title: Zakresy i dozwolone domeny
-description: Przypisz listy i dozwolone domeny do zakresów globalnych, interfejsów i urządzeń, a następnie stosuj dokładną kolejność od najbardziej szczegółowej decyzji dla każdego zapytania DNS.
+title: Klienci i blokowanie
+description: Zdefiniuj sieci i urządzenia na karcie Clients, wybierz na karcie Blocking listy i dozwolone domeny dla Global, każdej sieci i każdego urządzenia, a następnie stosuj dokładną kolejność od najbardziej szczegółowej decyzji dla każdego zapytania DNS.
 keywords:
   - sinkhole for pfsense
-  - zakresy
+  - klienci
+  - blokowanie
   - blokowanie vlan
   - zasady urządzeń
   - dozwolone domeny
@@ -17,44 +18,65 @@ tags:
 import deviceEditor from './_assets_/scopes-2.png';
 import scopesTab from './_assets_/scopes-1.png';
 
-Przypisz listy i dozwolone domeny na poziomie globalnym, sieciowym i urządzenia, aby każdy klient otrzymywał zasady przeznaczone dla swojej bieżącej lokalizacji.
+Zdefiniuj każdą sieć i każde urządzenie jeden raz na karcie **Clients**, a następnie wybierz na karcie **Blocking**, co każde z nich blokuje. Każdy klient otrzymuje zasady przeznaczone dla swojej bieżącej lokalizacji.
 
-## Dlaczego warto używać zakresów? \{#why-use-scopes}
+## Dlaczego warto używać sieci i urządzeń? \{#why-use-networks-and-devices}
 
-1. Nadają każdemu interfejsowi pfSense lub VLAN-owi własne zasady, zachowując reguły globalne dla wszystkich.
+1. Nadają każdemu interfejsowi pfSense lub VLAN-owi własne zasady, zachowując reguły Global dla wszystkich.
 2. Zapewniają jednemu urządzeniu bardziej szczegółową decyzję bez konieczności używania oddzielnego serwera DNS.
 3. Pozwalają dozwolonym domenom korygować wyniki fałszywie dodatnie na właściwym poziomie bez usuwania całej listy.
 4. Przechowują adresy klientów oddzielnie od skompilowanych list, dzięki czemu zmiany DHCP, sąsiadów lub interfejsów nie przeładowują Unbound.
 
-## Zakres globalny \{#global-scope}
+## Konteksty \{#contexts}
 
-Lista z zaznaczonym **Global** jest stosowana do każdego klienta po decyzjach urządzenia i sieci. Globalne dozwolone domeny wprowadza się na karcie **Lists**; przepuszczają one wskazaną domenę i jej poddomeny przez listy globalne.
+Karty Blocking, Services, SafeSearch, Alerts, Bypass i IP mają wspólny drugi wiersz kart pod kartami głównymi:
 
-Klient, który nie pasuje do żadnego włączonego zakresu sieci ani urządzenia, otrzymuje tylko ten poziom.
+| Karta    | Co edytuje strona                                                                                                    |
+|----------|----------------------------------------------------------------------------------------------------------------------|
+| All      | Nic. Tabela tylko do odczytu wymienia każdy kontekst z własnymi ustawieniami; wybierz wiersz, aby otworzyć kontekst. |
+| Global   | Ustawienia dla każdego klienta.                                                                                      |
+| Networks | Jedną sieć. Wiersz chipów sieci wybiera, którą.                                                                      |
+| Devices  | Jedno urządzenie. Wiersz chipów urządzeń wybiera, które, a pole wyszukiwania zawęża chipy według nazwy.              |
 
-## Zakresy sieci \{#network-scopes}
+Baner pod wierszem wskazuje, co edytujesz, na przykład **Editing: Network: IOT · applies to clients on IOT** lub **Editing: Device: Tablet · this device only**. Każdy kontekst pokazuje tylko własne ustawienia; w jego formularzu nie pojawia się nic odziedziczonego z szerszego kontekstu.
 
-Otwórz **Firewall → Sinkhole → Scopes**, a następnie wybierz **Add** pod tabelą Networks. Edytor domyślnie wybiera LAN lub pierwszy dostępny interfejs inny niż WAN i pomija interfejsy, które już mają zakres sieci. Klient należy do sieci, gdy jego adres znajduje się w jednej z bieżących podsieci IPv4 lub IPv6 interfejsu.
+Wybrany kontekst przechodzi z tobą między kartami, dopóki nie wybierzesz innego. Wyłączoną sieć lub wyłączone urządzenie nadal można edytować, a ostrzeżenie informuje, że ich ustawienia nie dotyczą żadnego klienta, dopóki nie zostaną ponownie włączone.
 
-Każdy wiersz sieci wybiera dodatkowe listy, dozwolone domeny i stan włączenia zakresu. Zapisanie powoduje powrót do Scopes; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować. Urządzenie przeniesione między sieciami otrzymuje zasady sieci pasującej do jego bieżącego adresu.
+## Definiowanie sieci \{#define-networks}
 
-<img src={scopesTab} alt="Karta Scopes pokazująca zakres sieci LAN i trzy urządzenia demonstracyjne identyfikowane adresem IP lub MAC wraz z ich bieżącymi adresami" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+Otwórz **Firewall → Sinkhole → Clients**, a następnie wybierz **Add** pod tabelą Networks. Edytor domyślnie wybiera LAN lub pierwszy dostępny interfejs inny niż WAN i pomija interfejsy, które już mają sieć. Klient należy do sieci, gdy jego adres znajduje się w jednej z bieżących podsieci IPv4 lub IPv6 interfejsu.
 
-## Zakresy urządzeń \{#device-scopes}
+Każdy wiersz sieci ma interfejs i pole wyboru **Enabled**. Zapisanie powoduje powrót do Clients; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować. Urządzenie przeniesione między sieciami otrzymuje zasady sieci pasującej do jego bieżącego adresu.
 
-Wybierz **Add** pod tabelą Devices, podaj nazwę i wybierz jedną metodę identyfikacji. Edytor pokazuje tylko pole identyfikatora właściwe dla wybranej metody:
+<img src={scopesTab} alt="Karta Clients pokazująca sieć LAN i trzy urządzenia demonstracyjne identyfikowane adresem IP lub MAC wraz z ich bieżącymi adresami" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-| Metoda              | Adresy używane dla urządzenia                                                    |
+## Definiowanie urządzeń \{#define-devices}
+
+Wybierz **Add** pod tabelą Devices, podaj nazwę i dodaj co najmniej jeden wiersz identyfikatora. Każdy wiersz zawiera typ i wartość odpowiednią dla tego typu:
+
+| Typ identyfikatora  | Adresy używane dla urządzenia                                                    |
 |---------------------|----------------------------------------------------------------------------------|
 | IP address          | Skonfigurowany adres IPv4 lub IPv6.                                              |
 | DHCP static mapping | Skonfigurowany adres oraz bieżące adresy zaobserwowane dla adresu MAC mapowania. |
 | MAC address         | Bieżące adresy ARP, NDP i dzierżaw DHCP dla tego adresu MAC.                     |
 
-Wiersz urządzenia wybiera jego listy, dozwolone domeny i stan włączenia. Zapisanie powoduje powrót do Scopes; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować. Zadanie w tle odświeża bieżące podsieci i adresy urządzeń co minutę, gdy blokowanie DNS ma włączony zakres sieci lub urządzenia albo gdy ochrona DNS Bypass wymaga rozpoznawania klientów. Sync pakietu uruchamia to samo odświeżanie tylko pod tym warunkiem.
+Używaj **Add Identifier** i przycisków kosza, aby zarządzać wierszami. Urządzenie musi mieć co najmniej jeden identyfikator. Każdy adres osiągnięty przez dowolny z jego identyfikatorów należy do tego samego urządzenia, więc współdzieli jeden zestaw ustawień i jeden stan włączenia. Zapisanie powoduje powrót do Clients; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować. Zadanie w tle odświeża bieżące podsieci i adresy urządzeń co minutę, gdy blokowanie DNS ma włączoną sieć lub włączone urządzenie albo gdy ochrona DNS Bypass wymaga rozpoznawania klientów. Sync pakietu uruchamia to samo odświeżanie tylko pod tym warunkiem.
 
-Gdy masz wiele list, przeciągnij dolny róg pola **Lists**, aby je powiększyć.
+Usunięcie sieci lub urządzenia na karcie Clients usuwa również ich ustawienia Blocking, Services, SafeSearch, Bypass i IP.
 
-<img src={deviceEditor} alt="Strona Edit Device demonstracyjnego tabletu identyfikowanego adresem IP, z jedną wybraną listą i jedną dozwoloną domeną" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={deviceEditor} alt="Strona Edit Device demonstracyjnego tabletu identyfikowanego adresem IP i adresem MAC" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Wybór list i dozwolonych domen \{#choose-lists-and-allowed-domains}
+
+Otwórz **Firewall → Sinkhole → Blocking** i wybierz kontekst:
+
+- **Global** wybiera listy stosowane do każdego klienta po decyzjach urządzenia i sieci oraz przechowuje globalne dozwolone domeny.
+- **Networks** wybiera dodatkowe listy i dozwolone domeny dla klientów w wybranej sieci.
+- **Devices** wybiera dodatkowe listy i dozwolone domeny dla wybranego urządzenia.
+
+Każdy kontekst ma pole **Lists** i pole **Allowed Domains** z jedną domeną w każdym wierszu. Wybierz **Save**, aby zastosować ten kontekst. Gdy masz wiele list, przeciągnij dolny róg pola **Lists**, aby je powiększyć. Same listy dodaje się i edytuje na karcie [Lists](/docs/configure/lists).
+
+**All** pokazuje jeden wiersz dla każdego kontekstu, który ma listy lub dozwolone domeny, z nazwami list i liczbą dozwolonych domen.
 
 ## Kolejność decyzji \{#decision-order}
 
@@ -67,7 +89,7 @@ Najbardziej szczegółowy pasujący poziom rozstrzyga każde zapytanie w następ
 5. **Global allowed domains** — Natychmiast zezwól, gdy pasuje wyjątek globalny.
 6. **Global lists** — Zablokuj, gdy pasuje lista globalna.
 
-Zapytanie jest przepuszczane, gdy żaden krok go nie rozstrzyga. Dozwolone domeny danego poziomu mają pierwszeństwo przed listami dziedziczonymi z mniej szczegółowych poziomów, ale nie przed listami bardziej szczegółowego poziomu, który już podjął decyzję.
+Zapytanie jest przepuszczane, gdy żaden krok go nie rozstrzyga. Klient, który nie pasuje do żadnej włączonej sieci ani żadnego włączonego urządzenia, przechodzi tylko kroki Global. Dozwolone domeny danego poziomu mają pierwszeństwo przed listami dziedziczonymi z mniej szczegółowych poziomów, ale nie przed listami bardziej szczegółowego poziomu, który już podjął decyzję.
 
 ## Działanie dozwolonych domen \{#allowed-domain-behavior}
 
@@ -79,12 +101,11 @@ Każdy wpis dozwolonej domeny dotyczy dokładnej domeny i wszystkich poddomen. N
 
 ## Konflikty adresów \{#address-conflicts}
 
-Gdy dwa wiersze urządzeń zgłaszają ten sam bieżący adres, wygrywa pierwsze urządzenie w kolejności tabeli. **Status → Scopes** pokazuje adres pod **Conflict** dla każdego wiersza objętego problemem, aby można było poprawić kolejność lub identyfikatory.
+Wiele identyfikatorów tego samego urządzenia może prowadzić do tego samego adresu bez konfliktu. Gdy dwa różne urządzenia zgłaszają ten sam bieżący adres, wygrywa pierwsze urządzenie w tabeli Clients. Tabela Clients i **Status → Clients** pokazują adres pod **Conflict** dla każdego wiersza objętego problemem, aby można było poprawić kolejność lub identyfikatory.
 
-## Weryfikacja zakresu \{#verify-a-scope}
+## Weryfikacja sieci lub urządzenia \{#verify-a-network-or-device}
 
 1. Uruchom `/usr/local/sbin/sinkhole --refresh-clients` lub poczekaj na odświeżenie minutowe.
-2. Otwórz **Status → Scopes** i sprawdź bieżące podsieci sieci oraz bieżące adresy urządzenia.
-3. Wykonaj zapytanie o nazwę z klienta w tym zakresie i porównaj wynik z powyższą kolejnością decyzji.
+2. Otwórz **Status → Clients** i sprawdź bieżące podsieci sieci oraz bieżące adresy urządzenia.
+3. Wykonaj zapytanie o nazwę z klienta w tej sieci lub z tego urządzenia i porównaj wynik z powyższą kolejnością decyzji.
 4. Przed poleganiem na zachowaniu właściwym dla urządzenia sprawdź, czy nie ma konfliktu adresów.
-

@@ -22,11 +22,11 @@ Sinkhole può controllare le proprie release GitHub, inviare notifiche tramite p
 
 **General → Update Checks** seleziona Daily, Weekly, Monthly o Never; Weekly è l’impostazione predefinita. Sinkhole memorizza componenti casuali stabili della pianificazione, così il salvataggio delle impostazioni non sposta continuamente l’ora del controllo.
 
-Un controllo registra ultima versione, pagina della release, ora del controllo e ultimo errore. **About → Check Now** esegue immediatamente lo stesso controllo.
+Un controllo registra ultima versione, pagina della release, ora del controllo e ultimo errore. **About → Check Now** esegue immediatamente lo stesso controllo senza creare un avviso e registra una versione più recente come già notificata.
 
 ## Avvisi di aggiornamento \{#update-notices}
 
-Ogni nuova versione rilevata crea un avviso WebGUI pfSense locale che rimanda alla scheda About di Sinkhole. I controlli ripetuti non creano avvisi duplicati per la stessa versione.
+Ogni nuova versione rilevata da un controllo pianificato crea un avviso WebGUI pfSense locale che rimanda alla scheda About di Sinkhole. I controlli ripetuti non creano avvisi duplicati per la stessa versione, inclusa una versione già mostrata da un controllo manuale in About.
 
 Seleziona **Remote Notifications** per usare anche i servizi configurati in **System → Advanced → Notifications**. L’impostazione è disattivata per impostazione predefinita e riguarda gli avvisi di versione, non le regole di avviso per i blocchi delle liste.
 
@@ -36,7 +36,9 @@ La barra di aggiornamento mostra versione installata, ultima versione controllat
 
 **Update** appare quando l’ultima versione registrata è più recente. La pagina interroga l’attività separata e ne riporta il risultato senza mantenere aperta la richiesta del browser.
 
-<img src={aboutUpdateBar} alt="Scheda About con un aggiornamento Sinkhole disponibile e i controlli Update e What's New" width={1024} height={846} style={{maxWidth: '100%', height: 'auto'}} />
+Se è in esecuzione un aggiornamento di liste, IP o Bypass, un’installazione da About mostra l’attesa e inizia al termine dell’attività. L’attesa è limitata a 30 minuti.
+
+<img src={aboutUpdateBar} alt="Scheda About con un aggiornamento Sinkhole disponibile e i controlli Update e What's New" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Verifica prima dell’installazione \{#verification-before-installation}
 
@@ -48,9 +50,9 @@ Un elenco di attendibilità installato vuoto significa che non è richiesta una 
 
 ## Lock degli aggiornamenti \{#update-locking}
 
-Il controllo e l’aggiornamento automatico del pacchetto condividono `/var/run/sinkhole-update.lock` con gli aggiornamenti DNS, Bypass e IP/paesi, le applicazioni delle impostazioni e la pulizia durante la rimozione. Non attendono il lock: se un’altra operazione lo detiene, il controllo o l’azione **Update** si interrompe con `Another package operation is already running.`
+I controlli delle release e l’aggiornamento automatico si coordinano tramite `/var/run/sinkhole-release.lock` e attendono fino a 30 secondi un altro controllo o un’altra installazione. Un controllo della release non acquisisce mai il lock delle attività del pacchetto, quindi può essere eseguito durante un aggiornamento di liste, IP o Bypass.
 
-Il lock impedisce che i file del pacchetto cambino mentre il pacchetto corrente scarica, analizza, compila o applica i criteri. Riprova da About quando Status non mostra più un aggiornamento in esecuzione.
+L’aggiornamento automatico acquisisce prima il lock delle release e poi `/var/run/sinkhole-update.lock`. Se un aggiornamento di liste, IP o Bypass mantiene il lock delle attività del pacchetto, la riga di avanzamento di About mostra l’attesa per un massimo di 30 minuti prima che l’installazione non riesca.
 
 ## Aggiornamento manuale del pacchetto \{#manual-package-update}
 

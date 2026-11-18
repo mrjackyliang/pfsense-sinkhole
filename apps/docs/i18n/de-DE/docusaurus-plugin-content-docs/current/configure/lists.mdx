@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Listen und gespeicherte Kopien
-description: Füge DNS-Listen per URL oder Katalog hinzu, nutze Hosts-, Domain- und Adblock-Formate, steuere globale Richtlinien und behalte letzte gültige Kopien.
+description: Füge DNS-Listen per URL oder Katalog hinzu, nutze Hosts-, Domain- und Adblock-Formate und behalte letzte gültige Kopien.
 keywords:
   - sinkhole for pfsense
   - blocklisten
@@ -21,7 +21,7 @@ Füge vertrauenswürdige Listenquellen hinzu und lasse Sinkhole normalisierte, l
 ## Warum gespeicherte Listen verwenden? \{#why-use-saved-lists}
 
 1. Hält DNS unabhängig vom Listenhost, sodass ein langsamer oder fehlgeschlagener Download die Namensauflösung nicht unterbricht.
-2. Lädt jede Quelle einmal herunter, sodass dieselbe gespeicherte Kopie globale, Netzwerk- und Geräte-Scopes bedienen kann.
+2. Lädt jede Quelle einmal herunter, sodass dieselbe gespeicherte Kopie Global, jedes Netzwerk und jedes Gerät bedienen kann.
 3. Behält die vorherige gültige Kopie bei, wenn ein neuer Download oder die Verarbeitung fehlschlägt, damit fehlerhafte Eingaben keine funktionierende Richtlinie ersetzen.
 4. Aktualisiert Listen im Hintergrund, sodass ein Neustart oder Neuladen des Resolvers nie auf das Netzwerk wartet.
 
@@ -29,14 +29,15 @@ Füge vertrauenswürdige Listenquellen hinzu und lasse Sinkhole normalisierte, l
 
 Öffne **Firewall → Sinkhole → Lists**, wähle unter der Blocklistentabelle **Add** und fülle anschließend auf der Editorseite **Add Block List** aus:
 
-| Feld    | Beschreibung                                                                   |
-|---------|--------------------------------------------------------------------------------|
-| Name    | Lokale Bezeichnung, die in Zuweisungen, Alarmen und Status angezeigt wird.     |
-| URL     | HTTP- oder HTTPS-Quelle ohne eingebettete Zugangsdaten.                        |
-| Enabled | Lädt die Quelle herunter und stellt sie zugewiesenen Scopes zur Verfügung.     |
-| Global  | Wendet die Quelle nach Geräte- und Netzwerkentscheidungen auf jeden Client an. |
+| Feld    | Beschreibung                                                              |
+|---------|---------------------------------------------------------------------------|
+| Name    | Lokale Bezeichnung, die unter Blocking, Alerts und Status angezeigt wird. |
+| URL     | HTTP- oder HTTPS-Quelle ohne eingebettete Zugangsdaten.                   |
+| Enabled | Lädt die Quelle herunter, damit Blocking sie verwenden kann.              |
 
 Nach dem Speichern kehrst du zum Tab Lists zurück, und derselbe validierte Hintergrundpfad zum Anwenden wird gestartet. Wähle zum Bearbeiten den Stift einer Zeile aus oder doppelklicke auf die Zeile. Ein deaktivierter Eintrag bleibt konfiguriert, wird in der Tabelle jedoch gedämpft dargestellt und weder vom Updater noch von der kompilierten Richtlinie verwendet.
+
+Lists ist nur die Listenverwaltung. Welche Listen für Global, ein Netzwerk oder ein Gerät gelten, wird unter [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains) gewählt, und die Spalte **Used By** zählt Global sowie jedes Netzwerk und Gerät, das die Liste auswählt.
 
 ## Akzeptierte DNS-Formate \{#accepted-dns-formats}
 
@@ -60,19 +61,19 @@ Die Ergebnisse erscheinen als Karten. Verwende Suche, Quelle und Maintainer-Steu
 
 Jede Karte zeigt den Listennamen, den Maintainer oder die Kategorie, den Quellkatalog, eine zweizeilige Beschreibung, die Homepage und den Zustand **Add** oder **Added**. Die Karten zeigen keine Bewertungen, Abzeichen oder Empfehlungen. Durch **Add** entsteht ein gewöhnlicher Listeneintrag, dessen URL wie jede manuell eingegebene Quelle zugewiesen werden kann.
 
-Neue Listen, auch solche aus dem Katalog, beginnen mit nicht angehaktem **Global**. Sie blockieren daher nichts, bis du Global anhakst oder sie in einem Scope auswählst.
+Neue Listen, auch solche aus dem Katalog, blockieren nichts, bis du sie unter Blocking für Global, ein Netzwerk oder ein Gerät auswählst.
 
 Die Zeile **Contents** jeder Karte zeigt **Domains**. Beim Hinzufügen eines Katalogergebnisses bleibt dessen Katalogname unverändert.
 
 Katalogkopien werden einen Tag lang unter `/var/db` zwischengespeichert. Bei einer fehlgeschlagenen Aktualisierung bleibt die letzte gültige Katalogkopie erhalten, und Status zeigt den Abruffehler an.
 
-<img src={catalogSearch} alt="Panel Add from Catalog auf dem Tab Lists mit Steuerelementen für die Katalogsuche und Abrufstatus" width={1024} height={920} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={catalogSearch} alt="Panel Add from Catalog auf dem Tab Lists mit Steuerelementen für die Katalogsuche und Abrufstatus" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
 Feeds, die dem Bypass-Schutz für Encrypted DNS, Tor oder VPN zugeordnet sind, erscheinen hier nicht. Sie sind nur über **Add from Catalog** auf dem Tab Bypass verfügbar.
 
 ## Globale erlaubte Domains festlegen \{#set-global-allowed-domains}
 
-Der Abschnitt **Allowed Domains** unter den Listen- und Katalog-Panels definiert globale Ausnahmen. Jede Zeile lässt diese Domain und ihre Subdomains durch geerbte globale Listen passieren. Wähle unter diesem Abschnitt **Save**, um die seitenweite Einstellung anzuwenden.
+Globale Ausnahmen befinden sich unter **Blocking → Global** im Feld **Allowed Domains**. Jede Zeile lässt diese Domain und ihre Subdomains durch globale Listen passieren. Wähle **Save**, um sie anzuwenden.
 
 Eine global erlaubte Domain wird nach Geräte- und Netzwerkregeln geprüft. Sie kann daher keine Liste außer Kraft setzen, die die Abfrage bereits auf einer spezifischeren Geräte- oder Netzwerkebene blockiert hat.
 

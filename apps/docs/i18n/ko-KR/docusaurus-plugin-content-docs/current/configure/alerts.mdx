@@ -27,20 +27,22 @@ import alertRuleEditor from './_assets_/alerts-1.png';
 
 ## 규칙 만들기 \{#create-a-rule}
 
-**Firewall → Sinkhole → Alerts**를 열고 알림 규칙 표 아래의 **Add**를 선택한 다음 편집기 페이지에서 **Add Alert Rule**을 작성합니다.
+**Firewall → Sinkhole → Alerts**를 엽니다. [컨텍스트 행](/docs/configure/scopes#contexts)이 표를 필터링합니다. **Global**은 **Everyone**에 대한 규칙을, 네트워크나 장치는 해당 항목을 선택한 규칙을, **All**은 모든 규칙을 나열합니다. 규칙 하나에서 여러 네트워크와 장치를 동시에 선택할 수도 있습니다.
 
-| 필드                   | 설명                                             |
-|----------------------|------------------------------------------------|
-| Description          | 알림 문구와 요약에 표시되는 로컬 규칙 이름입니다.                   |
-| Any block list       | 선택한 목록뿐 아니라 모든 목록의 차단과 일치합니다.                  |
-| Chosen block lists   | **Any**가 꺼져 있을 때 규칙을 충족할 수 있는 목록입니다.           |
-| Everyone             | 선택한 네트워크와 장치뿐 아니라 모든 클라이언트와 일치합니다.             |
-| Chosen networks      | **Everyone**이 꺼져 있을 때 규칙을 충족할 수 있는 네트워크 범위입니다. |
-| Chosen devices       | **Everyone**이 꺼져 있을 때 규칙을 충족할 수 있는 장치 범위입니다.   |
-| Repeat after         | 같은 규칙, 클라이언트, 도메인 및 목록이 다시 알림을 보낼 때까지의 분입니다.   |
-| WebGUI notice        | pfSense에 로컬 Sinkhole 알림을 추가합니다.                |
-| Remote notifications | pfSense에 구성된 원격 서비스를 사용합니다.                    |
-| Enabled              | 차단된 응답이 이 규칙과 일치할 수 있게 합니다.                    |
+알림 규칙 표 아래의 **Add**를 선택한 다음 편집기 페이지에서 **Add Alert Rule**을 작성합니다.
+
+| 필드                   | 설명                                                                 |
+|----------------------|--------------------------------------------------------------------|
+| Description          | 알림 문구와 요약에 표시되는 로컬 규칙 이름입니다.                                       |
+| Any block list       | 선택한 목록뿐 아니라 모든 목록의 차단과 일치합니다.                                      |
+| Chosen block lists   | **Any**가 꺼져 있을 때 규칙을 충족할 수 있는 목록입니다.                               |
+| Everyone             | 선택한 네트워크와 장치뿐 아니라 모든 클라이언트와 일치합니다.                                 |
+| Chosen networks      | **Everyone**이 꺼져 있을 때 규칙을 충족할 수 있는 Clients의 네트워크입니다.               |
+| Chosen devices       | 모든 식별자와 함께 표시되며 **Everyone**이 꺼져 있을 때 규칙을 충족할 수 있는 Clients의 장치입니다. |
+| Repeat after         | 같은 규칙, 클라이언트, 도메인 및 목록이 다시 알림을 보낼 때까지의 분입니다.                       |
+| WebGUI notice        | pfSense에 로컬 Sinkhole 알림을 추가합니다.                                    |
+| Remote notifications | pfSense에 구성된 원격 서비스를 사용합니다.                                        |
+| Enabled              | 차단된 응답이 이 규칙과 일치할 수 있게 합니다.                                        |
 
 **Any block list**가 선택되어 있으면 선택 목록 필드가 숨겨지고, **Everyone**이 선택되어 있으면 네트워크 및 장치 필드가 숨겨집니다. 저장하면 Alerts로 돌아갑니다. 연필을 선택하거나 행을 두 번 클릭하여 편집합니다.
 
@@ -75,7 +77,7 @@ pfSense의 로컬 알림 함수는 `New alert found: <message>`를 시스템 로
 
 ## 알림 검증 \{#verify-an-alert}
 
-1. 규칙, 선택한 목록 및 선택한 클라이언트 범위가 활성화되어 있는지 확인합니다.
+1. 규칙, 선택한 목록 및 선택한 네트워크 또는 장치가 활성화되어 있는지 확인합니다.
 2. Status에서 클라이언트가 현재 의도한 네트워크나 장치에 매핑되어 있는지 확인합니다.
 3. 선택한 목록이 차단하는 이름을 쿼리하고 구성된 pfSense 채널을 확인합니다.
 4. 두 번째 알림이 오지 않으면 시도 시점과 규칙의 반복 간격 및 고정 한도를 비교합니다.

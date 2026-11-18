@@ -289,24 +289,24 @@ function Home(): Pages_Index_Home_Returns {
               {
                 label: translate({
                   id: 'home.showcase.scopes.label',
-                  message: 'Scopes',
-                  description: 'Front page screenshot tab for the Scopes page.',
+                  message: 'Clients and Blocking',
+                  description: 'Front page screenshot tab for the Clients and Blocking pages.',
                 }),
                 heading: translate({
                   id: 'home.showcase.scopes.heading',
                   message: 'Different rules for each network and device',
-                  description: 'Front page heading for the Scopes page screenshot.',
+                  description: 'Front page heading for the Clients and Blocking screenshot.',
                 }),
                 description: translate({
                   id: 'home.showcase.scopes.description',
-                  message: 'Give a network or a single device its own lists and allowed domains. Every DNS query follows the most specific scope that matches it.',
-                  description: 'Front page description for the Scopes page screenshot.',
+                  message: 'Define each network and device once on Clients, then give it its own lists and allowed domains on Blocking. Every DNS query follows the most specific match: the device, then its network, then Global.',
+                  description: 'Front page description for the Clients and Blocking screenshot.',
                 }),
                 link: {
                   label: translate({
                     id: 'home.showcase.scopes.link',
-                    message: 'Set Up Scopes',
-                    description: 'Front page link from the Scopes screenshot to its guide.',
+                    message: 'Set Up Clients and Blocking',
+                    description: 'Front page link from the Clients and Blocking screenshot to its guide.',
                   }),
                   to: '/docs/configure/scopes/',
                 },
@@ -315,18 +315,18 @@ function Home(): Pages_Index_Home_Returns {
                     className={styles['shot-frame']}
                     title={translate({
                       id: 'home.showcase.scopes.title',
-                      message: 'pfSense.home.arpa - Firewall: Sinkhole: Scopes',
-                      description: 'Browser tab title of the Scopes screenshot on the front page, as the pfSense WebGUI shows it.',
+                      message: 'pfSense.home.arpa - Firewall: Sinkhole: Clients',
+                      description: 'Browser tab title of the Clients screenshot on the front page, as the pfSense WebGUI shows it.',
                     })}
-                    url="192.168.1.1/sinkhole-scopes.php"
+                    url="192.168.1.1/sinkhole-clients.php"
                     favicon="/images/pfsense-favicon.ico"
                   >
                     <img
                       src={scopesOne}
                       alt={translate({
                         id: 'home.showcase.scopes.alt',
-                        message: 'Sinkhole Scopes page with a LAN network scope and three device scopes',
-                        description: 'Alt text for the Scopes page screenshot on the front page.',
+                        message: 'Sinkhole Clients page with a LAN network and three devices',
+                        description: 'Alt text for the Clients page screenshot on the front page.',
                       })}
                       width={1024}
                       height={768}
@@ -395,7 +395,7 @@ function Home(): Pages_Index_Home_Returns {
                 }),
                 description: translate({
                   id: 'home.showcase.status.description',
-                  message: 'Status shows every list with its entry count and last update, plus the scopes, networks, and devices Sinkhole is applying right now.',
+                  message: 'Status shows every list with its entry count and last update, plus the networks and devices Sinkhole is applying right now.',
                   description: 'Front page description for the Status page screenshot.',
                 }),
                 link: {
@@ -421,7 +421,7 @@ function Home(): Pages_Index_Home_Returns {
                       src={statusOne}
                       alt={translate({
                         id: 'home.showcase.status.alt',
-                        message: 'Sinkhole Status page with the lists, scopes, networks, and devices panels',
+                        message: 'Sinkhole Status page with the lists, networks, and devices panels',
                         description: 'Alt text for the Status page screenshot on the front page.',
                       })}
                       width={1024}

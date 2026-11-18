@@ -40,7 +40,9 @@ Nakon potpunog vraćanja konfiguracije na istom vatrozidu, pfSense može navesti
 
 Objavljena verzija također čuva jedan zadatak oporavka vezan za kontrolni zbir u `config.xml`. Na novom vatrozidu bez Sinkhole datoteka odvojeni zadatak čeka završetak pfSense sinhronizacije paketa, provjerava i instalira tačnu verziju koja ga je napravila, a zatim izlazi svakih 15 minuta kada je Sinkhole već prisutan.
 
-Keep Settings čuva ovaj zadatak oporavka tokom namjernog uklanjanja. Isključite Keep Settings prije uklanjanja Sinkholea ako treba ostati deinstaliran.
+Zadatak čuva kopiju tog izdanja provjerenu kontrolnim zbirom u `/cf/conf/sinkhole/restore-heal`, iz vlastitog preuzimanja ili iz ažuriranja instaliranog na stranici **About**, tako da vraćanje na isti vatrozid može ponovo instalirati Sinkhole bez pristupa internetu. Istovremeno se izvršava samo jedno pokretanje; pokretanje koje započne dok drugo još preuzima ili instalira odmah se završava. Svaki korak se bilježi u sistemskom dnevniku pod `sinkhole-restore-heal`: `deferred` dok pfSense još vraća pakete, zatim `cache` ili `fetch`, `install` i `installed`, odnosno `fetch-failed`, `checksum-failed`, `cache-failed` ili `install-failed` kada korak ne uspije.
+
+Namjerno uklanjanje uklanja zadatak oporavka i njegovu keširanu kopiju bez obzira na to da li je **Keep Settings** uključen ili isključen; čuva ih samo uklanjanje tokom vraćanja konfiguracije.
 
 ## Zašto nadogradnja pfSensea zadržava Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
@@ -70,7 +72,7 @@ Kada je **Keep Settings** uključen, konfiguracija i sačuvane DNS i IP liste os
 
 1. Potvrdite da **Firewall → Sinkhole** više nije prisutan.
 2. Potvrdite da Python skripta i redoslijed DNS Resolvera odgovaraju vrijednostima koje su prethodile Sinkholeu.
-3. Ako je Keep Settings bio isključen, potvrdite da nije ostao nijedan cron unos Sinkholea. U svakom slučaju potvrdite da nisu ostali blok preusmjeravanja običnog DNS-a, sidro `sinkhole/bypass` ni sidro `sinkhole/ip`.
+3. Potvrdite da nisu ostali Sinkhole cron unosi, uključujući zadatak oporavka `sinkhole-restore-heal`, kao ni blok preusmjeravanja običnog DNS-a, sidro `sinkhole/bypass` ili sidro `sinkhole/ip`.
 4. Ako je Keep Settings bio isključen, potvrdite da `/cf/conf/sinkhole` ne postoji.
 
 Ako je ažuriranje bilo aktivno, oznaka uklanjanja traži da se zaustavi između ograničenih faza prije dodirivanja trajnih podataka. Uklanjanje bilježi prvi neuspjeh čišćenja, ali i dalje pokušava preostale nezavisne korake čišćenja.

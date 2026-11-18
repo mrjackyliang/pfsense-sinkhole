@@ -15,9 +15,11 @@ declare(strict_types=1);
 ##|-PRIV
 
 use PfSense\Sinkhole\Domain\ValidationException;
+use PfSense\Sinkhole\Runtime\Context;
 
 require_once('guiconfig.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
+require_once('/usr/local/pkg/sinkhole/Context.php');
 
 /**
  * Sinkhole Alerts - Apply Configuration.
@@ -69,6 +71,9 @@ $scopeConfiguration = pfsensePackageSinkholeGetScopeConfiguration();
 $networks = $scopeConfiguration['networks'];
 $devices = $scopeConfiguration['devices'];
 $interfaces = $adapter->getConfiguredInterfaces();
+$context = Context::current($networks, $devices, true);
+Context::remember($context);
+$parsedContext = Context::parse($context) ?? ['type' => Context::GLOBAL, 'id' => ''];
 $alertConfiguration = pfsensePackageSinkholeGetAlertConfiguration();
 $alerts = $alertConfiguration['alerts'];
 $invalidRows = $alertConfiguration['invalid_rows'];
@@ -139,14 +144,29 @@ foreach ($networks as $identifier => $network) {
 $deviceOptions = [];
 
 foreach ($devices as $identifier => $device) {
-    $deviceOptions[$identifier] = $device['name'];
+    $deviceOptions[$identifier] = pfsensePackageSinkholeDeviceLabel($device, $interfaces);
 }
+
+// Rules stay multi-target; a context lists the rules that include it.
+$visibleAlerts = array_filter(
+    $alerts,
+    static fn(array $alert): bool => match ($parsedContext['type']) {
+        Context::ALL => true,
+        'network' => !$alert['everyone'] && in_array($parsedContext['id'], $alert['networks'], true),
+        'device' => !$alert['everyone'] && in_array($parsedContext['id'], $alert['devices'], true),
+        default => $alert['everyone'],
+    },
+);
 
 $pgtitle = [gettext('Firewall'), 'Sinkhole', pfsensePackageSinkholeTranslate('alerts')];
 $pglinks = ['', '/pkg_edit.php?xml=sinkhole.xml&id=0', '@self'];
 
 include('head.inc');
+?>
+<link rel="stylesheet" href="/css/sinkhole.css">
+<?php
 display_top_tabs(pfsensePackageSinkholeTabs('alerts'));
+print(Context::renderRow('sinkhole-alerts.php', $context, $networks, $devices, true));
 
 if (is_string($actionMessage)) {
     print_info_box(htmlspecialchars($actionMessage), $actionClass, false);
@@ -167,10 +187,10 @@ if (is_string($actionMessage)) {
 				<th data-sortable="false"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('actions'))?></th>
 			</tr></thead>
 			<tbody>
-<?php if ($alerts === []): ?>
+<?php if ($visibleAlerts === []): ?>
 				<tr><td colspan="8" class="text-muted"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('no_alert_rules_configured'))?></td></tr>
 <?php endif; ?>
-<?php foreach ($alerts as $identifier => $alert): ?>
+<?php foreach ($visibleAlerts as $identifier => $alert): ?>
 <?php
     $listText = $alert['any_list']
         ? pfsensePackageSinkholeTranslate('any')

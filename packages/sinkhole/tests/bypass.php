@@ -140,7 +140,10 @@ final class SinkholeBypassFixtureDownloadClient implements DownloadClient
     }
 }
 
-/** @since 1.0.0 */
+/**
+ * @since 1.0.0
+ * @since 1.3.0
+ */
 function sinkholeBypassTestPaths(string $root): PackagePaths
 {
     file_put_contents($root . '/sinkhole_unbound.py', "# invented module fixture\n");
@@ -150,6 +153,7 @@ function sinkholeBypassTestPaths(string $root): PackagePaths
         'runtime_root_directory' => $root . '/runtime',
         'module_source_file' => $root . '/sinkhole_unbound.py',
         'update_lock_file' => $root . '/update.lock',
+        'release_lock_file' => $root . '/release.lock',
         'runtime_lock_file' => $root . '/runtime.lock',
         'client_lock_file' => $root . '/client.lock',
         'alert_lock_file' => $root . '/alert.lock',
@@ -246,6 +250,420 @@ sinkholeTestRun([
             );
             sinkholeTestAssertSame('', $adapter->bypassRuleText(), 'An upgrade must add no early anchor reference.');
             sinkholeTestAssertSame('', $adapter->bypassAnchorText(), 'An upgrade must add no Bypass rules.');
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'Bypass storage round trips Global network and device contexts' => static function (): void {
+        $sourceIdentifier = str_repeat('1', 32);
+        $networkIdentifier = str_repeat('a', 32);
+        $deviceIdentifier = str_repeat('d', 32);
+        $networkContext = 'network:' . $networkIdentifier;
+        $deviceContext = 'device:' . $deviceIdentifier;
+        $source = BypassConfiguration::normalizeListRow(
+            $sourceIdentifier,
+            'Invented encrypted DNS source',
+            'https://example.test/encrypted-dns.txt',
+            true,
+            BypassConfiguration::KIND_ENCRYPTED_DNS,
+        );
+        sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+            'redirect' => ['interfaces' => ['item' => ['lan']]],
+            'bypass' => sinkholeBypassTestStorage([[
+                'id' => $sourceIdentifier,
+                'descr' => $source['name'],
+                'url' => $source['url'],
+                'enabled' => 'on',
+                'kind' => $source['kind'],
+            ]]),
+        ]]]);
+        $globalSubmission = BypassConfiguration::submitContext(
+            'global',
+            [
+                'disable_firefox_doh' => 'on',
+                // pfSense's Form_Checkbox posts "yes" by default; it must count as checked.
+                'block_tor' => 'yes',
+                'bypass_interfaces' => ['lan'],
+            ],
+            ['lan' => 'LAN'],
+            [],
+            [$sourceIdentifier => $source],
+        );
+        sinkholeTestAssertSame(
+            [],
+            $globalSubmission['errors'],
+            'A valid Global submission must have no errors.',
+        );
+        BypassConfiguration::storeContext('global', $globalSubmission['settings']);
+        sinkholeTestAssertSame(
+            'on',
+            config_get_path(BypassConfiguration::SECTION_PATH . '/disable_firefox_doh'),
+            'Global fields must remain in the Global Bypass section.',
+        );
+        sinkholeTestAssertSame(
+            'on',
+            config_get_path(BypassConfiguration::SECTION_PATH . '/block_tor'),
+            'A checkbox posted as pfSense\'s default "yes" must save as on.',
+        );
+        sinkholeTestAssertSame(
+            [$sourceIdentifier],
+            array_column(
+                config_get_path(BypassConfiguration::SECTION_PATH . '/lists/item', []),
+                'id',
+            ),
+            'Saving Global settings must preserve package-wide source definitions.',
+        );
+        sinkholeTestAssertSame(
+            true,
+            in_array('bypass_interfaces', BypassConfiguration::fieldsForContext('global'), true),
+            'Only the Global field set must expose Apply to interfaces.',
+        );
+        sinkholeTestAssertSame(
+            true,
+            in_array('bypass_lists', BypassConfiguration::fieldsForContext($networkContext), true),
+            'A network field set must expose its source selection.',
+        );
+        $submission = BypassConfiguration::submitContext(
+            $networkContext,
+            [
+                'enabled' => 'on',
+                'block_encrypted_dns' => 'on',
+                'bypass_lists' => [$sourceIdentifier],
+                'block_exempt_sources' => "192.0.2.50\n",
+                'block_exempt_destinations' => '',
+            ],
+            [],
+            [],
+            [$sourceIdentifier => $source],
+        );
+
+        sinkholeTestAssertSame([], $submission['errors'], 'A valid context submission must have no errors.');
+        BypassConfiguration::storeContext($networkContext, $submission['settings']);
+        $emptyOverride = BypassConfiguration::submitContext(
+            $deviceContext,
+            ['enabled' => 'on'],
+            [],
+            [],
+            [$sourceIdentifier => $source],
+        );
+        sinkholeTestAssertSame(
+            [],
+            $emptyOverride['errors'],
+            'An enabled empty policy must be a valid most-specific override.',
+        );
+        BypassConfiguration::storeContext($deviceContext, $emptyOverride['settings']);
+        $rows = config_get_path(BypassConfiguration::CONTEXTS_PATH, []);
+        sinkholeTestAssertSame($networkContext, $rows[0]['context'], 'The stable context key must be stored.');
+        sinkholeTestAssertSame('on', $rows[0]['enabled'], 'The context enable bit must be stored.');
+        sinkholeTestAssertSame(
+            [$sourceIdentifier],
+            $rows[0]['lists']['item'],
+            'The row must store source IDs rather than source definitions.',
+        );
+        $loaded = BypassConfiguration::forContext(
+            config_get_path(BypassConfiguration::SECTION_PATH, []),
+            $rows,
+            $networkContext,
+        );
+        sinkholeTestAssertSame(true, $loaded['enabled'], 'The stored context must load enabled.');
+        sinkholeTestAssertSame(
+            [$sourceIdentifier],
+            $loaded['selected_lists'],
+            'The selected source must survive the storage round trip.',
+        );
+        sinkholeTestAssertSame(
+            false,
+            array_key_exists('lists', $loaded) || array_key_exists('interfaces', $loaded),
+            'A network context must not expose package-wide source definitions or Apply to.',
+        );
+        $loadedEmptyOverride = BypassConfiguration::forContext(
+            config_get_path(BypassConfiguration::SECTION_PATH, []),
+            $rows,
+            $deviceContext,
+        );
+        sinkholeTestAssertSame(
+            true,
+            $loadedEmptyOverride['enabled'],
+            'An enabled empty policy must retain ownership instead of inheriting.',
+        );
+        sinkholeTestAssertSame(
+            false,
+            $loadedEmptyOverride['dns_enabled'] || $loadedEmptyOverride['firewall_enabled'],
+            'The empty override must leave every Bypass action off.',
+        );
+        sinkholeTestAssertSame(
+            ['global', $networkContext, $deviceContext],
+            BypassConfiguration::contextKeys(),
+            'The overview keys must include Global and the stored row.',
+        );
+
+        BypassConfiguration::removeContext($deviceContext);
+        sinkholeTestAssertSame(
+            [$networkContext],
+            array_column(config_get_path(BypassConfiguration::CONTEXTS_PATH, []), 'context'),
+            'Removing device settings must preserve the network row.',
+        );
+        BypassConfiguration::removeContext($networkContext);
+        sinkholeTestAssertSame(
+            [],
+            config_get_path(BypassConfiguration::CONTEXTS_PATH, []),
+            'Removing a context must remove only its Bypass row.',
+        );
+    },
+    'Bypass context migration copies once honors Apply to and never overwrites' => static function (): void {
+        global $sinkholeStubInterfaces;
+
+        $root = sinkholeTestTemporaryDirectory();
+        $sourceIdentifier = str_repeat('2', 32);
+        $lanNetwork = str_repeat('a', 32);
+        $optNetwork = str_repeat('b', 32);
+        $lanDevice = str_repeat('c', 32);
+        $multiDevice = str_repeat('d', 32);
+        $offNetwork = str_repeat('e', 32);
+        $offDevice = str_repeat('f', 32);
+        $existingContext = 'network:' . $optNetwork;
+
+        try {
+            sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+                'redirect' => ['interfaces' => ['item' => ['lan']]],
+                'bypass' => sinkholeBypassTestStorage([[
+                    'id' => $sourceIdentifier,
+                    'descr' => 'Invented migration source',
+                    'url' => 'https://example.test/migration.txt',
+                    'kind' => BypassConfiguration::KIND_ENCRYPTED_DNS,
+                    'enabled' => 'on',
+                ]], ['block_tls_quic' => 'on']),
+                'networks' => ['item' => [
+                    ['id' => $lanNetwork, 'interface' => 'lan'],
+                    ['id' => $optNetwork, 'interface' => 'opt1'],
+                    ['id' => $offNetwork, 'interface' => 'opt1'],
+                ]],
+                'devices' => ['item' => [
+                    [
+                        'id' => $lanDevice,
+                        'identifiers' => ['item' => [[
+                            'type' => 'static_mapping',
+                            'value' => '00:11:22:33:44:55',
+                            'interface' => 'lan',
+                        ]]],
+                    ],
+                    [
+                        'id' => $multiDevice,
+                        'identifiers' => ['item' => [
+                            ['type' => 'mac', 'value' => '00:11:22:33:44:66', 'interface' => 'opt1'],
+                            ['type' => 'ip', 'value' => '192.0.2.60', 'interface' => 'lan'],
+                        ]],
+                    ],
+                    [
+                        'id' => $offDevice,
+                        'identifiers' => ['item' => [[
+                            'type' => 'static_mapping',
+                            'value' => '00:11:22:33:44:77',
+                            'interface' => 'opt1',
+                        ]]],
+                    ],
+                ]],
+                'bypass_contexts' => ['item' => [[
+                    'context' => $existingContext,
+                    'enabled' => '',
+                    'discovery' => 'nodata',
+                ]]],
+            ]]]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN', 'opt1' => 'OPT1'];
+            $paths = sinkholeBypassTestPaths($root);
+            pfsensePackageSinkholeAdapter(new PfSenseAdapter(
+                $paths,
+                new StateStore($paths->stateFile, $paths->statusFile),
+            ));
+
+            sinkholeTestAssertSame(
+                true,
+                pfsensePackageSinkholeMigrateBypassContexts(),
+                'The first migration must update configuration.',
+            );
+            $rows = config_get_path(BypassConfiguration::CONTEXTS_PATH, []);
+            $byContext = [];
+
+            foreach ($rows as $row) {
+                $byContext[$row['context']] = $row;
+            }
+
+            sinkholeTestAssertSame(
+                'on',
+                config_get_path(
+                    BypassConfiguration::SECTION_PATH
+                        . '/'
+                        . BypassConfiguration::CONTEXT_MIGRATION_FLAG,
+                ),
+                'The migration version flag must be stored in the Global section.',
+            );
+            sinkholeTestAssertSame('on', $byContext['network:' . $lanNetwork]['enabled'], 'LAN must retain the old active policy.');
+            sinkholeTestAssertSame('', $byContext['network:' . $offNetwork]['enabled'], 'A network outside Apply to must receive a disabled copy.');
+            sinkholeTestAssertSame('', $byContext[$existingContext]['enabled'], 'An existing row must never be overwritten.');
+            sinkholeTestAssertSame('nodata', $byContext[$existingContext]['discovery'], 'Existing row contents must remain exact.');
+            sinkholeTestAssertSame('on', $byContext['device:' . $lanDevice]['enabled'], 'A LAN identifier must enable its copy.');
+            sinkholeTestAssertSame('on', $byContext['device:' . $multiDevice]['enabled'], 'Any matching identifier interface must enable a device copy.');
+            sinkholeTestAssertSame('', $byContext['device:' . $offDevice]['enabled'], 'A device outside Apply to must receive a disabled copy.');
+            sinkholeTestAssertSame(
+                [$sourceIdentifier],
+                $byContext['network:' . $lanNetwork]['lists']['item'],
+                'Migration must select the former package-wide sources by ID.',
+            );
+            $firstRows = $rows;
+            config_set_path('installedpackages/sinkhole/bypass/block_tls_quic', '');
+            sinkholeTestAssertSame(
+                false,
+                pfsensePackageSinkholeMigrateBypassContexts(),
+                'The version flag must prevent a second migration.',
+            );
+            sinkholeTestAssertSame(
+                $firstRows,
+                config_get_path(BypassConfiguration::CONTEXTS_PATH, []),
+                'A later Sync must not rewrite migrated rows.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'Bypass context migration never activates malformed legacy settings' => static function (): void {
+        global $sinkholeStubInterfaces;
+
+        $root = sinkholeTestTemporaryDirectory();
+        $networkIdentifier = str_repeat('9', 32);
+
+        try {
+            sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+                'redirect' => ['interfaces' => ['item' => ['lan']]],
+                'bypass' => sinkholeBypassTestStorage([], [
+                    'block_tls_quic' => 'invalid',
+                    'block_vpn_ports' => 'on',
+                ]),
+                'networks' => ['item' => [[
+                    'id' => $networkIdentifier,
+                    'interface' => 'lan',
+                ]]],
+            ]]]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN'];
+            $paths = sinkholeBypassTestPaths($root);
+            pfsensePackageSinkholeAdapter(new PfSenseAdapter(
+                $paths,
+                new StateStore($paths->stateFile, $paths->statusFile),
+            ));
+
+            sinkholeTestAssertSame(
+                true,
+                pfsensePackageSinkholeMigrateBypassContexts(),
+                'The malformed legacy configuration must still be marked migrated.',
+            );
+            $rows = config_get_path(BypassConfiguration::CONTEXTS_PATH, []);
+            sinkholeTestAssertSame(
+                '',
+                $rows[0]['enabled'],
+                'A malformed legacy policy must not become active through a normalized copy.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'Bypass context tables encode device network Global precedence without passes' => static function (): void {
+        global $sinkholeStubInterfaceAddresses;
+        global $sinkholeStubInterfaces;
+
+        $root = sinkholeTestTemporaryDirectory();
+        $networkIdentifier = str_repeat('a', 32);
+        $deviceIdentifier = str_repeat('d', 32);
+
+        try {
+            sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+                'redirect' => ['interfaces' => ['item' => ['lan']]],
+                'bypass' => sinkholeBypassTestStorage([], ['block_tls_quic' => 'on']),
+                'networks' => ['item' => [[
+                    'id' => $networkIdentifier,
+                    'interface' => 'lan',
+                    'lists' => ['item' => []],
+                    'allowed_domains' => ['item' => []],
+                    'enabled' => 'on',
+                ]]],
+                'devices' => ['item' => [[
+                    'id' => $deviceIdentifier,
+                    'descr' => 'Invented device',
+                    'identifiers' => ['item' => [[
+                        'type' => 'ip',
+                        'value' => '192.0.2.10',
+                        'interface' => '',
+                    ]]],
+                    'lists' => ['item' => []],
+                    'allowed_domains' => ['item' => []],
+                    'enabled' => 'on',
+                ]]],
+                'bypass_contexts' => ['item' => [
+                    [
+                        'context' => 'network:' . $networkIdentifier,
+                        'enabled' => 'on',
+                        'block_tls_quic' => 'on',
+                    ],
+                    [
+                        'context' => 'device:' . $deviceIdentifier,
+                        'enabled' => 'on',
+                        'block_tls_quic' => 'on',
+                    ],
+                ]],
+            ]]]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN'];
+            $sinkholeStubInterfaceAddresses = ['lan' => [
+                'ipv4' => '192.0.2.1',
+                'ipv4_prefix' => 24,
+            ]];
+            $paths = sinkholeBypassTestPaths($root);
+            mkdir(dirname($paths->runtimeClientMapFile), 0700, true);
+            file_put_contents($paths->runtimeClientMapFile, json_encode([
+                'schema_version' => 2,
+                'networks' => [[
+                    'id' => $networkIdentifier,
+                    'cidrs' => ['192.0.2.0/24'],
+                ]],
+                'interfaces' => [[
+                    'name' => 'lan',
+                    'cidrs' => ['192.0.2.0/24'],
+                ]],
+                'devices' => ['192.0.2.10' => $deviceIdentifier],
+            ], JSON_THROW_ON_ERROR));
+            $adapter = new PfSenseAdapter(
+                $paths,
+                new StateStore($paths->stateFile, $paths->statusFile),
+            );
+            $rules = $adapter->bypassAnchorText();
+            $globalTable = BypassRuleConfiguration::contextTableName('global', 'ipv4');
+            $networkTable = BypassRuleConfiguration::contextTableName(
+                'network:' . $networkIdentifier,
+                'ipv4',
+            );
+            $deviceTable = BypassRuleConfiguration::contextTableName(
+                'device:' . $deviceIdentifier,
+                'ipv4',
+            );
+
+            sinkholeTestAssertTrue(
+                str_contains($rules, 'table <' . $globalTable . '>') === false,
+                'Global must drop the subnet the network owns exactly, leaving no Global clients or rules here.',
+            );
+            sinkholeTestAssertContains(
+                'table <' . $networkTable . '> { 192.0.2.0/24 !192.0.2.10 }',
+                $rules,
+                'The network must negate its owned device address.',
+            );
+            sinkholeTestAssertContains(
+                'table <' . $deviceTable . '> { 192.0.2.10 }',
+                $rules,
+                'The device table must contain only resolved device addresses.',
+            );
+            sinkholeTestAssertSame(0, preg_match('/^\s*pass\b/m', $rules), 'Context precedence must add no pass rule.');
+            sinkholeTestAssertSame(0, preg_match('/^block .* from any/m', $rules), 'Every Bypass block must use a context source table.');
+            sinkholeTestAssertSame(
+                2,
+                preg_match_all('/^block .* from <sh_bc_[a-f0-9]{12}_4>/m', $rules),
+                'The network and device rules must each reference their context table; Global has no clients left here.',
+            );
         } finally {
             sinkholeTestRemoveTemporaryDirectory($root);
         }
@@ -539,6 +957,8 @@ RULES;
     'compiler emits effective Bypass names beside ordinary allowed domains' => static function (): void {
         $root = sinkholeTestTemporaryDirectory();
         $identifier = str_repeat('a', 32);
+        $networkIdentifier = str_repeat('b', 32);
+        $deviceIdentifier = str_repeat('c', 32);
 
         try {
             $paths = sinkholeBypassTestPaths($root);
@@ -562,6 +982,21 @@ RULES;
                     'enabled' => 'on',
                 ]], ['block_encrypted_dns' => 'on']),
                 ['lan'],
+            );
+            $configuration = BypassConfiguration::withContexts(
+                $configuration,
+                [
+                    [
+                        'context' => 'network:' . $networkIdentifier,
+                        'enabled' => 'on',
+                        'block_encrypted_dns' => 'on',
+                        'lists' => ['item' => [$identifier]],
+                    ],
+                    [
+                        'context' => 'device:' . $deviceIdentifier,
+                        'enabled' => 'on',
+                    ],
+                ],
             );
             $compiler = new Compiler(
                 $paths,
@@ -587,17 +1022,40 @@ RULES;
             sinkholeTestAssertSame(
                 substr(hash('sha256', 'provider.example.test', true), 0, 16) . "\x00\x00",
                 file_get_contents($paths->runtimeDataDirectory . '/bypass.index'),
-                'The Bypass index must hold the hashed name and its kind-mask position.',
+                'The Bypass index must hold the hashed name and its source-mask position.',
             );
             sinkholeTestAssertSame(
-                [['', 'encrypted_dns']],
+                [['', '0']],
                 $manifest['bypass_index']['masks'],
-                'The Bypass index mask table must keep the kind columns.',
+                'The Bypass index mask table must keep source-bit columns.',
             );
             sinkholeTestAssertSame(
-                "provider.example.test\t\tencrypted_dns\n",
+                "provider.example.test\t\t0\n",
                 file_get_contents($paths->runtimeDataDirectory . '/bypass.tsv'),
-                'The compiler must emit kind membership separately from ordinary list bits.',
+                'The compiler must emit source membership separately from ordinary list bits.',
+            );
+            sinkholeTestAssertSame(
+                [
+                    'bit' => 0,
+                    'kind' => BypassConfiguration::KIND_ENCRYPTED_DNS,
+                ],
+                $manifest['bypass']['lists'][$identifier],
+                'The Bypass manifest must map each package source to its own bit.',
+            );
+            sinkholeTestAssertSame(
+                [$identifier],
+                $manifest['bypass']['networks'][$networkIdentifier]['lists'],
+                'A network manifest policy must select its own package source IDs.',
+            );
+            sinkholeTestAssertSame(
+                true,
+                $manifest['bypass']['devices'][$deviceIdentifier]['enabled'],
+                'An enabled empty device policy must compile as an inheritance override.',
+            );
+            sinkholeTestAssertSame(
+                [],
+                $manifest['bypass']['devices'][$deviceIdentifier]['lists'],
+                'An empty device override must compile without inheriting Global sources.',
             );
             sinkholeTestAssertSame(
                 "allowed.provider.example.test\n",
@@ -949,10 +1407,13 @@ RULES;
                 implode("\n", $sinkholeStubCommands),
                 'The independent Bypass anchor must load from its fixed file.',
             );
-            sinkholeTestAssertContains(
-                "/sbin/pfctl -a 'sinkhole/bypass' -t 'sinkhole_bypass_v4' -T replace -f '",
-                implode("\n", $sinkholeStubCommands),
-                'The IPv4 Bypass table must be replaced atomically.',
+            sinkholeTestAssertSame(
+                false,
+                str_contains(
+                    implode("\n", $sinkholeStubCommands),
+                    "-t 'sinkhole_bypass_v4'",
+                ),
+                'Per-context destination tables must load with the anchor instead of a shared table.',
             );
             $savedCopy = file_get_contents($paths->bypassListFile($identifier));
             $failed = (new BypassUpdater(
@@ -2200,10 +2661,43 @@ RULES;
             sinkholeTestAssertContains('198.51.100.128/25', $ipv4Table, 'The rest of the provider network must stay blocked.');
 
             $anchorText = (string) file_get_contents($paths->bypassAnchorFile);
-            sinkholeTestAssertContains(
-                'anchor "providers_inet" in inet from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v4> {',
-                $anchorText,
-                'The loaded anchor must apply the saved exemptions.',
+            sinkholeTestAssertSame(
+                1,
+                preg_match(
+                    '/^anchor "ctx_[a-f0-9]+_ipv4_providers" in inet from <(sh_bc_[a-f0-9]+_4)> '
+                    . 'to <sh_bd_[a-f0-9]+_4> \{\n'
+                    . '    anchor "aliases_1" in from ! <IP4_CENTRALSTATION> \{\n'
+                    . '        block return in quick all\n/m',
+                    $anchorText,
+                    $providerMatch,
+                ),
+                'The loaded anchor must apply the saved alias source exemption to provider blocks.',
+            );
+            sinkholeTestAssertSame(
+                1,
+                preg_match(
+                    '/^table <(sh_be_[a-f0-9]+_x)> \{ 198\.51\.100\.7 \}$/m',
+                    $anchorText,
+                    $destinationMatch,
+                ),
+                'The loaded anchor must keep the saved literal exempt destination.',
+            );
+            sinkholeTestAssertSame(
+                1,
+                preg_match(
+                    '/^anchor "ctx_[a-f0-9]+_ipv4_ports" in inet from <'
+                    . preg_quote($providerMatch[1], '/')
+                    . '> to ! <'
+                    . preg_quote($destinationMatch[1], '/')
+                    . '> \{\n    anchor "aliases_1" in from ! <IP4_CENTRALSTATION> \{$/m',
+                    $anchorText,
+                ),
+                'The loaded anchor must apply both saved exemptions to port blocks.',
+            );
+            sinkholeTestAssertSame(
+                false,
+                str_contains($anchorText, '10.0.0.5'),
+                'A literal exempt source must never become a blocked client address.',
             );
             sinkholeTestAssertSame(
                 2,

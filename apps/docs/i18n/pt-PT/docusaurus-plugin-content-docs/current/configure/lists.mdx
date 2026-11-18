@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Listas e cópias guardadas
-description: Adicione listas DNS por URL ou catálogo, use formatos hosts, domínio e estilo adblock, controlo a política global e mantenha cópias válidas após falhas.
+description: Adicione listas DNS por URL ou catálogo, use formatos hosts, domínio e estilo adblock e mantenha cópias válidas após falhas.
 keywords:
   - sinkhole for pfsense
   - listas de bloqueio
@@ -21,7 +21,7 @@ Adicione fontes de listas em que confia e deixe o Sinkhole manter na firewall c�
 ## Por que usar listas guardadas? \{#why-use-saved-lists}
 
 1. Mantém o DNS independente do host de uma lista, para que uma transferência lenta ou com falha não interrompa a resolução de nomes.
-2. Transfere cada fonte uma vez, para que a mesma cópia guardada possa atender aos âmbitos global, de rede e de dispositivo.
+2. Transfere cada fonte uma vez, para que a mesma cópia guardada possa atender a Global, a todas as redes e a todos os dispositivos.
 3. Preserva a cópia válida anterior quando uma nova transferência ou análise falha, para que uma entrada com defeito não substitua uma política funcional.
 4. Atualiza as listas em segundo plano, para que uma reinicialização ou recarga do Resolver nunca espere pela rede.
 
@@ -29,14 +29,15 @@ Adicione fontes de listas em que confia e deixe o Sinkhole manter na firewall c�
 
 Abra **Firewall → Sinkhole → Lists**, selecione **Add** abaixo da tabela de listas de bloqueio e preencha **Add Block List** na página do editor:
 
-| Campo   | Descrição                                                                     |
-|---------|-------------------------------------------------------------------------------|
-| Name    | Etiqueta local apresentado em atribuições, alertas e Status.                  |
-| URL     | Fonte HTTP ou HTTPS sem credenciais incorporadas.                             |
-| Enabled | Transfere a fonte e a disponibiliza aos âmbitos atribuídos.                   |
-| Global  | Aplica a fonte a todos os clientes depois das decisões de dispositivo e rede. |
+| Campo   | Descrição                                                |
+|---------|----------------------------------------------------------|
+| Name    | Etiqueta local apresentada em Blocking, Alerts e Status. |
+| URL     | Fonte HTTP ou HTTPS sem credenciais incorporadas.        |
+| Enabled | Transfere a fonte para que Blocking a possa usar.        |
 
 Ao guardar, regressa ao separador Lists, e o mesmo fluxo de aplicação validado é iniciado em segundo plano. Selecione o lápis de uma linha ou faça duplo clique nela para editá-la. Uma linha desativada continua configurada, mas aparece esbatida na tabela e não é usada pelo atualizador nem pela política compilada.
+
+Lists é apenas o gestor de listas. As listas que se aplicam a Global, a uma rede ou a um dispositivo são escolhidas em [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), e a coluna **Used By** conta Global mais cada rede e cada dispositivo que seleciona a lista.
 
 ## Formatos DNS aceitos \{#accepted-dns-formats}
 
@@ -60,7 +61,7 @@ Os resultados aparecem como cartões. Use juntos os controlos de pesquisa, fonte
 
 Cada cartão mostra o nome da lista, seu mantenedor ou categoria, o catálogo de origem, uma descrição de duas linhas, a página inicial e o estado **Add** ou **Added**. Os cartões não mostram avaliações, distintivos nem recomendações. Selecionar **Add** cria uma linha de lista comum cuja URL pode ser atribuída como qualquer fonte inserida manualmente.
 
-As novas listas, incluindo as adicionadas a partir do catálogo, começam com **Global** desmarcado, pelo que não bloqueiam nada até marcar Global ou as selecionar num âmbito.
+As novas listas, incluindo as adicionadas a partir do catálogo, não bloqueiam nada até as selecionar para Global, uma rede ou um dispositivo em Blocking.
 
 A linha **Contents** de cada cartão apresenta **Domains**. Ao adicionar um resultado do catálogo, o respetivo nome no catálogo permanece inalterado.
 
@@ -72,7 +73,7 @@ As fontes atribuídas à proteção de bypass de Encrypted DNS, Tor ou VPN não 
 
 ## Defina domínios permitidos globais \{#set-global-allowed-domains}
 
-A secção **Allowed Domains** abaixo dos painéis de listas e catálogos define exceções globais. Cada linha permite esse domínio e seus subdomínios diante das listas globais herdadas. Selecione **Save** abaixo dessa secção para aplicar a configuração de toda a página.
+As exceções globais ficam em **Blocking → Global**, na caixa **Allowed Domains**. Cada linha permite esse domínio e os seus subdomínios perante as listas globais. Selecione **Save** para as aplicar.
 
 Um domínio permitido global é verificado depois das regras de dispositivo e rede. Portanto, ele não pode substituir uma lista que já bloqueou a consulta em um nível mais específico de dispositivo ou rede.
 

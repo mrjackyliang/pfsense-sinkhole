@@ -105,19 +105,19 @@
     "message": "Sinkhole 페이지"
   },
   "home.showcase.scopes.label": {
-    "message": "범위"
+    "message": "클라이언트와 차단"
   },
   "home.showcase.scopes.heading": {
     "message": "네트워크와 장치마다 다른 규칙"
   },
   "home.showcase.scopes.description": {
-    "message": "네트워크나 단일 장치에 고유한 목록과 허용 도메인을 지정하세요. 모든 DNS 쿼리는 일치하는 가장 구체적인 범위를 따릅니다."
+    "message": "클라이언트에서 각 네트워크와 장치를 한 번만 정의한 다음 차단에서 각각에 고유한 목록과 허용 도메인을 지정하세요. 모든 DNS 쿼리는 가장 구체적인 일치 항목을 따르며, 장치, 해당 네트워크, 전역 설정 순으로 확인합니다."
   },
   "home.showcase.scopes.link": {
-    "message": "범위 설정하기"
+    "message": "클라이언트와 차단 설정하기"
   },
   "home.showcase.scopes.alt": {
-    "message": "LAN 네트워크 범위와 장치 범위 세 개가 있는 Sinkhole 범위 페이지"
+    "message": "LAN 네트워크 하나와 장치 세 개가 있는 Sinkhole 클라이언트 페이지"
   },
   "home.showcase.services.label": {
     "message": "서비스"
@@ -141,16 +141,16 @@
     "message": "무엇이 로드되었고 무엇이 오래되었는지 확인"
   },
   "home.showcase.status.description": {
-    "message": "상태 페이지는 모든 목록의 항목 수와 마지막 업데이트, 그리고 Sinkhole이 지금 적용하고 있는 범위, 네트워크, 장치를 보여 줍니다."
+    "message": "상태 페이지는 모든 목록의 항목 수와 마지막 업데이트, 그리고 Sinkhole이 지금 적용하고 있는 네트워크와 장치를 보여 줍니다."
   },
   "home.showcase.status.link": {
     "message": "상태 페이지 알아보기"
   },
   "home.showcase.status.alt": {
-    "message": "목록, 범위, 네트워크, 장치 패널이 있는 Sinkhole 상태 페이지"
+    "message": "목록, 네트워크, 장치 패널이 있는 Sinkhole 상태 페이지"
   },
   "home.showcase.scopes.title": {
-    "message": "pfSense.home.arpa - Firewall: Sinkhole: 범위"
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: 클라이언트"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Firewall: Sinkhole: 서비스"

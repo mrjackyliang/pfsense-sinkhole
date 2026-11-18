@@ -105,19 +105,19 @@
     "message": "Sinkhole 頁面"
   },
   "home.showcase.scopes.label": {
-    "message": "作用域"
+    "message": "用戶端和封鎖"
   },
   "home.showcase.scopes.heading": {
     "message": "每個網路和設備各有規則"
   },
   "home.showcase.scopes.description": {
-    "message": "為某個網路或單一設備指定專屬的清單和允許的網域。每個 DNS 查詢都會遵循與其相符的最具體作用域。"
+    "message": "在用戶端中定義每個網路和設備一次，然後在封鎖中為它們指定專屬的清單和允許的網域。每個 DNS 查詢都會遵循最具體的相符項目：先是設備，再來是其所在網路，最後是全域設定。"
   },
   "home.showcase.scopes.link": {
-    "message": "設定作用域"
+    "message": "設定用戶端和封鎖"
   },
   "home.showcase.scopes.alt": {
-    "message": "Sinkhole 作用域頁面，包含一個 LAN 網路作用域和三個設備作用域"
+    "message": "Sinkhole 用戶端頁面，包含一個 LAN 網路和三個設備"
   },
   "home.showcase.services.label": {
     "message": "服務"
@@ -141,16 +141,16 @@
     "message": "掌握哪些已載入、哪些已過期"
   },
   "home.showcase.status.description": {
-    "message": "狀態頁面顯示每份清單的項目數與上次更新時間，以及 Sinkhole 目前正在套用的作用域、網路和設備。"
+    "message": "狀態頁面顯示每份清單的項目數與上次更新時間，以及 Sinkhole 目前正在套用的網路和設備。"
   },
   "home.showcase.status.link": {
     "message": "了解狀態頁面"
   },
   "home.showcase.status.alt": {
-    "message": "Sinkhole 狀態頁面，包含清單、作用域、網路和設備面板"
+    "message": "Sinkhole 狀態頁面，包含清單、網路和設備面板"
   },
   "home.showcase.scopes.title": {
-    "message": "pfSense.home.arpa - Firewall: Sinkhole: 作用域"
+    "message": "pfSense.home.arpa - Firewall: Sinkhole: 用戶端"
   },
   "home.showcase.services.title": {
     "message": "pfSense.home.arpa - Firewall: Sinkhole: 服務"

@@ -52,7 +52,9 @@ Ein vorhandener `sinkhole/ip`-Anker kann nach einer erfolgreichen Aktualisierung
 
 Die standardmäßige Aktualisierungshäufigkeit für Listen ist Daily. Hourly, Every 6 hours, Daily und Weekly verwenden stabile zufällig bestimmte Minutenkomponenten, sodass die Firewall ihren Auftragszeitpunkt nicht bei jedem Speichern verschiebt.
 
-DNS-, Bypass- und IP-/Länderaktualisierungen, das Anwenden von Einstellungen, Paketprüfungen und Selbstaktualisierungen sowie die Bereinigung bei der Entfernung koordinieren sich über `/var/run/sinkhole-update.lock`. Eine Paketprüfung oder die Aktion Update wartet nicht: Hält ein anderer Vorgang die Sperre, stoppt sie mit `Another package operation is already running.` und kann nach Ende dieses Vorgangs erneut versucht werden.
+DNS-, Bypass- und IP-/Länderaktualisierungen, das Anwenden von Einstellungen, Paketinstallationen und die Bereinigung bei der Entfernung koordinieren sich über `/var/run/sinkhole-update.lock`. Release-Prüfungen und Selbstaktualisierungen koordinieren sich getrennt über `/var/run/sinkhole-release.lock`, und Prüfungen nehmen die Sperre für Paketaufgaben nie in Anspruch.
+
+Die Selbstaktualisierung nimmt die Release-Sperre vor der Sperre für Paketaufgaben. Sie wartet bis zu 30 Minuten auf eine laufende Listen-, IP- oder Bypass-Aktualisierung, während die Fortschrittszeile auf About den Wartezustand anzeigt.
 
 ## Katalogaktualisierungen sind getrennt \{#catalog-refreshes-are-separate}
 

@@ -32,8 +32,16 @@
 			<active/>
 		</tab>
 		<tab>
+			<text>Clients</text>
+			<url>/sinkhole-clients.php</url>
+		</tab>
+		<tab>
 			<text>Lists</text>
 			<url>/sinkhole-lists.php</url>
+		</tab>
+		<tab>
+			<text>Blocking</text>
+			<url>/sinkhole-blocking.php</url>
 		</tab>
 		<tab>
 			<text>Services</text>
@@ -42,10 +50,6 @@
 		<tab>
 			<text>SafeSearch</text>
 			<url>/sinkhole-safesearch.php</url>
-		</tab>
-		<tab>
-			<text>Scopes</text>
-			<url>/sinkhole-scopes.php</url>
 		</tab>
 		<tab>
 			<text>Alerts</text>

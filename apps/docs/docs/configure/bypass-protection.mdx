@@ -20,11 +20,37 @@ Keep DNS queries from selected client interfaces on paths that Sinkhole can insp
 
 ## Choose the Interfaces \{#choose-the-interfaces}
 
-Open **Firewall → Sinkhole → Bypass** and select **Apply to** interfaces before enabling a protection. This one selection applies to every setting on the page. Protections inspect only traffic arriving from clients on those interfaces; they don't affect the firewall's own lookups or outbound traffic.
+Open **Firewall → Sinkhole → Bypass** and select **Apply to** interfaces before enabling a protection. This selection belongs to **Global** and decides where Global's settings apply. Protections inspect only traffic arriving from clients on those interfaces; they don't affect the firewall's own lookups or outbound traffic.
 
 Network and device matching uses those interfaces' current subnets, just like ordinary Sinkhole scopes. A client outside the selected subnets receives no Bypass DNS answer.
 
-<img src={bypassProtection} alt="Bypass tab showing LAN selected, plain-DNS redirect off, encrypted-DNS and tunnel protections on, Discovery set to Answer with no records, one demo exempt source and exempt destination, and three demo Bypass Lists" width={1024} height={1659} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass tab showing LAN selected, plain-DNS redirect off, encrypted-DNS and tunnel protections on, Discovery set to Answer with no records, one demo exempt source and exempt destination, and three demo Bypass Lists" width={1024} height={1744} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Set Protections per Network and Device \{#set-protections-per-network-and-device}
+
+The row under the tabs chooses what you edit: **All**, **Global**, one network, or one device. The line under it names the clients those settings apply to. Each choice shows only its own settings; settings from a broader choice are never shown.
+
+A client follows the most specific settings that exist: its device's first, then its network's, then Global's. A network or device that is turned off on the Clients tab is skipped.
+
+**Global** alone holds:
+
+- **Apply to** interfaces.
+- **Plain DNS** redirect and its exemptions.
+- Bypass List sources, **Add from Catalog**, and list updates.
+
+A network or device holds:
+
+- **Enable**, which turns its protections on.
+- **Bypass Lists**, the enabled sources it uses.
+- The encrypted-DNS settings, **Discovery**, the tunnel blocks, and **Block Exemptions**.
+
+A network or device without settings of its own shows one line, such as "Not set for this network; Global applies.", above an empty form. A device names its network there when that network has settings of its own. Saving the form creates the settings, and **Remove settings for this network** or **Remove settings for this device** deletes them so the broader settings apply again. Deleting a network or device on the Clients tab deletes its settings too.
+
+**All** lists Global and every network and device with settings of its own, with the protections that are on. Select a row to edit it.
+
+When Sinkhole is upgraded to 1.3.0, the existing settings stay in Global and are copied into every network and device. Each copy is independent from then on. A copy is turned on only when the network's interface, or an interface of one of the device's identifiers, was selected in **Apply to**; every other copy is saved turned off, so no client is filtered that wasn't filtered before.
+
+Each network or device with turned-on settings gets its own client table in the `sinkhole/bypass` anchor. A device's addresses are removed from its network's table and from Global's, and a network's subnets from Global's, so a client is blocked only by its most specific settings. Sinkhole adds no pass rules for this.
 
 ## Redirect Plain DNS \{#redirect-plain-dns}
 

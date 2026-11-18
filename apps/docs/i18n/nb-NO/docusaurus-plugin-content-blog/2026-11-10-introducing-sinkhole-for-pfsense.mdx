@@ -30,7 +30,7 @@ Det oppsettet fungerte, men hver omstart eller omlasting av brannmuren betydde r
 
 Sinkhole kjører som en Python-modul i DNS Resolver i pfSense og svarer på et blokkert navn med `0.0.0.0` og `::`.
 
-- **Lister for hvert omfang** — Globale lister gjelder for alle. Et nettverksomfang legger til lister for ett grensesnitt eller VLAN, og et enhetsomfang legger til lister for én enhet, gjenkjent på IP-adresse, statisk DHCP-tilordning eller MAC-adresse.
+- **Lister for hvert omfang** — Globale lister gjelder for alle. Et nettverksomfang legger til lister for ett grensesnitt eller VLAN, og et enhetsomfang legger til ett delt listesett for en enhet som gjenkjennes med én eller flere IP-adresser, statiske DHCP-tilordninger og MAC-adresser.
 - **Tillatte domener på hvert nivå** — En falsk positiv rettes der det betyr noe, uten å droppe en hel liste.
 - **Lagrede kopier av hver liste** — DNS svarer fra siste gyldige data rett etter en omstart av DNS Resolver eller en omstart av systemet, også på installasjoner med RAM-disk. En mislykket nedlasting beholder den forrige kopien.
 - **Varsler du velger** — Et pfSense-varsel kommer bare for listene, nettverkene og enhetene som en varslingsregel velger, én gang per enhet og domene.

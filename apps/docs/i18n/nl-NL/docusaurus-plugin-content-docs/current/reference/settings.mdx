@@ -49,54 +49,56 @@ Een leeg veld schrijft niets en behoudt de standaardwaarde van de Resolver. [Res
 | Update Checks        | Weekly    | Selecteert Daily, Weekly, Monthly of Never voor controles op nieuwe GitHub-releases.                         |
 | Remote Notifications | Off       | Verzendt elke melding over een nieuwe versie ook via de externe services die in pfSense zijn geconfigureerd. |
 
-Elke nieuwe versie maakt één lokale pfSense-melding. **About → Check Now** voert dezelfde begrensde releasecontrole onmiddellijk uit zonder het schema te wijzigen.
+Elke nieuwe versie die door een geplande controle wordt gevonden, maakt één lokale pfSense-melding. **About → Check Now** voert dezelfde begrensde releasecontrole uit zonder het schema te wijzigen, maakt geen melding en voorkomt dat een latere geplande controle die versie aankondigt.
 
 ## Lists \{#lists}
 
-| Veld            | Standaard | Beschrijving                                                                                           |
-|-----------------|-----------|--------------------------------------------------------------------------------------------------------|
-| Name            | Empty     | Lokaal label dat door toewijzingen, waarschuwingen en Status wordt gebruikt.                           |
-| URL             | Empty     | HTTP- of HTTPS-bron zonder ingesloten referenties.                                                     |
-| Enabled         | On        | Neemt de bron op in updates en gecompileerd beleid wanneer deze is toegewezen.                         |
-| Global          | Off       | Past de lijst na apparaat- en netwerkbeslissingen op elke client toe.                                  |
-| Allowed Domains | Empty     | Eén globaal toegestaan domein per regel; elke vermelding staat het exacte domein en elk subdomein toe. |
+| Veld    | Standaard | Beschrijving                                                                    |
+|---------|-----------|---------------------------------------------------------------------------------|
+| Name    | Empty     | Lokaal label dat door Blocking, waarschuwingen en Status wordt gebruikt.        |
+| URL     | Empty     | HTTP- of HTTPS-bron zonder ingesloten referenties.                              |
+| Enabled | On        | Neemt de bron op in updates en gecompileerd beleid wanneer deze wordt gebruikt. |
 
 **Add from Catalog** doorzoekt op aanvraag het lijstregister van AdGuard Home en de feedcatalogus van pfBlockerNG. Het toevoegen van een resultaat maakt dezelfde gewone rij als wanneer de URL handmatig wordt ingevoerd.
 
 Bypass-feeds zijn uitgesloten van deze catalogus.
 
+## Blocking \{#blocking}
+
+Elke context (Global, één netwerk of één apparaat) heeft zijn eigen twee velden:
+
+| Veld            | Standaard | Beschrijving                                                                                                                                             |
+|-----------------|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Lists           | Empty     | DNS-lijsten die in deze context blokkeren. Global-lijsten worden na apparaat- en netwerkbeslissingen op elke client toegepast.                           |
+| Allowed Domains | Empty     | Eén uitzondering per regel; elke uitzondering staat het exacte domein en elk subdomein toe vóór de lijsten van deze context en van elke bredere context. |
+
 ## Diensten \{#services}
 
-Dienstselecties zijn standaard leeg voor elk bereik. Een registerdienst die onder een specifieke Bypass-beveiliging valt, wordt verborgen in Diensten en verwijderd uit opgeslagen selecties; Private Relay wordt alleen op het tabblad Bypass geconfigureerd.
+Dienstselecties zijn standaard leeg voor elke context. Een registerdienst die onder een specifieke Bypass-beveiliging valt, wordt verborgen in Diensten en verwijderd uit opgeslagen selecties; Private Relay wordt alleen op het tabblad Bypass geconfigureerd.
 
 ## SafeSearch \{#safesearch}
 
-SafeSearch-selecties zijn standaard leeg voor elke scope. Elke scope kan Google, YouTube (Moderate of Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex en Pixabay vergrendelen, of Qwant blokkeren. [SafeSearch](/docs/configure/safesearch) toont de namen en veilige hosts.
+SafeSearch-selecties zijn standaard leeg voor elke context. Elke context kan Google, YouTube (Moderate of Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex en Pixabay vergrendelen, of Qwant blokkeren. [SafeSearch](/docs/configure/safesearch) toont de namen en veilige hosts.
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| Veld            | Standaard | Beschrijving                                                                                                                                                              |
-|-----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | LAN       | Geconfigureerde pfSense-interface waarvan de huidige IPv4- en IPv6-subnetten het netwerk identificeren. Zonder LAN wordt de eerste vrije niet-WAN-interface geselecteerd. |
-| Lists           | Empty     | Aanvullende DNS-lijsten die clients in het netwerk blokkeren.                                                                                                             |
-| Allowed Domains | Empty     | Eén netwerkuitzondering per regel; elke uitzondering staat het exacte domein en elk subdomein toe vóór de lijsten van dat netwerk en al het globale beleid.               |
-| Enabled         | On        | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                                                                                     |
+| Veld      | Standaard | Beschrijving                                                                                                                                                              |
+|-----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface | LAN       | Geconfigureerde pfSense-interface waarvan de huidige IPv4- en IPv6-subnetten het netwerk identificeren. Zonder LAN wordt de eerste vrije niet-WAN-interface geselecteerd. |
+| Enabled   | On        | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                                                                                     |
 
 Elke interface kan slechts eenmaal voorkomen. Een opgeslagen interface die niet beschikbaar is, blijft zichtbaar voor correctie in plaats van te worden verwijderd.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| Veld                     | Standaard  | Beschrijving                                                                                                                                 |
-|--------------------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| Name                     | Empty      | Lokaal label dat in beleid en Status wordt weergegeven.                                                                                      |
-| Identified By            | IP address | Selecteert IP address, DHCP static mapping of MAC address.                                                                                   |
-| IP Address / MAC Address | Empty      | Exacte identificatie wanneer IP address of MAC address is geselecteerd. Het label volgt de geselecteerde methode.                            |
-| DHCP Static Mapping      | Empty      | Bestaande toewijzing die wordt geselecteerd wanneer die identificatiemethode wordt gebruikt.                                                 |
-| Lists                    | Empty      | Aanvullende DNS-lijsten die dit apparaat blokkeren.                                                                                          |
-| Allowed Domains          | Empty      | Eén apparaatuitzondering per regel; elke uitzondering staat het exacte domein en elk subdomein toe vóór elke netwerk- en globale beslissing. |
-| Enabled                  | On         | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                                                        |
+| Veld                | Standaard          | Beschrijving                                                                                                     |
+|---------------------|--------------------|------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty              | Lokaal label dat in beleid en Status wordt weergegeven.                                                          |
+| Identifiers → Type  | Eén IP address-rij | Selecteert IP address, DHCP static mapping of MAC address voor elke rij die kan worden toegevoegd of verwijderd. |
+| Identifiers → Value | Empty              | Exact IP- of MAC-adres, of een bestaande statische DHCP-toewijzing. Minstens één identificatierij is vereist.    |
+| Enabled             | On                 | Maakt de rij onderdeel van clientovereenkomst en gecompileerd beleid.                                            |
 
-Statische toewijzingen gebruiken hun geconfigureerde adres plus huidige adressen die voor het MAC-adres van de toewijzing zijn waargenomen. Een MAC-rij gebruikt actuele ARP-, NDP- en DHCP-leasegegevens.
+Alle identificatierijen horen bij hetzelfde apparaat en delen de instellingen ervan. Statische toewijzingen gebruiken hun geconfigureerde adres plus huidige adressen die voor het MAC-adres van de toewijzing zijn waargenomen. Een MAC-rij gebruikt actuele ARP-, NDP- en DHCP-leasegegevens. Adressen die via meerdere identificaties van hetzelfde apparaat worden bereikt, zijn geen conflicten.
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Statische toewijzingen gebruiken hun geconfigureerde adres plus huidige adressen
 |----------------------|-----------|--------------------------------------------------------------------------------------------------------------|
 | Description          | Empty     | Lokaal label voor de regel.                                                                                  |
 | Lists                | Any       | Komt overeen met elke lijst of alleen met de geselecteerde geconfigureerde lijsten.                          |
-| Clients              | Everyone  | Komt overeen met iedereen of met de geselecteerde netwerk- en apparaatscopes.                                |
+| Clients              | Everyone  | Komt overeen met iedereen of met de geselecteerde netwerken en apparaten.                                    |
 | Repeat After         | 60        | Minuten voordat dezelfde regel, client, domein en lijst opnieuw kunnen melden; accepteert 1 tot en met 1440. |
 | WebGUI Notice        | On        | Voegt een pfSense-melding toe wanneer de regel overeenkomt.                                                  |
 | Remote Notifications | On        | Gebruikt de geconfigureerde meldingsservices van pfSense wanneer de regel overeenkomt.                       |

@@ -52,7 +52,9 @@ Postojeće sidro `sinkhole/ip` nakon uspješnog ažuriranja može primiti samo z
 
 Zadana učestalost ažuriranja lista je Daily. Rasporedi Hourly, Every 6 hours, Daily i Weekly koriste stabilne nasumične minute, tako da zaštitni zid ne mijenja vrijeme posla nakon svakog spremanja.
 
-DNS, Bypass i IP/country ažuriranja, primjene postavki, provjere i samoažuriranja paketa te čišćenje pri uklanjanju usklađuju se putem `/var/run/sinkhole-update.lock`. Provjera paketa ili radnja Update ne čeka: ako druga operacija drži zaključavanje, zaustavlja se s porukom `Another package operation is already running.` i može se ponoviti kada ta operacija završi.
+DNS, Bypass i IP/country ažuriranja, primjene postavki, instaliranje paketa i čišćenje pri uklanjanju usklađuju se putem `/var/run/sinkhole-update.lock`. Provjere izdanja i samoažuriranja odvojeno se usklađuju putem `/var/run/sinkhole-release.lock`, a provjere nikada ne uzimaju zaključavanje zadatka paketa.
+
+Samoažuriranje uzima zaključavanje izdanja prije zaključavanja zadatka paketa. Čeka do 30 minuta na pokrenuto ažuriranje lista, IP-a ili Bypass-a dok red napretka na About prikazuje čekanje.
 
 ## Osvježavanje kataloga je odvojeno \{#catalog-refreshes-are-separate}
 

@@ -22,11 +22,11 @@ Sinkhole kan de GitHub-releases controleren, via pfSense melden en een geverifie
 
 **General → Update Checks** selecteert Daily, Weekly, Monthly of Never; Weekly is de standaardinstelling. Sinkhole bewaart stabiele willekeurige schemacomponenten, zodat het opslaan van instellingen het controletijdstip niet voortdurend verschuift.
 
-Een controle legt de nieuwste versie, releasepagina, controletijd en laatste fout vast. **About → Check Now** voert dezelfde controle onmiddellijk uit.
+Een controle legt de nieuwste versie, releasepagina, controletijd en laatste fout vast. **About → Check Now** voert dezelfde controle onmiddellijk uit zonder een melding te maken en legt een nieuwere versie vast als al gemeld.
 
 ## Updatemeldingen \{#update-notices}
 
-Elke nieuw gedetecteerde versie maakt één lokale pfSense WebGUI-melding met een koppeling naar het tabblad About van Sinkhole. Herhaalde controles maken geen dubbele meldingen voor dezelfde versie.
+Elke nieuw gedetecteerde versie uit een geplande controle maakt één lokale pfSense WebGUI-melding met een koppeling naar het tabblad About van Sinkhole. Herhaalde controles maken geen dubbele meldingen voor dezelfde versie, ook niet voor een versie die al door een handmatige About-controle is getoond.
 
 Selecteer **Remote Notifications** om ook de services te gebruiken die onder **System → Advanced → Notifications** zijn geconfigureerd. De instelling is standaard uitgeschakeld en beïnvloedt versiemeldingen, niet de waarschuwingsregels voor lijstblokkeringen.
 
@@ -36,7 +36,9 @@ De updatebalk toont de geïnstalleerde versie, de nieuwste gecontroleerde versie
 
 **Update** verschijnt wanneer de vastgelegde nieuwste versie nieuwer is. De pagina peilt de losgekoppelde taak en meldt het resultaat zonder het browserverzoek open te houden.
 
-<img src={aboutUpdateBar} alt="Tabblad About met een beschikbare Sinkhole-update en de besturingselementen Update en What's New" width={1024} height={846} style={{maxWidth: '100%', height: 'auto'}} />
+Als een lijst-, IP- of Bypass-update wordt uitgevoerd, toont een installatie vanuit About dat deze wacht en begint deze zodra die taak is voltooid. De wachttijd is beperkt tot 30 minuten.
+
+<img src={aboutUpdateBar} alt="Tabblad About met een beschikbare Sinkhole-update en de besturingselementen Update en What's New" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Verificatie vóór installatie \{#verification-before-installation}
 
@@ -48,9 +50,9 @@ Een lege geïnstalleerde vertrouwenslijst betekent dat geen handtekening vereist
 
 ## Updatevergrendeling \{#update-locking}
 
-Pakketcontrole en automatisch bijwerken delen `/var/run/sinkhole-update.lock` met DNS-, Bypass- en IP-/landupdates, het toepassen van instellingen en het opruimen bij verwijdering. Ze wachten niet op de vergrendeling: als een andere bewerking deze bezit, stopt de controle of de actie **Update** met `Another package operation is already running.`
+Releasecontroles en automatisch bijwerken worden gecoördineerd via `/var/run/sinkhole-release.lock` en wachten maximaal 30 seconden op een andere controle of installatie. Een releasecontrole neemt nooit de vergrendeling voor pakkettaken en kan daarom tijdens een lijst-, IP- of Bypass-update worden uitgevoerd.
 
-De vergrendeling voorkomt dat pakketbestanden veranderen terwijl het huidige pakket beleid downloadt, analyseert, compileert of toepast. Probeer het opnieuw vanuit About nadat Status geen actieve update meer toont.
+Automatisch bijwerken neemt eerst de releasevergrendeling en daarna `/var/run/sinkhole-update.lock`. Als een lijst-, IP- of Bypass-update de vergrendeling voor pakkettaken bezit, toont de voortgangsregel in About maximaal 30 minuten de wachttijd voordat de installatie mislukt.
 
 ## Handmatige pakketupdate \{#manual-package-update}
 

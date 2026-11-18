@@ -66,17 +66,14 @@ final class BypassUpdater
      *
      * @param bool $apply - Whether this is a selective configuration apply.
      *
-     * @return array{status: string, attempted: int, updated: int, failed: int, dns_active: bool, firewall_active: bool, changed: bool}
+     * @return array{status: string, attempted: int, updated: int, failed: int, dns_active: bool, firewall_active: bool, changed: bool, warning: string|null}
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public function run(bool $apply = false): array
     {
         $configuration = $this->adapter->getBypassConfiguration();
-
-        if ($configuration['invalid_values'] !== []) {
-            throw new RuntimeException('Bypass protection settings contain values that need repair.');
-        }
 
         if ($this->adapter->updateShouldStop()) {
             return $this->result('stopped', 0, 0, 0, $configuration, false);
@@ -102,7 +99,11 @@ final class BypassUpdater
 
             if (
                 $list['enabled'] === false
-                || !BypassConfiguration::kindEnabled($configuration, $list['kind'])
+                || !BypassConfiguration::sourceUsedAnywhere(
+                    $configuration,
+                    (string) $identifier,
+                    $list['kind'],
+                )
             ) {
                 continue;
             }
@@ -280,7 +281,7 @@ final class BypassUpdater
         }
 
         return $this->result(
-            ($failed > 0) ? 'warning' : 'completed',
+            ($failed > 0 || self::repairWarning($configuration) !== null) ? 'warning' : 'completed',
             $attempted,
             $updated,
             $failed,
@@ -347,6 +348,42 @@ final class BypassUpdater
             'dns_active' => ($configuration['dns_enabled'] ?? false) === true,
             'firewall_active' => ($configuration['firewall_enabled'] ?? false) === true,
             'changed' => $changed,
+            'warning' => self::repairWarning($configuration),
         ];
+    }
+
+    /**
+     * Bypass Updater - Repair Warning.
+     *
+     * Saved settings that need repair make only their own context inactive, so
+     * other contexts keep updating while the update still reports the problem.
+     *
+     * @param array $configuration - Bypass configuration with context rows.
+     *
+     * @return string|null
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private static function repairWarning(array $configuration): ?string
+    {
+        $contexts = [];
+
+        if (($configuration['invalid_values'] ?? []) !== []) {
+            $contexts[] = 'global';
+        }
+
+        foreach (is_array($configuration['contexts'] ?? null) ? $configuration['contexts'] : [] as $key => $context) {
+            if (is_array($context) && ($context['invalid_values'] ?? []) !== []) {
+                $contexts[] = (string) $key;
+            }
+        }
+
+        if ($contexts === []) {
+            return null;
+        }
+
+        return 'Bypass protection settings contain values that need repair; inactive contexts: '
+            . implode(', ', $contexts) . '.';
     }
 }

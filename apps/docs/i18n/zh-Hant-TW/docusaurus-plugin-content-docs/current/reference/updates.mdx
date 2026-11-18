@@ -22,11 +22,11 @@ Sinkhole 可以檢查其 GitHub 版本、通過 pfSense 發出通知，並從 Ab
 
 **General → Update Checks** 可選擇 Daily、Weekly、Monthly 或 Never；預設值為 Weekly。Sinkhole 會存儲穩定的隨機計劃組成部分，因此儲存設定不會不斷移動檢查時間。
 
-一次檢查會記錄最新版本、版本頁面、檢查時間和上次錯誤。**About → Check Now** 會立即執行相同檢查。
+一次檢查會記錄最新版本、版本頁面、檢查時間和上次錯誤。**About → Check Now** 會立即執行相同檢查，但不建立通知，並將較新版本記錄為已通知。
 
 ## 更新通知 \{#update-notices}
 
-每個新檢測到的版本只會創建一條本地 pfSense WebGUI 通知，並連結到 Sinkhole 的 About 選項卡。重復檢查不會為同一版本創建重復通知。
+計劃檢查每發現一個新版本，就會建立一條連結到 Sinkhole About 選項卡的本地 pfSense WebGUI 通知。重複檢查不會為同一版本建立重複通知，包括 About 手動檢查已顯示的版本。
 
 選擇 **Remote Notifications** 還會使用 **System → Advanced → Notifications** 下配置的服務。該設定預設關閉，只影響版本通知，不影響清單封鎖警報規則。
 
@@ -35,6 +35,8 @@ Sinkhole 可以檢查其 GitHub 版本、通過 pfSense 發出通知，並從 Ab
 更新欄顯示已安裝版本、最近檢查到的版本、上次檢查、版本連結、錯誤和分離更新進度。其視覺狀態可區分沒有待處理更新、存在較新版本、更新正在執行、成功和失敗。
 
 記錄的最新版本更新時會顯示 **Update**。頁面會輪詢分離作業並報告結果，而不會保持瀏覽器請求打開。
+
+如果清單、IP 或 Bypass 更新正在執行，從 About 啟動的安裝會顯示等待狀態，並在該工作完成後開始。等待時間最多為 30 分鐘。
 
 <img src={aboutUpdateBar} alt="About 選項卡顯示可用的 Sinkhole 更新以及 Update 和 What's New 控件" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
 
@@ -48,9 +50,9 @@ Sinkhole 可以檢查其 GitHub 版本、通過 pfSense 發出通知，並從 Ab
 
 ## 更新鎖定 \{#update-locking}
 
-套件檢查和自更新與 DNS、Bypass 和 IP/國家或地區更新、設定套用以及移除清理共享 `/var/run/sinkhole-update.lock`。它們不會等待該鎖：如果其他操作持有該鎖，檢查或 **Update** 操作會以 `Another package operation is already running.` 停止。
+版本檢查和自更新透過 `/var/run/sinkhole-release.lock` 協調，並最多等待另一項檢查或安裝 30 秒。版本檢查從不取得套件工作鎖，因此可以在清單、IP 或 Bypass 更新期間執行。
 
-該鎖可防止當前套件正在下載、解析、編譯或應用策略時套件檔案發生變化。Status 不再顯示更新執行後，請從 About 重試。
+自更新先取得版本鎖，再取得 `/var/run/sinkhole-update.lock`。如果清單、IP 或 Bypass 更新持有套件工作鎖，About 進度列會顯示最長 30 分鐘的等待狀態，之後安裝失敗。
 
 ## 手動套件更新 \{#manual-package-update}
 

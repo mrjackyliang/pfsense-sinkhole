@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Lister og lagrede kopier
-description: Legg til DNS-lister via URL eller katalog, bruk hosts-, domene- og adblock-lignende formater, styr global policy og behold siste gyldige kopier gjennom feil.
+description: Legg til DNS-lister via URL eller katalog, bruk hosts-, domene- og adblock-lignende formater, og behold siste gyldige kopier gjennom feil.
 keywords:
   - sinkhole for pfsense
   - blokkeringslister
@@ -21,7 +21,7 @@ Legg til listekilder du stoler på, og la Sinkhole beholde normaliserte, siste g
 ## Hvorfor bruke lagrede lister? \{#why-use-saved-lists}
 
 1. Holder DNS uavhengig av listeverten, slik at en treg eller mislykket nedlasting ikke avbryter navneoppløsningen.
-2. Laster ned hver kilde én gang, slik at den samme lagrede kopien kan betjene globale omfang, nettverksomfang og enhetsomfang.
+2. Laster ned hver kilde én gang, slik at den samme lagrede kopien kan betjene Global, hvert nettverk og hver enhet.
 3. Beholder den forrige gyldige kopien når en ny nedlasting eller analyse mislykkes, slik at ødelagte inndata ikke erstatter fungerende policy.
 4. Oppdaterer lister i bakgrunnen, slik at en omstart eller omlasting av Resolver aldri venter på nettverket.
 
@@ -29,14 +29,15 @@ Legg til listekilder du stoler på, og la Sinkhole beholde normaliserte, siste g
 
 Åpne **Firewall → Sinkhole → Lists**, velg **Add** under tabellen med blokkeringslister, og fyll deretter ut **Add Block List** på redigeringssiden:
 
-| Felt    | Beskrivelse                                                              |
-|---------|--------------------------------------------------------------------------|
-| Name    | Lokal etikett som vises i tilordninger, varsler og Status.               |
-| URL     | HTTP- eller HTTPS-kilde uten innebygd legitimasjon.                      |
-| Enabled | Laster ned kilden og gjør den tilgjengelig for tilordnede omfang.        |
-| Global  | Bruker kilden for alle klienter etter avgjørelser for enhet og nettverk. |
+| Felt    | Beskrivelse                                            |
+|---------|--------------------------------------------------------|
+| Name    | Lokal etikett som vises på Blocking, Alerts og Status. |
+| URL     | HTTP- eller HTTPS-kilde uten innebygd legitimasjon.    |
+| Enabled | Laster ned kilden slik at Blocking kan bruke den.      |
 
 Når du lagrer, går du tilbake til fanen Lists, og den samme validerte bruksprosessen starter i bakgrunnen. Velg blyanten på en rad eller dobbeltklikk raden for å redigere den. En deaktivert rad forblir konfigurert, men vises dempet i tabellen og brukes ikke av oppdateringsprosessen eller den kompilerte policyen.
+
+Lists er bare listebehandleren. Hvilke lister som gjelder for Global, et nettverk eller en enhet, velges på [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), og kolonnen **Used By** teller Global pluss hvert nettverk og hver enhet som velger listen.
 
 ## Støttede DNS-formater \{#accepted-dns-formats}
 
@@ -60,7 +61,7 @@ Resultatene vises som kort. Bruk kontrollene for søk, kilde og vedlikeholder sa
 
 Hvert kort viser listenavnet, vedlikeholderen eller kategorien, kildekatalogen, en beskrivelse på to linjer, hjemmesiden og statusen **Add** eller **Added**. Kortene viser ingen vurderinger, merker eller anbefalinger. Når du velger **Add**, opprettes en vanlig listerad der URL-en kan tilordnes som enhver manuelt angitt kilde.
 
-Nye lister, også de som legges til fra katalogen, starter med **Global** ikke avkrysset, så de blokkerer ingenting før du krysser av for Global eller velger dem i et omfang.
+Nye lister, også de som legges til fra katalogen, blokkerer ingenting før du velger dem for Global, et nettverk eller en enhet på Blocking.
 
 Linjen **Contents** på hvert kort viser **Domains**. Når du legger til et katalogresultat, beholdes katalognavnet uendret.
 
@@ -72,7 +73,7 @@ Feeder som er tilordnet omgåelsesbeskyttelse for Encrypted DNS, Tor eller VPN, 
 
 ## Angi globale tillatte domener \{#set-global-allowed-domains}
 
-Delen **Allowed Domains** under liste- og katalogpanelene definerer globale unntak. Hver linje slipper domenet og underdomenene gjennom arvede globale lister. Velg **Save** under delen for å bruke innstillingen for hele siden.
+Globale unntak ligger på **Blocking → Global** i boksen **Allowed Domains**. Hver linje slipper domenet og underdomenene gjennom globale lister. Velg **Save** for å bruke dem.
 
 Et globalt tillatt domene kontrolleres etter enhets- og nettverksregler. Det kan derfor ikke oppheve en liste som allerede blokkerte spørringen på et mer spesifikt enhets- eller nettverksnivå.
 

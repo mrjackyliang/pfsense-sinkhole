@@ -49,7 +49,7 @@ Sinkhole en pfBlockerNG kunnen DNS niet gelijktijdig filteren. Sinkhole blijft i
 ## Wat onder uw controle blijft \{#what-stays-under-your-control}
 
 - **Lists** — Voeg vertrouwde bronnen via een URL toe of zoek ze met de neutrale <Terminology title="Vind bekende blokkeerlijsten zonder naar URL's te zoeken" to="/docs/reference/terminology#lists-and-scopes">zoekfunctie voor populaire lijsten</Terminology>. Sinkhole publiceert of beveelt geen enkele lijst aan.
-- **Scopes** — Kies globale lijsten, lijsten voor één pfSense-interface of VLAN en lijsten voor een apparaat dat via IP-adres, statische DHCP-toewijzing of MAC-adres wordt geïdentificeerd.
+- **Clients and Blocking** — Definieer een netwerk voor één pfSense-interface of VLAN en een apparaat dat via een of meer IP-adressen, statische DHCP-toewijzingen en MAC-adressen wordt geïdentificeerd, en kies daarna de lijsten van Global, elk netwerk en elk apparaat.
 - **Allowed domains** — Sta een domein en de subdomeinen ervan op globaal, netwerk- of apparaatniveau toe zonder een volledige lijst te verwijderen.
 - **SafeSearch** — Kies welke zoekmachines per scope in hun veilige modus worden vergrendeld en of YouTube Moderate of Strict is.
 - **Alerts** — Kies de combinaties van lijsten en clients die lokale WebGUI-meldingen maken of de geconfigureerde externe meldingsservices van pfSense gebruiken.
@@ -71,7 +71,7 @@ De documentatiesite biedt Engels en de andere 17 pfSense-locales. Vertaalde pagi
 ## Volgende stappen \{#next-steps}
 
 - **[Het pakket installeren](/docs/installation)** — Controleer en installeer het stabiele releasepakket.
-- **[Sinkhole instellen](/docs/first-run)** — Voeg een eerste lijst toe, kies de scope en controleer de actieve generatie.
-- **[Scopes begrijpen](/docs/configure/scopes)** — Volg de exacte beslisvolgorde voor apparaat, netwerk en globaal beleid.
+- **[Sinkhole instellen](/docs/first-run)** — Voeg een eerste lijst toe, kies waar deze blokkeert en controleer de actieve generatie.
+- **[Clients en blokkeren begrijpen](/docs/configure/scopes)** — Volg de exacte beslisvolgorde voor apparaat, netwerk en globaal beleid.
 - **[Het veiligheidsmodel bekijken](/docs/safety/how-updates-work)** — Lees hoe opgeslagen kopieën en atomaire uitrol DNS beschikbaar houden.
 

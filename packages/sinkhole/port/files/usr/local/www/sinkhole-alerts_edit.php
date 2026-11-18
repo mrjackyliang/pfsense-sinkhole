@@ -177,7 +177,7 @@ foreach ($networks as $networkIdentifier => $network) {
 $deviceOptions = [];
 
 foreach ($devices as $deviceIdentifier => $device) {
-    $deviceOptions[$deviceIdentifier] = $device['name'];
+    $deviceOptions[$deviceIdentifier] = pfsensePackageSinkholeDeviceLabel($device, $interfaces);
 }
 
 $editingLists = ScopeConfiguration::unwrapRepeatedItems($editing['lists'] ?? []);

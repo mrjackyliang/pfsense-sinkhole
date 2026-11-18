@@ -31,7 +31,7 @@ Otvorite **Firewall → Sinkhole → Status** da biste vidjeli ove panele:
 | Lists                   | URL DNS liste, broj sačuvanih zapisa, posljednje uspješno ažuriranje i posljednju grešku.                                                                                   |
 | Popular-List Catalogs   | Posljednje dohvatanje i posljednju grešku za kataloške izvore AdGuard Homea i pfBlockerNG-a.                                                                                |
 | Invalid Saved Rows      | Neispravne redove lista koji ostaju dostupni za popravak; prikazuje se samo kada takvi redovi postoje.                                                                      |
-| Scopes                  | Vrijeme i grešku ponovne izgradnje mape klijenata, nakon čega slijede zasebni paneli Networks i Devices.                                                                    |
+| Clients                 | Vrijeme i grešku ponovne izgradnje mape klijenata, nakon čega slijede zasebni paneli Networks i Devices.                                                                    |
 | Blocked Services        | Preuzimanje registra, posljednju grešku i servise odabrane po opsegu.                                                                                                       |
 | SafeSearch              | Pretraživače po opsegu te adrese svakog sigurnog hosta, posljednju provjeru i grešku.                                                                                       |
 | Alerts                  | Posljednje pokretanje, pročitane ili zastarjele događaje, poslane ili zadržane obavijesti, odbačene događaje i posljednju grešku.                                           |
@@ -62,17 +62,17 @@ Kada je Sinkhole namjerno onemogućen, **Deployment Needed** je `No`, **Loaded G
 
 ## Stanje kompajliranja i postavljanja \{#compile-and-deployment-state}
 
-| Polje                            | Značenje                                                                                                                                                                           |
-|----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Compiled Names                   | Nazivi u postavljenom indeksu DNS blokiranja (liste i Blocked Services) plus nazivi u Bypass indeksu, u odnosu na ograničenje od 10.000.000 naziva.                                |
-| Compile Needed                   | Sačuvana pravila su promijenjena ili posljednje kompajliranje nije uspješno završeno.                                                                                              |
-| Compiled Generation              | Identifikator nastao posljednjim uspješnim kompajliranjem.                                                                                                                         |
-| Deployment Needed                | Kompajlirani sadržaj nije sadržaj postavljen za Unbound ili je integracija neaktivna.                                                                                              |
-| Deployed Generation              | Identifikator u trenutno postavljenom manifestu izvršnog okruženja.                                                                                                                |
-| Loaded Generation                | Identifikator koji Unbound modul prijavljuje kao učitan.                                                                                                                           |
-| Update Running                   | Prikazuje se samo dok živi proces posjeduje zajedničko zaključavanje ažuriranja: DNS, Bypass ili IP ažuriranje, primjena postavki, provjera ili ažuriranje paketa, ili uklanjanje. |
-| Removal in Progress              | Prikazuje se samo dok je trajna oznaka uklanjanja postavljena i integracija se povlači.                                                                                            |
-| DNS Resolver Python Script Owner | Trenutna vrijednost jedinog mjesta `python_script` u Resolveru ili `None`.                                                                                                         |
+| Polje                            | Značenje                                                                                                                                                                   |
+|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Compiled Names                   | Nazivi u postavljenom indeksu DNS blokiranja (liste i Blocked Services) plus nazivi u Bypass indeksu, u odnosu na ograničenje od 10.000.000 naziva.                        |
+| Compile Needed                   | Sačuvana pravila su promijenjena ili posljednje kompajliranje nije uspješno završeno.                                                                                      |
+| Compiled Generation              | Identifikator nastao posljednjim uspješnim kompajliranjem.                                                                                                                 |
+| Deployment Needed                | Kompajlirani sadržaj nije sadržaj postavljen za Unbound ili je integracija neaktivna.                                                                                      |
+| Deployed Generation              | Identifikator u trenutno postavljenom manifestu izvršnog okruženja.                                                                                                        |
+| Loaded Generation                | Identifikator koji Unbound modul prijavljuje kao učitan.                                                                                                                   |
+| Update Running                   | Prikazuje se samo dok živi proces posjeduje zajedničko zaključavanje zadataka paketa: DNS, Bypass ili IP ažuriranje, primjena postavki, instalacija paketa ili uklanjanje. |
+| Removal in Progress              | Prikazuje se samo dok je trajna oznaka uklanjanja postavljena i integracija se povlači.                                                                                    |
+| DNS Resolver Python Script Owner | Trenutna vrijednost jedinog mjesta `python_script` u Resolveru ili `None`.                                                                                                 |
 
 Stranica prikazuje okvir upozorenja kada kompajliranje ili postavljanje čeka, uključujući zabilježeni razlog. Podudarni identifikatori kompajlirane, postavljene i učitane generacije pokazuju da su sačuvana pravila stigla do pokrenutog modula.
 
@@ -80,7 +80,7 @@ Stranica prikazuje okvir upozorenja kada kompajliranje ili postavljanje čeka, u
 
 ## Stanje opsega i upozorenja \{#scope-and-alert-state}
 
-Sažetak Scopes prikazuje stanje ponovne izgradnje mape klijenata. Zasebni paneli **Networks** i **Devices** prikazuju trenutne CIDR-ove svakog interfejsa i trenutne adrese svakog uređaja. Sukob navodi adresu na koju polaže pravo više uređaja; prvi uređaj po redoslijedu u tabeli posjeduje tu adresu za pravila.
+Sažetak Clients prikazuje stanje ponovne izgradnje mape klijenata. Zasebni paneli **Networks** i **Devices** prikazuju trenutne CIDR-ove svakog interfejsa te sve konfigurirane identifikatore i trenutne adrese svakog uređaja. Sukob navodi adresu na koju polaže pravo više uređaja; prvi uređaj po redoslijedu u tabeli posjeduje tu adresu za pravila. Dva identifikatora istog uređaja mogu dosegnuti istu adresu bez sukoba.
 
 Panel **Alerts** opisuje samo posljednji minutni posao. **Notifications held back** obuhvata potiskivanje zbog ograničenja ili nepročitanih obavijesti, dok **Events dropped by module** znači da se napunio ograničeni red događaja u memoriji ili na disku.
 

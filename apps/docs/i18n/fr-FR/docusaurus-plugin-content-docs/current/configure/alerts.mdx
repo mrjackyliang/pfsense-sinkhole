@@ -27,20 +27,22 @@ Envoyez des notifications uniquement pour les réponses bloquées dont la liste 
 
 ## Créer une règle \{#create-a-rule}
 
-Ouvrez **Firewall → Sinkhole → Alerts**, sélectionnez **Add** sous la table des règles d’alerte, puis remplissez **Add Alert Rule** dans la page d’édition :
+Ouvrez **Firewall → Sinkhole → Alerts**. La [rangée de contextes](/docs/configure/scopes#contexts) filtre la table : **Global** liste les règles pour **Everyone**, un réseau ou un appareil liste les règles qui le choisissent, et **All** liste toutes les règles. Une règle peut toujours choisir plusieurs réseaux et appareils à la fois.
 
-| Champ                | Description                                                                                              |
-|----------------------|----------------------------------------------------------------------------------------------------------|
-| Description          | Nom local de la règle affiché dans le texte des notifications et les résumés.                            |
-| Any block list       | Correspond à un blocage de n’importe quelle liste au lieu des seules listes choisies.                    |
-| Chosen block lists   | Listes qui peuvent satisfaire la règle lorsque **Any** est désactivé.                                    |
-| Everyone             | Correspond à tous les clients au lieu des seuls réseaux et appareils choisis.                            |
-| Chosen networks      | Portées réseau qui peuvent satisfaire la règle lorsque **Everyone** est désactivé.                       |
-| Chosen devices       | Portées appareil qui peuvent satisfaire la règle lorsque **Everyone** est désactivé.                     |
-| Repeat after         | Nombre de minutes avant que la même règle, le même client, domaine et liste puissent notifier à nouveau. |
-| WebGUI notice        | Ajoute un avis Sinkhole local à pfSense.                                                                 |
-| Remote notifications | Utilise les services distants configurés dans pfSense.                                                   |
-| Enabled              | Permet aux réponses bloquées de correspondre à cette règle.                                              |
+Sélectionnez **Add** sous la table des règles d’alerte, puis remplissez **Add Alert Rule** dans la page d’édition :
+
+| Champ                | Description                                                                                                                      |
+|----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| Description          | Nom local de la règle affiché dans le texte des notifications et les résumés.                                                    |
+| Any block list       | Correspond à un blocage de n’importe quelle liste au lieu des seules listes choisies.                                            |
+| Chosen block lists   | Listes qui peuvent satisfaire la règle lorsque **Any** est désactivé.                                                            |
+| Everyone             | Correspond à tous les clients au lieu des seuls réseaux et appareils choisis.                                                    |
+| Chosen networks      | Réseaux de Clients qui peuvent satisfaire la règle lorsque **Everyone** est désactivé.                                           |
+| Chosen devices       | Appareils de Clients, affichés avec tous leurs identifiants, qui peuvent satisfaire la règle lorsque **Everyone** est désactivé. |
+| Repeat after         | Nombre de minutes avant que la même règle, le même client, domaine et liste puissent notifier à nouveau.                         |
+| WebGUI notice        | Ajoute un avis Sinkhole local à pfSense.                                                                                         |
+| Remote notifications | Utilise les services distants configurés dans pfSense.                                                                           |
+| Enabled              | Permet aux réponses bloquées de correspondre à cette règle.                                                                      |
 
 Le champ des listes choisies est masqué lorsque **Any block list** est sélectionné, et les champs des réseaux et appareils le sont lorsque **Everyone** est sélectionné. L’enregistrement revient à Alerts ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier.
 
@@ -75,7 +77,7 @@ La fonction d’avis local de pfSense écrit `New alert found: <message>` dans l
 
 ## Vérifier une alerte \{#verify-an-alert}
 
-1. Vérifiez que la règle, la liste sélectionnée et la portée du client sélectionné sont activées.
+1. Vérifiez que la règle, la liste sélectionnée et le réseau ou l’appareil sélectionné sont activés.
 2. Vérifiez dans Status que le client est actuellement associé au réseau ou à l’appareil prévu.
 3. Interrogez un nom bloqué par la liste sélectionnée et vérifiez le canal pfSense configuré.
 4. Si aucun second avis n’arrive, comparez la tentative à la fenêtre de répétition et aux limites fixes de la règle.

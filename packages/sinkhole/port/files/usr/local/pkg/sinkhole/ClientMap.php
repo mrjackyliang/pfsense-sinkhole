@@ -189,6 +189,7 @@ final class ClientMap
      * @return array{schema_version: int, generated_at: string, content_digest: string, networks: list<array{id: string, cidrs: list<string>}>, interfaces: list<array{name: string, cidrs: list<string>}>, devices: array<string, string>, conflicts: list<array{address: string, winner: string, devices: list<string>}>}
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public function build(
         array $networks,
@@ -298,32 +299,39 @@ final class ClientMap
             }
 
             $addresses = [];
-            $type = (string) ($device['identifier_type'] ?? '');
-            $identifier = (string) ($device['identifier'] ?? '');
 
-            try {
-                if ($type === ScopeConfiguration::DEVICE_IP) {
-                    $addresses[ScopeConfiguration::normalizeIpAddress($identifier)] = true;
-                } elseif (
-                    $type === ScopeConfiguration::DEVICE_MAC
-                    || $type === ScopeConfiguration::DEVICE_STATIC_MAPPING
-                ) {
-                    $mac = ScopeConfiguration::normalizeMacAddress($identifier);
+            foreach ($device['identifiers'] ?? [] as $identifierRow) {
+                if (!is_array($identifierRow)) {
+                    continue;
+                }
 
-                    foreach ($observed[$mac] ?? [] as $address) {
-                        $addresses[$address] = true;
-                    }
+                $type = (string) ($identifierRow['type'] ?? '');
+                $identifier = (string) ($identifierRow['value'] ?? '');
 
-                    if ($type === ScopeConfiguration::DEVICE_STATIC_MAPPING) {
-                        $mappingKey = (string) ($device['interface'] ?? '') . ':' . $mac;
+                try {
+                    if ($type === ScopeConfiguration::DEVICE_IP) {
+                        $addresses[ScopeConfiguration::normalizeIpAddress($identifier)] = true;
+                    } elseif (
+                        $type === ScopeConfiguration::DEVICE_MAC
+                        || $type === ScopeConfiguration::DEVICE_STATIC_MAPPING
+                    ) {
+                        $mac = ScopeConfiguration::normalizeMacAddress($identifier);
 
-                        foreach ($mappingAddresses[$mappingKey] ?? [] as $address) {
+                        foreach ($observed[$mac] ?? [] as $address) {
                             $addresses[$address] = true;
                         }
+
+                        if ($type === ScopeConfiguration::DEVICE_STATIC_MAPPING) {
+                            $mappingKey = (string) ($identifierRow['interface'] ?? '') . ':' . $mac;
+
+                            foreach ($mappingAddresses[$mappingKey] ?? [] as $address) {
+                                $addresses[$address] = true;
+                            }
+                        }
                     }
+                } catch (InvalidArgumentException) {
+                    continue;
                 }
-            } catch (InvalidArgumentException) {
-                continue;
             }
 
             $sortedAddresses = array_keys($addresses);

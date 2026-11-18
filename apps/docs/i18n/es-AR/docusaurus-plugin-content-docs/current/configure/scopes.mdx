@@ -1,10 +1,11 @@
 ---
 id: scopes
-title: Ámbitos y dominios permitidos
-description: Asigne listas y dominios permitidos a ámbitos globales, de interfaz y dispositivo y siga el orden exacto del nivel más específico en cada consulta DNS.
+title: Clientes y bloqueo
+description: Defina redes y dispositivos en Clients, elija en Blocking las listas y los dominios permitidos de Global, de cada red y de cada dispositivo, y siga el orden exacto del nivel más específico en cada consulta DNS.
 keywords:
   - sinkhole for pfsense
-  - ámbitos
+  - clientes
+  - bloqueo
   - bloqueo de vlan
   - política de dispositivo
   - dominios permitidos
@@ -17,44 +18,65 @@ tags:
 import deviceEditor from './_assets_/scopes-2.png';
 import scopesTab from './_assets_/scopes-1.png';
 
-Asigne listas y dominios permitidos en los niveles global, de red y de dispositivo para que cada cliente reciba la política prevista para su ubicación actual.
+Defina cada red y cada dispositivo una sola vez en **Clients** y después elija en **Blocking** qué bloquea cada uno. Cada cliente recibe la política prevista para su ubicación actual.
 
-## ¿Por qué usar ámbitos? \{#why-use-scopes}
+## ¿Por qué usar redes y dispositivos? \{#why-use-networks-and-devices}
 
 1. Proporciona a cada interfaz o VLAN de pfSense su propia política y conserva a la vez reglas globales para todos.
 2. Proporciona a un dispositivo una decisión más específica sin requerir un servidor DNS separado.
 3. Permite que los dominios permitidos corrijan falsos positivos en el nivel donde importan sin retirar una lista completa.
 4. Mantiene las direcciones de los clientes separadas de las listas compiladas para que los cambios de DHCP, vecinos o interfaces no recarguen Unbound.
 
-## Ámbito global \{#global-scope}
+## Contextos \{#contexts}
 
-Una lista con **Global** seleccionado se aplica a todos los clientes después de las decisiones de dispositivo y red. Los dominios permitidos globales se introducen en la pestaña **Lists** y permiten que el dominio indicado y sus subdominios atraviesen las listas globales.
+Blocking, Services, SafeSearch, Alerts, Bypass e IP comparten una segunda fila de pestañas debajo de las pestañas principales:
 
-Un cliente que no coincida con ningún ámbito de red o dispositivo activado recibe solo este nivel.
+| Pestaña  | Qué edita la página                                                                                                              |
+|----------|----------------------------------------------------------------------------------------------------------------------------------|
+| All      | Nada. Una tabla de solo lectura lista cada contexto que tiene configuración propia; seleccione una fila para abrir ese contexto. |
+| Global   | La configuración para todos los clientes.                                                                                        |
+| Networks | Una red. Una fila de chips de red elige cuál.                                                                                    |
+| Devices  | Un dispositivo. Una fila de chips de dispositivo elige cuál, y el cuadro de búsqueda filtra los chips por nombre.                |
 
-## Ámbitos de red \{#network-scopes}
+Un banner debajo de la fila indica qué está editando, por ejemplo **Editing: Network: IOT · applies to clients on IOT** o **Editing: Device: Tablet · this device only**. Cada contexto muestra solo su propia configuración; nada heredado de un contexto más amplio aparece en su formulario.
 
-Abra **Firewall → Sinkhole → Scopes** y seleccione **Add** debajo de la tabla Networks. El editor usa de forma predeterminada LAN, o la primera interfaz disponible que no sea WAN, y omite las interfaces que ya tengan un ámbito de red. Un cliente pertenece a esa red cuando su dirección está dentro de una de las subredes IPv4 o IPv6 actuales de la interfaz.
+El contexto seleccionado se mantiene al cambiar de pestaña hasta que elija otro. Una red o un dispositivo desactivado puede seguir editándose, y una advertencia indica que su configuración no se aplica a ningún cliente hasta que se vuelva a activar.
 
-Cada fila de red selecciona listas adicionales, dominios permitidos y si el ámbito está activado. Al guardar se vuelve a Scopes; seleccione el lápiz o haga doble clic en una fila para editarla. Un dispositivo que cambia de red recibe la política de la red con la que coincide su dirección actual.
+## Definir redes \{#define-networks}
 
-<img src={scopesTab} alt="Pestaña Scopes con un ámbito de red LAN y tres dispositivos de demostración identificados por dirección IP o MAC con sus direcciones actuales" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+Abra **Firewall → Sinkhole → Clients** y seleccione **Add** debajo de la tabla Networks. El editor usa de forma predeterminada LAN, o la primera interfaz disponible que no sea WAN, y omite las interfaces que ya tengan una red. Un cliente pertenece a esa red cuando su dirección está dentro de una de las subredes IPv4 o IPv6 actuales de la interfaz.
 
-## Ámbitos de dispositivo \{#device-scopes}
+Cada fila de red tiene una interfaz y una casilla **Enabled**. Al guardar se vuelve a Clients; seleccione el lápiz o haga doble clic en una fila para editarla. Un dispositivo que cambia de red recibe la política de la red con la que coincide su dirección actual.
 
-Seleccione **Add** debajo de la tabla Devices, indique un nombre y elija un método de identificación. El editor solo muestra el campo de identificador correspondiente al método seleccionado:
+<img src={scopesTab} alt="Pestaña Clients con una red LAN y tres dispositivos de demostración identificados por dirección IP o MAC con sus direcciones actuales" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
-| Método              | Direcciones usadas para el dispositivo                                                       |
-|---------------------|----------------------------------------------------------------------------------------------|
-| IP address          | La dirección IPv4 o IPv6 configurada.                                                        |
-| DHCP static mapping | Su dirección configurada y las direcciones actuales observadas para la MAC de la asignación. |
-| MAC address         | Las direcciones actuales de ARP, NDP y concesiones DHCP para esa MAC.                        |
+## Definir dispositivos \{#define-devices}
 
-La fila del dispositivo selecciona sus listas, dominios permitidos y estado de activación. Al guardar se vuelve a Scopes; seleccione el lápiz o haga doble clic en una fila para editarla. Un trabajo en segundo plano actualiza cada minuto las subredes y direcciones de dispositivos mientras el bloqueo DNS tenga habilitado un ámbito de red o dispositivo, o mientras la protección DNS de Bypass necesite identificar clientes. Sync del paquete inicia la misma actualización solo bajo esa condición.
+Seleccione **Add** debajo de la tabla Devices, indique un nombre y agregue una o más filas de identificadores. Cada fila tiene un tipo y el valor que corresponde a ese tipo:
 
-Arrastre la esquina inferior del cuadro **Lists** para agrandarlo cuando tenga muchas listas.
+| Tipo de identificador | Direcciones usadas para el dispositivo                                                       |
+|-----------------------|----------------------------------------------------------------------------------------------|
+| IP address            | La dirección IPv4 o IPv6 configurada.                                                        |
+| DHCP static mapping   | Su dirección configurada y las direcciones actuales observadas para la MAC de la asignación. |
+| MAC address           | Las direcciones actuales de ARP, NDP y concesiones DHCP para esa MAC.                        |
 
-<img src={deviceEditor} alt="Página Edit Device de una tableta de demostración identificada por dirección IP, con una lista seleccionada y un dominio permitido" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
+Use **Add Identifier** y los botones de papelera para mantener las filas. Un dispositivo necesita al menos un identificador. Toda dirección alcanzada mediante cualquiera de sus identificadores corresponde al mismo dispositivo y, por lo tanto, comparte una única configuración y un único estado de activación. Al guardar se vuelve a Clients; seleccione el lápiz o haga doble clic en una fila para editarla. Un trabajo en segundo plano actualiza cada minuto las subredes y direcciones de dispositivos mientras el bloqueo DNS tenga una red o un dispositivo activado, o mientras la protección DNS de Bypass necesite identificar clientes. Sync del paquete inicia la misma actualización solo bajo esa condición.
+
+Eliminar una red o un dispositivo en Clients también elimina su configuración de Blocking, Services, SafeSearch, Bypass e IP.
+
+<img src={deviceEditor} alt="Página Edit Device de una tableta de demostración identificada por una dirección IP y una dirección MAC" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Elegir listas y dominios permitidos \{#choose-lists-and-allowed-domains}
+
+Abra **Firewall → Sinkhole → Blocking** y elija un contexto:
+
+- **Global** selecciona las listas que se aplican a todos los clientes después de las decisiones de dispositivo y red, y contiene los dominios permitidos globales.
+- **Networks** selecciona las listas y los dominios permitidos adicionales para los clientes de la red elegida.
+- **Devices** selecciona las listas y los dominios permitidos adicionales para el dispositivo elegido.
+
+Cada contexto tiene un cuadro **Lists** y un cuadro **Allowed Domains** con un dominio por línea. Seleccione **Save** para aplicar ese contexto. Arrastre la esquina inferior del cuadro **Lists** para agrandarlo cuando tenga muchas listas. Las listas en sí se agregan y editan en la pestaña [Lists](/docs/configure/lists).
+
+**All** muestra una fila por cada contexto que tiene listas o dominios permitidos, con los nombres de sus listas y la cantidad de dominios permitidos.
 
 ## Orden de decisión \{#decision-order}
 
@@ -67,7 +89,7 @@ El nivel coincidente más específico decide cada consulta en este orden exacto:
 5. **Dominios permitidos globales** — Permiten inmediatamente si coincide la excepción global.
 6. **Listas globales** — Bloquean si coincide una lista global.
 
-La consulta se permite cuando ningún paso toma una decisión. Los dominios permitidos de un nivel anulan las listas heredadas de niveles menos específicos, pero no las listas de un nivel más específico que ya haya decidido.
+La consulta se permite cuando ningún paso toma una decisión. Un cliente que no coincide con ninguna red ni ningún dispositivo activado recibe solo los pasos globales. Los dominios permitidos de un nivel anulan las listas heredadas de niveles menos específicos, pero no las listas de un nivel más específico que ya haya decidido.
 
 ## Comportamiento de los dominios permitidos \{#allowed-domain-behavior}
 
@@ -79,11 +101,11 @@ Cada entrada de dominio permitido se aplica al dominio exacto y a todos sus subd
 
 ## Conflictos de direcciones \{#address-conflicts}
 
-Cuando dos filas de dispositivos reclaman la misma dirección actual, gana el primer dispositivo en el orden de la tabla. **Status → Scopes** muestra la dirección en **Conflict** para cada fila afectada, de modo que puedan corregirse el orden o los identificadores.
+Varios identificadores del mismo dispositivo pueden alcanzar una dirección sin generar un conflicto. Cuando dos dispositivos diferentes reclaman la misma dirección actual, gana el primer dispositivo de la tabla Clients. La tabla Clients y **Status → Clients** muestran la dirección en **Conflict** para cada fila afectada, de modo que puedan corregirse el orden o los identificadores.
 
-## Verificar un ámbito \{#verify-a-scope}
+## Verificar una red o un dispositivo \{#verify-a-network-or-device}
 
 1. Ejecute `/usr/local/sbin/sinkhole --refresh-clients` o espere a la actualización por minuto.
-2. Abra **Status → Scopes** y confirme las subredes actuales de la red y las direcciones actuales del dispositivo.
-3. Consulte un nombre desde un cliente de ese ámbito y compare el resultado con el orden de decisión anterior.
+2. Abra **Status → Clients** y confirme las subredes actuales de la red y las direcciones actuales del dispositivo.
+3. Consulte un nombre desde un cliente de esa red o desde ese dispositivo y compare el resultado con el orden de decisión anterior.
 4. Compruebe si hay un conflicto de dirección antes de depender del comportamiento específico del dispositivo.

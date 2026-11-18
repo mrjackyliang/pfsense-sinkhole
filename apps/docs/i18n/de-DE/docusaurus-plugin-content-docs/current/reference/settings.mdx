@@ -49,54 +49,56 @@ Ein leeres Feld schreibt nichts und behält den Standard des Resolvers bei. [Res
 | Update Checks        | Weekly   | Wählt Daily, Weekly, Monthly oder Never für Prüfungen auf neue GitHub-Releases.                            |
 | Remote Notifications | Off      | Sendet jeden Hinweis auf eine neue Version zusätzlich über die in pfSense konfigurierten externen Dienste. |
 
-Jede neue Version erzeugt einen lokalen pfSense-Hinweis. **About → Check Now** führt dieselbe begrenzte Release-Prüfung sofort aus, ohne den Zeitplan zu ändern.
+Jede durch eine geplante Prüfung gefundene neue Version erzeugt einen lokalen pfSense-Hinweis. **About → Check Now** führt dieselbe begrenzte Release-Prüfung ohne Zeitplanänderung aus, legt keinen Hinweis an und verhindert, dass eine spätere geplante Prüfung diese Version meldet.
 
 ## Lists \{#lists}
 
-| Feld            | Standard | Beschreibung                                                                                       |
-|-----------------|----------|----------------------------------------------------------------------------------------------------|
-| Name            | Empty    | Lokale Bezeichnung für Zuweisungen, Alarme und Status.                                             |
-| URL             | Empty    | HTTP- oder HTTPS-Quelle ohne eingebettete Zugangsdaten.                                            |
-| Enabled         | On       | Nimmt die Quelle in Aktualisierungen und bei Zuweisung in kompilierte Richtlinien auf.             |
-| Global          | Off      | Wendet die Liste nach Geräte- und Netzwerkentscheidungen auf jeden Client an.                      |
-| Allowed Domains | Empty    | Eine global erlaubte Domain pro Zeile; jeder Eintrag erlaubt die exakte Domain und jede Subdomain. |
+| Feld    | Standard | Beschreibung                                                                            |
+|---------|----------|-----------------------------------------------------------------------------------------|
+| Name    | Empty    | Lokale Bezeichnung für Blocking, Alarme und Status.                                     |
+| URL     | Empty    | HTTP- oder HTTPS-Quelle ohne eingebettete Zugangsdaten.                                 |
+| Enabled | On       | Nimmt die Quelle in Aktualisierungen und bei Verwendung in kompilierte Richtlinien auf. |
 
 **Add from Catalog** durchsucht das Listenregister von AdGuard Home und den Feed-Katalog von pfBlockerNG auf Abruf. Durch das Hinzufügen eines Ergebnisses entsteht derselbe gewöhnliche Eintrag wie bei der manuellen Eingabe seiner URL.
 
 Bypass-Feeds sind aus diesem Katalog ausgeschlossen.
 
+## Blocking \{#blocking}
+
+Jeder Kontext (Global, ein Netzwerk oder ein Gerät) hat zwei eigene Felder:
+
+| Feld            | Standard | Beschreibung                                                                                                                                |
+|-----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| Lists           | Empty    | DNS-Listen, die in diesem Kontext blockieren. Globale Listen gelten nach Geräte- und Netzwerkentscheidungen für jeden Client.               |
+| Allowed Domains | Empty    | Eine Ausnahme pro Zeile; jede erlaubt die exakte Domain und jede Subdomain vor den Listen dieses Kontexts und jedes umfassenderen Kontexts. |
+
 ## Dienste \{#services}
 
-Die Dienstauswahl ist für jeden Scope standardmäßig leer. Ein Registerdienst, der durch einen eigenen Bypass-Schutz abgedeckt ist, wird unter Dienste ausgeblendet und aus gespeicherten Auswahlen entfernt; Private Relay wird nur auf dem Tab Bypass konfiguriert.
+Die Dienstauswahl ist für jeden Kontext standardmäßig leer. Ein Registerdienst, der durch einen eigenen Bypass-Schutz abgedeckt ist, wird unter Dienste ausgeblendet und aus gespeicherten Auswahlen entfernt; Private Relay wird nur auf dem Tab Bypass konfiguriert.
 
 ## SafeSearch \{#safesearch}
 
-Die SafeSearch-Auswahl ist für jeden Scope standardmäßig leer. Jeder Scope kann Google, YouTube (Moderate oder Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex und Pixabay fixieren oder Qwant blockieren. [SafeSearch](/docs/configure/safesearch) listet die Namen und sicheren Hosts auf.
+Die SafeSearch-Auswahl ist für jeden Kontext standardmäßig leer. Jeder Kontext kann Google, YouTube (Moderate oder Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex und Pixabay fixieren oder Qwant blockieren. [SafeSearch](/docs/configure/safesearch) listet die Namen und sicheren Hosts auf.
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| Feld            | Standard | Beschreibung                                                                                                                                                          |
-|-----------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | LAN      | Konfigurierte pfSense-Schnittstelle, deren aktuelle IPv4- und IPv6-Subnetze das Netzwerk bestimmen. Ohne LAN wird die erste freie Nicht-WAN-Schnittstelle ausgewählt. |
-| Lists           | Empty    | Zusätzliche DNS-Listen, die Clients im Netzwerk blockieren.                                                                                                           |
-| Allowed Domains | Empty    | Eine Netzwerkausnahme pro Zeile; jede erlaubt die exakte Domain und jede Subdomain vor den Listen dieses Netzwerks und allen globalen Richtlinien.                    |
-| Enabled         | On       | Nimmt den Eintrag in Clientzuordnung und kompilierte Richtlinien auf.                                                                                                 |
+| Feld      | Standard | Beschreibung                                                                                                                                                          |
+|-----------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface | LAN      | Konfigurierte pfSense-Schnittstelle, deren aktuelle IPv4- und IPv6-Subnetze das Netzwerk bestimmen. Ohne LAN wird die erste freie Nicht-WAN-Schnittstelle ausgewählt. |
+| Enabled   | On       | Nimmt den Eintrag in Clientzuordnung und kompilierte Richtlinien auf.                                                                                                 |
 
 Jede Schnittstelle darf nur einmal vorkommen. Eine gespeicherte, nicht verfügbare Schnittstelle bleibt zur Korrektur sichtbar, statt verworfen zu werden.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| Feld                     | Standard   | Beschreibung                                                                                                                    |
-|--------------------------|------------|---------------------------------------------------------------------------------------------------------------------------------|
-| Name                     | Empty      | Lokale Bezeichnung, die in Richtlinien und Status angezeigt wird.                                                               |
-| Identified By            | IP address | Wählt IP address, DHCP static mapping oder MAC address.                                                                         |
-| IP Address / MAC Address | Empty      | Exakter Identifikator, wenn IP address oder MAC address ausgewählt ist. Die Beschriftung folgt der ausgewählten Methode.        |
-| DHCP Static Mapping      | Empty      | Vorhandene Zuordnung, wenn diese Identifikationsmethode verwendet wird.                                                         |
-| Lists                    | Empty      | Zusätzliche DNS-Listen, die dieses Gerät blockieren.                                                                            |
-| Allowed Domains          | Empty      | Eine Geräteausnahme pro Zeile; jede erlaubt die exakte Domain und jede Subdomain vor jeder Netzwerk- und globalen Entscheidung. |
-| Enabled                  | On         | Nimmt den Eintrag in Clientzuordnung und kompilierte Richtlinien auf.                                                           |
+| Feld                | Standard            | Beschreibung                                                                                                                    |
+|---------------------|---------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty               | Lokale Bezeichnung, die in Richtlinien und Status angezeigt wird.                                                               |
+| Identifiers → Type  | Eine IP-Adresszeile | Wählt für jede hinzufügbare oder entfernbare Zeile IP address, DHCP static mapping oder MAC address.                            |
+| Identifiers → Value | Empty               | Exakte IP- oder MAC-Adresse oder eine vorhandene statische DHCP-Zuordnung. Mindestens eine Identifikatorzeile ist erforderlich. |
+| Enabled             | On                  | Nimmt den Eintrag in Clientzuordnung und kompilierte Richtlinien auf.                                                           |
 
-Statische Zuordnungen verwenden ihre konfigurierte Adresse sowie aktuelle Adressen, die für die MAC der Zuordnung beobachtet werden. Ein MAC-Eintrag verwendet aktuelle ARP-, NDP- und DHCP-Lease-Daten.
+Alle Identifikatorzeilen gehören zum selben Gerät und teilen dessen Einstellungen. Statische Zuordnungen verwenden ihre konfigurierte Adresse sowie aktuelle Adressen, die für die MAC der Zuordnung beobachtet werden. Ein MAC-Eintrag verwendet aktuelle ARP-, NDP- und DHCP-Lease-Daten. Adressen, die über mehrere Identifikatoren desselben Geräts gefunden werden, sind keine Konflikte.
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Statische Zuordnungen verwenden ihre konfigurierte Adresse sowie aktuelle Adress
 |----------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------|
 | Description          | Empty    | Lokale Bezeichnung der Regel.                                                                                                             |
 | Lists                | Any      | Stimmt mit jeder Liste oder nur mit den ausgewählten konfigurierten Listen überein.                                                       |
-| Clients              | Everyone | Stimmt mit allen oder nur mit ausgewählten Netzwerk- und Geräte-Scopes überein.                                                           |
+| Clients              | Everyone | Stimmt mit allen oder nur mit ausgewählten Netzwerken und Geräten überein.                                                                |
 | Repeat After         | 60       | Minuten, bevor dieselbe Regel, derselbe Client, dieselbe Domain und dieselbe Liste erneut benachrichtigen kann; zulässig sind 1 bis 1440. |
 | WebGUI Notice        | On       | Fügt einen pfSense-Hinweis hinzu, wenn die Regel übereinstimmt.                                                                           |
 | Remote Notifications | On       | Verwendet die konfigurierten pfSense-Benachrichtigungsdienste, wenn die Regel übereinstimmt.                                              |

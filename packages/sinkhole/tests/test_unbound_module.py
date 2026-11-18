@@ -1034,6 +1034,125 @@ class SinkholeUnboundTest(unittest.TestCase):
         self.module.operate(0, self.module.MODULE_EVENT_NEW, off_interface, None)
         self.assertEqual(self.module.MODULE_WAIT_MODULE, off_interface.ext_state[0])
 
+    def test_bypass_uses_device_network_global_precedence(self) -> None:
+        """Each client uses only its most-specific enabled Bypass policy.
+
+        Since:
+            1.3.0
+        """
+
+        sources = {
+            "44444444444444444444444444444444": {
+                "bit": 0,
+                "kind": "encrypted_dns",
+            },
+            "55555555555555555555555555555555": {
+                "bit": 1,
+                "kind": "tor",
+            },
+            "66666666666666666666666666666666": {
+                "bit": 2,
+                "kind": "vpn",
+            },
+        }
+        network_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        device_id = "dddddddddddddddddddddddddddddddd"
+        empty_device_id = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+
+        def policy(**overrides: Any) -> dict[str, Any]:
+            result: dict[str, Any] = {
+                "enabled": True,
+                "block_encrypted_dns": False,
+                "disable_firefox_doh": False,
+                "disable_private_relay": False,
+                "discovery": "off",
+                "block_tor": False,
+                "block_vpn": False,
+                "lists": [],
+            }
+            result.update(overrides)
+
+            return result
+
+        global_policy = policy(
+            block_encrypted_dns=True,
+            disable_firefox_doh=True,
+            lists=["44444444444444444444444444444444"],
+        )
+        global_policy["interfaces"] = ["lan"]
+        bypass = {
+            "lists": sources,
+            "global": global_policy,
+            "networks": {
+                network_id: policy(
+                    block_tor=True,
+                    disable_private_relay=True,
+                    lists=["55555555555555555555555555555555"],
+                ),
+            },
+            "devices": {
+                device_id: policy(
+                    block_vpn=True,
+                    disable_firefox_doh=True,
+                    lists=["66666666666666666666666666666666"],
+                ),
+                empty_device_id: policy(),
+            },
+            "discovery_hostname": "",
+            "discovery_port": 0,
+        }
+        self.write_data(
+            "generation-bypass-contexts",
+            [],
+            include_list=False,
+            bypass_domains=[
+                ("global-provider.example.test", "0", ""),
+                ("network-relay.example.test", "1", ""),
+                ("device-tunnel.example.test", "2", ""),
+            ],
+            bypass=bypass,
+        )
+        self.write_client_map(
+            [{"id": network_id, "cidrs": ["192.0.2.0/24"]}],
+            {
+                "192.0.2.10": device_id,
+                "192.0.2.11": empty_device_id,
+            },
+            interfaces=[
+                {
+                    "name": "lan",
+                    "cidrs": ["192.0.2.0/24", "198.51.100.0/24"],
+                }
+            ],
+        )
+        self.initialize()
+
+        cases = (
+            ("198.51.100.10", "global-provider.example.test.", True),
+            ("198.51.100.10", "use-application-dns.net.", True),
+            ("192.0.2.20", "global-provider.example.test.", False),
+            ("192.0.2.20", "network-relay.example.test.", True),
+            ("192.0.2.20", "use-application-dns.net.", False),
+            ("192.0.2.20", "mask.icloud.com.", True),
+            ("192.0.2.10", "network-relay.example.test.", False),
+            ("192.0.2.10", "device-tunnel.example.test.", True),
+            ("192.0.2.10", "use-application-dns.net.", True),
+            ("192.0.2.10", "mask.icloud.com.", False),
+            ("192.0.2.11", "network-relay.example.test.", False),
+            ("192.0.2.11", "mask.icloud.com.", False),
+        )
+
+        for address, name, blocked in cases:
+            with self.subTest(address=address, name=name):
+                qstate = self.query_state(name, self.module.RR_TYPE_A, address)
+                self.module.operate(0, self.module.MODULE_EVENT_NEW, qstate, None)
+                expected = (
+                    self.module.MODULE_FINISHED
+                    if blocked
+                    else self.module.MODULE_WAIT_MODULE
+                )
+                self.assertEqual(expected, qstate.ext_state[0])
+
     def test_discovery_can_return_nodata(self) -> None:
         """DDR NODATA is a successful empty response on the selected interface."""
 

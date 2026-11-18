@@ -49,54 +49,56 @@ Et tomt felt skriver ingenting og beholder standardverdien til Resolver. [Resolv
 | Update Checks        | Weekly   | Velger Daily, Weekly, Monthly eller Never for kontroller av nye GitHub-utgivelser.                  |
 | Remote Notifications | Off      | Sender også hvert varsel om ny versjon gjennom de eksterne tjenestene som er konfigurert i pfSense. |
 
-Hver nye versjon oppretter ett lokalt pfSense-varsel. **About → Check Now** kjører den samme avgrensede utgivelseskontrollen umiddelbart uten å endre tidsplanen.
+Hver nye versjon som blir funnet av en planlagt kontroll, oppretter ett lokalt pfSense-varsel. **About → Check Now** kjører den samme avgrensede utgivelseskontrollen uten å endre tidsplanen, oppretter ikke noe varsel og hindrer en senere planlagt kontroll i å varsle om versjonen.
 
 ## Lists \{#lists}
 
-| Felt            | Standard | Beskrivelse                                                                                               |
-|-----------------|----------|-----------------------------------------------------------------------------------------------------------|
-| Name            | Empty    | Lokal etikett som brukes av tilordninger, varsler og Status.                                              |
-| URL             | Empty    | HTTP- eller HTTPS-kilde uten innebygd legitimasjon.                                                       |
-| Enabled         | On       | Tar med kilden i oppdateringer og kompilert policy når den er tilordnet.                                  |
-| Global          | Off      | Bruker listen for alle klienter etter avgjørelser for enhet og nettverk.                                  |
-| Allowed Domains | Empty    | Ett globalt tillatt domene per linje; hver oppføring tillater det nøyaktige domenet og alle underdomener. |
+| Felt    | Standard | Beskrivelse                                                        |
+|---------|----------|--------------------------------------------------------------------|
+| Name    | Empty    | Lokal etikett som brukes av Blocking, varsler og Status.           |
+| URL     | Empty    | HTTP- eller HTTPS-kilde uten innebygd legitimasjon.                |
+| Enabled | On       | Tar med kilden i oppdateringer og kompilert policy når den brukes. |
 
 **Add from Catalog** søker ved behov i listeregisteret til AdGuard Home og feedkatalogen til pfBlockerNG. Når et resultat legges til, opprettes den samme vanlige raden som når URL-en angis manuelt.
 
 Omgåelsesfeeder er utelatt fra denne katalogen.
 
+## Blocking \{#blocking}
+
+Hver kontekst (Global, ett nettverk eller én enhet) har sine egne to felt:
+
+| Felt            | Standard | Beskrivelse                                                                                                                                       |
+|-----------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| Lists           | Empty    | DNS-lister som blokkerer i denne konteksten. Global-lister gjelder for alle klienter etter avgjørelser for enhet og nettverk.                     |
+| Allowed Domains | Empty    | Ett unntak per linje; hvert unntak tillater det nøyaktige domenet og alle underdomener før listene i denne konteksten og alle bredere kontekster. |
+
 ## Tjenester \{#services}
 
-Tjenestevalgene er tomme som standard for hvert omfang. En registertjeneste som dekkes av en egen Bypass-beskyttelse, skjules fra Tjenester og fjernes fra lagrede valg; Private Relay konfigureres bare på Bypass-fanen.
+Tjenestevalgene er tomme som standard for hver kontekst. En registertjeneste som dekkes av en egen Bypass-beskyttelse, skjules fra Tjenester og fjernes fra lagrede valg; Private Relay konfigureres bare på Bypass-fanen.
 
 ## SafeSearch \{#safesearch}
 
-SafeSearch-valgene er tomme som standard for hvert omfang. Hvert omfang kan låse Google, YouTube (Moderate eller Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex og Pixabay, eller blokkere Qwant. [SafeSearch](/docs/configure/safesearch) viser navnene og de sikre vertene.
+SafeSearch-valgene er tomme som standard for hver kontekst. Hver kontekst kan låse Google, YouTube (Moderate eller Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex og Pixabay, eller blokkere Qwant. [SafeSearch](/docs/configure/safesearch) viser navnene og de sikre vertene.
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| Felt            | Standard | Beskrivelse                                                                                                                                                    |
-|-----------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | LAN      | Konfigurert pfSense-grensesnitt der gjeldende IPv4- og IPv6-delnett identifiserer nettverket. Uten LAN velges det første ledige grensesnittet som ikke er WAN. |
-| Lists           | Empty    | Flere DNS-lister som blokkerer klienter i nettverket.                                                                                                          |
-| Allowed Domains | Empty    | Ett nettverksunntak per linje; hvert unntak tillater det nøyaktige domenet og alle underdomener før nettverkets lister og all global policy.                   |
-| Enabled         | On       | Gjør raden til en del av klientsamsvar og kompilert policy.                                                                                                    |
+| Felt      | Standard | Beskrivelse                                                                                                                                                    |
+|-----------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface | LAN      | Konfigurert pfSense-grensesnitt der gjeldende IPv4- og IPv6-delnett identifiserer nettverket. Uten LAN velges det første ledige grensesnittet som ikke er WAN. |
+| Enabled   | On       | Gjør raden til en del av klientsamsvar og kompilert policy.                                                                                                    |
 
 Hvert grensesnitt kan bare vises én gang. Et lagret grensesnitt som ikke er tilgjengelig, forblir synlig for retting i stedet for å bli forkastet.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| Felt                     | Standard   | Beskrivelse                                                                                                                                        |
-|--------------------------|------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| Name                     | Empty      | Lokal etikett som vises i policy og Status.                                                                                                        |
-| Identified By            | IP address | Velger IP address, DHCP static mapping eller MAC address.                                                                                          |
-| IP Address / MAC Address | Empty      | Nøyaktig identifikator når IP address eller MAC address er valgt. Etiketten følger den valgte metoden.                                             |
-| DHCP Static Mapping      | Empty      | Eksisterende tilordning som velges når denne identifikasjonsmetoden brukes.                                                                        |
-| Lists                    | Empty      | Flere DNS-lister som blokkerer denne enheten.                                                                                                      |
-| Allowed Domains          | Empty      | Ett enhetsunntak per linje; hvert unntak tillater det nøyaktige domenet og alle underdomener før alle nettverksavgjørelser og globale avgjørelser. |
-| Enabled                  | On         | Gjør raden til en del av klientsamsvar og kompilert policy.                                                                                        |
+| Felt                | Standard          | Beskrivelse                                                                                                          |
+|---------------------|-------------------|----------------------------------------------------------------------------------------------------------------------|
+| Name                | Empty             | Lokal etikett som vises i policy og Status.                                                                          |
+| Identifiers → Type  | Én IP address-rad | Velger IP address, DHCP static mapping eller MAC address for hver rad som kan legges til eller fjernes.              |
+| Identifiers → Value | Empty             | Nøyaktig IP- eller MAC-adresse, eller en eksisterende statisk DHCP-tilordning. Minst én identifikatorrad er påkrevd. |
+| Enabled             | On                | Gjør raden til en del av klientsamsvar og kompilert policy.                                                          |
 
-Statiske tilordninger bruker den konfigurerte adressen pluss gjeldende adresser som er observert for MAC-adressen til tilordningen. En MAC-rad bruker gjeldende data for ARP, NDP og DHCP-leie.
+Alle identifikatorrader tilhører samme enhet og deler innstillingene. Statiske tilordninger bruker den konfigurerte adressen pluss gjeldende adresser som er observert for MAC-adressen til tilordningen. En MAC-rad bruker gjeldende data for ARP, NDP og DHCP-leie. Adresser som nås gjennom flere identifikatorer i samme enhet, er ikke konflikter.
 
 ## Alert Rules \{#alert-rules}
 
@@ -104,7 +106,7 @@ Statiske tilordninger bruker den konfigurerte adressen pluss gjeldende adresser 
 |----------------------|----------|-----------------------------------------------------------------------------------------------|
 | Description          | Empty    | Lokal etikett for regelen.                                                                    |
 | Lists                | Any      | Samsvarer med en hvilken som helst liste eller bare de valgte konfigurerte listene.           |
-| Clients              | Everyone | Samsvarer med alle eller de valgte nettverks- og enhetsomfangene.                             |
+| Clients              | Everyone | Samsvarer med alle eller de valgte nettverkene og enhetene.                                   |
 | Repeat After         | 60       | Minutter før samme regel, klient, domene og liste kan varsle igjen. Godtar 1 til og med 1440. |
 | WebGUI Notice        | On       | Legger til et pfSense-varsel når regelen samsvarer.                                           |
 | Remote Notifications | On       | Bruker de konfigurerte varslingstjenestene i pfSense når regelen samsvarer.                   |

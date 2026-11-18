@@ -49,7 +49,7 @@ Sinkhole y pfBlockerNG no pueden filtrar DNS al mismo tiempo. Sinkhole permanece
 ## Qué permanece bajo su control \{#what-stays-under-your-control}
 
 - **Lists** — Añada por URL las fuentes en las que confíe o búsquelas mediante la <Terminology title="Encuentre listas de bloqueo conocidas sin buscar URL" to="/docs/reference/terminology#lists-and-scopes">búsqueda de listas populares</Terminology> neutral. Sinkhole no publica ni recomienda ninguna lista.
-- **Scopes** — Elija listas globales, listas para una interfaz o VLAN de pfSense y listas para un dispositivo identificado por dirección IP, asignación DHCP estática o dirección MAC.
+- **Clientes y bloqueo** — Definí una red para una interfaz o VLAN de pfSense y un dispositivo identificado por una o varias direcciones IP, asignaciones DHCP estáticas y direcciones MAC, y después elegí las listas de Global, de cada red y de cada dispositivo.
 - **Allowed domains** — Permita un dominio y sus subdominios en el nivel global, de red o de dispositivo sin retirar una lista completa.
 - **SafeSearch** — Elija qué buscadores quedan fijados en su modo seguro para cada ámbito y si YouTube usa Moderate o Strict.
 - **Alerts** — Elija las combinaciones de lista y cliente que crean avisos locales en la WebGUI o usan los servicios de notificación remota configurados en pfSense.
@@ -71,6 +71,6 @@ El sitio de documentación ofrece inglés y las otras 17 configuraciones regiona
 ## Siguientes pasos \{#next-steps}
 
 - **[Instalar el paquete](/docs/installation)** — Verifique e instale el paquete estable de la versión publicada.
-- **[Configurar Sinkhole](/docs/first-run)** — Añada una primera lista, elija su ámbito y verifique la generación activa.
-- **[Comprender los ámbitos](/docs/configure/scopes)** — Siga el orden exacto de decisión para dispositivo, red y nivel global.
+- **[Configurar Sinkhole](/docs/first-run)** — Añada una primera lista, elija dónde bloquea y verifique la generación activa.
+- **[Comprender los clientes y el bloqueo](/docs/configure/scopes)** — Siga el orden exacto de decisión para dispositivo, red y nivel global.
 - **[Revisar el modelo de seguridad](/docs/safety/how-updates-work)** — Vea cómo las copias guardadas y el despliegue atómico mantienen disponible el DNS.

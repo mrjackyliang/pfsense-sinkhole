@@ -52,7 +52,9 @@ Unbound 模块会在查询之间检查新清单，并且只在引用的每个文
 
 默认列表更新频率为 Daily。Hourly、Every 6 hours、Daily 和 Weekly 计划使用稳定的随机分钟组成部分，因此防火墙不会在每次保存时改变作业时间。
 
-DNS、Bypass 和 IP/国家或地区更新、设置应用、软件包检查和自更新以及删除清理通过 `/var/run/sinkhole-update.lock` 进行协调。软件包检查或 Update 操作不会等待：如果其他操作持有该锁，它会以 `Another package operation is already running.` 停止，并可在该操作结束后重试。
+DNS、Bypass 和 IP/国家或地区更新、设置应用、软件包安装以及删除清理通过 `/var/run/sinkhole-update.lock` 进行协调。版本检查和自更新通过 `/var/run/sinkhole-release.lock` 单独协调，检查从不获取软件包任务锁。
+
+自更新先获取版本锁，再获取软件包任务锁。它会等待正在运行的列表、IP 或 Bypass 更新最多 30 分钟，同时 About 进度行显示等待状态。
 
 ## 目录刷新相互独立 \{#catalog-refreshes-are-separate}
 

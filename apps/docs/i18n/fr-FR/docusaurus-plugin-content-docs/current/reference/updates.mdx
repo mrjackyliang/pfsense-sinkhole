@@ -22,11 +22,11 @@ Sinkhole peut vérifier ses versions GitHub, notifier par pfSense et installer u
 
 **General → Update Checks** choisit Daily, Weekly, Monthly ou Never ; Weekly est la valeur par défaut. Sinkhole enregistre des composants de calendrier aléatoires stables afin que l’enregistrement des réglages ne déplace pas continuellement l’heure du contrôle.
 
-Un contrôle enregistre la dernière version, la page de publication, l’heure du contrôle et la dernière erreur. **About → Check Now** exécute immédiatement le même contrôle.
+Un contrôle enregistre la dernière version, la page de publication, l’heure du contrôle et la dernière erreur. **About → Check Now** exécute immédiatement le même contrôle sans déposer d’avis et enregistre une version plus récente comme déjà signalée.
 
 ## Avis de mise à jour \{#update-notices}
 
-Chaque nouvelle version détectée crée un avis WebGUI pfSense local qui renvoie vers l’onglet About de Sinkhole. Les contrôles répétés ne créent pas d’avis en double pour la même version.
+Chaque nouvelle version détectée par un contrôle planifié crée un avis WebGUI pfSense local qui renvoie vers l’onglet About de Sinkhole. Les contrôles répétés ne créent pas d’avis en double pour la même version, y compris celle déjà affichée par un contrôle manuel dans About.
 
 Sélectionnez **Remote Notifications** pour utiliser aussi les services configurés sous **System → Advanced → Notifications**. Le réglage est désactivé par défaut et concerne les avis de version, pas les règles d’alerte de blocage de liste.
 
@@ -36,7 +36,9 @@ La barre de mise à jour affiche la version installée, la dernière version con
 
 **Update** apparaît lorsque la dernière version enregistrée est plus récente. La page interroge la tâche détachée et rapporte son résultat sans maintenir la requête du navigateur ouverte.
 
-<img src={aboutUpdateBar} alt="Onglet About affichant une mise à jour Sinkhole disponible avec les commandes Update et What's New" width={1024} height={846} style={{maxWidth: '100%', height: 'auto'}} />
+Si une mise à jour de listes, IP ou Bypass est en cours, une installation depuis About affiche son attente et commence à la fin de cette tâche. L’attente est limitée à 30 minutes.
+
+<img src={aboutUpdateBar} alt="Onglet About affichant une mise à jour Sinkhole disponible avec les commandes Update et What's New" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Vérification avant l’installation \{#verification-before-installation}
 
@@ -48,9 +50,9 @@ Une liste de confiance installée vide signifie qu’aucune signature n’est ex
 
 ## Verrouillage des mises à jour \{#update-locking}
 
-Le contrôle du paquet et sa mise à jour automatique partagent `/var/run/sinkhole-update.lock` avec les mises à jour DNS, Bypass et IP/pays, les applications de réglages et le nettoyage lors de la suppression. Ils n’attendent pas le verrou : si une autre opération le détient, le contrôle ou l’action **Update** s’arrête avec `Another package operation is already running.`
+Les contrôles de version et la mise à jour automatique se coordonnent avec `/var/run/sinkhole-release.lock` et attendent jusqu’à 30 secondes un autre contrôle ou une autre installation. Un contrôle de version ne prend jamais le verrou des tâches du paquet et peut donc s’exécuter pendant une mise à jour de listes, IP ou Bypass.
 
-Le verrou empêche les fichiers du paquet de changer pendant que le paquet actuel télécharge, analyse, compile ou applique la politique. Réessayez depuis About lorsque Status n’affiche plus de mise à jour en cours.
+La mise à jour automatique prend d’abord le verrou de version, puis `/var/run/sinkhole-update.lock`. Si une mise à jour de listes, IP ou Bypass détient le verrou des tâches du paquet, la ligne de progression d’About affiche l’attente pendant 30 minutes au maximum avant l’échec de l’installation.
 
 ## Mise à jour manuelle du paquet \{#manual-package-update}
 

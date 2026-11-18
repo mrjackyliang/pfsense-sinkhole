@@ -18,19 +18,22 @@ tags:
 
 ## 命令模式 \{#command-modes}
 
-| 命令                           | 行為                                      |
-|------------------------------|-----------------------------------------|
-| `sinkhole --update`          | 執行排程的 DNS、Bypass 和已啓用 IP/國家或地區清單更新路徑。   |
-| `sinkhole --manual`          | 執行 **Status → Update Now** 使用的完整手動更新。   |
-| `sinkhole --apply`           | 在後台應用已儲存配置，並且只執行其所需的下載工作。               |
-| `sinkhole --refresh-clients` | 重建用戶端映射中的網路子網和設備地址。                     |
-| `sinkhole --alerts`          | 讀取封鎖事件並處理匹配的警報規則。                       |
-| `sinkhole --redirect-check`  | 協調所需的普通 DNS 重定向規則和獨立載入的 Bypass 與 IP 錨點。 |
-| `sinkhole --check-updates`   | 檢查最新 GitHub 版本並同步更新通知。                  |
-| `sinkhole --self-update`     | 下載、驗證、檢查並安裝最新的排隊版本。                     |
-| `sinkhole --help`            | 輸出支持的用法行。                               |
+| 命令                                     | 行為                                      |
+|----------------------------------------|-----------------------------------------|
+| `sinkhole --update`                    | 執行排程的 DNS、Bypass 和已啓用 IP/國家或地區清單更新路徑。   |
+| `sinkhole --manual`                    | 執行 **Status → Update Now** 使用的完整手動更新。   |
+| `sinkhole --apply`                     | 在後台應用已儲存配置，並且只執行其所需的下載工作。               |
+| `sinkhole --refresh-clients`           | 重建用戶端映射中的網路子網和設備地址。                     |
+| `sinkhole --alerts`                    | 讀取封鎖事件並處理匹配的警報規則。                       |
+| `sinkhole --redirect-check`            | 協調所需的普通 DNS 重定向規則和獨立載入的 Bypass 與 IP 錨點。 |
+| `sinkhole --check-updates`             | 檢查最新 GitHub 版本並同步計劃更新通知。                |
+| `sinkhole --check-updates --no-notice` | 檢查版本而不建立通知，並將新版本記錄為已通知。                 |
+| `sinkhole --self-update`               | 等待正在執行的清單、IP 或 Bypass 更新，然後驗證並安裝排隊版本。   |
+| `sinkhole --help`                      | 輸出支持的用法行。                               |
 
-在自動化中使用安裝路徑，例如 `/usr/local/sbin/sinkhole --refresh-clients`。這些模式互斥；如果 DNS/Bypass/IP 清單更新或自更新發現共享更新鎖已被持有，則會退出而不啓動競爭操作。
+在自動化中使用安裝路徑，例如 `/usr/local/sbin/sinkhole --refresh-clients`。這些模式互斥，`--no-notice` 只能與 `--check-updates` 一起使用。
+
+版本檢查最多等待版本鎖 30 秒，並且不取得套件工作鎖。自更新先取得版本鎖，然後最多等待 30 分鐘，讓正在執行的 DNS、Bypass 或 IP 清單更新釋放套件工作鎖。
 
 ## `/cf/conf/sinkhole` 下的持久檔案 \{#persistent-files}
 
@@ -73,7 +76,8 @@ tags:
 
 | 路徑                              | 用途                                     |
 |---------------------------------|----------------------------------------|
-| `sinkhole-update.lock`          | 清單、IP 和套件更新共用的長時間執行鎖。                  |
+| `sinkhole-update.lock`          | 清單、Bypass、IP 和套件安裝工作共用的長時間執行鎖。         |
+| `sinkhole-release.lock`         | 版本檢查和自更新協調鎖。                           |
 | `sinkhole-runtime.lock`         | 編譯、激活和 Resolver 集成使用的短時鎖。              |
 | `sinkhole-clients.lock`         | 用戶端映射刷新鎖。                              |
 | `sinkhole-alerts.lock`          | 警報處理鎖。                                 |

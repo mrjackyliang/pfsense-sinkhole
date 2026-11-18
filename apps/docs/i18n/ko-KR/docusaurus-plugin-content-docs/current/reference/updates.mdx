@@ -22,11 +22,11 @@ Sinkhole은 GitHub 릴리스를 확인하고 pfSense를 통해 알림을 보내�
 
 **General → Update Checks**에서 Daily, Weekly, Monthly 또는 Never를 선택하며 기본값은 Weekly입니다. Sinkhole은 안정적으로 임의 지정된 일정 요소를 저장하므로 설정을 저장할 때마다 확인 시간이 계속 바뀌지 않습니다.
 
-확인 작업은 최신 버전, 릴리스 페이지, 확인 시간 및 마지막 오류를 기록합니다. **About → Check Now**는 동일한 확인을 즉시 실행합니다.
+확인 작업은 최신 버전, 릴리스 페이지, 확인 시간 및 마지막 오류를 기록합니다. **About → Check Now**는 알림을 만들지 않고 동일한 확인을 즉시 실행하며 새 버전을 이미 알린 것으로 기록합니다.
 
 ## 업데이트 알림 \{#update-notices}
 
-새로 감지된 각 버전은 Sinkhole의 About 탭으로 연결되는 로컬 pfSense WebGUI 알림 하나를 만듭니다. 같은 버전을 반복해서 확인해도 중복 알림을 만들지 않습니다.
+예약 확인에서 새로 감지된 각 버전은 Sinkhole의 About 탭으로 연결되는 로컬 pfSense WebGUI 알림 하나를 만듭니다. About에서 수동으로 이미 표시한 버전을 포함하여 같은 버전을 반복해서 확인해도 중복 알림을 만들지 않습니다.
 
 **Remote Notifications**를 선택하면 **System → Advanced → Notifications**에 구성된 서비스도 사용합니다. 이 설정은 기본적으로 꺼져 있으며 목록 차단 알림 규칙이 아니라 버전 알림에 영향을 줍니다.
 
@@ -35,6 +35,8 @@ Sinkhole은 GitHub 릴리스를 확인하고 pfSense를 통해 알림을 보내�
 업데이트 표시줄에는 설치된 버전, 마지막으로 확인한 최신 버전, 마지막 확인, 릴리스 링크, 오류 및 분리된 업데이트 진행 상황이 표시됩니다. 시각적 상태로 대기 중 업데이트 없음, 새 릴리스, 실행 중인 업데이트, 성공 및 실패를 구분합니다.
 
 기록된 최신 버전이 더 새 버전이면 **Update**가 표시됩니다. 페이지는 브라우저 요청을 열어 둔 채 기다리지 않고 분리된 작업을 폴링하여 결과를 보고합니다.
+
+목록, IP 또는 Bypass 업데이트가 실행 중이면 About 탭의 설치가 대기 중임을 표시하고 해당 작업이 끝난 후 시작합니다. 대기 시간은 30분으로 제한됩니다.
 
 <img src={aboutUpdateBar} alt="사용 가능한 Sinkhole 업데이트와 Update 및 What's New 컨트롤을 표시하는 About 탭" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
 
@@ -48,9 +50,9 @@ Sinkhole은 GitHub 릴리스를 확인하고 pfSense를 통해 알림을 보내�
 
 ## 업데이트 잠금 \{#update-locking}
 
-패키지 확인과 자체 업데이트는 DNS, Bypass 및 IP/국가 업데이트, 설정 적용, 제거 정리 작업과 `/var/run/sinkhole-update.lock`을 공유합니다. 이 작업들은 잠금을 기다리지 않습니다. 다른 작업이 잠금을 보유하고 있으면 확인 또는 **Update** 작업이 `Another package operation is already running.`과 함께 중지됩니다.
+릴리스 확인과 자체 업데이트는 `/var/run/sinkhole-release.lock`을 통해 조정되며 다른 확인이나 설치를 최대 30초 동안 기다립니다. 릴리스 확인은 패키지 작업 잠금을 사용하지 않으므로 목록, IP 또는 Bypass 업데이트 중에도 실행할 수 있습니다.
 
-잠금은 현재 패키지가 정책을 다운로드, 구문 분석, 컴파일 또는 적용하는 동안 패키지 파일이 변경되지 않도록 합니다. Status에 업데이트 실행이 더 이상 표시되지 않으면 About에서 다시 시도합니다.
+자체 업데이트는 릴리스 잠금을 먼저 획득한 다음 `/var/run/sinkhole-update.lock`을 획득합니다. 목록, IP 또는 Bypass 업데이트가 패키지 작업 잠금을 보유하면 About 진행 표시줄에 최대 30분 동안 대기 상태를 표시한 뒤 설치에 실패합니다.
 
 ## 수동 패키지 업데이트 \{#manual-package-update}
 

@@ -22,11 +22,11 @@ Sinkhole can check its GitHub releases, notify through pfSense, and install a ve
 
 **General → Update Checks** selects Daily, Weekly, Monthly, or Never; Weekly is the default. Sinkhole stores stable randomized schedule components so saving settings doesn't continually move the check time.
 
-A check records the latest version, release page, check time, and last error. **About → Check Now** runs the same check immediately.
+A check records the latest version, release page, check time, and last error. **About → Check Now** runs the same check immediately without filing a notice and records a newer version as already notified.
 
 ## Update Notices \{#update-notices}
 
-Each newly detected version creates one local pfSense WebGUI notice that links to Sinkhole's About tab. Repeated checks don't create duplicate notices for the same version.
+Each newly detected version from a scheduled check creates one local pfSense WebGUI notice that links to Sinkhole's About tab. Repeated checks don't create duplicate notices for the same version, including a version already shown by a manual About check.
 
 Select **Remote Notifications** to also use the services configured under **System → Advanced → Notifications**. The setting is off by default and affects version notices, not list-block alert rules.
 
@@ -35,6 +35,8 @@ Select **Remote Notifications** to also use the services configured under **Syst
 The update bar shows the installed version, latest checked version, last check, release link, error, and detached update progress. Its visual state distinguishes no pending update, a newer release, a running update, success, and failure.
 
 **Update** appears when the recorded latest version is newer. The page polls the detached job and reports its result without keeping the browser request open.
+
+If a list, IP, or Bypass update is running, an About-tab install shows that it is waiting and starts after that task finishes. The wait is limited to 30 minutes.
 
 The About privilege is read-only. **Check Now** and **Update** are shown and accepted only for a logged-in user with the Sinkhole General settings privilege or pfSense's `page-all` privilege. An About-only user can still read the installed version, release status, and release link.
 
@@ -50,9 +52,9 @@ An empty installed trust list means no signature is required, but checksum and p
 
 ## Update Locking \{#update-locking}
 
-Package checking and self-update share `/var/run/sinkhole-update.lock` with DNS, Bypass, and IP/country updates, settings applies, and removal cleanup. They don't wait for the lock: if another operation holds it, the check or **Update** action stops with `Another package operation is already running.`
+Release checks and self-update serialize through `/var/run/sinkhole-release.lock`, waiting up to 30 seconds for another check or install. A release check never acquires the package task lock, so it can run during a list, IP, or Bypass update.
 
-The lock prevents package files from changing while the current package is downloading, parsing, compiling, or applying policy. Retry from About after Status no longer shows an update running.
+Self-update takes the release lock first and then `/var/run/sinkhole-update.lock`. If a list, IP, or Bypass update holds the package task lock, the About progress line shows the wait for up to 30 minutes before the install fails.
 
 ## Manual Package Update \{#manual-package-update}
 

@@ -40,7 +40,9 @@ Nach einer vollständigen Wiederherstellung der Konfiguration auf derselben Fire
 
 Ein veröffentlichtes Build speichert außerdem einen durch eine Prüfsumme gebundenen Wiederherstellungsauftrag in `config.xml`. Auf einer neuen Firewall ohne Sinkhole-Dateien wartet der abgekoppelte Auftrag auf das Ende der pfSense-Paketsynchronisierung, prüft und installiert genau die Version, die ihn erstellt hat, und beendet sich ansonsten alle 15 Minuten, sobald Sinkhole vorhanden ist.
 
-Keep Settings bewahrt diesen Wiederherstellungsauftrag bei einer absichtlichen Deinstallation auf. Deaktiviere Keep Settings vor dem Entfernen von Sinkhole, wenn es deinstalliert bleiben soll.
+Der Auftrag hält unter `/cf/conf/sinkhole/restore-heal` eine per Prüfsumme verifizierte Kopie dieser Version bereit, die entweder aus seinem eigenen Download oder aus einer über **About** installierten Aktualisierung stammt, sodass Sinkhole bei einer Wiederherstellung auf derselben Firewall ohne Internetzugang neu installiert werden kann. Es läuft jeweils nur eine Ausführung; eine Ausführung, die startet, während eine andere noch herunterlädt oder installiert, wird sofort beendet. Jeder Schritt erscheint im Systemprotokoll unter `sinkhole-restore-heal`: `deferred`, solange pfSense noch Pakete wiederherstellt, danach `cache` oder `fetch`, `install` und `installed`; bei einem fehlgeschlagenen Schritt dagegen `fetch-failed`, `checksum-failed`, `cache-failed` oder `install-failed`.
+
+Eine absichtliche Deinstallation entfernt den Wiederherstellungsauftrag und seine zwischengespeicherte Kopie unabhängig davon, ob **Keep Settings** ein- oder ausgeschaltet ist; nur eine Entfernung während einer Konfigurationswiederherstellung behält beides.
 
 ## Warum ein pfSense-Upgrade Sinkhole behält \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
@@ -70,7 +72,7 @@ Wenn **Keep Settings** aktiviert ist, bleiben Konfiguration und die gespeicherte
 
 1. Bestätige, dass **Firewall → Sinkhole** nicht mehr vorhanden ist.
 2. Bestätige, dass Python-Skript und -Reihenfolge des DNS Resolvers den Werten vor Sinkhole entsprechen.
-3. Wenn Keep Settings deaktiviert war, bestätige, dass keine Sinkhole-cron-Einträge verbleiben. Bestätige in jedem Fall, dass kein Klartext-DNS-Umleitungsblock, kein `sinkhole/bypass`-Anker und kein `sinkhole/ip`-Anker verbleiben.
+3. Bestätige, dass keine Sinkhole-cron-Einträge verbleiben, einschließlich des Wiederherstellungsauftrags `sinkhole-restore-heal`, und dass kein Klartext-DNS-Umleitungsblock, kein `sinkhole/bypass`-Anker und kein `sinkhole/ip`-Anker verbleiben.
 4. Wenn Keep Settings deaktiviert war, bestätige, dass `/cf/conf/sinkhole` nicht vorhanden ist.
 
 Wenn eine Aktualisierung aktiv war, fordert die Entfernungsmarkierung sie auf, zwischen begrenzten Phasen anzuhalten, bevor persistente Daten verändert werden. Die Entfernung zeichnet den ersten Bereinigungsfehler auf und versucht dennoch die übrigen unabhängigen Bereinigungsschritte.

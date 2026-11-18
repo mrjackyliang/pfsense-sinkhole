@@ -40,7 +40,9 @@ Dopo un ripristino completo della configurazione sullo stesso firewall, pfSense 
 
 Una versione pubblicata salva inoltre in `config.xml` un’attività di recupero vincolata a un checksum. Su un nuovo firewall privo dei file di Sinkhole, l’attività separata attende il completamento della sincronizzazione dei pacchetti pfSense, verifica e installa la versione esatta che l’ha creata e, quando Sinkhole è già presente, termina ogni 15 minuti senza modifiche.
 
-Keep Settings conserva questa attività di recupero durante una disinstallazione intenzionale. Disattiva Keep Settings prima di rimuovere Sinkhole se deve rimanere disinstallato.
+L’attività conserva in `/cf/conf/sinkhole/restore-heal` una copia della versione verificata tramite checksum, proveniente dal proprio download o da un aggiornamento installato tramite **About**, così un ripristino sullo stesso firewall può reinstallare Sinkhole senza accesso a Internet. È attiva una sola esecuzione alla volta; un’esecuzione avviata mentre un’altra sta ancora scaricando o installando termina immediatamente. Ogni passaggio viene registrato nel log di sistema sotto `sinkhole-restore-heal`: `deferred` mentre pfSense sta ancora ripristinando i pacchetti, quindi `cache` o `fetch`, `install` e `installed`, oppure `fetch-failed`, `checksum-failed`, `cache-failed` o `install-failed` quando un passaggio non riesce.
+
+Una disinstallazione intenzionale rimuove l’attività di recupero e la relativa copia memorizzata nella cache sia con **Keep Settings** attivo sia con l’opzione disattivata; solo una rimozione durante il ripristino di una configurazione le conserva.
 
 ## Perché un aggiornamento pfSense mantiene Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
@@ -70,7 +72,7 @@ Quando **Keep Settings** è attivo, configurazione e liste DNS e IP salvate rima
 
 1. Verifica che **Firewall → Sinkhole** non sia più presente.
 2. Verifica che lo script Python e l’ordine del DNS Resolver corrispondano ai valori precedenti a Sinkhole.
-3. Se Keep Settings era disattivato, verifica che non rimangano voci cron di Sinkhole. In ogni caso, verifica che non rimangano blocchi di reindirizzamento del DNS in chiaro, l’anchor `sinkhole/bypass` o l’anchor `sinkhole/ip`.
+3. Verifica che non rimangano voci cron di Sinkhole, inclusa l’attività di recupero `sinkhole-restore-heal`, e che non rimangano né blocchi di reindirizzamento del DNS in chiaro né l’anchor `sinkhole/bypass` né l’anchor `sinkhole/ip`.
 4. Se Keep Settings era disattivato, verifica che `/cf/conf/sinkhole` non esista.
 
 Se era attivo un aggiornamento, il marcatore di rimozione gli chiede di interrompersi tra fasi limitate prima di modificare i dati persistenti. La rimozione registra il primo errore di pulizia ma tenta comunque i passaggi indipendenti rimanenti.

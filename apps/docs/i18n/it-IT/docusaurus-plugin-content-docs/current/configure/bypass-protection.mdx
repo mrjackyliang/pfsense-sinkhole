@@ -20,11 +20,37 @@ Mantieni le query DNS delle interfacce client selezionate su percorsi che Sinkho
 
 ## Scegliere le interfacce \{#choose-the-interfaces}
 
-Apri **Firewall → Sinkhole → Bypass** e seleziona le interfacce in **Apply to** prima di attivare una protezione. Questa singola selezione si applica a ogni impostazione della pagina. Le protezioni ispezionano solo il traffico in arrivo dai client su tali interfacce; non influiscono sulle query del firewall stesso o sul traffico in uscita.
+Apri **Firewall → Sinkhole → Bypass** e seleziona le interfacce in **Apply to** prima di attivare una protezione. Questa selezione appartiene a **Global** e decide dove si applicano le impostazioni di Global. Le protezioni ispezionano solo il traffico in arrivo dai client su tali interfacce; non influiscono sulle query del firewall stesso o sul traffico in uscita.
 
 La corrispondenza di reti e dispositivi usa le sottoreti correnti di tali interfacce, come i normali ambiti di Sinkhole. Un client esterno alle sottoreti selezionate non riceve alcuna risposta DNS Bypass.
 
-<img src={bypassProtection} alt="Scheda Bypass con LAN selezionata, reindirizzamento DNS in chiaro disattivato, protezioni per DNS cifrato e tunnel attive, Discovery impostato su Answer with no records, una sorgente e una destinazione esenti dimostrative e tre Bypass Lists dimostrative" width={1024} height={1679} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Scheda Bypass con LAN selezionata, reindirizzamento DNS in chiaro disattivato, protezioni per DNS cifrato e tunnel attive, Discovery impostato su Answer with no records, una sorgente e una destinazione esenti dimostrative e tre Bypass Lists dimostrative" width={1024} height={1804} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Impostare le protezioni per rete e dispositivo \{#set-protections-per-network-and-device}
+
+La riga sotto le schede sceglie cosa modifichi: **All**, **Global**, una rete o un dispositivo. La riga sottostante indica i client a cui si applicano quelle impostazioni. Ogni scelta mostra solo le proprie impostazioni; le impostazioni di una scelta più ampia non vengono mai mostrate.
+
+Un client segue le impostazioni più specifiche esistenti: prima quelle del suo dispositivo, poi quelle della sua rete, poi quelle di Global. Una rete o un dispositivo disattivato nella scheda Clients viene saltato.
+
+Solo **Global** contiene:
+
+- Le interfacce di **Apply to**.
+- Il reindirizzamento **Plain DNS** e le sue esenzioni.
+- Le sorgenti delle Bypass Lists, **Add from Catalog** e gli aggiornamenti delle liste.
+
+Una rete o un dispositivo contiene:
+
+- **Enable**, che attiva le sue protezioni.
+- **Bypass Lists**, le sorgenti abilitate che usa.
+- Le impostazioni per DNS cifrato, **Discovery**, i blocchi dei tunnel e **Block Exemptions**.
+
+Una rete o un dispositivo senza impostazioni proprie mostra una riga, come "Non impostato per questa rete; si applica Globale.", sopra un modulo vuoto. Un dispositivo vi indica la sua rete quando quella rete ha impostazioni proprie. Il salvataggio del modulo crea le impostazioni, e **Remove settings for this network** o **Remove settings for this device** le elimina, così si applicano di nuovo le impostazioni più ampie. Eliminando una rete o un dispositivo nella scheda Clients si eliminano anche le sue impostazioni.
+
+**All** elenca Global e ogni rete e dispositivo con impostazioni proprie, con le protezioni attive. Seleziona una riga per modificarla.
+
+Quando Sinkhole viene aggiornato alla 1.3.0, le impostazioni esistenti restano in Global e vengono copiate in ogni rete e dispositivo. Da quel momento ogni copia è indipendente. Una copia viene attivata solo se l’interfaccia della rete, o un’interfaccia di uno degli identificatori del dispositivo, era selezionata in **Apply to**; ogni altra copia viene salvata disattivata, così nessun client viene filtrato se non lo era già prima.
+
+Ogni rete o dispositivo con impostazioni attive ottiene una propria tabella dei client nell’anchor `sinkhole/bypass`. Gli indirizzi di un dispositivo vengono rimossi dalla tabella della sua rete e da quella di Global, e le sottoreti di una rete da quella di Global, così un client viene bloccato solo dalle sue impostazioni più specifiche. Sinkhole non aggiunge regole pass per questo.
 
 ## Reindirizzare il DNS in chiaro \{#redirect-plain-dns}
 

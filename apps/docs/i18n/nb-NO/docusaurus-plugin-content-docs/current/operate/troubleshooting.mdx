@@ -59,8 +59,8 @@ Et tillatt spørringsnavn forblir tillatt. Dette hindrer et mindre spesifikt CNA
 
 ## SafeSearch gjelder ikke \{#safesearch-does-not-apply}
 
-1. Bekreft at nettverks- eller enhetsomfanget til klienten er aktivert under **Scopes**, og at søkemotoren er krysset av for det omfanget eller for Global under **SafeSearch**.
-2. Sjekk **Status → SafeSearch** for adressene til den sikre verten og den siste feilen. En vert uten adresser holder søkemotoren blokkert for omfanget til et oppslag lykkes.
+1. Bekreft at nettverket eller enheten til klienten er aktivert under **Clients**, og at søkemotoren er krysset av for det nettverket eller den enheten, eller for Global, under **SafeSearch**.
+2. Sjekk **Status → SafeSearch** for adressene til den sikre verten og den siste feilen. En vert uten adresser holder søkemotoren blokkert for den konteksten til et oppslag lykkes.
 3. Bekreft at **Compile Needed** og **Deployment Needed** er `No` etter lagring.
 4. Bekreft at klienten ikke bruker kryptert DNS eller en annen resolver; [Beskyttelse mot omgåelse](/docs/configure/bypass-protection) holder valgte grensesnitt på Sinkholes DNS-bane.
 
@@ -68,10 +68,10 @@ En nettleser kan beholde den vanlige adressen til en søkemotor i hurtigbufferen
 
 ## En enhet får feil policy \{#a-device-gets-the-wrong-policy}
 
-- Kjør `/usr/local/sbin/sinkhole --refresh-clients`, og undersøk **Status → Scopes**.
-- Bekreft at nettverksraden viser de gjeldende delnettene til grensesnittet, og at enhetsraden viser de gjeldende adressene.
+- Kjør `/usr/local/sbin/sinkhole --refresh-clients`, og undersøk **Status → Clients**.
+- Bekreft at nettverksraden viser de gjeldende delnettene til grensesnittet, og at enhetsraden viser alle konfigurerte identifikatorer og gjeldende adresser.
 - Løs alle verdier for **Conflict**, fordi den første enheten i tabellrekkefølgen vinner en delt adresse.
-- For en statisk tilordning kontrollerer du både den konfigurerte adressen og gjeldende adresser som er observert for MAC-adressen.
+- For hver identifikator for statisk tilordning kontrollerer du både den konfigurerte adressen og gjeldende adresser som er observert for MAC-adressen. Adresser som finnes gjennom to identifikatorer i samme enhet, er ikke konflikter.
 
 ISC-leietider kan være GMT eller lokal tid på brannmuren, avhengig av innstillingen for leietid på grensesnittet, mens Kea-leietider allerede er lokale. Sinkhole følger denne pfSense-semantikken når det avgjør om en leie er gjeldende.
 

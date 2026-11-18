@@ -49,52 +49,54 @@ An empty field writes nothing and keeps the Resolver's default. [Resolver Settin
 | Update Checks        | Weekly  | Selects Daily, Weekly, Monthly, or Never checks for new GitHub releases.              |
 | Remote Notifications | Off     | Also sends each new-version notice through the remote services configured in pfSense. |
 
-Each new version creates one local pfSense notice. **About → Check Now** runs the same bounded release check immediately without changing the schedule.
+Each new version found by a scheduled check creates one local pfSense notice. **About → Check Now** runs the same bounded release check without changing the schedule, files no notice, and prevents a later scheduled check from announcing that version.
 
 ## Lists \{#lists}
 
-| Field           | Default | Description                                                                           |
-|-----------------|---------|---------------------------------------------------------------------------------------|
-| Name            | Empty   | Local label used by assignments, alerts, and Status.                                  |
-| URL             | Empty   | HTTP or HTTPS source without embedded credentials.                                    |
-| Enabled         | On      | Includes the source in updates and compiled policy when assigned.                     |
-| Global          | Off     | Applies the list to every client after device and network decisions.                  |
-| Allowed Domains | Empty   | One global allowed domain per line; each allows the exact domain and every subdomain. |
+| Field   | Default | Description                                                   |
+|---------|---------|---------------------------------------------------------------|
+| Name    | Empty   | Local label used by Blocking, alerts, and Status.             |
+| URL     | Empty   | HTTP or HTTPS source without embedded credentials.            |
+| Enabled | On      | Includes the source in updates and compiled policy when used. |
 
 **Add from Catalog** searches the AdGuard Home list registry and pfBlockerNG feed catalog on demand. Adding a result creates the same ordinary row as entering its URL manually; bypass feeds are excluded.
 
+## Blocking \{#blocking}
+
+Each context (Global, one network, or one device) has its own two fields:
+
+| Field           | Default | Description                                                                                                                       |
+|-----------------|---------|-----------------------------------------------------------------------------------------------------------------------------------|
+| Lists           | Empty   | DNS lists that block in this context. Global lists apply to every client after device and network decisions.                      |
+| Allowed Domains | Empty   | One exception per line; each allows the exact domain and every subdomain before this context's lists and every broader context's. |
+
 ## Services \{#services}
 
-Service selections default to empty for every scope. A registry service covered by a dedicated Bypass protection is hidden from Services and removed from saved selections; Private Relay is configured only on Bypass.
+Service selections default to empty for every context. A registry service covered by a dedicated Bypass protection is hidden from Services and removed from saved selections; Private Relay is configured only on Bypass.
 
 ## SafeSearch \{#safesearch}
 
-SafeSearch selections default to empty for every scope. Each scope can lock Google, YouTube (Moderate or Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex, and Pixabay, or block Qwant. [SafeSearch](/docs/configure/safesearch) lists the names and safe hosts.
+SafeSearch selections default to empty for every context. Each context can lock Google, YouTube (Moderate or Strict), Bing, DuckDuckGo, Brave Search, Startpage, Ecosia, Yandex, and Pixabay, or block Qwant. [SafeSearch](/docs/configure/safesearch) lists the names and safe hosts.
 
-## Network Scopes \{#network-scopes}
+## Networks \{#networks}
 
-| Field           | Default | Description                                                                                                                                       |
-|-----------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| Interface       | LAN     | Configured pfSense interface whose current IPv4 and IPv6 subnets identify the network. Without LAN, the first free non-WAN interface is selected. |
-| Lists           | Empty   | Additional DNS lists that block clients in the network.                                                                                           |
-| Allowed Domains | Empty   | One network exception per line; each allows the exact domain and every subdomain before that network's lists and all global policy.               |
-| Enabled         | On      | Makes the row part of client matching and compiled policy.                                                                                        |
+| Field     | Default | Description                                                                                                                                       |
+|-----------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interface | LAN     | Configured pfSense interface whose current IPv4 and IPv6 subnets identify the network. Without LAN, the first free non-WAN interface is selected. |
+| Enabled   | On      | Makes the row part of client matching and compiled policy.                                                                                        |
 
 Each interface can appear only once. An unavailable saved interface remains visible for correction instead of being discarded.
 
-## Device Scopes \{#device-scopes}
+## Devices \{#devices}
 
-| Field                    | Default    | Description                                                                                                               |
-|--------------------------|------------|---------------------------------------------------------------------------------------------------------------------------|
-| Name                     | Empty      | Local label shown in policy and Status.                                                                                   |
-| Identified By            | IP address | Selects IP address, DHCP static mapping, or MAC address.                                                                  |
-| IP Address / MAC Address | Empty      | Exact identifier when IP address or MAC address is selected. Label follows the selected method.                           |
-| DHCP Static Mapping      | Empty      | Existing mapping selected when that identification method is used.                                                        |
-| Lists                    | Empty      | Additional DNS lists that block this device.                                                                              |
-| Allowed Domains          | Empty      | One device exception per line; each allows the exact domain and every subdomain before every network and global decision. |
-| Enabled                  | On         | Makes the row part of client matching and compiled policy.                                                                |
+| Field               | Default            | Description                                                                                           |
+|---------------------|--------------------|-------------------------------------------------------------------------------------------------------|
+| Name                | Empty              | Local label shown in policy and Status.                                                               |
+| Identifiers → Type  | One IP address row | Selects IP address, DHCP static mapping, or MAC address for each addable and removable row.           |
+| Identifiers → Value | Empty              | Exact IP or MAC address, or an existing DHCP static mapping. At least one identifier row is required. |
+| Enabled             | On                 | Makes the row part of client matching and compiled policy.                                            |
 
-Static mappings use their configured address plus current addresses observed for the mapping's MAC. A MAC row uses current ARP, NDP, and DHCP lease data.
+All identifier rows resolve to the same device and share its settings. Static mappings use their configured address plus current addresses observed for the mapping's MAC. A MAC row uses current ARP, NDP, and DHCP lease data. Addresses reached by several identifiers in one device are not conflicts.
 
 ## Alert Rules \{#alert-rules}
 
@@ -102,7 +104,7 @@ Static mappings use their configured address plus current addresses observed for
 |----------------------|----------|--------------------------------------------------------------------------------------------------|
 | Description          | Empty    | Local label for the rule.                                                                        |
 | Lists                | Any      | Matches any list or only the selected configured lists.                                          |
-| Clients              | Everyone | Matches everyone or the selected network and device scopes.                                      |
+| Clients              | Everyone | Matches everyone or the selected networks and devices.                                           |
 | Repeat After         | 60       | Minutes before the same rule, client, domain, and list can notify again; accepts 1 through 1440. |
 | WebGUI Notice        | On       | Adds a pfSense notice when the rule matches.                                                     |
 | Remote Notifications | On       | Uses pfSense's configured notification services when the rule matches.                           |

@@ -126,6 +126,7 @@ final class ScopeConfiguration
      * @return array{devices: array<string, array>, invalid_rows: list<array>}
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public static function partitionDevices(
         mixed $value,
@@ -163,14 +164,19 @@ final class ScopeConfiguration
                     throw new ValidationException('saved_device_identifier_duplicated');
                 }
 
-                $identifierKey = self::deviceIdentifierKey($device);
+                $identifierKeys = self::deviceIdentifierKeys($device);
 
-                if (isset($usedIdentifiers[$identifierKey])) {
-                    throw new ValidationException('device_identifier_duplicated');
+                foreach ($identifierKeys as $identifierKey) {
+                    if (isset($usedIdentifiers[$identifierKey])) {
+                        throw new ValidationException('device_identifier_duplicated');
+                    }
                 }
 
                 $devices[$device['id']] = $device;
-                $usedIdentifiers[$identifierKey] = true;
+
+                foreach ($identifierKeys as $identifierKey) {
+                    $usedIdentifiers[$identifierKey] = true;
+                }
             } catch (ValidationException $exception) {
                 $invalidRows[] = self::invalidRow($position, $row, $exception);
             }
@@ -216,16 +222,18 @@ final class ScopeConfiguration
     /**
      * Scope Configuration - Normalize Device Row.
      *
-     * Static mappings are identified by interface and normalized MAC, never by a
-     * mutable array index.
+     * Legacy single-identifier rows become a one-item identifier list. Static
+     * mappings are identified by interface and normalized MAC, never by a mutable
+     * array index.
      *
      * @param array $row - Device row.
      * @param list<array> $staticMappings - Current DHCP static mappings.
      * @param array<string, array> $lists - Configured lists by stable ID.
      *
-     * @return array{id: string, name: string, identifier_type: string, identifier: string, interface: string, lists: list<string>, allowed_domains: list<string>, enabled: bool}
+     * @return array{id: string, name: string, identifiers: list<array{type: string, value: string, interface: string}>, lists: list<string>, allowed_domains: list<string>, enabled: bool}
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
     public static function normalizeDeviceRow(array $row, array $staticMappings, array $lists): array
     {
@@ -241,25 +249,48 @@ final class ScopeConfiguration
             throw new ValidationException('device_name_invalid');
         }
 
-        $type = is_string($row['identifier_type'] ?? null)
-            ? $row['identifier_type']
-            : '';
-        $rawIdentifier = is_string($row['identifier'] ?? null) ? $row['identifier'] : '';
+        return [
+            'id' => $identifier,
+            'name' => $name,
+            'identifiers' => self::normalizeDeviceIdentifiers($row, $staticMappings),
+            'lists' => self::normalizeListSelection($row['lists'] ?? [], $lists),
+            'allowed_domains' => self::normalizeAllowedDomains($row['allowed_domains'] ?? []),
+            'enabled' => self::enabled($row['enabled'] ?? null),
+        ];
+    }
+
+    /**
+     * Scope Configuration - Normalize Device Identifier Row.
+     *
+     * Reuses the former single-identifier validation contract for every repeated
+     * identifier row.
+     *
+     * @param array $row - Identifier row.
+     * @param list<array> $staticMappings - Current DHCP static mappings.
+     *
+     * @return array{type: string, value: string, interface: string}
+     *
+     * @since 1.3.0
+     */
+    public static function normalizeDeviceIdentifierRow(array $row, array $staticMappings): array
+    {
+        $type = is_string($row['type'] ?? null) ? $row['type'] : '';
+        $value = is_string($row['value'] ?? null) ? $row['value'] : '';
         $interface = is_string($row['interface'] ?? null) ? trim($row['interface']) : '';
 
         if ($type === self::DEVICE_IP) {
-            $rawIdentifier = self::normalizeIpAddress($rawIdentifier);
+            $value = self::normalizeIpAddress($value);
             $interface = '';
         } elseif ($type === self::DEVICE_MAC) {
-            $rawIdentifier = self::normalizeMacAddress($rawIdentifier);
+            $value = self::normalizeMacAddress($value);
             $interface = '';
         } elseif ($type === self::DEVICE_STATIC_MAPPING) {
-            $rawIdentifier = self::normalizeMacAddress($rawIdentifier);
+            $value = self::normalizeMacAddress($value);
 
             if (preg_match('/^[\x21-\x7e]+$/D', $interface) !== 1 || !self::staticMappingExists(
                 $staticMappings,
                 $interface,
-                $rawIdentifier,
+                $value,
             )) {
                 throw new ValidationException('dhcp_static_mapping_missing');
             }
@@ -268,15 +299,76 @@ final class ScopeConfiguration
         }
 
         return [
-            'id' => $identifier,
-            'name' => $name,
-            'identifier_type' => $type,
-            'identifier' => $rawIdentifier,
+            'type' => $type,
+            'value' => $value,
             'interface' => $interface,
-            'lists' => self::normalizeListSelection($row['lists'] ?? [], $lists),
-            'allowed_domains' => self::normalizeAllowedDomains($row['allowed_domains'] ?? []),
-            'enabled' => self::enabled($row['enabled'] ?? null),
         ];
+    }
+
+    /**
+     * Scope Configuration - Normalize Device Identifiers.
+     *
+     * New rows use repeated ``identifiers/item`` children. A saved legacy row is
+     * read as a one-item list until the next configuration save rewrites it.
+     *
+     * @param array $device - Device row.
+     * @param list<array> $staticMappings - Current DHCP static mappings.
+     *
+     * @return list<array{type: string, value: string, interface: string}>
+     *
+     * @since 1.3.0
+     * @private
+     */
+    private static function normalizeDeviceIdentifiers(array $device, array $staticMappings): array
+    {
+        if (array_key_exists('identifiers', $device)) {
+            $rows = self::unwrapRepeatedItems($device['identifiers']);
+        } elseif (
+            array_key_exists('identifier_type', $device)
+            || array_key_exists('identifier', $device)
+            || array_key_exists('interface', $device)
+        ) {
+            $rows = [[
+                'type' => $device['identifier_type'] ?? null,
+                'value' => $device['identifier'] ?? null,
+                'interface' => $device['interface'] ?? null,
+            ]];
+        } else {
+            $rows = [];
+        }
+
+        if (!is_array($rows)) {
+            throw new ValidationException('device_identifiers_invalid');
+        }
+
+        if ($rows !== [] && !array_is_list($rows)) {
+            $rows = [$rows];
+        }
+
+        if ($rows === []) {
+            throw new ValidationException('device_identifiers_required');
+        }
+
+        $identifiers = [];
+        $usedIdentifiers = [];
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                throw new ValidationException('device_identifier_row_invalid');
+            }
+
+            $identifier = self::normalizeDeviceIdentifierRow($row, $staticMappings);
+            $identifierKey = self::deviceIdentifierKey($identifier);
+
+            if (isset($usedIdentifiers[$identifierKey])) {
+                throw new ValidationException('device_identifier_duplicate_in_device');
+            }
+
+            $identifiers[] = $identifier;
+            $usedIdentifiers[$identifierKey] = true;
+        }
+
+        return $identifiers;
     }
 
     /**
@@ -313,22 +405,47 @@ final class ScopeConfiguration
      *
      * Produces the canonical key used for duplicate detection.
      *
-     * @param array $device - Normalized device row.
+     * @param array $identifier - Normalized identifier row.
      *
      * @return string
      *
      * @since 1.0.0
+     * @since 1.3.0
      */
-    public static function deviceIdentifierKey(array $device): string
+    public static function deviceIdentifierKey(array $identifier): string
     {
-        $type = (string) ($device['identifier_type'] ?? '');
-        $identifier = (string) ($device['identifier'] ?? '');
+        $type = (string) ($identifier['type'] ?? '');
+        $value = (string) ($identifier['value'] ?? '');
 
         if ($type === self::DEVICE_STATIC_MAPPING) {
-            return $type . ':' . (string) ($device['interface'] ?? '') . ':' . $identifier;
+            return $type . ':' . (string) ($identifier['interface'] ?? '') . ':' . $value;
         }
 
-        return $type . ':' . $identifier;
+        return $type . ':' . $value;
+    }
+
+    /**
+     * Scope Configuration - Device Identifier Keys.
+     *
+     * Produces every canonical duplicate-detection key for one normalized device.
+     *
+     * @param array $device - Normalized device row.
+     *
+     * @return list<string>
+     *
+     * @since 1.3.0
+     */
+    public static function deviceIdentifierKeys(array $device): array
+    {
+        $keys = [];
+
+        foreach ($device['identifiers'] ?? [] as $identifier) {
+            if (is_array($identifier)) {
+                $keys[] = self::deviceIdentifierKey($identifier);
+            }
+        }
+
+        return $keys;
     }
 
     /**

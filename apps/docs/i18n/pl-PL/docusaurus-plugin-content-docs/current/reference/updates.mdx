@@ -22,11 +22,11 @@ Sinkhole może sprawdzać swoje wydania GitHub, powiadamiać przez pfSense i ins
 
 **General → Update Checks** wybiera Daily, Weekly, Monthly lub Never; ustawieniem domyślnym jest Weekly. Sinkhole przechowuje stabilne losowe składniki harmonogramu, aby zapisywanie ustawień nie przesuwało stale czasu kontroli.
 
-Kontrola zapisuje najnowszą wersję, stronę wydania, czas kontroli i ostatni błąd. **About → Check Now** natychmiast uruchamia tę samą kontrolę.
+Kontrola zapisuje najnowszą wersję, stronę wydania, czas kontroli i ostatni błąd. **About → Check Now** natychmiast uruchamia tę samą kontrolę bez tworzenia powiadomienia i zapisuje nowszą wersję jako już zgłoszoną.
 
 ## Powiadomienia o aktualizacjach \{#update-notices}
 
-Każda nowo wykryta wersja tworzy jedno lokalne powiadomienie WebGUI pfSense z łączem do karty About Sinkhole. Powtarzane kontrole nie tworzą duplikatów powiadomień dla tej samej wersji.
+Każda nowo wykryta wersja z zaplanowanej kontroli tworzy jedno lokalne powiadomienie WebGUI pfSense z łączem do karty About Sinkhole. Powtarzane kontrole nie tworzą duplikatów powiadomień dla tej samej wersji, także wersji pokazanej już przez ręczną kontrolę w About.
 
 Zaznacz **Remote Notifications**, aby używać również usług skonfigurowanych w **System → Advanced → Notifications**. Ustawienie jest domyślnie wyłączone i wpływa na powiadomienia o wersjach, a nie na reguły alertów blokowania list.
 
@@ -36,7 +36,9 @@ Pasek aktualizacji pokazuje zainstalowaną wersję, najnowszą sprawdzoną wersj
 
 Przycisk **Update** pojawia się, gdy zapisana najnowsza wersja jest nowsza. Strona odpytuje odłączone zadanie i zgłasza jego wynik bez utrzymywania otwartego żądania przeglądarki.
 
-<img src={aboutUpdateBar} alt="Karta About pokazująca dostępną aktualizację Sinkhole z elementami Update i What's New" width={1024} height={816} style={{maxWidth: '100%', height: 'auto'}} />
+Jeśli trwa aktualizacja list, IP lub Bypass, instalacja z About pokazuje oczekiwanie i rozpoczyna się po zakończeniu tego zadania. Czas oczekiwania jest ograniczony do 30 minut.
+
+<img src={aboutUpdateBar} alt="Karta About pokazująca dostępną aktualizację Sinkhole z elementami Update i What's New" width={1024} height={796} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Weryfikacja przed instalacją \{#verification-before-installation}
 
@@ -48,9 +50,9 @@ Pusta zainstalowana lista zaufania oznacza, że podpis nie jest wymagany, ale we
 
 ## Blokada aktualizacji \{#update-locking}
 
-Kontrola pakietu i automatyczna aktualizacja współdzielą `/var/run/sinkhole-update.lock` z aktualizacjami DNS, Bypass i IP/krajów, zastosowaniem ustawień oraz porządkowaniem przy usuwaniu. Nie czekają na blokadę: jeśli utrzymuje ją inna operacja, kontrola lub akcja **Update** zatrzymuje się z komunikatem `Another package operation is already running.`
+Kontrole wydań i automatyczna aktualizacja są koordynowane przez `/var/run/sinkhole-release.lock` i czekają do 30 sekund na inną kontrolę lub instalację. Kontrola wydania nigdy nie zajmuje blokady zadań pakietu, więc może działać podczas aktualizacji list, IP lub Bypass.
 
-Blokada uniemożliwia zmianę plików pakietu, gdy bieżący pakiet pobiera, analizuje, kompiluje lub stosuje zasady. Spróbuj ponownie z About, gdy Status nie pokazuje już trwającej aktualizacji.
+Automatyczna aktualizacja najpierw zajmuje blokadę wydania, a następnie `/var/run/sinkhole-update.lock`. Jeśli aktualizacja list, IP lub Bypass utrzymuje blokadę zadań pakietu, wiersz postępu w About pokazuje oczekiwanie przez maksymalnie 30 minut, po czym instalacja kończy się niepowodzeniem.
 
 ## Ręczna aktualizacja pakietu \{#manual-package-update}
 

@@ -49,7 +49,7 @@ Sinkhole i pfBlockerNG ne mogu istovremeno filtrirati DNS. Sinkhole ostaje neakt
 ## Šta ostaje pod vašom kontrolom \{#what-stays-under-your-control}
 
 - **Lists** — Dodajte pouzdane izvore putem URL-a ili ih pronađite neutralnom <Terminology title="Pronađite poznate liste za blokiranje bez traženja URL-ova" to="/docs/reference/terminology#lists-and-scopes">pretragom popularnih lista</Terminology>. Sinkhole ne objavljuje niti preporučuje bilo koju listu.
-- **Scopes** — Odaberite globalne liste, liste za jedan pfSense interfejs ili VLAN te liste za uređaj identificiran IP adresom, DHCP statičkim mapiranjem ili MAC adresom.
+- **Klijenti i blokiranje** — Definišite mrežu za jedan pfSense interfejs ili VLAN i uređaj identificiran jednom ili više IP adresa, DHCP statičkih mapiranja i MAC adresa, a zatim odaberite liste za Global, svaku mrežu i svaki uređaj.
 - **Allowed domains** — Propustite domenu i njene poddomene na globalnom, mrežnom ili uređajskom nivou bez uklanjanja cijele liste.
 - **SafeSearch** — Odaberite koji su pretraživači zaključani u sigurnom načinu rada za svaki opseg i da li YouTube koristi Moderate ili Strict.
 - **Alerts** — Odaberite kombinacije lista i klijenata koje stvaraju lokalne WebGUI obavijesti ili koriste udaljene usluge obavijesti konfigurirane u pfSenseu.
@@ -71,6 +71,6 @@ Dokumentacijska lokacija nudi engleski i ostalih 17 lokaliteta pfSensea. Prevede
 ## Sljedeći koraci \{#next-steps}
 
 - **[Instalirajte paket](/docs/installation)** — Provjerite i instalirajte stabilni paket izdanja.
-- **[Postavite Sinkhole](/docs/first-run)** — Dodajte prvu listu, odaberite njen opseg i provjerite aktivnu generaciju.
-- **[Razumijte opsege](/docs/configure/scopes)** — Slijedite tačan redoslijed odlučivanja za uređaj, mrežu i globalni nivo.
+- **[Postavite Sinkhole](/docs/first-run)** — Dodajte prvu listu, odaberite gdje blokira i provjerite aktivnu generaciju.
+- **[Razumijte klijente i blokiranje](/docs/configure/scopes)** — Slijedite tačan redoslijed odlučivanja za uređaj, mrežu i globalni nivo.
 - **[Pregledajte sigurnosni model](/docs/safety/how-updates-work)** — Pogledajte kako sačuvane kopije i atomsko postavljanje održavaju DNS dostupnim.

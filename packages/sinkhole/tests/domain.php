@@ -11,9 +11,11 @@ use PfSense\Sinkhole\Domain\ScopeConfiguration;
 use PfSense\Sinkhole\Domain\Settings;
 use PfSense\Sinkhole\Domain\UnboundCustomOptions;
 use PfSense\Sinkhole\Domain\ValidationException;
+use PfSense\Sinkhole\Runtime\Context;
 use PfSense\Sinkhole\Runtime\Translator;
 
 require_once(__DIR__ . '/TestSupport.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Context.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/DomainParser.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/AlertConfiguration.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/ListConfiguration.php');
@@ -24,7 +26,166 @@ require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Settings.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Translator.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/UnboundCustomOptions.php');
 
+/**
+ * Sinkhole Domain Test - Context Fixtures.
+ *
+ * @return array{networks: array<string, array>, devices: array<string, array>}
+ *
+ * @since 1.3.0
+ */
+function sinkholeDomainTestContextFixtures(): array
+{
+    $networkOne = str_repeat('d', 32);
+    $networkTwo = str_repeat('e', 32);
+    $deviceOne = str_repeat('f', 32);
+
+    return [
+        'networks' => [
+            $networkOne => ['id' => $networkOne, 'name' => 'IOT', 'interface' => 'opt2', 'enabled' => true],
+            $networkTwo => ['id' => $networkTwo, 'interface' => 'opt9', 'enabled' => false],
+        ],
+        'devices' => [
+            $deviceOne => ['id' => $deviceOne, 'name' => 'Invented tablet', 'enabled' => true],
+        ],
+    ];
+}
+
 sinkholeTestRun([
+    'Context parses only global, all, and 32-hex network or device keys' => static function (): void {
+        $identifier = str_repeat('a', 32);
+
+        sinkholeTestAssertSame(['type' => 'global', 'id' => ''], Context::parse('global'), 'Global parses.');
+        sinkholeTestAssertSame(['type' => 'all', 'id' => ''], Context::parse('all'), 'All parses.');
+        sinkholeTestAssertSame(
+            ['type' => 'network', 'id' => $identifier],
+            Context::parse('network:' . $identifier),
+            'A network key parses into its ID.',
+        );
+        sinkholeTestAssertSame(
+            ['type' => 'device', 'id' => $identifier],
+            Context::parse('device:' . $identifier),
+            'A device key parses into its ID.',
+        );
+
+        foreach (['', 'Global', 'network:', 'network:abc', 'device:' . strtoupper($identifier), 'vlan:' . $identifier, 'network:' . $identifier . "\n"] as $malformed) {
+            sinkholeTestAssertSame(null, Context::parse($malformed), 'Malformed keys are rejected: ' . json_encode($malformed));
+        }
+    },
+    'Context current prefers the request, then the session, then Global' => static function (): void {
+        $fixtures = sinkholeDomainTestContextFixtures();
+        $networkKey = 'network:' . str_repeat('d', 32);
+        $deviceKey = 'device:' . str_repeat('f', 32);
+        $_GET = [];
+        $_POST = [];
+        $_SESSION = [];
+
+        sinkholeTestAssertSame('global', Context::current($fixtures['networks'], $fixtures['devices'], true), 'Nothing selected falls back to Global.');
+
+        $_SESSION = [Context::SESSION_KEY => $deviceKey];
+        sinkholeTestAssertSame($deviceKey, Context::current($fixtures['networks'], $fixtures['devices'], true), 'The remembered context is used.');
+
+        $_GET = ['context' => $networkKey];
+        sinkholeTestAssertSame($networkKey, Context::current($fixtures['networks'], $fixtures['devices'], true), 'A linked context wins over the session.');
+
+        $_POST = ['context' => 'global'];
+        sinkholeTestAssertSame('global', Context::current($fixtures['networks'], $fixtures['devices'], true), 'A submitted context wins over the link.');
+
+        $_POST = [];
+        $_GET = ['context' => 'network:' . str_repeat('9', 32)];
+        sinkholeTestAssertSame($deviceKey, Context::current($fixtures['networks'], $fixtures['devices'], true), 'A deleted network in the link falls through to the session.');
+
+        $_GET = [];
+        $_SESSION = [Context::SESSION_KEY => 'device:' . str_repeat('9', 32)];
+        sinkholeTestAssertSame('global', Context::current($fixtures['networks'], $fixtures['devices'], true), 'A deleted remembered device falls back to Global.');
+
+        $_GET = ['context' => 'all'];
+        sinkholeTestAssertSame('all', Context::current($fixtures['networks'], $fixtures['devices'], true), 'All is allowed where the page has an overview.');
+        sinkholeTestAssertSame('global', Context::current($fixtures['networks'], $fixtures['devices'], false), 'All falls back to Global where the page has none.');
+
+        $_GET = [];
+        $_POST = [];
+        $_SESSION = [];
+    },
+    'Context remember stores only valid keys in the session' => static function (): void {
+        $_SESSION = [];
+        Context::remember('network:' . str_repeat('d', 32));
+        sinkholeTestAssertSame('network:' . str_repeat('d', 32), $_SESSION[Context::SESSION_KEY] ?? null, 'A valid key is remembered.');
+
+        Context::remember('nonsense');
+        sinkholeTestAssertSame('network:' . str_repeat('d', 32), $_SESSION[Context::SESSION_KEY] ?? null, 'A malformed key never replaces the remembered one.');
+
+        Context::remember('all');
+        sinkholeTestAssertSame('all', $_SESSION[Context::SESSION_KEY] ?? null, 'All is remembered so it follows the user across tabs.');
+        $_SESSION = [];
+    },
+    'Context labels and banners name what the page edits' => static function (): void {
+        $fixtures = sinkholeDomainTestContextFixtures();
+        $networks = $fixtures['networks'];
+        $devices = $fixtures['devices'];
+        $networkKey = 'network:' . str_repeat('d', 32);
+        $deviceKey = 'device:' . str_repeat('f', 32);
+
+        sinkholeTestAssertSame('Global', Context::label('global', $networks, $devices), 'Global has its own label.');
+        sinkholeTestAssertSame('Network: IOT', Context::label($networkKey, $networks, $devices), 'A network label uses its name.');
+        sinkholeTestAssertSame('Network: OPT9', Context::label('network:' . str_repeat('e', 32), $networks, $devices), 'Without a description the interface name is shown.');
+        sinkholeTestAssertSame('Device: Invented tablet', Context::label($deviceKey, $networks, $devices), 'A device label uses its name.');
+        sinkholeTestAssertSame(
+            'Editing: Global · applies to every client',
+            Context::bannerText('global', $networks, $devices),
+            'The Global banner says it applies to everyone.',
+        );
+        sinkholeTestAssertSame(
+            'Editing: Network: IOT · applies to clients on IOT',
+            Context::bannerText($networkKey, $networks, $devices),
+            'The network banner names the network twice.',
+        );
+        sinkholeTestAssertSame(
+            'Editing: Device: Invented tablet · this device only',
+            Context::bannerText($deviceKey, $networks, $devices),
+            'The device banner limits itself to the device.',
+        );
+    },
+    'Context row renders pfSense pills, chips, a device search, and the banner' => static function (): void {
+        $fixtures = sinkholeDomainTestContextFixtures();
+        $networks = $fixtures['networks'];
+        $devices = $fixtures['devices'];
+        $networkOne = str_repeat('d', 32);
+        $networkTwo = str_repeat('e', 32);
+        $deviceOne = str_repeat('f', 32);
+
+        $globalRow = Context::renderRow('sinkhole-blocking.php', 'global', $networks, $devices, true);
+        sinkholeTestAssertContains('<ul class="nav nav-pills sinkhole-context-kinds" role="tablist">', $globalRow, 'The row uses pfSense pills.');
+        sinkholeTestAssertContains('<li role="presentation" class="active" data-sinkhole-context-name="global"><a href="sinkhole-blocking.php?context=global">Global</a></li>', $globalRow, 'Global is active.');
+        sinkholeTestAssertContains('href="sinkhole-blocking.php?context=all">All</a>', $globalRow, 'All is offered where allowed.');
+        sinkholeTestAssertContains('href="sinkhole-blocking.php?context=network%3A' . $networkOne . '">Networks (2)</a>', $globalRow, 'Networks opens the first network.');
+        sinkholeTestAssertContains('Devices (1)', $globalRow, 'Devices shows its count.');
+        sinkholeTestAssertSame(false, str_contains($globalRow, 'sinkhole-context-chips'), 'Global shows no chips.');
+        sinkholeTestAssertContains('Editing: Global · applies to every client', $globalRow, 'The banner follows the row.');
+
+        $withoutAll = Context::renderRow('sinkhole-blocking.php', 'global', [], [], false);
+        sinkholeTestAssertSame(false, str_contains($withoutAll, 'context=all'), 'All is hidden where the page has no overview.');
+        sinkholeTestAssertSame(false, str_contains($withoutAll, 'Networks'), 'An empty kind has no tab.');
+
+        $networkRow = Context::renderRow('sinkhole-ip.php', 'network:' . $networkTwo, $networks, $devices, true);
+        sinkholeTestAssertContains('sinkhole-context-chips', $networkRow, 'A network shows the network chips.');
+        sinkholeTestAssertContains('<a href="sinkhole-ip.php?context=network%3A' . $networkTwo . '">OPT9 (disabled)</a>', $networkRow, 'A disabled network chip says so.');
+        sinkholeTestAssertContains('This network is disabled on Clients', $networkRow, 'A disabled network warns that nothing applies.');
+        sinkholeTestAssertSame(false, str_contains($networkRow, 'sinkhole-context-search'), 'Networks have no search box.');
+
+        $deviceRow = Context::renderRow('sinkhole-bypass.php', 'device:' . $deviceOne, $networks, $devices, true);
+        sinkholeTestAssertContains('id="sinkhole-context-search"', $deviceRow, 'Devices get a search box.');
+        sinkholeTestAssertContains('id="sinkhole-context-devices"', $deviceRow, 'The search filters the device chips.');
+        sinkholeTestAssertContains('data-sinkhole-context-name="invented tablet"', $deviceRow, 'Chips carry a lowercase search name.');
+
+        $escaped = Context::renderRow(
+            'sinkhole-blocking.php',
+            'device:' . $deviceOne,
+            [],
+            [$deviceOne => ['id' => $deviceOne, 'name' => '<b>"x"</b>', 'enabled' => true]],
+            true,
+        );
+        sinkholeTestAssertSame(false, str_contains($escaped, '<b>'), 'Device names are escaped.');
+    },
     'SafeSearch engines cover every Google domain and keep YouTube exclusive' => static function (): void {
         $googleNames = SafeSearchEngines::names('google');
 
@@ -476,9 +637,11 @@ sinkholeTestRun([
             [
                 'id' => '22222222222222222222222222222222',
                 'descr' => 'Duplicate',
-                'identifier_type' => ScopeConfiguration::DEVICE_IP,
-                'identifier' => '192.0.2.10',
-                'interface' => '',
+                'identifiers' => ['item' => [[
+                    'type' => ScopeConfiguration::DEVICE_IP,
+                    'value' => '192.0.2.10',
+                    'interface' => '',
+                ]]],
                 'lists' => [],
                 'allowed_domains' => [],
                 'enabled' => 'on',
@@ -486,9 +649,11 @@ sinkholeTestRun([
             [
                 'id' => '33333333333333333333333333333333',
                 'descr' => 'Bad IP',
-                'identifier_type' => ScopeConfiguration::DEVICE_IP,
-                'identifier' => '999.1.1.1',
-                'interface' => '',
+                'identifiers' => [[
+                    'type' => ScopeConfiguration::DEVICE_IP,
+                    'value' => '999.1.1.1',
+                    'interface' => '',
+                ]],
                 'lists' => [],
                 'allowed_domains' => [],
                 'enabled' => 'on',
@@ -496,9 +661,11 @@ sinkholeTestRun([
             [
                 'id' => '44444444444444444444444444444444',
                 'descr' => 'Bad MAC',
-                'identifier_type' => ScopeConfiguration::DEVICE_MAC,
-                'identifier' => 'not-a-mac',
-                'interface' => '',
+                'identifiers' => [[
+                    'type' => ScopeConfiguration::DEVICE_MAC,
+                    'value' => 'not-a-mac',
+                    'interface' => '',
+                ]],
                 'lists' => [],
                 'allowed_domains' => [],
                 'enabled' => 'on',
@@ -506,9 +673,66 @@ sinkholeTestRun([
             [
                 'id' => '55555555555555555555555555555555',
                 'descr' => 'Stale Mapping',
-                'identifier_type' => ScopeConfiguration::DEVICE_STATIC_MAPPING,
-                'identifier' => '00:11:22:33:44:66',
-                'interface' => 'lan',
+                'identifiers' => [[
+                    'type' => ScopeConfiguration::DEVICE_STATIC_MAPPING,
+                    'value' => '00:11:22:33:44:66',
+                    'interface' => 'lan',
+                ]],
+                'lists' => [],
+                'allowed_domains' => [],
+                'enabled' => 'on',
+            ],
+            [
+                'id' => '66666666666666666666666666666666',
+                'descr' => 'No Identifiers',
+                'identifiers' => [],
+                'lists' => [],
+                'allowed_domains' => [],
+                'enabled' => 'on',
+            ],
+            [
+                'id' => '77777777777777777777777777777777',
+                'descr' => 'Duplicate In Device',
+                'identifiers' => [
+                    [
+                        'type' => ScopeConfiguration::DEVICE_MAC,
+                        'value' => '00:11:22:33:44:55',
+                        'interface' => '',
+                    ],
+                    [
+                        'type' => ScopeConfiguration::DEVICE_MAC,
+                        'value' => '00:11:22:33:44:55',
+                        'interface' => '',
+                    ],
+                ],
+                'lists' => [],
+                'allowed_domains' => [],
+                'enabled' => 'on',
+            ],
+            [
+                'id' => '88888888888888888888888888888888',
+                'descr' => 'Invalid Identifier List',
+                'identifiers' => 'not-a-list',
+                'lists' => [],
+                'allowed_domains' => [],
+                'enabled' => 'on',
+            ],
+            [
+                'id' => '99999999999999999999999999999999',
+                'descr' => 'Invalid Identifier Row',
+                'identifiers' => ['not-a-row'],
+                'lists' => [],
+                'allowed_domains' => [],
+                'enabled' => 'on',
+            ],
+            [
+                'id' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                'descr' => 'Invalid Identifier Type',
+                'identifiers' => [[
+                    'type' => 'invented',
+                    'value' => '192.0.2.30',
+                    'interface' => '',
+                ]],
                 'lists' => [],
                 'allowed_domains' => [],
                 'enabled' => 'on',
@@ -521,9 +745,33 @@ sinkholeTestRun([
             'Only the first valid unique device identifier may remain active.',
         );
         sinkholeTestAssertSame(
-            4,
+            9,
             count($devices['invalid_rows']),
-            'Bad IP, bad MAC, stale mapping, and duplicate identifiers must be repair rows.',
+            'Every invalid identifier list and cross-device duplicate must remain a repair row.',
+        );
+        sinkholeTestAssertSame(
+            [
+                'device_identifier_duplicated',
+                'device_ip_address_invalid',
+                'device_mac_address_invalid',
+                'dhcp_static_mapping_missing',
+                'device_identifiers_required',
+                'device_identifier_duplicate_in_device',
+                'device_identifiers_invalid',
+                'device_identifier_row_invalid',
+                'device_identification_method_invalid',
+            ],
+            array_column($devices['invalid_rows'], 'reason_key'),
+            'Each device identifier validation rule must retain its stable reason.',
+        );
+        sinkholeTestAssertSame(
+            [[
+                'type' => ScopeConfiguration::DEVICE_IP,
+                'value' => '192.0.2.10',
+                'interface' => '',
+            ]],
+            $devices['devices']['11111111111111111111111111111111']['identifiers'],
+            'A legacy single identifier must read as a canonical one-item list.',
         );
     },
     'scope readers unwrap repeated items and accept empty elements' => static function (): void {
@@ -563,6 +811,20 @@ sinkholeTestRun([
             'The repair form helper must expose stored repeated items directly.',
         );
         sinkholeTestAssertSame([], $device['lists'], 'An empty lists element must be empty.');
+        sinkholeTestAssertSame(
+            [[
+                'type' => ScopeConfiguration::DEVICE_IP,
+                'value' => '192.0.2.10',
+                'interface' => '',
+            ]],
+            $device['identifiers'],
+            'A legacy device identifier must migrate in memory without changing behavior.',
+        );
+        sinkholeTestAssertTrue(
+            !array_key_exists('identifier', $device)
+                && !array_key_exists('identifier_type', $device),
+            'A normalized legacy device must expose only the repeated identifier shape.',
+        );
         sinkholeTestAssertSame(
             [],
             $device['allowed_domains'],
@@ -1103,6 +1365,9 @@ sinkholeTestRun([
                 'page-firewall-sinkhole-lists',
                 'page-firewall-sinkhole-lists-edit',
                 'page-firewall-sinkhole-services',
+                'page-firewall-sinkhole-clients',
+                'page-firewall-sinkhole-clients-edit',
+                'page-firewall-sinkhole-blocking',
                 'page-firewall-sinkhole-scopes',
                 'page-firewall-sinkhole-scopes-edit',
                 'page-firewall-sinkhole-alerts',
@@ -1151,6 +1416,7 @@ sinkholeTestRun([
         foreach ([
             'sinkhole-alerts_edit.php',
             'sinkhole-bypass_edit.php',
+            'sinkhole-clients_edit.php',
             'sinkhole-ip_edit.php',
             'sinkhole-lists_edit.php',
             'sinkhole-scopes_edit.php',

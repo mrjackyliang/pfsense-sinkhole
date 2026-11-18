@@ -59,8 +59,8 @@ Ein erlaubter Abfragename bleibt erlaubt. Dadurch kann ein weniger spezifisches 
 
 ## SafeSearch greift nicht \{#safesearch-does-not-apply}
 
-1. Bestätige, dass der Netzwerk- oder Geräte-Scope des Clients unter **Scopes** aktiviert ist und die Suchmaschine unter **SafeSearch** für diesen Scope oder für Global markiert ist.
-2. Prüfe unter **Status → SafeSearch** die Adressen und den letzten Fehler des sicheren Hosts. Ein Host ohne Adressen hält seine Suchmaschine für den Scope blockiert, bis eine Auflösung gelingt.
+1. Bestätige, dass das Netzwerk oder Gerät des Clients unter **Clients** aktiviert ist und die Suchmaschine unter **SafeSearch** für dieses Netzwerk oder Gerät oder für Global markiert ist.
+2. Prüfe unter **Status → SafeSearch** die Adressen und den letzten Fehler des sicheren Hosts. Ein Host ohne Adressen hält seine Suchmaschine für diesen Kontext blockiert, bis eine Auflösung gelingt.
 3. Bestätige, dass **Compile Needed** und **Deployment Needed** nach dem Speichern `No` anzeigen.
 4. Bestätige, dass der Client weder verschlüsseltes DNS noch einen anderen Resolver verwendet; [Bypass-Schutz](/docs/configure/bypass-protection) hält ausgewählte Schnittstellen auf dem DNS-Pfad von Sinkhole.
 
@@ -68,10 +68,10 @@ Ein Browser kann die normale Adresse einer Suchmaschine einige Minuten lang zwis
 
 ## Ein Gerät erhält die falsche Richtlinie \{#a-device-gets-the-wrong-policy}
 
-- Führe `/usr/local/sbin/sinkhole --refresh-clients` aus und prüfe **Status → Scopes**.
-- Bestätige, dass der Netzwerkeintrag die aktuellen Subnetze der Schnittstelle und der Geräteeintrag seine aktuellen Adressen zeigt.
+- Führe `/usr/local/sbin/sinkhole --refresh-clients` aus und prüfe **Status → Clients**.
+- Bestätige, dass der Netzwerkeintrag die aktuellen Subnetze der Schnittstelle und der Geräteeintrag jeden konfigurierten Identifikator und dessen aktuelle Adressen zeigt.
 - Behebe jeden Wert unter **Conflict**, da bei einer gemeinsam verwendeten Adresse das erste Gerät in der Tabellenreihenfolge gewinnt.
-- Prüfe bei einer statischen Zuordnung sowohl ihre konfigurierte Adresse als auch die aktuellen Adressen, die für ihre MAC beobachtet wurden.
+- Prüfe bei jedem Identifikator einer statischen Zuordnung sowohl seine konfigurierte Adresse als auch die aktuellen Adressen, die für seine MAC beobachtet wurden. Adressen, die über zwei Identifikatoren desselben Geräts gefunden werden, sind keine Konflikte.
 
 ISC-Lease-Zeiten können abhängig von der Lease-Zeiteinstellung der Schnittstelle in GMT oder in der lokalen Firewall-Zeit vorliegen, während Kea-Lease-Zeiten bereits lokal sind. Sinkhole folgt bei der Entscheidung, ob ein Lease aktuell ist, diesen pfSense-Semantiken.
 

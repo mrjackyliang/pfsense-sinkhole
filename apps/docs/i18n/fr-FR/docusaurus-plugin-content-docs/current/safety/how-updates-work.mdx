@@ -52,7 +52,9 @@ Une ancre `sinkhole/ip` existante peut recevoir uniquement un `pfctl -T replace`
 
 La fréquence par défaut des mises à jour de listes est Daily. Les calendriers Hourly, Every 6 hours, Daily et Weekly utilisent des minutes aléatoires stables afin que le pare-feu ne déplace pas l’heure de sa tâche à chaque enregistrement.
 
-Les mises à jour DNS, Bypass et IP/pays, les applications de réglages, les vérifications et mises à jour automatiques du paquet ainsi que le nettoyage lors de la suppression se coordonnent par `/var/run/sinkhole-update.lock`. Une vérification du paquet ou une action Update n’attend pas : si une autre opération détient le verrou, elle s’arrête avec `Another package operation is already running.` et peut être relancée une fois cette opération terminée.
+Les mises à jour DNS, Bypass et IP/pays, les applications de réglages, l’installation du paquet et le nettoyage lors de la suppression se coordonnent par `/var/run/sinkhole-update.lock`. Les contrôles de version et les mises à jour automatiques se coordonnent séparément par `/var/run/sinkhole-release.lock`, et les contrôles ne prennent jamais le verrou des tâches du paquet.
+
+La mise à jour automatique prend le verrou de version avant celui des tâches du paquet. Elle attend jusqu’à 30 minutes la fin d’une mise à jour de listes, IP ou Bypass pendant que la ligne de progression d’About affiche l’attente.
 
 ## Actualisations des catalogues séparées \{#catalog-refreshes-are-separate}
 

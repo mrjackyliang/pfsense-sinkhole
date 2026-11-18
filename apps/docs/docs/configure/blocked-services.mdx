@@ -6,8 +6,8 @@ keywords:
   - sinkhole for pfsense
   - blocked services
   - service blocking
-  - network scope
-  - device scope
+  - network blocking
+  - device blocking
 tags:
   - configure
   - services
@@ -18,15 +18,17 @@ import servicesTab from './_assets_/blocked-services-1.png';
 
 Use **Firewall → Sinkhole → Services** when you want to block a whole brand without choosing and maintaining a separate list URL.
 
-## Choose a Scope \{#choose-a-scope}
+## Choose a Context \{#choose-a-context}
 
-Select **Global**, a configured network, or a configured device. Search for a service, narrow the tiles with a group chip, select each service's checkbox, then select **Save** beneath the service tiles.
+Pick **Global**, a network, or a device in the [context row](/docs/configure/scopes#contexts) under the main tabs; the page shows only that context's own selection. Search for a service, narrow the tiles with a group chip, select each service's checkbox, then select **Save** beneath the service tiles.
+
+**All** lists every context that blocks at least one service, with the service names; select a row to edit that context.
 
 Services covered by a dedicated Bypass protection don't appear in the grid, group counts, or search. Private Relay is configured only on the Bypass tab.
 
-The selection compiles at that scope's existing level. Device allowed domains still win over device service rules, network allowed domains still win over network service rules, and global allowed domains still win over global service rules.
+The selection compiles at that context's existing level. Device allowed domains still win over device service rules, network allowed domains still win over network service rules, and global allowed domains still win over global service rules.
 
-<img src={servicesTab} alt="Services tab filtered to the Gaming group for a demo device scope, with four services selected" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={servicesTab} alt="Services tab filtered to the Gaming group for a demo device, with four services selected" width={1024} height={1268} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Registry and Repair \{#registry-and-repair}
 
@@ -34,4 +36,4 @@ Sinkhole fetches the AdGuard Home services registry only when this page opens or
 
 Service logos are rendered as isolated data-URI images. Missing or oversized logos use a generic image. If a saved service disappears from a newer registry, Sinkhole keeps its ID and shows it under **Needs Repair**; clear its checkbox and save to remove that choice.
 
-The **Status** tab shows the registry's fetch time, last error, and the number of blocked services selected for each configured scope.
+The **Status** tab shows the registry's fetch time, last error, and the number of blocked services selected for Global and each network and device.

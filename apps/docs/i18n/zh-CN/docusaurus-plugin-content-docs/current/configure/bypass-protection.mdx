@@ -20,11 +20,37 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 ## 选择接口 \{#choose-the-interfaces}
 
-打开 **Firewall → Sinkhole → Bypass**，并在启用保护功能之前选择 **Apply to** 接口。此选择适用于页面上的所有设置。保护功能只检查从这些接口上的客户端传入的流量；不会影响防火墙自身的查询或出站流量。
+打开 **Firewall → Sinkhole → Bypass**，并在启用保护功能之前选择 **Apply to** 接口。此选择属于 **Global**，决定 Global 的设置在哪里生效。保护功能只检查从这些接口上的客户端传入的流量；不会影响防火墙自身的查询或出站流量。
 
 网络和设备匹配与普通 Sinkhole 作用域一样，使用这些接口的当前子网。所选子网之外的客户端不会收到 Bypass DNS 响应。
 
-<img src={bypassProtection} alt="Bypass 选项卡，其中已选择 LAN、已关闭普通 DNS 重定向、已启用加密 DNS 和隧道保护、Discovery 设为 Answer with no records，并显示一个演示豁免源和豁免目标以及三个演示 Bypass Lists" width={1024} height={1599} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass 选项卡，其中已选择 LAN、已关闭普通 DNS 重定向、已启用加密 DNS 和隧道保护、Discovery 设为 Answer with no records，并显示一个演示豁免源和豁免目标以及三个演示 Bypass Lists" width={1024} height={1784} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 按网络和设备设置保护 \{#set-protections-per-network-and-device}
+
+选项卡下方的一行决定您要编辑的内容：**All**、**Global**、某个网络或某个设备。其下方的一行列出这些设置适用的客户端。每个选项只显示自己的设置；绝不会显示更宽泛选项的设置。
+
+客户端遵循现有设置中最具体的一项：先是其设备的设置，然后是其网络的设置，最后是 Global 的设置。在 Clients 选项卡上已关闭的网络或设备会被跳过。
+
+只有 **Global** 包含：
+
+- **Apply to** 接口。
+- **Plain DNS** 重定向及其豁免。
+- Bypass List 来源、**Add from Catalog** 和列表更新。
+
+网络或设备包含：
+
+- **Enable**，用于开启其保护功能。
+- **Bypass Lists**，即其使用的已启用来源。
+- 加密 DNS 设置、**Discovery**、隧道拦截和 **Block Exemptions**。
+
+没有自身设置的网络或设备会在空白表单上方显示一行，例如“此网络未单独设置，将使用全局。”如果设备所属网络有自身设置，设备会在此处注明该网络。保存表单即可创建设置，**Remove settings for this network** 或 **Remove settings for this device** 会删除设置，让更宽泛的设置重新生效。在 Clients 选项卡上删除网络或设备也会删除其设置。
+
+**All** 列出 Global 以及每个有自身设置的网络和设备，并显示已开启的保护功能。选择某行即可编辑。
+
+将 Sinkhole 升级到 1.3.0 时，现有设置会保留在 Global 中，并复制到每个网络和设备。此后每份副本相互独立。只有当网络的接口，或设备某个标识符的接口，已在 **Apply to** 中选中时，该副本才会开启；其他副本均以关闭状态保存，因此之前未被过滤的客户端不会因此被过滤。
+
+每个已开启设置的网络或设备都会在 `sinkhole/bypass` 锚点中获得自己的客户端表。设备的地址会从其网络的表和 Global 的表中移除，网络的子网会从 Global 的表中移除，因此客户端只会被其最具体的设置拦截。Sinkhole 不会为此添加 pass 规则。
 
 ## 重定向普通 DNS \{#redirect-plain-dns}
 
