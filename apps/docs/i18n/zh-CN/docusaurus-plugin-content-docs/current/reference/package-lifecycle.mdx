@@ -34,6 +34,14 @@ pfSense 会在启动和每次 WAN 地址改变后调用软件包 Sync。Sinkhole
 
 没有变化的 Sync 不会写入配置修订、不会编译任何内容，也不会影响 Unbound。在 RAM 磁盘系统上，启动时的 Sync 会从持久镜像恢复缺失的 `/var/unbound` 内容，并且只在必要时重启 Resolver。
 
+## 恢复配置 \{#restoring-a-configuration}
+
+在同一防火墙上执行完整配置恢复后，pfSense 可能会报告 Sinkhole 已被删除，因为它不是从 Netgate 的软件包仓库安装的。在随后的软件包 Sync 中，Sinkhole 只会关闭完全匹配的错误通知，并添加一条链接到 **About** 的本地化确认消息，说明软件包和设置均未更改。
+
+已发布的构建还会在 `config.xml` 中保存一个由校验和固定的恢复任务。在没有 Sinkhole 文件的新防火墙上，该分离任务会等待 pfSense 软件包同步完成，验证并安装创建该任务的确切版本；当 Sinkhole 已存在时，它每 15 分钟运行一次并直接退出，不作任何更改。
+
+Keep Settings 会在有意卸载时保留此恢复任务。如果 Sinkhole 应保持卸载状态，请在删除前关闭 Keep Settings。
+
 ## pfSense 升级为何会保留 Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
 发布软件包将 ABI 声明为 `FreeBSD:*`，并设置软件包的 vital 标志。通配符使一个发布软件包可跨 FreeBSD 主版本安装，而 vital 标志可防止 pfSense 在升级时的自动删除步骤删除 Netgate 仓库中不存在的软件包。
@@ -62,7 +70,7 @@ pkg delete -f pfSense-pkg-Sinkhole
 
 1. 确认 **Firewall → Sinkhole** 不再显示。
 2. 确认 DNS Resolver 的 Python 脚本和顺序与安装 Sinkhole 之前的值一致。
-3. 确认不存在 Sinkhole cron 条目、普通 DNS 重定向块、`sinkhole/bypass` 锚点或 `sinkhole/ip` 锚点。
+3. 如果关闭了 Keep Settings，请确认不存在 Sinkhole cron 条目。无论哪种情况，都请确认不存在普通 DNS 重定向块、`sinkhole/bypass` 锚点或 `sinkhole/ip` 锚点。
 4. 如果关闭了 Keep Settings，请确认 `/cf/conf/sinkhole` 不存在。
 
 如果更新处于活动状态，删除标记会要求它在接触持久数据之前，于有界阶段之间停止。删除过程会记录第一个清理失败，同时仍尝试其余相互独立的清理步骤。

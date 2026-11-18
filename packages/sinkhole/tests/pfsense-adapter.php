@@ -9,21 +9,39 @@ use PfSense\Sinkhole\Runtime\Compiler;
 use PfSense\Sinkhole\Runtime\FileSystem;
 use PfSense\Sinkhole\Runtime\PackagePaths;
 use PfSense\Sinkhole\Runtime\PfSenseAdapter;
+use PfSense\Sinkhole\Runtime\RestoreHealReleaseNotVerifiableException;
 use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Runtime\StateStore;
+use PfSense\Sinkhole\Runtime\Translator;
+use PfSense\Sinkhole\Runtime\UpdateManager;
 
 set_include_path(__DIR__ . '/stubs' . PATH_SEPARATOR . get_include_path());
 
 /** @var list<array> @since 1.0.0 */
 $sinkholeAdapterTestNotices = [];
 
+/** @var array<int|string, array<string, string>> @since 1.2.3 */
+$sinkholeAdapterTestStoredNotices = [];
+
+/** @var list<string> @since 1.2.3 */
+$sinkholeAdapterTestClosedNotices = [];
+
+/** @var int|null @since 1.2.3 */
+$sinkholeAdapterTestNoticeTime = null;
+
+/** @var string @since 1.2.3 */
+$sinkholeAdapterTestProductLabel = 'pfSense CE';
+
 if (!function_exists('file_notice')) {
     /**
      * Sinkhole Adapter Test - File Notice.
      *
+     * Keeps raw call arguments for assertions and writes the encoded notice under
+     * a controllable pfSense-style timestamp key.
+     *
      * @return void
      *
-     * @since 1.0.0
+     * @since 1.2.3
      */
     function file_notice(
         string $id,
@@ -34,6 +52,8 @@ if (!function_exists('file_notice')) {
         bool $localOnly = false,
     ): void {
         global $sinkholeAdapterTestNotices;
+        global $sinkholeAdapterTestNoticeTime;
+        global $sinkholeAdapterTestStoredNotices;
 
         $sinkholeAdapterTestNotices[] = compact(
             'id',
@@ -43,6 +63,134 @@ if (!function_exists('file_notice')) {
             'priority',
             'localOnly',
         );
+        $noticeTime = $sinkholeAdapterTestNoticeTime ?? time();
+
+        while (array_key_exists($noticeTime, $sinkholeAdapterTestStoredNotices)) {
+            $noticeTime++;
+        }
+
+        $sinkholeAdapterTestStoredNotices[$noticeTime] = [
+            'id' => htmlentities($id),
+            'notice' => htmlentities($notice),
+            'url' => htmlentities($url),
+            'category' => htmlentities($category),
+            'priority' => htmlentities((string) $priority),
+        ];
+    }
+}
+
+if (!function_exists('get_notices')) {
+    /**
+     * Sinkhole Adapter Test - Get Notices.
+     *
+     * Returns the active timestamp-keyed queue, using false for the empty state
+     * that pfSense reports when its notice file has no entries.
+     *
+     * @return array<int|string, array<string, string>>|false
+     *
+     * @since 1.2.3
+     */
+    function get_notices(): array|false
+    {
+        global $sinkholeAdapterTestStoredNotices;
+
+        return count($sinkholeAdapterTestStoredNotices) === 0
+            ? false
+            : $sinkholeAdapterTestStoredNotices;
+    }
+}
+
+if (!function_exists('close_notice')) {
+    /**
+     * Sinkhole Adapter Test - Close Notice.
+     *
+     * Removes one key match before one stored-identifier match so duplicate IDs
+     * behave exactly like pfSense's notice queue.
+     *
+     * @param string $id - Notice identifier.
+     *
+     * @return void
+     *
+     * @since 1.2.3
+     */
+    function close_notice(string $id): void
+    {
+        global $sinkholeAdapterTestClosedNotices;
+        global $sinkholeAdapterTestStoredNotices;
+
+        $sinkholeAdapterTestClosedNotices[] = $id;
+
+        if ($id === 'all') {
+            $sinkholeAdapterTestStoredNotices = [];
+
+            return;
+        }
+
+        if (array_key_exists($id, $sinkholeAdapterTestStoredNotices)) {
+            unset($sinkholeAdapterTestStoredNotices[$id]);
+
+            return;
+        }
+
+        foreach ($sinkholeAdapterTestStoredNotices as $noticeQueueKey => $notice) {
+            if (($notice['id'] ?? null) !== $id) {
+                continue;
+            }
+
+            unset($sinkholeAdapterTestStoredNotices[$noticeQueueKey]);
+
+            return;
+        }
+    }
+}
+
+/**
+ * Sinkhole Adapter Test - Notice Queue Keys.
+ *
+ * Finds every timestamp key whose stored identifier matches one logical notice
+ * identifier after pfSense's storage encoding.
+ *
+ * @param string $id - Notice identifier.
+ *
+ * @return list<int|string>
+ *
+ * @since 1.2.3
+ */
+function sinkholeAdapterTestNoticeQueueKeys(string $id): array
+{
+    $notices = get_notices();
+
+    if (!is_array($notices)) {
+        return [];
+    }
+
+    $storedId = htmlentities($id);
+    $noticeQueueKeys = [];
+
+    foreach ($notices as $noticeQueueKey => $notice) {
+        if (($notice['id'] ?? null) === $storedId) {
+            $noticeQueueKeys[] = $noticeQueueKey;
+        }
+    }
+
+    return $noticeQueueKeys;
+}
+
+if (!function_exists('g_get')) {
+    /**
+     * Sinkhole Adapter Test - Global Setting.
+     *
+     * @param string $key - Global setting key.
+     *
+     * @return mixed
+     *
+     * @since 1.2.3
+     */
+    function g_get(string $key): mixed
+    {
+        global $sinkholeAdapterTestProductLabel;
+
+        return $key === 'product_label' ? $sinkholeAdapterTestProductLabel : null;
     }
 }
 
@@ -392,6 +540,668 @@ sinkholeTestRun([
                 array_column(pfsensePackageSinkholeTabs('status'), 0),
                 'Every shared page tab must render for ' . $locale . '.',
             );
+        }
+    },
+    'pfSense notice stubs mirror timestamp queue storage and one-entry closes' => static function (): void {
+        global $sinkholeAdapterTestClosedNotices;
+        global $sinkholeAdapterTestNoticeTime;
+        global $sinkholeAdapterTestNotices;
+        global $sinkholeAdapterTestStoredNotices;
+
+        $sinkholeAdapterTestClosedNotices = [];
+        $sinkholeAdapterTestNoticeTime = 1_700_000_000;
+        $sinkholeAdapterTestNotices = [];
+        $sinkholeAdapterTestStoredNotices = [];
+        $noticeMessage = 'Jacky’s Café & notice';
+        $noticeUrl = '/sinkhole-about.php?first=1&second=2';
+        $noticeCategory = 'Sinkhole & tests';
+
+        file_notice(
+            'notice-id',
+            $noticeMessage,
+            $noticeCategory,
+            $noticeUrl,
+            2,
+            true,
+        );
+        file_notice('notice-id', 'Second notice');
+
+        $notices = get_notices();
+        sinkholeTestAssertTrue(is_array($notices), 'A non-empty queue must return its notices.');
+        sinkholeTestAssertSame(
+            [1_700_000_000, 1_700_000_001],
+            is_array($notices) ? array_keys($notices) : [],
+            'Notices filed in one second must use incrementing timestamp keys.',
+        );
+        sinkholeTestAssertSame(
+            [
+                'id' => htmlentities('notice-id'),
+                'notice' => htmlentities($noticeMessage),
+                'url' => htmlentities($noticeUrl),
+                'category' => htmlentities($noticeCategory),
+                'priority' => htmlentities('2'),
+            ],
+            is_array($notices) ? ($notices[1_700_000_000] ?? null) : null,
+            'The stored notice must match pfSense field encoding and shape.',
+        );
+        sinkholeTestAssertSame(
+            false,
+            is_array($notices)
+                && array_key_exists('localOnly', $notices[1_700_000_000] ?? []),
+            'The local-only delivery argument must not be stored in the queue entry.',
+        );
+
+        close_notice('1700000000');
+        $notices = get_notices();
+        sinkholeTestAssertSame(
+            1,
+            is_array($notices) ? count($notices) : 0,
+            'Closing by queue key must remove only one notice.',
+        );
+
+        close_notice('notice-id');
+        sinkholeTestAssertSame(false, get_notices(), 'An empty notice queue must return false.');
+        sinkholeTestAssertSame(
+            ['1700000000', 'notice-id'],
+            $sinkholeAdapterTestClosedNotices,
+            'Each close call must remove at most one key or stored identifier match.',
+        );
+    },
+    'configuration restore notices match encoded English and translated pfSense text' => static function (): void {
+        global $sinkholeAdapterTestClosedNotices;
+        global $sinkholeAdapterTestNoticeTime;
+        global $sinkholeAdapterTestNotices;
+        global $sinkholeAdapterTestStoredNotices;
+
+        $englishTemplate = 'Package %s does not exist in current %s version and it has been removed.';
+        $frenchTemplate = 'Le paquet %s n’existe pas dans la version actuelle de %s et a été supprimé.';
+        $cases = [
+            'English plain name' => [
+                'locale' => 'en_US',
+                'template' => $englishTemplate,
+                'package_name' => 'Sinkhole',
+            ],
+            'French name with internal name' => [
+                'locale' => 'fr_FR',
+                'template' => $frenchTemplate,
+                'package_name' => 'Sinkhole (Sinkhole)',
+            ],
+        ];
+
+        foreach ($cases as $label => $case) {
+            sinkholeStubReset([
+                'system' => ['language' => $case['locale']],
+                'installedpackages' => [
+                    'package' => [[
+                        'name' => 'Sinkhole',
+                        'internal_name' => 'Sinkhole',
+                        'configurationfile' => 'sinkhole.xml',
+                    ]],
+                ],
+            ]);
+            $sinkholeAdapterTestClosedNotices = [];
+            $sinkholeAdapterTestNoticeTime = 1_700_100_000;
+            $sinkholeAdapterTestNotices = [];
+            $sinkholeAdapterTestStoredNotices = [];
+            $falseNoticeIdentifier = 'false-package-removal';
+            $falseNotice = sprintf(
+                $case['template'],
+                $case['package_name'],
+                'pfSense CE',
+            );
+            file_notice(
+                $falseNoticeIdentifier,
+                $falseNotice,
+                'Package reinstall',
+            );
+            $falseNoticeKeys = sinkholeAdapterTestNoticeQueueKeys($falseNoticeIdentifier);
+            $storedNotices = get_notices();
+            $falseNoticeKey = $falseNoticeKeys[0] ?? '';
+            sinkholeTestAssertSame(
+                htmlentities($falseNotice),
+                is_array($storedNotices)
+                    ? ($storedNotices[$falseNoticeKey]['notice'] ?? null)
+                    : null,
+                $label . ' fixture must store pfSense\'s htmlentities-encoded text.',
+            );
+            $sinkholeAdapterTestNotices = [];
+            $translate = static fn(string $message): string => $message === $englishTemplate
+                ? $case['template']
+                : $message;
+
+            pfsensePackageSinkholeReconcileRestoreNotice($translate);
+
+            sinkholeTestAssertSame(
+                [(string) ($falseNoticeKeys[0] ?? '')],
+                $sinkholeAdapterTestClosedNotices,
+                $label . ' must close the exact false pfSense notice.',
+            );
+            sinkholeTestAssertSame(
+                [],
+                sinkholeAdapterTestNoticeQueueKeys($falseNoticeIdentifier),
+                $label . ' must remove the false notice from the active collection.',
+            );
+            $restoreNoticeKeys = sinkholeAdapterTestNoticeQueueKeys(
+                UpdateManager::RESTORE_NOTICE_ID,
+            );
+            $storedNotices = get_notices();
+            $restoreNoticeKey = $restoreNoticeKeys[0] ?? '';
+            $restoreNotice = is_array($storedNotices)
+                ? ($storedNotices[$restoreNoticeKey] ?? null)
+                : null;
+            sinkholeTestAssertSame(
+                1,
+                count($restoreNoticeKeys),
+                $label . ' must file one reassurance under a timestamp key.',
+            );
+            sinkholeTestAssertSame(
+                htmlentities(Translator::translateForLocale(
+                    $case['locale'],
+                    'configuration_restore_reassurance',
+                )),
+                is_array($restoreNotice) ? ($restoreNotice['notice'] ?? null) : null,
+                $label . ' must file the package-localized reassurance.',
+            );
+            sinkholeTestAssertSame(
+                htmlentities('Sinkhole'),
+                is_array($restoreNotice) ? ($restoreNotice['category'] ?? null) : null,
+                $label . ' must use the Sinkhole notice category.',
+            );
+            sinkholeTestAssertSame(
+                htmlentities(UpdateManager::ABOUT_PAGE),
+                is_array($restoreNotice) ? ($restoreNotice['url'] ?? null) : null,
+                $label . ' must link the reassurance to About.',
+            );
+            sinkholeTestAssertSame(
+                1,
+                count($sinkholeAdapterTestNotices),
+                $label . ' must file exactly one reassurance.',
+            );
+        }
+    },
+    'two configuration restores retain one reassurance notice' => static function (): void {
+        global $sinkholeAdapterTestClosedNotices;
+        global $sinkholeAdapterTestNoticeTime;
+        global $sinkholeAdapterTestNotices;
+        global $sinkholeAdapterTestStoredNotices;
+
+        sinkholeStubReset([
+            'installedpackages' => [
+                'package' => [[
+                    'name' => 'Sinkhole',
+                    'internal_name' => 'Sinkhole',
+                    'configurationfile' => 'sinkhole.xml',
+                ]],
+            ],
+        ]);
+        $sinkholeAdapterTestClosedNotices = [];
+        $sinkholeAdapterTestNoticeTime = 1_700_200_000;
+        $sinkholeAdapterTestNotices = [];
+        $sinkholeAdapterTestStoredNotices = [];
+        $falseNoticeTemplate = 'Package %s does not exist in current %s version and it has been removed.';
+        $falseNotice = sprintf($falseNoticeTemplate, 'Sinkhole', 'pfSense CE');
+
+        file_notice('first-false-package-removal', $falseNotice, 'Package reinstall');
+        $sinkholeAdapterTestNotices = [];
+        pfsensePackageSinkholeReconcileRestoreNotice(null, 'pfSense CE');
+
+        file_notice('second-false-package-removal', $falseNotice, 'Package reinstall');
+        pfsensePackageSinkholeReconcileRestoreNotice(null, 'pfSense CE');
+
+        $reassuranceCalls = array_values(array_filter(
+            $sinkholeAdapterTestNotices,
+            static fn(array $notice): bool => ($notice['id'] ?? null)
+                === UpdateManager::RESTORE_NOTICE_ID,
+        ));
+        sinkholeTestAssertSame(
+            1,
+            count(sinkholeAdapterTestNoticeQueueKeys(UpdateManager::RESTORE_NOTICE_ID)),
+            'Two restores must leave exactly one stored reassurance.',
+        );
+        sinkholeTestAssertSame(
+            1,
+            count($reassuranceCalls),
+            'Two restores must file the reassurance only once.',
+        );
+        sinkholeTestAssertSame(
+            [],
+            sinkholeAdapterTestNoticeQueueKeys('first-false-package-removal'),
+            'The first false removal notice must be closed.',
+        );
+        sinkholeTestAssertSame(
+            [],
+            sinkholeAdapterTestNoticeQueueKeys('second-false-package-removal'),
+            'The second false removal notice must be closed.',
+        );
+        sinkholeTestAssertSame(
+            ['1700200000', '1700200001'],
+            $sinkholeAdapterTestClosedNotices,
+            'Each restore must close its false removal notice by timestamp key.',
+        );
+    },
+    'configuration restore reconciliation treats an empty queue as a quiet no-op' => static function (): void {
+        global $sinkholeAdapterTestClosedNotices;
+        global $sinkholeAdapterTestNoticeTime;
+        global $sinkholeAdapterTestNotices;
+        global $sinkholeAdapterTestStoredNotices;
+        global $sinkholeStubLogs;
+
+        sinkholeStubReset([
+            'installedpackages' => [
+                'package' => [[
+                    'name' => 'Sinkhole',
+                    'internal_name' => 'Sinkhole',
+                    'configurationfile' => 'sinkhole.xml',
+                ]],
+            ],
+        ]);
+        $sinkholeAdapterTestClosedNotices = [];
+        $sinkholeAdapterTestNoticeTime = 1_700_300_000;
+        $sinkholeAdapterTestNotices = [];
+        $sinkholeAdapterTestStoredNotices = [];
+
+        pfsensePackageSinkholeReconcileRestoreNotice(null, 'pfSense CE');
+
+        sinkholeTestAssertSame(false, get_notices(), 'The fixture queue must remain empty.');
+        sinkholeTestAssertSame([], $sinkholeAdapterTestNotices, 'An empty queue needs no reassurance.');
+        sinkholeTestAssertSame([], $sinkholeAdapterTestClosedNotices, 'An empty queue closes nothing.');
+        sinkholeTestAssertSame([], $sinkholeStubLogs, 'An empty queue must not log an error.');
+    },
+    'configuration restore notice reconciliation ignores unrelated notices' => static function (): void {
+        global $sinkholeAdapterTestClosedNotices;
+        global $sinkholeAdapterTestNoticeTime;
+        global $sinkholeAdapterTestNotices;
+        global $sinkholeAdapterTestStoredNotices;
+
+        sinkholeStubReset([
+            'installedpackages' => [
+                'package' => [[
+                    'name' => 'Sinkhole',
+                    'internal_name' => 'Sinkhole',
+                    'configurationfile' => 'sinkhole.xml',
+                ]],
+            ],
+        ]);
+        $sinkholeAdapterTestClosedNotices = [];
+        $sinkholeAdapterTestNoticeTime = 1_700_400_000;
+        $sinkholeAdapterTestNotices = [];
+        $sinkholeAdapterTestStoredNotices = [];
+        file_notice('unrelated', 'Another package was removed.', 'Package reinstall');
+        $sinkholeAdapterTestNotices = [];
+
+        pfsensePackageSinkholeReconcileRestoreNotice(null, 'pfSense CE');
+
+        sinkholeTestAssertSame(
+            [],
+            $sinkholeAdapterTestClosedNotices,
+            'An unrelated notice must remain open.',
+        );
+        sinkholeTestAssertSame(
+            [],
+            $sinkholeAdapterTestNotices,
+            'No reassurance is needed without the exact false notice.',
+        );
+        sinkholeTestAssertSame(
+            1,
+            count(sinkholeAdapterTestNoticeQueueKeys('unrelated')),
+            'An unrelated notice must remain in the queue.',
+        );
+    },
+    'configuration restore notice failures stay inside the Sync boundary' => static function (): void {
+        global $sinkholeAdapterTestStoredNotices;
+        global $sinkholeStubLogs;
+
+        sinkholeStubReset([
+            'installedpackages' => [
+                'package' => [[
+                    'name' => 'Sinkhole',
+                    'internal_name' => 'Sinkhole',
+                    'configurationfile' => 'sinkhole.xml',
+                ]],
+            ],
+        ]);
+        $sinkholeAdapterTestStoredNotices = [];
+
+        pfsensePackageSinkholeReconcileRestoreNotice(
+            static function (string $unusedMessage): string {
+                throw new RuntimeException('gettext failed');
+            },
+            'pfSense CE',
+        );
+
+        sinkholeTestAssertSame(1, count($sinkholeStubLogs), 'A notice failure must only log once.');
+        sinkholeTestAssertContains(
+            'Unable to reconcile the configuration-restore notice: gettext failed',
+            $sinkholeStubLogs[0],
+            'A notice failure must retain an actionable log message.',
+        );
+    },
+    'package uninstall closes every stale update and reassurance notice' => static function (): void {
+        global $sinkholeAdapterTestClosedNotices;
+        global $sinkholeAdapterTestNoticeTime;
+        global $sinkholeAdapterTestStoredNotices;
+
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            sinkholeStubReset([]);
+            $paths = sinkholeAdapterTestPaths($directory);
+            pfsensePackageSinkholeAdapter(new PfSenseAdapter($paths));
+            $sinkholeAdapterTestClosedNotices = [];
+            $sinkholeAdapterTestNoticeTime = 1_700_500_000;
+            $sinkholeAdapterTestStoredNotices = [];
+
+            file_notice(UpdateManager::RESTORE_NOTICE_ID, 'First stale reassurance.');
+            file_notice(UpdateManager::RESTORE_NOTICE_ID, 'Second stale reassurance.');
+            file_notice(UpdateManager::NOTICE_ID, 'First stale update notice.');
+            file_notice(UpdateManager::NOTICE_ID, 'Second stale update notice.');
+            $storedNotices = get_notices();
+            $storedNoticeKeys = is_array($storedNotices) ? array_keys($storedNotices) : [];
+
+            pfsensePackageSinkholeRemove(0);
+
+            sinkholeTestAssertSame(false, get_notices(), 'Uninstall must leave no package notice.');
+            sinkholeTestAssertSame(
+                array_map(
+                    static fn(int|string $noticeQueueKey): string => (string) $noticeQueueKey,
+                    $storedNoticeKeys,
+                ),
+                $sinkholeAdapterTestClosedNotices,
+                'Uninstall must close every stale package notice by queue key.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'restore-heal cron validates commands, skips current lookup, and replaces a new version' => static function (): void {
+        global $sinkholeStubConfigureCronCount;
+        global $sinkholeStubWrites;
+
+        $lookupCount = 0;
+        $firstSha256 = str_repeat('a', 64);
+        $firstMetadata = UpdateManager::restoreHealMetadataFromChecksum(
+            '1.2.2',
+            $firstSha256,
+        );
+        sinkholeTestAssertTrue(
+            is_array($firstMetadata),
+            'A release with a hash-only checksum must produce recovery metadata.',
+        );
+        sinkholeStubReset([
+            'cron' => [
+                'item' => [[
+                    'minute' => '5',
+                    'hour' => '*',
+                    'mday' => '*',
+                    'month' => '*',
+                    'wday' => '*',
+                    'who' => 'root',
+                    'command' => '/usr/local/bin/unrelated-job',
+                ]],
+            ],
+        ]);
+
+        pfsensePackageSinkholeInstallRestoreHealCron(
+            static function () use (&$lookupCount, $firstMetadata): array {
+                $lookupCount++;
+
+                return $firstMetadata;
+            },
+            '1.2.2',
+        );
+
+        $items = config_get_path('cron/item', []);
+        $restoreItems = array_values(array_filter(
+            is_array($items) ? $items : [],
+            static fn(mixed $item): bool => is_array($item)
+                && str_starts_with(
+                    (string) ($item['command'] ?? ''),
+                    UpdateManager::RESTORE_HEAL_MARKER,
+                ),
+        ));
+        sinkholeTestAssertSame(1, count($restoreItems), 'Exactly one recovery job must be stored.');
+        sinkholeTestAssertSame('*/15', $restoreItems[0]['minute'] ?? null, 'Recovery must retry every 15 minutes.');
+        sinkholeTestAssertSame('root', $restoreItems[0]['who'] ?? null, 'Recovery must run as root.');
+        $command = (string) ($restoreItems[0]['command'] ?? '');
+
+        foreach ([
+            UpdateManager::RESTORE_HEAL_MARKER,
+            '/usr/sbin/daemon -f /bin/sh -c',
+            UpdateManager::PACKAGE_SYNC_FLAG,
+            '/usr/local/sbin/pkg info -e $p',
+            '/usr/local/sbin/pkg add -f',
+            '/sbin/sha256 -q',
+            UpdateManager::DOWNLOAD_PREFIX . 'v1.2.2/pfSense-pkg-Sinkhole-1.2.2.pkg',
+            $firstSha256,
+        ] as $expectedCommandPart) {
+            sinkholeTestAssertContains(
+                $expectedCommandPart,
+                $command,
+                'The recovery command must contain ' . $expectedCommandPart . '.',
+            );
+        }
+        sinkholeTestAssertTrue(
+            strlen($command) < 1000,
+            'The recovery command must fit FreeBSD cron\'s command buffer.',
+        );
+
+        $process = proc_open(
+            ['/bin/sh', '-n', '-c', $command],
+            [
+                0 => ['pipe', 'r'],
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ],
+            $pipes,
+        );
+
+        if (!is_resource($process)) {
+            throw new RuntimeException('Unable to start the restore-heal shell syntax check.');
+        }
+
+        fclose($pipes[0]);
+        $shellOutput = stream_get_contents($pipes[1]);
+        $shellError = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $shellStatus = proc_close($process);
+        sinkholeTestAssertSame(
+            0,
+            $shellStatus,
+            'The generated recovery command must pass sh -n. '
+                . $shellOutput
+                . $shellError,
+        );
+        sinkholeTestAssertSame(1, count($sinkholeStubWrites), 'Initial recovery storage must write once.');
+        sinkholeTestAssertSame(1, $sinkholeStubConfigureCronCount, 'Initial recovery storage must apply cron once.');
+        sinkholeTestAssertSame(1, $lookupCount, 'Initial recovery storage must perform one lookup.');
+        $currentItems = config_get_path('cron/item', []);
+
+        pfsensePackageSinkholeInstallRestoreHealCron(
+            static function () use (&$lookupCount, $firstMetadata): array {
+                $lookupCount++;
+
+                return $firstMetadata;
+            },
+            'v1.2.2',
+        );
+        sinkholeTestAssertSame(1, $lookupCount, 'A current recovery pin must skip lookup.');
+        sinkholeTestAssertSame(
+            $currentItems,
+            config_get_path('cron/item', []),
+            'A current recovery pin must leave cron configuration unchanged.',
+        );
+        sinkholeTestAssertSame(1, count($sinkholeStubWrites), 'Unchanged recovery metadata must not write again.');
+        sinkholeTestAssertSame(1, $sinkholeStubConfigureCronCount, 'Unchanged recovery metadata must not reapply cron.');
+
+        $secondSha256 = str_repeat('b', 64);
+        $secondMetadata = UpdateManager::restoreHealMetadataFromChecksum(
+            '1.2.3',
+            $secondSha256,
+        );
+        sinkholeTestAssertTrue(is_array($secondMetadata), 'A newer release must produce recovery metadata.');
+        pfsensePackageSinkholeInstallRestoreHealCron(
+            static function () use (&$lookupCount, $secondMetadata): array {
+                $lookupCount++;
+
+                return $secondMetadata;
+            },
+            '1.2.3',
+        );
+        $refreshedItems = config_get_path('cron/item', []);
+        $refreshedRestoreItems = array_values(array_filter(
+            is_array($refreshedItems) ? $refreshedItems : [],
+            static fn(mixed $item): bool => is_array($item)
+                && str_starts_with(
+                    (string) ($item['command'] ?? ''),
+                    UpdateManager::RESTORE_HEAL_MARKER,
+                ),
+        ));
+        sinkholeTestAssertSame(1, count($refreshedRestoreItems), 'Refresh must replace rather than duplicate recovery.');
+        sinkholeTestAssertContains(
+            'v1.2.3/pfSense-pkg-Sinkhole-1.2.3.pkg',
+            (string) ($refreshedRestoreItems[0]['command'] ?? ''),
+            'Refresh must pin the newly installed release.',
+        );
+        sinkholeTestAssertContains(
+            $secondSha256,
+            (string) ($refreshedRestoreItems[0]['command'] ?? ''),
+            'Refresh must store the newly verified checksum.',
+        );
+        sinkholeTestAssertSame(2, count($sinkholeStubWrites), 'Release refresh must write once more.');
+        sinkholeTestAssertSame(2, $sinkholeStubConfigureCronCount, 'Release refresh must reapply cron once.');
+        sinkholeTestAssertSame(2, $lookupCount, 'A new installed version must perform one lookup.');
+    },
+    'restore-heal cron keeps every entry after a transient lookup failure' => static function (): void {
+        global $sinkholeStubConfigureCronCount;
+        global $sinkholeStubLogs;
+        global $sinkholeStubWrites;
+
+        $metadata = UpdateManager::restoreHealMetadataFromChecksum(
+            '1.2.2',
+            str_repeat('c', 64),
+        );
+        sinkholeTestAssertTrue(is_array($metadata), 'The transient fixture needs valid old metadata.');
+        $command = pfsensePackageSinkholeBuildRestoreHealCommand($metadata);
+        $storedItems = [
+            [
+                'minute' => '*/15',
+                'hour' => '*',
+                'mday' => '*',
+                'month' => '*',
+                'wday' => '*',
+                'who' => 'root',
+                'command' => $command,
+            ],
+            ['command' => UpdateManager::RESTORE_HEAL_MARKER . ' stale-two'],
+            ['command' => '/usr/local/bin/unrelated-job'],
+        ];
+        sinkholeStubReset([
+            'cron' => [
+                'item' => $storedItems,
+            ],
+        ]);
+        $lookupCount = 0;
+
+        pfsensePackageSinkholeInstallRestoreHealCron(
+            static function () use (&$lookupCount): array {
+                $lookupCount++;
+
+                throw new RuntimeException('network unavailable');
+            },
+            '1.2.3',
+        );
+
+        sinkholeTestAssertSame(1, $lookupCount, 'A stale pin must perform one lookup.');
+        sinkholeTestAssertSame(
+            $storedItems,
+            config_get_path('cron/item', []),
+            'A transient failure must preserve every cron entry byte for byte.',
+        );
+        sinkholeTestAssertSame([], $sinkholeStubWrites, 'A transient failure must not write config.xml.');
+        sinkholeTestAssertSame(0, $sinkholeStubConfigureCronCount, 'A transient failure must not apply cron.');
+        sinkholeTestAssertSame(1, count($sinkholeStubLogs), 'A transient failure must log once.');
+        sinkholeTestAssertContains(
+            'Unable to verify the installed release for configuration restore: network unavailable',
+            $sinkholeStubLogs[0],
+            'A transient failure log must retain the lookup error.',
+        );
+    },
+    'restore-heal cron removes tagged entries after a definite checksum 404' => static function (): void {
+        global $sinkholeStubConfigureCronCount;
+        global $sinkholeStubLogs;
+        global $sinkholeStubWrites;
+
+        sinkholeStubReset([
+            'cron' => [
+                'item' => [
+                    ['command' => UpdateManager::RESTORE_HEAL_MARKER . ' stale-one'],
+                    ['command' => UpdateManager::RESTORE_HEAL_MARKER . ' stale-two'],
+                    ['command' => '/usr/local/bin/unrelated-job'],
+                ],
+            ],
+        ]);
+        $lookupCount = 0;
+
+        pfsensePackageSinkholeInstallRestoreHealCron(
+            static function () use (&$lookupCount): array {
+                $lookupCount++;
+
+                throw new RestoreHealReleaseNotVerifiableException(
+                    'The installed release has no checksum asset.',
+                    404,
+                );
+            },
+            '1.2.3',
+        );
+
+        sinkholeTestAssertSame(1, $lookupCount, 'A definite 404 must perform one lookup.');
+        sinkholeTestAssertSame(
+            [['command' => '/usr/local/bin/unrelated-job']],
+            config_get_path('cron/item', []),
+            'A definite checksum 404 must remove tagged jobs and preserve unrelated jobs.',
+        );
+        sinkholeTestAssertSame(1, count($sinkholeStubWrites), 'A definite 404 must write once.');
+        sinkholeTestAssertSame(1, $sinkholeStubConfigureCronCount, 'A definite 404 must apply cron once.');
+        sinkholeTestAssertSame([], $sinkholeStubLogs, 'A definite 404 is not a transient failure.');
+    },
+    'restore-heal cron removal honors deliberate uninstall restore and Keep Settings' => static function (): void {
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            $metadata = UpdateManager::restoreHealMetadataFromChecksum(
+                '1.2.2',
+                str_repeat('c', 64),
+            );
+            sinkholeTestAssertTrue(is_array($metadata), 'The removal fixture needs valid recovery metadata.');
+            sinkholeStubReset([]);
+            pfsensePackageSinkholeReconcileRestoreHealCron($metadata);
+
+            pfsensePackageSinkholeRemoveRestoreHealCron(true, $directory . '/missing');
+            sinkholeTestAssertSame(
+                1,
+                count(config_get_path('cron/item', [])),
+                'Keep Settings must retain recovery.',
+            );
+
+            $restoreFlag = $directory . '/needs_package_sync';
+            file_put_contents($restoreFlag, "restore\n");
+            pfsensePackageSinkholeRemoveRestoreHealCron(false, $restoreFlag);
+            sinkholeTestAssertSame(
+                1,
+                count(config_get_path('cron/item', [])),
+                'A restore-driven removal must retain recovery.',
+            );
+
+            unlink($restoreFlag);
+            pfsensePackageSinkholeRemoveRestoreHealCron(false, $restoreFlag);
+            sinkholeTestAssertSame(
+                [],
+                config_get_path('cron/item', []),
+                'A deliberate uninstall without Keep Settings must remove recovery.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
         }
     },
     'stub reset clears every client discovery fixture' => static function (): void {

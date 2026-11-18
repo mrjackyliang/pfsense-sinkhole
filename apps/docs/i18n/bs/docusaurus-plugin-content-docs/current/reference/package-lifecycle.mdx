@@ -34,6 +34,14 @@ pfSense poziva Sync paketa pri pokretanju i nakon svake promjene WAN adrese. Sin
 
 Sync bez promjena ne zapisuje reviziju konfiguracije, ništa ne kompajlira i ostavlja Unbound na miru. Na sistemu s RAM diskom, Sync pri pokretanju vraća nedostajući sadržaj `/var/unbound` iz trajne kopije i ponovo pokreće Resolver samo kada je potrebno.
 
+## Vraćanje konfiguracije \{#restoring-a-configuration}
+
+Nakon potpunog vraćanja konfiguracije na istom vatrozidu, pfSense može navesti da je Sinkhole uklonjen jer nije instaliran iz Netgateovog repozitorija paketa. Tokom naredne sinhronizacije paketa, Sinkhole zatvara samo tu tačnu netačnu obavijest i dodaje lokaliziranu potvrdu s vezom na **About** da paket i postavke nisu promijenjeni.
+
+Objavljena verzija također čuva jedan zadatak oporavka vezan za kontrolni zbir u `config.xml`. Na novom vatrozidu bez Sinkhole datoteka odvojeni zadatak čeka završetak pfSense sinhronizacije paketa, provjerava i instalira tačnu verziju koja ga je napravila, a zatim izlazi svakih 15 minuta kada je Sinkhole već prisutan.
+
+Keep Settings čuva ovaj zadatak oporavka tokom namjernog uklanjanja. Isključite Keep Settings prije uklanjanja Sinkholea ako treba ostati deinstaliran.
+
 ## Zašto nadogradnja pfSensea zadržava Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
 Paketi izdanja navode ABI kao `FreeBSD:*` i postavljaju oznaku vitalnog paketa. Zamjenski znak omogućava instaliranje jednog paketa izdanja na više glavnih verzija FreeBSD-a, dok vitalna oznaka sprečava postupak automatskog uklanjanja pri nadogradnji pfSensea da izbriše paket kojeg nema u Netgateovom repozitoriju.
@@ -62,7 +70,7 @@ Kada je **Keep Settings** uključen, konfiguracija i sačuvane DNS i IP liste os
 
 1. Potvrdite da **Firewall → Sinkhole** više nije prisutan.
 2. Potvrdite da Python skripta i redoslijed DNS Resolvera odgovaraju vrijednostima koje su prethodile Sinkholeu.
-3. Potvrdite da nije ostao nijedan cron unos Sinkholea, blok preusmjeravanja običnog DNS-a, sidro `sinkhole/bypass` ni sidro `sinkhole/ip`.
+3. Ako je Keep Settings bio isključen, potvrdite da nije ostao nijedan cron unos Sinkholea. U svakom slučaju potvrdite da nisu ostali blok preusmjeravanja običnog DNS-a, sidro `sinkhole/bypass` ni sidro `sinkhole/ip`.
 4. Ako je Keep Settings bio isključen, potvrdite da `/cf/conf/sinkhole` ne postoji.
 
 Ako je ažuriranje bilo aktivno, oznaka uklanjanja traži da se zaustavi između ograničenih faza prije dodirivanja trajnih podataka. Uklanjanje bilježi prvi neuspjeh čišćenja, ali i dalje pokušava preostale nezavisne korake čišćenja.

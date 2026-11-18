@@ -34,6 +34,14 @@ pfSense 会在启动和每次 WAN 地址改变后调用软件包 Sync。Sinkhole
 
 没有变化的 Sync 不会写入配置修订、不会编译任何内容，也不会影响 Unbound。在 RAM 磁盘系统上，启动时的 Sync 会从持久镜像恢复缺失的 `/var/unbound` 内容，并且只在必要时重启 Resolver。
 
+## 恢復配置 \{#restoring-a-configuration}
+
+在同一防火牆上執行完整配置恢復後，pfSense 可能會報告 Sinkhole 已被移除，因為它不是從 Netgate 的套件存放庫安裝的。在隨後的套件 Sync 中，Sinkhole 只會關閉完全相符的錯誤通知，並加入一則連結到 **About** 的本地化確認訊息，說明套件和設定均未變更。
+
+已發佈的組建還會在 `config.xml` 中儲存一個由校驗和固定的恢復工作。在沒有 Sinkhole 檔案的新防火牆上，該分離工作會等待 pfSense 套件同步完成，驗證並安裝建立該工作的確切版本；當 Sinkhole 已存在時，它每 15 分鐘執行一次並直接結束，不作任何變更。
+
+Keep Settings 會在有意移除時保留此恢復工作。如果 Sinkhole 應保持未安裝狀態，請在移除前關閉 Keep Settings。
+
 ## pfSense 升级为何会保留 Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
 发布软件包将 ABI 声明为 `FreeBSD:*`，并设置软件包的 vital 标志。通配符使一个发布软件包可跨 FreeBSD 主版本安装，而 vital 标志可防止 pfSense 在升级时的自动删除步骤删除 Netgate 仓库中不存在的软件包。
@@ -62,7 +70,7 @@ pkg delete -f pfSense-pkg-Sinkhole
 
 1. 确认 **Firewall → Sinkhole** 不再显示。
 2. 确认 DNS Resolver 的 Python 脚本和顺序与安装 Sinkhole 之前的值一致。
-3. 确认不存在 Sinkhole cron 条目、普通 DNS 重定向块、`sinkhole/bypass` 锚点或 `sinkhole/ip` 锚点。
+3. 如果關閉了 Keep Settings，請確認不存在 Sinkhole cron 項目。無論哪種情況，都請確認不存在普通 DNS 重新導向區塊、`sinkhole/bypass` 錨點或 `sinkhole/ip` 錨點。
 4. 如果关闭了 Keep Settings，请确认 `/cf/conf/sinkhole` 不存在。
 
 如果更新处于活动状态，删除标记会要求它在接触持久数据之前，于有界阶段之间停止。删除过程会记录第一个清理失败，同时仍尝试其余相互独立的清理步骤。

@@ -1011,8 +1011,10 @@ function sinkholePageRenderFixture(string $name): array
             $updateStatusIcon,
             'Check Now',
             'fa-solid fa-arrows-rotate',
+            'pfSense CE 2.9.1',
             'pfSense CE 2.9.0',
             'pfSense CE 2.8.1',
+            'pfSense Plus 26.07.1',
             'pfSense Plus 26.07',
             'pfSense Plus 26.03.1',
             'Each tested release passed install, update, a blocking test, and removal end to end.',
@@ -1044,7 +1046,7 @@ function sinkholePageRenderFixture(string $name): array
                 ],
                 [
                     'path' => ['testedReleases'],
-                    'expected_count' => 4,
+                    'expected_count' => 6,
                 ],
                 [
                     'path' => ['currentReleaseTested'],

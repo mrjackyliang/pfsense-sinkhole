@@ -34,6 +34,14 @@ pfSense는 부팅할 때와 WAN 주소가 변경될 때마다 패키지 Sync를 
 
 변경 사항이 없으면 Sync는 구성 리비전을 쓰거나 컴파일하지 않으며 Unbound를 건드리지 않습니다. RAM 디스크 시스템에서는 부팅 시 Sync가 영구 미러에서 누락된 `/var/unbound` 내용을 복원하고 필요한 경우에만 Resolver를 재시작합니다.
 
+## 구성 복원 \{#restoring-a-configuration}
+
+동일한 방화벽에서 전체 구성을 복원한 후 Sinkhole이 Netgate 패키지 저장소에서 설치되지 않았다는 이유로 pfSense가 제거된 것으로 표시할 수 있습니다. 이후 패키지 Sync 중에 Sinkhole은 정확히 일치하는 잘못된 알림만 닫고, 패키지와 설정이 변경되지 않았음을 확인하는 현지화된 안내를 **About** 링크와 함께 추가합니다.
+
+릴리스 빌드는 체크섬으로 고정된 복구 작업 하나도 `config.xml`에 저장합니다. Sinkhole 파일이 없는 새 방화벽에서는 분리된 작업이 pfSense 패키지 동기화가 끝날 때까지 기다린 후 작업을 만든 정확한 릴리스를 검증하고 설치하며, Sinkhole이 이미 있으면 15분마다 변경 없이 종료합니다.
+
+Keep Settings는 의도적인 제거 중에도 이 복구 작업을 보존합니다. Sinkhole이 제거된 상태로 유지되어야 한다면 제거 전에 Keep Settings를 끄십시오.
+
 ## pfSense 업그레이드가 Sinkhole을 유지하는 이유 \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
 릴리스 패키지는 ABI를 `FreeBSD:*`로 선언하고 패키지의 필수 플래그를 설정합니다. 와일드카드를 사용하므로 하나의 릴리스 패키지를 여러 FreeBSD 주 버전에 설치할 수 있고, 필수 플래그는 Netgate 저장소에 없는 패키지를 pfSense 업그레이드 중 자동 제거 과정에서 삭제하지 않도록 합니다.
@@ -62,7 +70,7 @@ pkg delete -f pfSense-pkg-Sinkhole
 
 1. **Firewall → Sinkhole**이 더 이상 표시되지 않는지 확인합니다.
 2. DNS Resolver의 Python 스크립트와 순서가 Sinkhole 설치 전 값과 일치하는지 확인합니다.
-3. Sinkhole cron 항목, 일반 DNS 리디렉션 블록, `sinkhole/bypass` 앵커 또는 `sinkhole/ip` 앵커가 남아 있지 않은지 확인합니다.
+3. Keep Settings가 꺼져 있었다면 Sinkhole cron 항목이 남아 있지 않은지 확인합니다. 모든 경우에 일반 DNS 리디렉션 블록, `sinkhole/bypass` 앵커 또는 `sinkhole/ip` 앵커가 남아 있지 않은지 확인합니다.
 4. Keep Settings가 꺼져 있었다면 `/cf/conf/sinkhole`이 없는지 확인합니다.
 
 업데이트가 활성 상태였다면 제거 마커가 영구 데이터를 변경하기 전에 제한된 단계 사이에서 중지하도록 요청합니다. 제거 작업은 첫 정리 실패를 기록하면서 나머지 독립적인 정리 단계도 계속 시도합니다.

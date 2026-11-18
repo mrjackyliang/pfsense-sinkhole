@@ -34,6 +34,14 @@ pfSense roept pakket-Sync aan bij het opstarten en na elke wijziging van het WAN
 
 Een Sync zonder wijzigingen schrijft geen configuratierevisie, compileert niets en laat Unbound ongemoeid. Op een systeem met een RAM-schijf herstelt Sync tijdens het opstarten ontbrekende inhoud van `/var/unbound` vanuit de permanente spiegel en start de Resolver alleen opnieuw wanneer dat nodig is.
 
+## Een configuratie herstellen \{#restoring-a-configuration}
+
+Na een volledig configuratieherstel op dezelfde firewall kan pfSense melden dat Sinkhole is verwijderd omdat het niet uit de pakketrepository van Netgate is geïnstalleerd. Tijdens de daaropvolgende pakket-Sync sluit Sinkhole alleen die exact overeenkomende onjuiste melding en voegt het een gelokaliseerde bevestiging met een koppeling naar **About** toe dat het pakket en de instellingen ongewijzigd zijn.
+
+Een uitgebrachte build slaat ook één met een controlesom vastgezette hersteltaak op in `config.xml`. Op een nieuwe firewall zonder Sinkhole-bestanden wacht de losgekoppelde taak tot de pfSense-pakketsynchronisatie klaar is, verifieert en installeert de exacte release die de taak heeft gemaakt en sluit daarna elke 15 minuten zonder wijzigingen af zodra Sinkhole aanwezig is.
+
+Keep Settings bewaart deze hersteltaak tijdens een bewuste verwijdering. Schakel Keep Settings uit voordat u Sinkhole verwijdert als het verwijderd moet blijven.
+
 ## Waarom een pfSense-upgrade Sinkhole behoudt \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
 Releasepakketten declareren de ABI als `FreeBSD:*` en stellen de vitale vlag van het pakket in. Het jokerteken maakt één releasepakket installeerbaar op meerdere FreeBSD-hoofdversies, terwijl vitaal voorkomt dat de automatische verwijderingsstap tijdens een pfSense-upgrade een pakket verwijdert dat niet in de opslag van Netgate staat.
@@ -62,7 +70,7 @@ Wanneer **Keep Settings** is ingeschakeld, blijven de configuratie en de opgesla
 
 1. Controleer of **Firewall → Sinkhole** niet meer aanwezig is.
 2. Controleer of het Python-script en de volgorde van de DNS Resolver overeenkomen met de waarden van vóór Sinkhole.
-3. Controleer of er geen Sinkhole-cronvermeldingen, blok voor de omleiding van gewone DNS, `sinkhole/bypass`-anker of `sinkhole/ip`-anker achterblijven.
+3. Als Keep Settings was uitgeschakeld, controleert u of er geen Sinkhole-cronvermeldingen achterblijven. Controleer in alle gevallen of er geen blok voor de omleiding van gewone DNS, `sinkhole/bypass`-anker of `sinkhole/ip`-anker achterblijft.
 4. Als Keep Settings was uitgeschakeld, controleert u of `/cf/conf/sinkhole` ontbreekt.
 
 Als een update actief was, vraagt de verwijderingsmarkering deze tussen begrensde fasen te stoppen voordat permanente gegevens worden aangeraakt. Bij verwijdering wordt de eerste opschoonfout vastgelegd terwijl de overige onafhankelijke opschoonstappen nog steeds worden geprobeerd.

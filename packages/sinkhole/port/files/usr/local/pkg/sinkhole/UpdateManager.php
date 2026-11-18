@@ -12,6 +12,18 @@ require_once(__DIR__ . '/PackagePaths.php');
 require_once(__DIR__ . '/Translator.php');
 
 /**
+ * Restore-Heal Release Not Verifiable Exception.
+ *
+ * A definitive release answer uses this type so package Sync can remove a
+ * stale recovery job without treating transient transport failures as absence.
+ *
+ * @since 1.2.3
+ */
+final class RestoreHealReleaseNotVerifiableException extends RuntimeException
+{
+}
+
+/**
  * Update Manager.
  *
  * Scheduled checks, notices, and the About tab share this boundary so release
@@ -44,6 +56,18 @@ final class UpdateManager
 
     /** @var string @since 1.0.0 */
     public const ABOUT_PAGE = '/sinkhole-about.php';
+
+    /** @var string @since 1.2.3 */
+    public const RESTORE_HEAL_MARKER = ': sinkhole-restore-heal;';
+
+    /** @var string @since 1.2.3 */
+    public const RESTORE_HEAL_DIRECTORY = '/conf/sinkhole/restore-heal';
+
+    /** @var string @since 1.2.3 */
+    public const PACKAGE_SYNC_FLAG = '/conf/needs_package_sync';
+
+    /** @var string @since 1.2.3 */
+    public const RESTORE_NOTICE_ID = 'sinkhole-configuration-restore';
 
     /** @var string @since 1.0.0 @private */
     private const USER_AGENT = 'pfSense-pkg-Sinkhole';
@@ -859,6 +883,173 @@ final class UpdateManager
     }
 
     /**
+     * Update Manager - Restore-Heal Metadata From Checksum.
+     *
+     * Builds the immutable package coordinates saved in configuration only when
+     * the matching release checksum is a single verifiable SHA-256 value.
+     *
+     * @param string $version - Installed package version.
+     * @param string $checksum - Hash-only checksum asset contents.
+     * @param string $downloadPrefix - Allowed release asset URL prefix.
+     *
+     * @return array{version: string, file: string, url: string, sha256: string}|null
+     *
+     * @since 1.2.3
+     */
+    public static function restoreHealMetadataFromChecksum(
+        string $version,
+        string $checksum,
+        string $downloadPrefix = self::DOWNLOAD_PREFIX,
+    ): ?array {
+        $normalizedVersion = self::restoreHealReleaseVersion($version);
+
+        if (!is_string($normalizedVersion)) {
+            return null;
+        }
+
+        $digest = self::checksumDigest($checksum);
+
+        if (!is_string($digest)) {
+            return null;
+        }
+
+        $packageFile = self::PACKAGE_NAME . '-' . $normalizedVersion . '.pkg';
+        $packageUrl = $downloadPrefix
+            . 'v'
+            . $normalizedVersion
+            . '/'
+            . $packageFile;
+
+        if (self::isAllowedAssetUrl($packageUrl, $downloadPrefix) === false) {
+            return null;
+        }
+
+        return [
+            'version' => $normalizedVersion,
+            'file' => $packageFile,
+            'url' => $packageUrl,
+            'sha256' => substr($digest, strlen('sha256:')),
+        ];
+    }
+
+    /**
+     * Update Manager - Restore-Heal Release Version.
+     *
+     * Normalizes only versions that can identify an immutable GitHub release so
+     * Sync can reject development package versions without a network request.
+     *
+     * @param string $version - Installed package version.
+     *
+     * @return string|null
+     *
+     * @since 1.2.3
+     */
+    public static function restoreHealReleaseVersion(string $version): ?string
+    {
+        $normalizedVersion = self::normalizeVersion($version);
+
+        if (
+            preg_match(
+                '/^[0-9]+(?:\.[0-9]+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/',
+                $normalizedVersion,
+            ) !== 1
+        ) {
+            return null;
+        }
+
+        return $normalizedVersion;
+    }
+
+    /**
+     * Update Manager - Fetch Restore-Heal Metadata.
+     *
+     * Downloads the installed release's pinned checksum through the same bounded,
+     * proxy-aware transport used by self-update before configuration stores it.
+     *
+     * @return array{version: string, file: string, url: string, sha256: string}
+     *
+     * @throws RestoreHealReleaseNotVerifiableException When the installed release
+     *     definitively has no usable checksum.
+     * @throws Throwable When the checksum lookup fails transiently.
+     *
+     * @since 1.2.3
+     */
+    public function fetchRestoreHealMetadata(): array
+    {
+        $normalizedVersion = self::restoreHealReleaseVersion($this->installedVersion);
+
+        if (!is_string($normalizedVersion)) {
+            throw new RestoreHealReleaseNotVerifiableException(
+                'The installed package version does not identify a release.',
+            );
+        }
+
+        $packageFile = self::PACKAGE_NAME . '-' . $normalizedVersion . '.pkg';
+        $checksumUrl = $this->downloadPrefix
+            . 'v'
+            . $normalizedVersion
+            . '/'
+            . $packageFile
+            . '.sha256';
+
+        if (self::isAllowedAssetUrl($checksumUrl, $this->downloadPrefix) === false) {
+            throw new RestoreHealReleaseNotVerifiableException(
+                'The installed release checksum URL is not verifiable.',
+            );
+        }
+
+        $temporaryDirectory = $this->createTemporaryDirectory();
+        $checksumPath = $temporaryDirectory . '/' . $packageFile . '.sha256';
+
+        try {
+            try {
+                $this->downloadFile(
+                    $checksumUrl,
+                    $checksumPath,
+                    self::AUXILIARY_DOWNLOAD_LIMIT,
+                );
+            } catch (RuntimeException $runtimeException) {
+                if (self::isNoPublicReleaseStatus($runtimeException->getCode())) {
+                    throw new RestoreHealReleaseNotVerifiableException(
+                        'The installed release has no checksum asset.',
+                        $runtimeException->getCode(),
+                        $runtimeException,
+                    );
+                }
+
+                throw $runtimeException;
+            }
+
+            $checksum = @file_get_contents($checksumPath);
+
+            if (!is_string($checksum)) {
+                $failureMessage = self::translate(
+                    'release_asset_download_failed',
+                    ['the checksum could not be read'],
+                );
+
+                throw new RuntimeException($failureMessage);
+            }
+
+            $metadata = self::restoreHealMetadataFromChecksum(
+                $normalizedVersion,
+                $checksum,
+                $this->downloadPrefix,
+            );
+
+            if (!is_array($metadata)) {
+                throw new RestoreHealReleaseNotVerifiableException(
+                    'The installed release checksum is not a usable SHA-256 value.',
+                );
+            }
+
+            return $metadata;
+        } finally {
+            $this->removeTemporaryDirectory($temporaryDirectory);
+        }
+    }
+
+    /**
      * Update Manager - Assert Signature Requirements.
      *
      * A configured signing key makes the matching detached signature mandatory.
@@ -1413,11 +1604,12 @@ final class UpdateManager
             @unlink($path);
 
             $detail = $curlError !== '' ? $curlError : (string) $statusCode;
+            $exceptionCode = $result === true ? $statusCode : 0;
 
             throw new RuntimeException(self::translate(
                 'release_asset_download_failed',
                 [$detail],
-            ));
+            ), $exceptionCode);
         }
     }
 

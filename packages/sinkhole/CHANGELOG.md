@@ -1,5 +1,13 @@
 # pfsense-pkg-sinkhole
 
+## 1.2.3 - 2026-11-18
+
+### UPDATED
+- The About tab's tested releases include pfSense CE 2.9.1 and pfSense Plus 26.07.1, which both passed install, update, a blocking test, and removal end to end.
+
+### FIXED
+- A full configuration restore no longer leaves pfSense's false "has been removed" notice behind: on the same firewall Sinkhole replaces it with a notice that the package and its settings are unchanged, and on a new firewall Sinkhole reinstalls itself within 15 minutes from its checksum-verified release.
+
 ## 1.2.2 - 2026-11-18
 
 ### UPDATED

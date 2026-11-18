@@ -21,13 +21,22 @@ $sinkholeUpdateNotices = [];
 /** @var list<string> */
 $sinkholeUpdateClosedNotices = [];
 
+/** @var array<int|string, array<string, string>> @since 1.2.3 */
+$sinkholeUpdateStoredNotices = [];
+
+/** @var int|null @since 1.2.3 */
+$sinkholeUpdateNoticeTime = null;
+
 if (!function_exists('file_notice')) {
     /**
      * Sinkhole Update Test - File Notice.
      *
+     * Keeps raw call arguments for delivery assertions while maintaining the
+     * same encoded timestamp-keyed queue as pfSense.
+     *
      * @return void
      *
-     * @since 1.0.0
+     * @since 1.2.3
      */
     function file_notice(
         string $id,
@@ -37,7 +46,9 @@ if (!function_exists('file_notice')) {
         int $priority = 1,
         bool $localOnly = false,
     ): void {
+        global $sinkholeUpdateNoticeTime;
         global $sinkholeUpdateNotices;
+        global $sinkholeUpdateStoredNotices;
 
         $sinkholeUpdateNotices[] = compact(
             'id',
@@ -47,6 +58,40 @@ if (!function_exists('file_notice')) {
             'priority',
             'localOnly',
         );
+        $noticeTime = $sinkholeUpdateNoticeTime ?? time();
+
+        while (array_key_exists($noticeTime, $sinkholeUpdateStoredNotices)) {
+            $noticeTime++;
+        }
+
+        $sinkholeUpdateStoredNotices[$noticeTime] = [
+            'id' => htmlentities($id),
+            'notice' => htmlentities($notice),
+            'url' => htmlentities($url),
+            'category' => htmlentities($category),
+            'priority' => htmlentities((string) $priority),
+        ];
+    }
+}
+
+if (!function_exists('get_notices')) {
+    /**
+     * Sinkhole Update Test - Get Notices.
+     *
+     * Mirrors pfSense's false return for a missing or empty notice queue while
+     * exposing timestamp-keyed entries to update tests.
+     *
+     * @return array<int|string, array<string, string>>|false
+     *
+     * @since 1.2.3
+     */
+    function get_notices(): array|false
+    {
+        global $sinkholeUpdateStoredNotices;
+
+        return count($sinkholeUpdateStoredNotices) === 0
+            ? false
+            : $sinkholeUpdateStoredNotices;
     }
 }
 
@@ -54,15 +99,43 @@ if (!function_exists('close_notice')) {
     /**
      * Sinkhole Update Test - Close Notice.
      *
+     * Removes only one queue-key or stored-identifier match so duplicate update
+     * IDs follow pfSense's close semantics.
+     *
+     * @param string $id - Notice identifier.
+     *
      * @return void
      *
-     * @since 1.0.0
+     * @since 1.2.3
      */
     function close_notice(string $id): void
     {
         global $sinkholeUpdateClosedNotices;
+        global $sinkholeUpdateStoredNotices;
 
         $sinkholeUpdateClosedNotices[] = $id;
+
+        if ($id === 'all') {
+            $sinkholeUpdateStoredNotices = [];
+
+            return;
+        }
+
+        if (array_key_exists($id, $sinkholeUpdateStoredNotices)) {
+            unset($sinkholeUpdateStoredNotices[$id]);
+
+            return;
+        }
+
+        foreach ($sinkholeUpdateStoredNotices as $noticeQueueKey => $notice) {
+            if (($notice['id'] ?? null) !== $id) {
+                continue;
+            }
+
+            unset($sinkholeUpdateStoredNotices[$noticeQueueKey]);
+
+            return;
+        }
     }
 }
 
@@ -248,10 +321,14 @@ $cases = [
     },
     'notices are emitted once per version and remote delivery is opt in' => static function (): void {
         global $sinkholeUpdateClosedNotices;
+        global $sinkholeUpdateNoticeTime;
         global $sinkholeUpdateNotices;
+        global $sinkholeUpdateStoredNotices;
 
         $sinkholeUpdateNotices = [];
         $sinkholeUpdateClosedNotices = [];
+        $sinkholeUpdateNoticeTime = 1_700_000_000;
+        $sinkholeUpdateStoredNotices = [];
         $state = UpdateManager::synchronizeNotice([], '2.0.0', '2.1.0', false);
 
         sinkholeTestAssertSame(1, count($sinkholeUpdateNotices), 'A new version must create one bell notice.');
@@ -591,6 +668,11 @@ PHP;
             [
                 [
                     'edition' => 'CE',
+                    'version' => '2.9.1',
+                    'freebsd' => '16.0',
+                ],
+                [
+                    'edition' => 'CE',
                     'version' => '2.9.0',
                     'freebsd' => '16.0',
                 ],
@@ -598,6 +680,11 @@ PHP;
                     'edition' => 'CE',
                     'version' => '2.8.1',
                     'freebsd' => '15.0',
+                ],
+                [
+                    'edition' => 'Plus',
+                    'version' => '26.07.1',
+                    'freebsd' => '16.0',
                 ],
                 [
                     'edition' => 'Plus',

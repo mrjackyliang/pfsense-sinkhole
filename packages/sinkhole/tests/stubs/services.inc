@@ -3,6 +3,20 @@
 declare(strict_types=1);
 
 /**
+ * Sinkhole Stub - Configure Cron.
+ *
+ * @return void
+ *
+ * @since 1.2.3
+ */
+function configure_cron(): void
+{
+    global $sinkholeStubConfigureCronCount;
+
+    $sinkholeStubConfigureCronCount++;
+}
+
+/**
  * Sinkhole Stub - Configure Unbound.
  *
  * @return void

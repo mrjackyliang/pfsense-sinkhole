@@ -17,6 +17,7 @@ use PfSense\Sinkhole\Runtime\FileLock;
 use PfSense\Sinkhole\Runtime\FileSystem;
 use PfSense\Sinkhole\Runtime\PackagePaths;
 use PfSense\Sinkhole\Runtime\PfSenseAdapter;
+use PfSense\Sinkhole\Runtime\RestoreHealReleaseNotVerifiableException;
 use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Runtime\ServiceRegistryCache;
 use PfSense\Sinkhole\Runtime\StateStore;
@@ -110,6 +111,310 @@ function pfsensePackageSinkholeThrowableMessage(Throwable $throwable): string
     }
 
     return pfsensePackageSinkholeTranslate('unexpected_error', [$throwable->getMessage()]);
+}
+
+/**
+ * pfSense Package Sinkhole - Log Non-Fatal Restore Failure.
+ *
+ * Restore reconciliation must never interrupt package Sync, including when the
+ * ordinary adapter logger is itself unavailable during an unusual boot state.
+ *
+ * @param string $message - English system-log message.
+ *
+ * @return void
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeLogNonFatalRestoreFailure(string $message): void
+{
+    try {
+        pfsensePackageSinkholeAdapter()->log($message);
+    } catch (Throwable) {
+        try {
+            if (function_exists('log_error')) {
+                log_error('Sinkhole: ' . $message);
+            }
+        } catch (Throwable) {
+            // Restore recovery failures must never escape package Sync.
+        }
+    }
+}
+
+/**
+ * pfSense Package Sinkhole - Registered Package.
+ *
+ * The exact installed-package row supplies the names pfSense used when it filed
+ * its repository-only package-reinstall notice after a configuration restore.
+ *
+ * @return array|null
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeRegisteredPackage(): ?array
+{
+    $packages = config_get_path('installedpackages/package', []);
+
+    if (!is_array($packages)) {
+        return null;
+    }
+
+    foreach ($packages as $package) {
+        if (!is_array($package)) {
+            continue;
+        }
+
+        $name = $package['name'] ?? null;
+        $internalName = $package['internal_name'] ?? null;
+        $configurationFile = $package['configurationfile'] ?? null;
+
+        if (
+            $configurationFile === 'sinkhole.xml'
+            || $name === 'Sinkhole'
+            || $internalName === 'Sinkhole'
+        ) {
+            return $package;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * pfSense Package Sinkhole - False Removal Notice Texts.
+ *
+ * Mirrors pkg-utils.inc with both possible package-name forms so matching stays
+ * exact in every language supplied by pfSense's gettext catalog.
+ *
+ * @param array $package - Registered installed-package row.
+ * @param string $productLabel - pfSense product label.
+ * @param callable|null $translate - Optional gettext-compatible test boundary.
+ *
+ * @return list<string>
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeFalseRemovalNoticeTexts(
+    array $package,
+    string $productLabel,
+    ?callable $translate = null,
+): array {
+    $name = $package['name'] ?? null;
+
+    if (!is_string($name) || $name === '' || $productLabel === '') {
+        return [];
+    }
+
+    $translate ??= static fn(string $message): string => gettext($message);
+    $template = $translate(
+        'Package %s does not exist in current %s version and it has been removed.',
+    );
+
+    if (!is_string($template) || $template === '') {
+        return [];
+    }
+
+    $packageNames = [$name];
+    $internalName = $package['internal_name'] ?? null;
+
+    if (is_string($internalName) && $internalName !== '') {
+        $packageNames[] = $name . ' (' . $internalName . ')';
+    }
+
+    return array_values(array_unique(array_map(
+        static fn(string $packageName): string => sprintf(
+            $template,
+            $packageName,
+            $productLabel,
+        ),
+        $packageNames,
+    )));
+}
+
+/**
+ * pfSense Package Sinkhole - Reconcile Restore Notice.
+ *
+ * Closes only pfSense's exact false removal notice and files one localized,
+ * About-linked reassurance while the installed package code proves it remains.
+ *
+ * @param callable|null $translate - Optional gettext-compatible test boundary.
+ * @param string|null $productLabel - Optional product-label test boundary.
+ *
+ * @return void
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeReconcileRestoreNotice(
+    ?callable $translate = null,
+    ?string $productLabel = null,
+): void {
+    try {
+        $package = pfsensePackageSinkholeRegisteredPackage();
+
+        if (!is_array($package)) {
+            return;
+        }
+
+        if (
+            (
+                function_exists('get_notices') === false
+                || function_exists('close_notice') === false
+                || function_exists('file_notice') === false
+            )
+            && is_readable('/etc/inc/notices.inc')
+        ) {
+            require_once('/etc/inc/notices.inc');
+        }
+
+        foreach (['get_notices', 'close_notice', 'file_notice'] as $noticeFunction) {
+            if (function_exists($noticeFunction) === false) {
+                throw new RuntimeException(
+                    'Required notice function is unavailable: ' . $noticeFunction,
+                );
+            }
+        }
+
+        if ($productLabel === null) {
+            if (function_exists('g_get') === false) {
+                throw new RuntimeException('The pfSense product label is unavailable.');
+            }
+
+            $resolvedProductLabel = g_get('product_label');
+            $productLabel = is_string($resolvedProductLabel)
+                ? $resolvedProductLabel
+                : '';
+        }
+
+        $falseNoticeTexts = pfsensePackageSinkholeFalseRemovalNoticeTexts(
+            $package,
+            $productLabel,
+            $translate,
+        );
+
+        if (count($falseNoticeTexts) === 0) {
+            return;
+        }
+
+        $storedFalseNoticeTexts = array_map(
+            static fn(string $falseNoticeText): string => htmlentities($falseNoticeText),
+            $falseNoticeTexts,
+        );
+        $notices = get_notices();
+
+        if ($notices === false) {
+            return;
+        }
+
+        if (!is_array($notices)) {
+            throw new RuntimeException('pfSense returned an invalid notice collection.');
+        }
+
+        $falseNoticeQueueKeys = [];
+        $storedRestoreNoticeId = htmlentities(UpdateManager::RESTORE_NOTICE_ID);
+        $restoreNoticeExists = array_key_exists(
+            UpdateManager::RESTORE_NOTICE_ID,
+            $notices,
+        );
+
+        foreach ($notices as $noticeQueueKey => $notice) {
+            if (!is_array($notice)) {
+                continue;
+            }
+
+            if (($notice['id'] ?? null) === $storedRestoreNoticeId) {
+                $restoreNoticeExists = true;
+            }
+
+            $noticeText = $notice['notice'] ?? null;
+
+            if (
+                is_string($noticeText)
+                && in_array($noticeText, $storedFalseNoticeTexts, true)
+            ) {
+                $falseNoticeQueueKeys[] = (string) $noticeQueueKey;
+            }
+        }
+
+        if (count($falseNoticeQueueKeys) === 0) {
+            return;
+        }
+
+        foreach ($falseNoticeQueueKeys as $falseNoticeQueueKey) {
+            close_notice($falseNoticeQueueKey);
+        }
+
+        if ($restoreNoticeExists) {
+            return;
+        }
+
+        file_notice(
+            UpdateManager::RESTORE_NOTICE_ID,
+            pfsensePackageSinkholeTranslate('configuration_restore_reassurance'),
+            'Sinkhole',
+            UpdateManager::ABOUT_PAGE,
+            1,
+            true,
+        );
+    } catch (Throwable $throwable) {
+        pfsensePackageSinkholeLogNonFatalRestoreFailure(
+            'Unable to reconcile the configuration-restore notice: '
+            . $throwable->getMessage(),
+        );
+    }
+}
+
+/**
+ * pfSense Package Sinkhole - Close Package Notices.
+ *
+ * pfSense keys notices by timestamp and closes only one matching entry per call.
+ * Removal therefore closes every package notice by its queue key.
+ *
+ * @return void
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeClosePackageNotices(): void
+{
+    if (
+        (
+            function_exists('get_notices') === false
+            || function_exists('close_notice') === false
+        )
+        && is_readable('/etc/inc/notices.inc')
+    ) {
+        require_once('/etc/inc/notices.inc');
+    }
+
+    if (
+        function_exists('get_notices') === false
+        || function_exists('close_notice') === false
+    ) {
+        return;
+    }
+
+    $notices = get_notices();
+
+    if (!is_array($notices)) {
+        return;
+    }
+
+    $storedNoticeIds = array_map(
+        static fn(string $noticeId): string => htmlentities($noticeId),
+        [
+            UpdateManager::NOTICE_ID,
+            UpdateManager::RESTORE_NOTICE_ID,
+        ],
+    );
+
+    foreach ($notices as $noticeQueueKey => $notice) {
+        if (
+            !is_array($notice)
+            || !in_array($notice['id'] ?? null, $storedNoticeIds, true)
+        ) {
+            continue;
+        }
+
+        close_notice((string) $noticeQueueKey);
+    }
 }
 
 /**
@@ -1257,6 +1562,370 @@ function pfsensePackageSinkholeInstallUpdateCron(): void
 }
 
 /**
+ * pfSense Package Sinkhole - Build Restore-Heal Command.
+ *
+ * Produces one self-contained detached shell command whose pinned values come
+ * only from release metadata verified before it enters pfSense configuration.
+ *
+ * @param array $metadata - Verified installed-release metadata.
+ *
+ * @return string
+ *
+ * @throws InvalidArgumentException When metadata is not safe and exact.
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeBuildRestoreHealCommand(array $metadata): string
+{
+    $version = $metadata['version'] ?? null;
+    $packageFile = $metadata['file'] ?? null;
+    $packageUrl = $metadata['url'] ?? null;
+    $expectedSha256 = $metadata['sha256'] ?? null;
+
+    if (
+        !is_string($version)
+        || preg_match(
+            '/^[0-9]+(?:\.[0-9]+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/',
+            $version,
+        ) !== 1
+        || !is_string($packageFile)
+        || !is_string($packageUrl)
+        || !is_string($expectedSha256)
+        || preg_match('/^[a-f0-9]{64}$/', $expectedSha256) !== 1
+    ) {
+        throw new InvalidArgumentException('Restore-heal release metadata is invalid.');
+    }
+
+    $expectedPackageFile = UpdateManager::PACKAGE_NAME . '-' . $version . '.pkg';
+    $expectedPackageUrl = UpdateManager::DOWNLOAD_PREFIX
+        . 'v'
+        . $version
+        . '/'
+        . $expectedPackageFile;
+
+    if (
+        $packageFile !== $expectedPackageFile
+        || $packageUrl !== $expectedPackageUrl
+        || UpdateManager::isAllowedAssetUrl($packageUrl) === false
+    ) {
+        throw new InvalidArgumentException('Restore-heal release coordinates are invalid.');
+    }
+
+    $statements = [
+        'l(){ /usr/bin/logger -t sinkhole "$1";}',
+        '[ -e ' . UpdateManager::PACKAGE_SYNC_FLAG . ' ]&&{ l deferred;exit 0;}',
+        'p=' . UpdateManager::PACKAGE_NAME,
+        '/usr/local/sbin/pkg info -e $p >/dev/null 2>&1&&exit 0',
+        'v=' . $version,
+        'n=$p-$v.pkg',
+        'c=' . UpdateManager::RESTORE_HEAL_DIRECTORY . '/$n',
+        't=/tmp/$n.$$',
+        'u=' . $packageUrl,
+        'h=' . $expectedSha256,
+        'if [ -f "$c" ];then s=$c;l cache;else s=$t;l "fetching $v";'
+            . '/usr/bin/fetch -q -o "$s" "$u"||{ l "fetch failed";'
+            . '/bin/rm -f "$s";exit 1;};fi',
+        'a=$(/sbin/sha256 -q "$s" 2>/dev/null)||{ l "hash failed";'
+            . '/bin/rm -f "$s";exit 1;}',
+        '[ "$a" = "$h" ]||{ l "checksum mismatch";/bin/rm -f "$s";exit 1;}',
+        'l "verified $v"',
+        'l "install $v"',
+        '/usr/local/sbin/pkg add -f "$s" >/dev/null 2>&1',
+        'r=$?',
+        '[ "$s" = "$t" ]&&/bin/rm -f "$s"',
+        'm=failed;[ "$r" = 0 ]&&m=installed;l "$m $v"',
+        'exit "$r"',
+    ];
+    $script = implode(';', $statements);
+    $command = UpdateManager::RESTORE_HEAL_MARKER
+        . ' /usr/sbin/daemon -f /bin/sh -c '
+        . escapeshellarg($script);
+
+    if (strlen($command) >= 1000) {
+        throw new InvalidArgumentException('Restore-heal command exceeds cron limits.');
+    }
+
+    return $command;
+}
+
+/**
+ * pfSense Package Sinkhole - Restore-Heal Command Metadata.
+ *
+ * Reads the pinned version and SHA-256 from a tagged command, then rebuilds the
+ * complete command so altered or obsolete shell text never counts as current.
+ *
+ * @param string $command - Stored cron command.
+ *
+ * @return array{version: string, file: string, url: string, sha256: string}|null
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeRestoreHealCommandMetadata(string $command): ?array
+{
+    if (!str_starts_with($command, UpdateManager::RESTORE_HEAL_MARKER)) {
+        return null;
+    }
+
+    if (
+        preg_match('/;v=([^;]+);/', $command, $versionMatches) !== 1
+        || preg_match('/;h=([a-f0-9]{64});/', $command, $sha256Matches) !== 1
+    ) {
+        return null;
+    }
+
+    $version = $versionMatches[1] ?? null;
+    $sha256 = $sha256Matches[1] ?? null;
+
+    if (!is_string($version) || !is_string($sha256)) {
+        return null;
+    }
+
+    $metadata = UpdateManager::restoreHealMetadataFromChecksum($version, $sha256);
+
+    if (!is_array($metadata) || ($metadata['version'] ?? null) !== $version) {
+        return null;
+    }
+
+    try {
+        $expectedCommand = pfsensePackageSinkholeBuildRestoreHealCommand($metadata);
+    } catch (Throwable) {
+        return null;
+    }
+
+    return $command === $expectedCommand ? $metadata : null;
+}
+
+/**
+ * pfSense Package Sinkhole - Has Current Restore-Heal Cron.
+ *
+ * A matching tagged command is sufficient to skip release lookup and all cron
+ * mutation, including when another stale tagged entry is also still present.
+ *
+ * @param string $installedVersion - Installed package version.
+ *
+ * @return bool
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeHasCurrentRestoreHealCron(string $installedVersion): bool
+{
+    $normalizedInstalledVersion = UpdateManager::restoreHealReleaseVersion($installedVersion);
+
+    if (!is_string($normalizedInstalledVersion)) {
+        return false;
+    }
+
+    $storedItems = config_get_path('cron/item', []);
+
+    if (!is_array($storedItems)) {
+        return false;
+    }
+
+    foreach ($storedItems as $storedItem) {
+        if (!is_array($storedItem)) {
+            continue;
+        }
+
+        $command = $storedItem['command'] ?? null;
+
+        if (!is_string($command)) {
+            continue;
+        }
+
+        $metadata = pfsensePackageSinkholeRestoreHealCommandMetadata($command);
+
+        if (
+            is_array($metadata)
+            && ($metadata['version'] ?? null) === $normalizedInstalledVersion
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * pfSense Package Sinkhole - Reconcile Restore-Heal Cron.
+ *
+ * Replaces every command carrying Sinkhole's fixed prefix in one configuration
+ * write, preserving unrelated cron entries and applying the live crontab once.
+ *
+ * @param array|null $metadata - Verified release metadata, or null to remove.
+ *
+ * @return void
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeReconcileRestoreHealCron(?array $metadata): void
+{
+    $command = null;
+
+    if (is_array($metadata)) {
+        try {
+            $command = pfsensePackageSinkholeBuildRestoreHealCommand($metadata);
+        } catch (Throwable $throwable) {
+            pfsensePackageSinkholeLogNonFatalRestoreFailure(
+                'Unable to build the configuration-restore recovery job: '
+                . $throwable->getMessage(),
+            );
+
+            return;
+        }
+    }
+
+    $storedItems = config_get_path('cron/item', []);
+    $storedItems = is_array($storedItems) ? array_values($storedItems) : [];
+    $desiredItems = [];
+
+    foreach ($storedItems as $storedItem) {
+        if (
+            is_array($storedItem)
+            && str_starts_with(
+                (string) ($storedItem['command'] ?? ''),
+                UpdateManager::RESTORE_HEAL_MARKER,
+            )
+        ) {
+            continue;
+        }
+
+        $desiredItems[] = $storedItem;
+    }
+
+    if (is_string($command)) {
+        $desiredItems[] = [
+            'minute' => '*/15',
+            'hour' => '*',
+            'mday' => '*',
+            'month' => '*',
+            'wday' => '*',
+            'who' => 'root',
+            'command' => $command,
+        ];
+    }
+
+    if ($storedItems === $desiredItems) {
+        return;
+    }
+
+    if (count($desiredItems) === 0) {
+        config_del_path('cron/item');
+    } else {
+        config_set_path('cron/item', $desiredItems);
+    }
+
+    write_config(pfsensePackageSinkholeTranslate('revision_restore_heal_cron'));
+    configure_cron();
+}
+
+/**
+ * pfSense Package Sinkhole - Install Restore-Heal Cron.
+ *
+ * Reuses an exact current pin without I/O, keeps every existing pin through a
+ * transient lookup failure, and removes pins only after a definitive answer.
+ *
+ * @param callable|null $metadataProvider - Optional release-metadata test boundary.
+ * @param string|null $installedVersion - Optional installed-version test boundary.
+ *
+ * @return void
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeInstallRestoreHealCron(
+    ?callable $metadataProvider = null,
+    ?string $installedVersion = null,
+): void {
+    try {
+        $installedVersion ??= UpdateManager::installedVersion();
+
+        if (!is_string($installedVersion) || $installedVersion === '') {
+            throw new RuntimeException('The installed package version is unavailable.');
+        }
+
+        $normalizedInstalledVersion = UpdateManager::restoreHealReleaseVersion(
+            $installedVersion,
+        );
+
+        if (!is_string($normalizedInstalledVersion)) {
+            throw new RestoreHealReleaseNotVerifiableException(
+                'The installed package version does not identify a release.',
+            );
+        }
+
+        if (pfsensePackageSinkholeHasCurrentRestoreHealCron($normalizedInstalledVersion)) {
+            return;
+        }
+
+        if (is_callable($metadataProvider)) {
+            $resolvedMetadata = $metadataProvider();
+        } elseif (PHP_OS_FAMILY === 'BSD' && file_exists('/etc/version')) {
+            $updateManager = new UpdateManager($normalizedInstalledVersion);
+            $resolvedMetadata = $updateManager->fetchRestoreHealMetadata();
+        } else {
+            return;
+        }
+
+        if (
+            !is_array($resolvedMetadata)
+            || ($resolvedMetadata['version'] ?? null) !== $normalizedInstalledVersion
+        ) {
+            throw new RuntimeException(
+                'The restore-heal lookup returned invalid release metadata.',
+            );
+        }
+    } catch (RestoreHealReleaseNotVerifiableException) {
+        $resolvedMetadata = null;
+    } catch (Throwable $throwable) {
+        pfsensePackageSinkholeLogNonFatalRestoreFailure(
+            'Unable to verify the installed release for configuration restore: '
+            . $throwable->getMessage(),
+        );
+
+        return;
+    }
+
+    try {
+        pfsensePackageSinkholeReconcileRestoreHealCron($resolvedMetadata);
+    } catch (Throwable $throwable) {
+        pfsensePackageSinkholeLogNonFatalRestoreFailure(
+            'Unable to reconcile the configuration-restore recovery job: '
+            . $throwable->getMessage(),
+        );
+    }
+}
+
+/**
+ * pfSense Package Sinkhole - Remove Restore-Heal Cron.
+ *
+ * A deliberate removal drops recovery only when neither the pfSense restore flag
+ * nor Sinkhole's Keep Settings choice requires the saved entry to survive.
+ *
+ * @param bool $keepSettings - Whether saved package data must remain.
+ * @param string $packageSyncFlag - pfSense package-sync flag path.
+ *
+ * @return void
+ *
+ * @since 1.2.3
+ */
+function pfsensePackageSinkholeRemoveRestoreHealCron(
+    bool $keepSettings,
+    string $packageSyncFlag = UpdateManager::PACKAGE_SYNC_FLAG,
+): void {
+    if ($keepSettings || file_exists($packageSyncFlag)) {
+        return;
+    }
+
+    try {
+        pfsensePackageSinkholeReconcileRestoreHealCron(null);
+    } catch (Throwable $throwable) {
+        pfsensePackageSinkholeLogNonFatalRestoreFailure(
+            'Unable to remove the configuration-restore recovery job: '
+            . $throwable->getMessage(),
+        );
+    }
+}
+
+/**
  * pfSense Package Sinkhole - Compile.
  *
  * Builds current scope-ready data after list configuration changes and during package
@@ -1740,6 +2409,8 @@ function pfsensePackageSinkholeSync(
 {
     $adapter = pfsensePackageSinkholeAdapter();
 
+    pfsensePackageSinkholeReconcileRestoreNotice();
+
     try {
         $adapter->relayBootRestoreStatus();
     } catch (Throwable) {
@@ -1764,6 +2435,7 @@ function pfsensePackageSinkholeSync(
     } else {
         pfsensePackageSinkholeInstallCron();
         pfsensePackageSinkholeInstallUpdateCron();
+        pfsensePackageSinkholeInstallRestoreHealCron();
     }
 
     $lock = new FileLock($paths->runtimeLockFile);
@@ -2060,6 +2732,8 @@ function pfsensePackageSinkholeRemove(
 {
     $paths = pfsensePackageSinkholeAdapter()->packagePaths();
 
+    pfsensePackageSinkholeClosePackageNotices();
+
     // A repeated pre-deinstall callback must not recreate the deleted state store.
     if (
         config_get_path('installedpackages/sinkhole', null) === null
@@ -2072,16 +2746,6 @@ function pfsensePackageSinkholeRemove(
     pfsensePackageSinkholeMarkRemoving();
     pfsensePackageSinkholeDisableCron(false);
 
-    if (function_exists('close_notice')) {
-        close_notice(UpdateManager::NOTICE_ID);
-    } elseif (is_readable('/etc/inc/notices.inc')) {
-        require_once('/etc/inc/notices.inc');
-
-        if (function_exists('close_notice')) {
-            close_notice(UpdateManager::NOTICE_ID);
-        }
-    }
-
     $keepSettings = true;
 
     try {
@@ -2092,6 +2756,8 @@ function pfsensePackageSinkholeRemove(
             'Invalid removal settings; keeping saved data: ' . $throwable->getMessage(),
         );
     }
+
+    pfsensePackageSinkholeRemoveRestoreHealCron($keepSettings);
 
     $stateStore = new StateStore($paths->stateFile, $paths->statusFile);
 

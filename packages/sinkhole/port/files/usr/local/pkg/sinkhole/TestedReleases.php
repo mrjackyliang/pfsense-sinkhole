@@ -27,6 +27,11 @@ final class TestedReleases
     public const RELEASES = [
         [
             'edition' => 'CE',
+            'version' => '2.9.1',
+            'freebsd' => '16.0',
+        ],
+        [
+            'edition' => 'CE',
             'version' => '2.9.0',
             'freebsd' => '16.0',
         ],
@@ -34,6 +39,11 @@ final class TestedReleases
             'edition' => 'CE',
             'version' => '2.8.1',
             'freebsd' => '15.0',
+        ],
+        [
+            'edition' => 'Plus',
+            'version' => '26.07.1',
+            'freebsd' => '16.0',
         ],
         [
             'edition' => 'Plus',

@@ -34,6 +34,14 @@ pfSense calls package Sync at boot and after every WAN address change. Sinkhole 
 
 A no-change Sync writes no configuration revision, compiles nothing, and leaves Unbound alone. On a RAM-disk system, boot-time Sync restores missing `/var/unbound` content from the persistent mirror and restarts the Resolver only when required.
 
+## Restoring a Configuration \{#restoring-a-configuration}
+
+After a full configuration restore on the same firewall, pfSense may say Sinkhole was removed because it isn't installed from Netgate's package repository. During the following package Sync, Sinkhole closes only that exact false notice and adds a localized reassurance linked to **About** confirming that the package and settings are unchanged.
+
+A released build also stores one checksum-pinned recovery job in `config.xml`. On a new firewall without Sinkhole's files, the detached job waits for pfSense package synchronization to finish, verifies and installs the exact release that created it, and otherwise exits every 15 minutes once Sinkhole is present.
+
+Keep Settings preserves this recovery job during a deliberate uninstall. Clear Keep Settings before removing Sinkhole if it should stay uninstalled.
+
 ## Why a pfSense Upgrade Keeps Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
 Release packages declare the ABI as `FreeBSD:*` and set the package's vital flag. The wildcard makes one release package installable across FreeBSD major versions, while vital prevents pfSense's upgrade-time autoremove pass from deleting a package absent from Netgate's repository.
@@ -62,7 +70,7 @@ When **Keep Settings** is on, configuration and the saved DNS and IP lists remai
 
 1. Confirm **Firewall → Sinkhole** is no longer present.
 2. Confirm the DNS Resolver's Python script and order match the values that preceded Sinkhole.
-3. Confirm no Sinkhole cron entries, plain-DNS redirect block, `sinkhole/bypass` anchor, or `sinkhole/ip` anchor remains.
+3. If Keep Settings was off, confirm no Sinkhole cron entries remain. In every case, confirm no plain-DNS redirect block, `sinkhole/bypass` anchor, or `sinkhole/ip` anchor remains.
 4. If Keep Settings was off, confirm `/cf/conf/sinkhole` is absent.
 
 If an update was active, the removal marker asks it to stop between bounded stages before persistent data is touched. Removal records the first cleanup failure while still attempting the remaining independent cleanup steps.

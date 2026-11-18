@@ -34,6 +34,14 @@ pfSense richiama il Sync dei pacchetti all’avvio e dopo ogni modifica dell’i
 
 Un Sync senza modifiche non scrive revisioni della configurazione, non compila nulla e lascia invariato Unbound. In un sistema con disco RAM, il Sync all’avvio ripristina il contenuto mancante di `/var/unbound` dal mirror persistente e riavvia il Resolver solo quando necessario.
 
+## Ripristinare una configurazione \{#restoring-a-configuration}
+
+Dopo un ripristino completo della configurazione sullo stesso firewall, pfSense può indicare che Sinkhole è stato rimosso perché non è installato dal repository dei pacchetti Netgate. Durante la successiva Sync del pacchetto, Sinkhole chiude solo quell’esatto avviso errato e aggiunge una conferma localizzata collegata ad **About** che indica che il pacchetto e le impostazioni non sono cambiati.
+
+Una versione pubblicata salva inoltre in `config.xml` un’attività di recupero vincolata a un checksum. Su un nuovo firewall privo dei file di Sinkhole, l’attività separata attende il completamento della sincronizzazione dei pacchetti pfSense, verifica e installa la versione esatta che l’ha creata e, quando Sinkhole è già presente, termina ogni 15 minuti senza modifiche.
+
+Keep Settings conserva questa attività di recupero durante una disinstallazione intenzionale. Disattiva Keep Settings prima di rimuovere Sinkhole se deve rimanere disinstallato.
+
 ## Perché un aggiornamento pfSense mantiene Sinkhole \{#why-a-pfsense-upgrade-keeps-sinkhole}
 
 I pacchetti di release dichiarano l’ABI come `FreeBSD:*` e impostano il flag vital del pacchetto. Il carattere jolly rende installabile un’unica release del pacchetto su più versioni principali di FreeBSD, mentre il flag vital impedisce alla rimozione automatica durante l’aggiornamento pfSense di eliminare un pacchetto assente dal repository Netgate.
@@ -62,7 +70,7 @@ Quando **Keep Settings** è attivo, configurazione e liste DNS e IP salvate rima
 
 1. Verifica che **Firewall → Sinkhole** non sia più presente.
 2. Verifica che lo script Python e l’ordine del DNS Resolver corrispondano ai valori precedenti a Sinkhole.
-3. Verifica che non rimangano voci cron di Sinkhole, blocchi di reindirizzamento del DNS in chiaro, l’anchor `sinkhole/bypass` o l’anchor `sinkhole/ip`.
+3. Se Keep Settings era disattivato, verifica che non rimangano voci cron di Sinkhole. In ogni caso, verifica che non rimangano blocchi di reindirizzamento del DNS in chiaro, l’anchor `sinkhole/bypass` o l’anchor `sinkhole/ip`.
 4. Se Keep Settings era disattivato, verifica che `/cf/conf/sinkhole` non esista.
 
 Se era attivo un aggiornamento, il marcatore di rimozione gli chiede di interrompersi tra fasi limitate prima di modificare i dati persistenti. La rimozione registra il primo errore di pulizia ma tenta comunque i passaggi indipendenti rimanenti.

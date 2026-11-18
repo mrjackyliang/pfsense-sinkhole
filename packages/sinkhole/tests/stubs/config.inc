@@ -200,6 +200,15 @@ $sinkholeStubBypassAnchorLoaded = false;
 $sinkholeStubCronOperations = [];
 
 /**
+ * Stub cron reconfiguration count.
+ *
+ * @var int
+ *
+ * @since 1.2.3
+ */
+$sinkholeStubConfigureCronCount = 0;
+
+/**
  * Stub configuration-set observer.
  *
  * @var callable(string, mixed): void|null
@@ -1126,6 +1135,7 @@ function sinkholeStubReset(array $configuration): void
     global $sinkholeStubConfiguration;
     global $sinkholeStubCommands;
     global $sinkholeStubCommandStatuses;
+    global $sinkholeStubConfigureCronCount;
     global $sinkholeStubExecOutputs;
     global $sinkholeStubExecStatuses;
     global $sinkholeStubIpAnchorLoaded;
@@ -1178,6 +1188,7 @@ function sinkholeStubReset(array $configuration): void
     $sinkholeStubIpAnchorLoaded = false;
     $sinkholeStubBypassAnchorLoaded = false;
     $sinkholeStubCronOperations = [];
+    $sinkholeStubConfigureCronCount = 0;
     $sinkholeStubConfigSetObserver = null;
     $sinkholeStubWriteConfigObserver = null;
     $sinkholeStubXmlParseState = [];
