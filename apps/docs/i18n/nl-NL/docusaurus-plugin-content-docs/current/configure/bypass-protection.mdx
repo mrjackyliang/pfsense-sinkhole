@@ -62,6 +62,8 @@ De instellingen voor versleutelde DNS zijn onafhankelijk:
 
 Namen uit providerlijsten worden in DNS geblokkeerd. IPv4-adressen, IPv6-adressen en CIDR's uit dezelfde lijsten worden op elke poort en elk protocol geblokkeerd in het onafhankelijke firewallanker `sinkhole/bypass`. Sinkhole verwijdert de interfaceadressen van de firewall en gateway- en DNS-serveradressen, inclusief adressen die via DHCP of PPP zijn verkregen, uit die tabellen voordat ze worden geladen.
 
+Elke firewallblokkering op het tabblad Bypass weigert de verbinding in plaats van deze te laten vallen, zoals de pfSense-actie **Reject**: TCP krijgt een reset en UDP een ICMP-melding dat de bestemming onbereikbaar is. Een geblokkeerde client faalt meteen en valt terug op de resolver van de firewall in plaats van op een time-out te wachten.
+
 Toegestane domeinen hebben voorrang op naamblokkeringen uit providerlijsten. Ze overschrijven de antwoorden van Firefox, Private Relay of Discovery niet, omdat deze antwoorden netwerksignalen zijn en geen lijstblokkeringen.
 
 ## Resolver Discovery configureren \{#configure-resolver-discovery}

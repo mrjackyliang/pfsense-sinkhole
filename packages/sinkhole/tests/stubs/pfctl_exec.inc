@@ -60,7 +60,7 @@ function exec(
                 $commandOutput = ['sinkhole_block_v4', 'sinkhole_block_v6'];
         } elseif ($command === $bypassRulesCommand && $sinkholeStubBypassAnchorLoaded === true) {
             $commandOutput = [
-                'block drop in quick on igc0 inet proto tcp from any to ! (self) port 853',
+                'block return in quick on igc0 inet proto tcp from any to ! (self) port 853',
             ];
         } elseif ($command === $bypassTablesCommand && $sinkholeStubBypassAnchorLoaded === true) {
             $commandOutput = ['sinkhole_bypass_v4', 'sinkhole_bypass_v6'];

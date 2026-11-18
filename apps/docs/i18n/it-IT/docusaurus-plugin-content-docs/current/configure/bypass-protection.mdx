@@ -62,6 +62,8 @@ Le impostazioni del DNS cifrato sono indipendenti:
 
 I nomi delle liste di provider vengono bloccati nel DNS. Gli indirizzi IPv4, gli indirizzi IPv6 e i CIDR delle stesse liste vengono bloccati su ogni porta e protocollo nell’anchor firewall indipendente `sinkhole/bypass`. Sinkhole rimuove da tali tabelle gli indirizzi delle interfacce del firewall e gli indirizzi dei gateway e dei server DNS, inclusi quelli ottenuti tramite DHCP o PPP, prima di caricarle.
 
+Ogni blocco del firewall nella scheda Bypass rifiuta la connessione invece di scartarla, come l’azione **Reject** di pfSense: TCP riceve un reset e UDP un messaggio ICMP di destinazione non raggiungibile. Un client bloccato va subito in errore e ripiega sul resolver del firewall invece di attendere un timeout.
+
 I domini consentiti hanno la precedenza sui blocchi dei nomi delle liste di provider. Non ignorano le risposte Firefox, Private Relay o Discovery perché tali risposte sono segnali di rete e non blocchi di lista.
 
 ## Configurare il rilevamento del Resolver \{#configure-resolver-discovery}

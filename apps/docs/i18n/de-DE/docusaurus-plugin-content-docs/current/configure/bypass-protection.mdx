@@ -62,6 +62,8 @@ Die Einstellungen für verschlüsseltes DNS sind unabhängig voneinander:
 
 Namen aus Anbieterlisten werden im DNS blockiert. IPv4-Adressen, IPv6-Adressen und CIDRs aus denselben Listen werden auf jedem Port und Protokoll im unabhängigen Firewall-Anker `sinkhole/bypass` blockiert. Sinkhole entfernt die Schnittstellenadressen der Firewall sowie Gateway- und DNS-Serveradressen, einschließlich der über DHCP oder PPP erlernten Adressen, aus diesen Tabellen, bevor sie geladen werden.
 
+Jede Firewall-Sperre auf dem Bypass-Tab weist die Verbindung ab, statt sie zu verwerfen, wie die pfSense-Aktion **Reject**: TCP erhält einen Reset und UDP eine ICMP-Unreachable-Meldung. Bei einem blockierten Client schlägt die Verbindung sofort fehl, sodass er auf den Resolver der Firewall zurückgreift, statt auf eine Zeitüberschreitung zu warten.
+
 Erlaubte Domains haben Vorrang vor Namenssperren aus Anbieterlisten. Sie setzen die Antworten für Firefox, Private Relay oder Discovery nicht außer Kraft, da diese Antworten Netzwerksignale und keine Listensperren sind.
 
 ## Resolver Discovery konfigurieren \{#configure-resolver-discovery}

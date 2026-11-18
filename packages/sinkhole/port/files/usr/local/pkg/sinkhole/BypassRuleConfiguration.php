@@ -117,8 +117,10 @@ final class BypassRuleConfiguration
                     continue;
                 }
 
+                // Reject, like pfSense's Reject action: TCP gets a reset and UDP an ICMP
+                // unreachable, so a blocked client falls back at once instead of timing out.
                 $prefix = sprintf(
-                    'block drop in quick on %s %s',
+                    'block return in quick on %s %s',
                     $realInterface,
                     $family['family'],
                 );

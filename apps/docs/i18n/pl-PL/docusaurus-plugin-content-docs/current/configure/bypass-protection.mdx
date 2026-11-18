@@ -62,6 +62,8 @@ Ustawienia szyfrowanego DNS są niezależne:
 
 Nazwy z list dostawców są blokowane w DNS. Adresy IPv4, adresy IPv6 i sieci CIDR z tych samych list są blokowane na każdym porcie i protokole w niezależnej kotwicy zapory `sinkhole/bypass`. Sinkhole usuwa z tych tabel adresy interfejsów zapory oraz adresy bram i serwerów DNS, w tym uzyskane przez DHCP lub PPP, przed ich załadowaniem.
 
+Każda blokada zapory na karcie Bypass odrzuca połączenie zamiast je porzucać, podobnie jak akcja **Reject** w pfSense: TCP otrzymuje reset, a UDP komunikat ICMP o nieosiągalnym miejscu docelowym. Zablokowany klient od razu otrzymuje błąd i przełącza się na resolver zapory zamiast czekać na przekroczenie limitu czasu.
+
 Dozwolone domeny mają pierwszeństwo przed blokowaniem nazw z list dostawców. Nie zastępują odpowiedzi Firefox, Private Relay ani Discovery, ponieważ te odpowiedzi są sygnałami sieciowymi, a nie blokadami z list.
 
 ## Konfigurowanie wykrywania Resolvera \{#configure-resolver-discovery}

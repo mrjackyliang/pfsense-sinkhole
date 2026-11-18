@@ -1,5 +1,10 @@
 # pfsense-pkg-sinkhole
 
+## 1.2.2 - 2026-11-18
+
+### UPDATED
+- Bypass firewall blocks (TLS and QUIC, Providers, Tor, and both VPN blocks) reject connections instead of silently dropping them, so a blocked client gets a TCP reset or ICMP unreachable and falls back to the firewall's resolver right away instead of waiting for a timeout.
+
 ## 1.2.1 - 2026-11-17
 
 ### FIXED

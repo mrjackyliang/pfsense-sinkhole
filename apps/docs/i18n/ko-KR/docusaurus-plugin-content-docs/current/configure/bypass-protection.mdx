@@ -62,6 +62,8 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 공급자 목록의 이름은 DNS에서 차단됩니다. 같은 목록의 IPv4 주소, IPv6 주소 및 CIDR은 독립적인 `sinkhole/bypass` 방화벽 앵커에서 모든 포트와 프로토콜에 대해 차단됩니다. Sinkhole은 테이블을 로드하기 전에 방화벽 인터페이스 주소와 DHCP 또는 PPP를 통해 얻은 주소를 포함한 게이트웨이 및 DNS 서버 주소를 해당 테이블에서 제거합니다.
 
+Bypass 탭의 모든 방화벽 차단은 pfSense의 **Reject** 동작처럼 연결을 드롭하는 대신 거부하여 TCP에는 재설정을, UDP에는 ICMP 도달 불가 메시지를 보냅니다. 차단된 클라이언트는 즉시 실패하여 시간 초과를 기다리는 대신 방화벽의 Resolver를 사용합니다.
+
 허용된 도메인은 공급자 목록의 이름 차단보다 우선합니다. Firefox, Private Relay 또는 Discovery 응답은 목록 차단이 아니라 네트워크 신호이므로 허용된 도메인이 이를 재정의하지 않습니다.
 
 ## Resolver 검색 구성 \{#configure-resolver-discovery}

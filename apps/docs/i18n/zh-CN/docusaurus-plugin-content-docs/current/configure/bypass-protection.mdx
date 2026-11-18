@@ -62,6 +62,8 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 提供商列表中的名称在 DNS 中被拦截。同一列表中的 IPv4 地址、IPv6 地址和 CIDR 会在独立的 `sinkhole/bypass` 防火墙锚点中针对所有端口和协议进行拦截。Sinkhole 会在加载这些表之前，从中删除防火墙的接口地址以及网关和 DNS 服务器地址，包括通过 DHCP 或 PPP 获取的地址。
 
+Bypass 选项卡上的每条防火墙拦截规则都会像 pfSense 的 **Reject** 操作一样拒绝连接，而不是直接丢弃：TCP 会收到重置，UDP 会收到 ICMP 目标不可达消息。被拦截的客户端会立即失败并改用防火墙的 Resolver，无需等待超时。
+
 允许的域名优先于提供商列表的名称拦截。它们不会覆盖 Firefox、Private Relay 或 Discovery 响应，因为这些响应是网络信号，而不是列表拦截。
 
 ## 配置 Resolver 发现 \{#configure-resolver-discovery}

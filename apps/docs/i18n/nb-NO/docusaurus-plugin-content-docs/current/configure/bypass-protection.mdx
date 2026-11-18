@@ -62,6 +62,8 @@ Innstillingene for kryptert DNS er uavhengige:
 
 Navn i leverandørlister blokkeres i DNS. IPv4-adresser, IPv6-adresser og CIDR-er fra de samme listene blokkeres på alle porter og protokoller i det uavhengige brannmurankeret `sinkhole/bypass`. Sinkhole fjerner brannmurens grensesnittadresser samt gateway- og DNS-serveradresser, inkludert adresser mottatt via DHCP eller PPP, fra tabellene før de lastes.
 
+Hver brannmurblokkering på Bypass-fanen avviser forbindelsen i stedet for å forkaste den, som pfSense-handlingen **Reject**: TCP får en tilbakestilling, og UDP får en ICMP-melding om at målet ikke kan nås. En blokkert klient feiler umiddelbart og faller tilbake til brannmurens resolver i stedet for å vente på et tidsavbrudd.
+
 Tillatte domener har prioritet over navneblokkering fra leverandørlister. De overstyrer ikke svarene fra Firefox, Private Relay eller Discovery fordi disse svarene er nettverkssignaler, ikke listeblokkeringer.
 
 ## Konfigurer Resolver-oppdagelse \{#configure-resolver-discovery}

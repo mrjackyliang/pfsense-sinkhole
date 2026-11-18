@@ -443,16 +443,16 @@ sinkholeTestRun([
 # Sinkhole bypass protection
 table <sinkhole_bypass_v4> persist file "/var/db/sinkhole-bypass-v4.txt"
 table <sinkhole_bypass_v6> persist file "/var/db/sinkhole-bypass-v6.txt"
-block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
-block drop in quick on igc0 inet from any to <sinkhole_bypass_v4>
-block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 1194
-block drop in quick on igc0 inet proto udp from any to ! (self) port { 500 4500 51820 }
-block drop in quick on igc0 inet proto esp from any to ! (self)
-block drop in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 853
-block drop in quick on igc0 inet6 from any to <sinkhole_bypass_v6>
-block drop in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 1194
-block drop in quick on igc0 inet6 proto udp from any to ! (self) port { 500 4500 51820 }
-block drop in quick on igc0 inet6 proto esp from any to ! (self)
+block return in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
+block return in quick on igc0 inet from any to <sinkhole_bypass_v4>
+block return in quick on igc0 inet proto { tcp udp } from any to ! (self) port 1194
+block return in quick on igc0 inet proto udp from any to ! (self) port { 500 4500 51820 }
+block return in quick on igc0 inet proto esp from any to ! (self)
+block return in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 853
+block return in quick on igc0 inet6 from any to <sinkhole_bypass_v6>
+block return in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 1194
+block return in quick on igc0 inet6 proto udp from any to ! (self) port { 500 4500 51820 }
+block return in quick on igc0 inet6 proto esp from any to ! (self)
 RULES;
 
         sinkholeTestAssertSame($expected . PHP_EOL, $rules, 'The exact Bypass rules must remain stable.');
@@ -473,7 +473,7 @@ RULES;
             }
 
             sinkholeTestAssertTrue(
-                str_starts_with($ruleLine, 'block drop in quick on '),
+                str_starts_with($ruleLine, 'block return in quick on '),
                 'Every Bypass firewall rule must be an inbound quick block.',
             );
         }
@@ -1793,18 +1793,18 @@ table <sinkhole_bypass_exempt_src> { 10.0.0.5 }
 table <sinkhole_bypass_exempt_dst> { 9.9.9.9 }
 anchor "ports" in from ! <sinkhole_bypass_exempt_src> to ! <sinkhole_bypass_exempt_dst> {
     anchor "aliases_1" in from ! <IP4_CENTRALSTATION> {
-        block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
-        block drop in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 853
+        block return in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
+        block return in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 853
     }
 }
 anchor "providers_inet" in inet from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v4> {
     anchor "aliases_1" in from ! <IP4_CENTRALSTATION> {
-        block drop in quick on igc0 inet all
+        block return in quick on igc0 inet all
     }
 }
 anchor "providers_inet6" in inet6 from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v6> {
     anchor "aliases_1" in from ! <IP4_CENTRALSTATION> {
-        block drop in quick on igc0 inet6 all
+        block return in quick on igc0 inet6 all
     }
 }
 RULES;
@@ -1839,21 +1839,21 @@ table <sinkhole_bypass_v4> persist file "/v4"
 table <sinkhole_bypass_v6> persist file "/v6"
 anchor "ports" in from ! <NAS_HOSTS> to ! <DNS_SERVERS> {
     anchor "aliases_1" in from ! <CAMERAS> {
-        block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
-        block drop in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 853
+        block return in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
+        block return in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 853
     }
 }
 anchor "providers_inet" in inet from any to <sinkhole_bypass_v4> {
     anchor "aliases_1" in from ! <NAS_HOSTS> to ! <DNS_SERVERS> {
         anchor "aliases_2" in from ! <CAMERAS> {
-            block drop in quick on igc0 inet all
+            block return in quick on igc0 inet all
         }
     }
 }
 anchor "providers_inet6" in inet6 from any to <sinkhole_bypass_v6> {
     anchor "aliases_1" in from ! <NAS_HOSTS> to ! <DNS_SERVERS> {
         anchor "aliases_2" in from ! <CAMERAS> {
-            block drop in quick on igc0 inet6 all
+            block return in quick on igc0 inet6 all
         }
     }
 }
@@ -1894,18 +1894,18 @@ table <sinkhole_bypass_v6> persist file "/v6"
 table <sinkhole_bypass_exempt_src> { 192.0.2.10 2001:db8:5::/64 198.51.100.0/24 }
 table <sinkhole_bypass_exempt_dst> { 2606:4700:4700::1111 }
 anchor "ports" in from ! <sinkhole_bypass_exempt_src> to ! <sinkhole_bypass_exempt_dst> {
-    block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 1194
-    block drop in quick on igc0 inet proto udp from any to ! (self) port { 500 4500 51820 }
-    block drop in quick on igc0 inet proto esp from any to ! (self)
-    block drop in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 1194
-    block drop in quick on igc0 inet6 proto udp from any to ! (self) port { 500 4500 51820 }
-    block drop in quick on igc0 inet6 proto esp from any to ! (self)
+    block return in quick on igc0 inet proto { tcp udp } from any to ! (self) port 1194
+    block return in quick on igc0 inet proto udp from any to ! (self) port { 500 4500 51820 }
+    block return in quick on igc0 inet proto esp from any to ! (self)
+    block return in quick on igc0 inet6 proto { tcp udp } from any to ! (self) port 1194
+    block return in quick on igc0 inet6 proto udp from any to ! (self) port { 500 4500 51820 }
+    block return in quick on igc0 inet6 proto esp from any to ! (self)
 }
 anchor "providers_inet" in inet from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v4> {
-    block drop in quick on igc0 inet all
+    block return in quick on igc0 inet all
 }
 anchor "providers_inet6" in inet6 from ! <sinkhole_bypass_exempt_src> to <sinkhole_bypass_v6> {
-    block drop in quick on igc0 inet6 all
+    block return in quick on igc0 inet6 all
 }
 RULES;
 
@@ -1938,9 +1938,9 @@ table <sinkhole_bypass_v4> persist file "/v4"
 table <sinkhole_bypass_v6> persist file "/v6"
 table <sinkhole_bypass_exempt_dst> { 1.1.1.1 }
 anchor "ports" in to ! <sinkhole_bypass_exempt_dst> {
-    block drop in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
+    block return in quick on igc0 inet proto { tcp udp } from any to ! (self) port 853
 }
-block drop in quick on igc0 inet from any to <sinkhole_bypass_v4>
+block return in quick on igc0 inet from any to <sinkhole_bypass_v4>
 RULES;
 
         sinkholeTestAssertSame(

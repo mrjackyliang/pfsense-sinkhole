@@ -62,6 +62,8 @@ Postavke šifriranog DNS-a su nezavisne:
 
 Imena iz lista pružalaca blokiraju se u DNS-u. IPv4 adrese, IPv6 adrese i CIDR-ovi iz istih lista blokiraju se na svakom portu i protokolu u nezavisnom sidru zaštitnog zida `sinkhole/bypass`. Sinkhole uklanja adrese interfejsa zaštitnog zida te adrese pristupnika i DNS servera, uključujući one dobijene putem DHCP-a ili PPP-a, iz tih tabela prije njihovog učitavanja.
 
+Svaka blokada zaštitnog zida na kartici Bypass odbija vezu umjesto da je odbaci, poput pfSense radnje **Reject**: TCP dobija reset, a UDP ICMP poruku o nedostupnosti. Blokirani klijent odmah dobija grešku i vraća se na resolver zaštitnog zida umjesto da čeka istek vremena.
+
 Dozvoljene domene imaju prednost nad blokiranjem imena iz lista pružalaca. One ne poništavaju odgovore Firefox, Private Relay ili Discovery jer su ti odgovori mrežni signali, a ne blokiranja sa liste.
 
 ## Konfigurišite otkrivanje Resolvera \{#configure-resolver-discovery}

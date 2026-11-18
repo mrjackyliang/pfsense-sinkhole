@@ -62,6 +62,8 @@ Los ajustes de DNS cifrado son independientes:
 
 Los nombres de las listas de proveedores se bloquean en DNS. Las direcciones IPv4, las direcciones IPv6 y los CIDR de las mismas listas se bloquean en todos los puertos y protocolos en el ancla de firewall independiente `sinkhole/bypass`. Sinkhole elimina de esas tablas las direcciones de interfaz del firewall y las direcciones de gateway y servidores DNS, incluidas las obtenidas mediante DHCP o PPP, antes de cargarlas.
 
+Cada bloqueo del firewall en la pestaña Bypass rechaza la conexión en lugar de descartarla, como la acción **Reject** de pfSense: TCP recibe un restablecimiento y UDP un mensaje ICMP de destino inalcanzable. Un cliente bloqueado falla de inmediato y recurre al resolver del firewall en lugar de esperar a que se agote el tiempo de espera.
+
 Los dominios permitidos tienen prioridad sobre los bloqueos de nombres de listas de proveedores. No anulan las respuestas de Firefox, Private Relay o Discovery porque esas respuestas son señales de red y no bloqueos de lista.
 
 ## Configurar el descubrimiento del Resolver \{#configure-resolver-discovery}

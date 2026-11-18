@@ -62,6 +62,8 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 供應商列表中的名稱會在 DNS 中被封鎖。同一列表中的 IPv4 地址、IPv6 地址和 CIDR 會在獨立的 `sinkhole/bypass` 防火牆錨點中針對所有端口和協定進行封鎖。Sinkhole 會在載入這些表格之前，從中移除防火牆的介面位址以及閘道和 DNS 伺服器位址，包括透過 DHCP 或 PPP 取得的位址。
 
+Bypass 分頁上的每條防火牆封鎖規則都會像 pfSense 的 **Reject** 動作一樣拒絕連線，而不是直接丟棄：TCP 會收到重設，UDP 會收到 ICMP 目標無法到達訊息。被封鎖的用戶端會立即失敗並改用防火牆的 Resolver，無需等待逾時。
+
 允許的網域優先於供應商列表的名稱封鎖。它們不會覆寫 Firefox、Private Relay 或 Discovery 回應，因為這些回應是網路訊號，而不是列表封鎖。
 
 ## 設定 Resolver 探索 \{#configure-resolver-discovery}

@@ -1036,7 +1036,7 @@ function mwexec(string $command): int
         );
         $anchorText = file_get_contents($anchorPath);
         $sinkholeStubBypassAnchorLoaded = is_string($anchorText)
-            && str_contains($anchorText, 'block drop ');
+            && str_contains($anchorText, 'block return ');
     } elseif ($command === "/sbin/pfctl -a 'sinkhole/bypass' -F all") {
         $sinkholeStubBypassAnchorLoaded = false;
     }

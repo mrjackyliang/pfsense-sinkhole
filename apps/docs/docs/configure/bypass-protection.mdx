@@ -62,6 +62,8 @@ The encrypted-DNS settings are independent:
 
 Provider-list names are blocked in DNS. IPv4 addresses, IPv6 addresses, and CIDRs from the same lists are blocked on every port and protocol in the independent `sinkhole/bypass` firewall anchor. Sinkhole removes the firewall's interface addresses, gateway addresses, and DNS server addresses—including ones learned from DHCP or PPP—from those tables before loading them.
 
+Every firewall block on the Bypass tab rejects the connection instead of dropping it, like pfSense's **Reject** action: TCP gets a reset and UDP gets an ICMP unreachable. A blocked client fails right away and falls back to the firewall's resolver instead of waiting for a timeout.
+
 Allowed domains keep priority over provider-list name blocks. They don't override the Firefox, Private Relay, or Discovery answers because those answers are network signals rather than list blocks.
 
 ## Configure Resolver Discovery \{#configure-resolver-discovery}

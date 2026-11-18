@@ -3038,7 +3038,8 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             if (is_string($contents)) {
                 $ruleCount = count(array_filter(
                     explode("\n", str_replace(["\r\n", "\r"], "\n", $contents)),
-                    static fn(string $line): bool => str_starts_with(ltrim($line), 'block drop '),
+                    static fn(string $line): bool => str_starts_with(ltrim($line), 'block return ')
+                        || str_starts_with(ltrim($line), 'block drop '),
                 ));
             }
         }

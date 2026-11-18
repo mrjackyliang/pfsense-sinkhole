@@ -62,6 +62,8 @@ Les réglages du DNS chiffré sont indépendants :
 
 Les noms des listes de fournisseurs sont bloqués dans le DNS. Les adresses IPv4, les adresses IPv6 et les CIDR des mêmes listes sont bloqués sur tous les ports et protocoles dans l’ancre de pare-feu indépendante `sinkhole/bypass`. Sinkhole retire de ces tables les adresses d’interface du pare-feu ainsi que les adresses de passerelle et de serveurs DNS, y compris celles apprises via DHCP ou PPP, avant de les charger.
 
+Chaque blocage du pare-feu dans l’onglet Bypass refuse la connexion au lieu de l’abandonner, comme l’action **Reject** de pfSense : TCP reçoit une réinitialisation et UDP un message ICMP de destination inaccessible. Un client bloqué reçoit immédiatement une erreur et se rabat sur le Resolver du pare-feu au lieu d’attendre l’expiration du délai d’attente.
+
 Les domaines autorisés ont priorité sur les blocages de noms des listes de fournisseurs. Ils ne remplacent pas les réponses Firefox, Private Relay ou Discovery, car ces réponses sont des signaux réseau et non des blocages de liste.
 
 ## Configurer la découverte du Resolver \{#configure-resolver-discovery}
