@@ -24,7 +24,7 @@ Open **Firewall → Sinkhole → Bypass** en selecteer interfaces bij **Apply to
 
 Netwerk- en apparaatovereenkomsten gebruiken de huidige subnetten van die interfaces, net als gewone Sinkhole-scopes. Een client buiten de geselecteerde subnetten ontvangt geen Bypass-DNS-antwoord.
 
-<img src={bypassProtection} alt="Tabblad Bypass met LAN geselecteerd, gewone DNS-omleiding uitgeschakeld, bescherming voor versleutelde DNS en tunnels ingeschakeld, Discovery ingesteld op Answer with no records, één uitgezonderde demobron en -bestemming, en drie demo-Bypass Lists" width={1024} height={1884} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Tabblad Bypass voor Global met LAN geselecteerd, gewone DNS-omleiding uitgeschakeld, drie demo-Bypass Lists geselecteerd, bescherming voor versleutelde DNS en tunnels ingeschakeld, Discovery ingesteld op Answer with no records, en één uitgezonderde demobron en -bestemming" width={1024} height={1717} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Beveiligingen per netwerk en apparaat instellen \{#set-protections-per-network-and-device}
 
@@ -36,19 +36,21 @@ Alleen **Global** bevat:
 
 - De interfaces bij **Apply to**.
 - De omleiding voor **Plain DNS** en de uitzonderingen daarvoor.
-- Bronnen voor Bypass Lists, **Add from Catalog** en lijstupdates.
 
-Een netwerk of apparaat bevat:
+Een netwerk of apparaat bevat daarnaast **Enable**, dat de beveiligingen ervan inschakelt.
 
-- **Enable**, dat de beveiligingen ervan inschakelt.
-- **Bypass Lists**, de ingeschakelde bronnen die het gebruikt.
+Global en elk netwerk of apparaat bevatten:
+
+- **Bypass Lists**, de ingeschakelde bronnen die het gebruikt. Bronnen worden toegevoegd, ingeschakeld en bijgewerkt op [Lists → Bypass](/docs/configure/lists#add-bypass-lists). Zonder ingeschakelde bron toont het veld in plaats daarvan één regel met een link **Open Lists**.
 - De instellingen voor versleutelde DNS, **Discovery**, de tunnelblokkeringen en **Block Exemptions**.
 
-Een netwerk of apparaat zonder eigen instellingen toont één regel, zoals "Niet ingesteld voor dit netwerk; Globaal is van toepassing.", boven een leeg formulier. Een apparaat noemt daar zijn netwerk wanneer dat netwerk eigen instellingen heeft. Door het formulier op te slaan worden de instellingen aangemaakt, en **Remove settings for this network** of **Remove settings for this device** verwijdert ze, zodat de bredere instellingen weer gelden. Als je een netwerk of apparaat op het tabblad Clients verwijdert, worden ook de instellingen ervan verwijderd.
+Een netwerk of apparaat zonder eigen instellingen toont één regel, zoals "Niet ingesteld voor dit netwerk; Globaal is van toepassing.", boven een leeg formulier. Een apparaat noemt daar zijn netwerk wanneer dat netwerk eigen instellingen heeft die zijn ingeschakeld. Een netwerk of apparaat waarvan de instellingen zijn uitgeschakeld, toont in plaats daarvan "Uitgeschakeld; Globaal is van toepassing." en noemt daarbij dezelfde bredere instellingen. Door het formulier op te slaan worden de instellingen aangemaakt, en **Remove settings for this network** of **Remove settings for this device** verwijdert ze, zodat de bredere instellingen weer gelden. Als je een netwerk of apparaat op het tabblad Clients verwijdert, worden ook de instellingen ervan verwijderd.
 
 **All** toont Global en elk netwerk en apparaat met eigen instellingen, samen met de beveiligingen die aan staan. Selecteer een rij om deze te bewerken.
 
 Wanneer Sinkhole naar 1.3.0 wordt bijgewerkt, blijven de bestaande instellingen in Global staan en worden ze naar elk netwerk en apparaat gekopieerd. Vanaf dat moment is elke kopie onafhankelijk. Een kopie wordt alleen ingeschakeld als de interface van het netwerk, of een interface van een van de identificatoren van het apparaat, bij **Apply to** was geselecteerd; elke andere kopie wordt uitgeschakeld opgeslagen, zodat geen client wordt gefilterd die eerder niet werd gefilterd.
+
+Global kiest zijn Bypass Lists net als elk netwerk en apparaat. Wanneer Sinkhole naar 1.3.1 wordt bijgewerkt, wordt de selectie van Global elke Bypass List die op dat moment bestaat, zodat er niets verandert totdat je deze bewerkt. Een later toegevoegde Bypass List wordt nergens gebruikt totdat Global, een netwerk of een apparaat deze selecteert.
 
 Elk netwerk of apparaat met ingeschakelde instellingen krijgt een eigen clienttabel in het anker `sinkhole/bypass`. De adressen van een apparaat worden uit de tabel van zijn netwerk en uit die van Global verwijderd, en de subnetten van een netwerk uit die van Global, zodat een client alleen door zijn meest specifieke instellingen wordt geblokkeerd. Sinkhole voegt hiervoor geen doorlaatregels toe.
 
@@ -82,7 +84,7 @@ De omleidingsregels worden geladen zodra Sinkhole is ingeschakeld op het tabblad
 De instellingen voor versleutelde DNS zijn onafhankelijk:
 
 - **TLS and QUIC** blokkeert TCP- en UDP-poort 853 naar elke bestemming behalve de firewall.
-- **Providers** blokkeert namen en adressen uit ingeschakelde Bypass Lists van het type **Encrypted DNS**.
+- **Providers** blokkeert namen en adressen uit de geselecteerde, ingeschakelde Bypass Lists van het type **Encrypted DNS**.
 - **Firefox** beantwoordt `use-application-dns.net` en de subdomeinen ervan met `NXDOMAIN`, waarmee de automatische DNS-over-HTTPS-selectie van Firefox wordt uitgeschakeld.
 - **Private Relay** beantwoordt `mask.icloud.com` en `mask-h2.icloud.com` met `NXDOMAIN`, waarmee compatibele Apple-apparaten wordt verteld dat Private Relay niet beschikbaar is op dit netwerk.
 
@@ -117,8 +119,8 @@ Als Discovery wordt uitgeschakeld of Sinkhole wordt verwijderd, wordt de zonereg
 
 ## Beschermen tegen tunnels \{#protect-against-tunnels}
 
-- **Tor → Block listed Tor relays** past ingeschakelde Bypass Lists van het type **Tor** toe.
-- **VPN → Block listed VPN providers** past ingeschakelde Bypass Lists van het type **VPN** toe.
+- **Tor → Block listed Tor relays** past de geselecteerde, ingeschakelde Bypass Lists van het type **Tor** toe.
+- **VPN → Block listed VPN providers** past de geselecteerde, ingeschakelde Bypass Lists van het type **VPN** toe.
 - **VPN → Block standard VPN ports** blokkeert TCP en UDP `1194`, UDP `51820`, UDP `500` en `4500`, en ESP naar elke bestemming behalve de firewall.
 
 Namen en adressen uit Tor- en VPN-lijsten gebruiken hetzelfde DNS- en firewallgedrag als providerlijsten voor versleutelde DNS. Deze instellingen beperken veelgebruikte alternatieve paden, maar herkennen niet elke versleutelde of aangepaste tunnel.
@@ -136,21 +138,9 @@ Uitzonderingen gelden alleen voor de firewallblokkades. Provider-, Tor- en VPN-n
 
 Als een opgeslagen blokkeringsuitzondering ongeldig wordt, zoals een alias die is hernoemd of verwijderd, houdt Sinkhole alle blokkades aan zonder uitzonderingen, schrijft het één regel naar het systeemlogboek en toont het de waarde onder **Invalid Saved Values** totdat die is gecorrigeerd of verwijderd.
 
-## Toevoegen vanuit de catalogus \{#add-from-catalog}
+## Bypass Lists beheren \{#manage-bypass-lists}
 
-Open **Add from Catalog** op het tabblad Bypass om het lijstenregister van AdGuard Home en de DNS-, IPv4- en IPv6-secties van de feedcatalogus van pfBlockerNG te doorzoeken. De resultaten zijn beperkt tot bypass-feeds en hebben een vast type: **Encrypted DNS**, **Tor** of **VPN**.
-
-De broncatalogi worden alleen opgehaald wanneer je de catalogus opent of **Refresh** selecteert. Het toevoegen van een resultaat maakt een ingeschakelde Bypass List; die neemt alleen deel aan geplande updates zolang de bijbehorende beveiliging **Providers**, **Tor** of **VPN** aan staat.
-
-De regel **Contents** op elke kaart toont **Domains**, **IPv4 addresses** of **IPv6 addresses**. Wanneer u een IPv4- of IPv6-resultaat van pfBlockerNG toevoegt, voegt Sinkhole ` (IPv4)` of ` (IPv6)` toe aan de opgeslagen naam; domeinresultaten behouden de ongewijzigde catalogusnaam.
-
-## Bypass Lists toevoegen \{#add-bypass-lists}
-
-Selecteer **Add** onder **Bypass Lists** en voer vervolgens een lokale naam, type en HTTP- of HTTPS-URL in. Nieuwe rijen zijn uitgeschakeld totdat ze expliciet worden ingeschakeld.
-
-Elke bron accepteert één item per regel. Een lijst kan domeinen, IPv4-adressen, IPv6-adressen en CIDR's combineren; tekst na `#` is een opmerking. Ongeldige en te lange regels worden overgeslagen. Een download die de vaste byte- of geaccepteerde-itemslimiet overschrijdt, wordt geweigerd, zodat de laatste goede kopie behouden blijft.
-
-Een ingeschakelde Bypass List wordt volgens het geconfigureerde lijstschema bijgewerkt met dezelfde begrensde downloadclient als andere lijsten, maar alleen zolang de bijbehorende beveiliging **Providers**, **Tor** of **VPN** aan staat. Een mislukte ophaalactie behoudt de laatste goede opgeslagen kopie van dezelfde URL en **Status → Bypass Lists** meldt items, laatste ophaalactie en de meest recente fout voor elke rij. Sinkhole levert of adviseert geen Bypass List.
+Bronnen voor Bypass Lists worden toegevoegd, bewerkt, ingeschakeld en verwijderd op [Lists → Bypass](/docs/configure/lists#add-bypass-lists), waar ook **Add from Catalog** staat en een telling **Used By** voor elke lijst. Het tabblad Bypass kiest alleen welke ingeschakelde lijsten elke context gebruikt. Een ingeschakelde Bypass List neemt alleen deel aan geplande updates zolang de bijbehorende beveiliging **Providers**, **Tor** of **VPN** aan staat.
 
 ## De actieve status verifiëren \{#verify-the-active-state}
 

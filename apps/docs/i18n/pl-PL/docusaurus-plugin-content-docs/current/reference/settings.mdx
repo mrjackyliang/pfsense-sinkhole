@@ -63,6 +63,8 @@ Każda nowa wersja znaleziona przez zaplanowaną kontrolę tworzy jedno lokalne 
 
 Źródła obejścia są wykluczone z tego katalogu.
 
+Karta Lists przełącza między rodzajami **DNS**, **Bypass** i **IP**. Powyższa tabela to rodzaj DNS; [Bypass Lists](#bypass-lists) i [wiersze list IP](#ip-and-country-blocking) również są tam zarządzane, a tabela każdego rodzaju ma licznik **Used By** obejmujący Global oraz każdą sieć i każde urządzenie, które wybierają listę.
+
 ## Blocking \{#blocking}
 
 Każdy kontekst (Global, jedna sieć lub jedno urządzenie) ma własne dwa pola:
@@ -122,13 +124,14 @@ Proces minutowy wysyła najwyżej 20 komunikatów na wykonanie i 60 komunikatów
 | Redirect                               | Off       | Wysyła zwykły ruch DNS na portach UDP i TCP 53 z wybranych interfejsów do zapory.                                         |
 | Exempt Sources                         | Empty     | Jeden adres IPv4 lub IPv6, sieć CIDR lub istniejący alias hosta/sieci w wierszu, który omija przekierowanie zwykłego DNS. |
 | Exempt Destinations                    | Empty     | Jeden docelowy adres IP, CIDR lub alias w wierszu, który omija przekierowanie zwykłego DNS.                               |
+| Bypass Lists                           | Empty     | Włączone Bypass Lists używane przez ten kontekst; samymi źródłami zarządza się na karcie Lists.                           |
 | TLS and QUIC                           | Off       | Blokuje port TCP i UDP 853 do miejsc docelowych innych niż zapora.                                                        |
-| Providers                              | Off       | Blokuje nazwy i adresy z włączonych Bypass Lists typu **Encrypted DNS**.                                                  |
+| Providers                              | Off       | Blokuje nazwy i adresy z wybranych Bypass Lists typu **Encrypted DNS**.                                                   |
 | Firefox                                | Off       | Zwraca `NXDOMAIN` dla nazwy kanarkowej automatycznego DNS-over-HTTPS Firefoksa i jej poddomen.                            |
 | Private Relay                          | Off       | Zwraca `NXDOMAIN` dla dwóch nazw dostępności usługi Private Relay firmy Apple.                                            |
 | Discovery                              | Off       | Pozostawia DDR bez zmian, ogłasza DNS over TLS zapory albo odpowiada `NOERROR` bez rekordów.                              |
-| Tor                                    | Off       | Blokuje nazwy i adresy z włączonych Bypass Lists typu **Tor**.                                                            |
-| VPN (Block listed VPN providers)       | Off       | Blokuje nazwy i adresy z włączonych Bypass Lists typu **VPN**.                                                            |
+| Tor                                    | Off       | Blokuje nazwy i adresy z wybranych Bypass Lists typu **Tor**.                                                             |
+| VPN (Block listed VPN providers)       | Off       | Blokuje nazwy i adresy z wybranych Bypass Lists typu **VPN**.                                                             |
 | VPN (Block standard VPN ports)         | Off       | Blokuje porty UDP OpenVPN, WireGuard i IPsec oraz ESP do miejsc docelowych innych niż zapora.                             |
 | Block Exemptions → Exempt Sources      | Empty     | Jeden adres IP, CIDR lub alias w wierszu, którego ruch omija każdą blokadę zapory Bypass.                                 |
 | Block Exemptions → Exempt Destinations | Empty     | Jeden docelowy adres IP, CIDR lub alias w wierszu, którego nie zatrzymuje żadna blokada zapory Bypass.                    |
@@ -139,9 +142,11 @@ Wyjątki od blokad nie dodają reguły pass, więc ruch objęty wyjątkiem nadal
 
 ### Bypass Lists \{#bypass-lists}
 
+Wierszami Bypass Lists zarządza się na karcie **Lists → Bypass**.
+
 | Pole    | Domyślnie     | Opis                                                                                          |
 |---------|---------------|-----------------------------------------------------------------------------------------------|
-| Name    | Empty         | Lokalna etykieta wyświetlana w Bypass i Status.                                               |
+| Name    | Empty         | Lokalna etykieta wyświetlana w Lists, Bypass i Status.                                        |
 | Kind    | Encrypted DNS | Wybiera zasadę **Encrypted DNS**, **Tor** lub **VPN**.                                        |
 | URL     | Empty         | Źródło HTTP lub HTTPS zawierające mieszane domeny, adresy i CIDR-y.                           |
 | Enabled | Off           | Uwzględnia zapisaną listę w zaplanowanych pobraniach i odpowiadającej jej włączonej ochronie. |
@@ -163,7 +168,7 @@ Dane Bypass List zawierają jeden wpis w wierszu i komentarze `#`. Nieudane pobr
 | Clear License Key   | Off       | Usuwa zapisany klucz MaxMind po zapisaniu ustawień.                                                                        |
 | IP Allowlist        | Empty     | Jeden adres IPv4 lub IPv6, sieć CIDR lub istniejący alias hosta/sieci w wierszu, odejmowany od końcowych tabel blokowania. |
 
-Każdy wiersz listy IP ma nazwę, adres URL, wybór rodziny IPv4/IPv6/Both i przełącznik Enabled. Sinkhole usuwa również adresy interfejsów zapory, bram i DNS z tabel końcowych, aby jego własne reguły nie blokowały chronionej infrastruktury.
+Każdy wiersz listy IP ma nazwę, adres URL, wybór rodziny IPv4/IPv6/Both i przełącznik Enabled, a zarządza się nim na karcie **Lists → IP**. Pole **IP Lists** każdego kontekstu wybiera używane przez niego włączone listy IP. Sinkhole usuwa również adresy interfejsów zapory, bram i DNS z tabel końcowych, aby jego własne reguły nie blokowały chronionej infrastruktury.
 
 Katalog IP wyklucza wszystkie źródła Encrypted DNS, Tor i VPN należące do katalogu Bypass.
 

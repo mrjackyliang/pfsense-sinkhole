@@ -24,7 +24,7 @@ Open **Firewall → Sinkhole → Bypass** and select **Apply to** interfaces bef
 
 Network and device matching uses those interfaces' current subnets, just like ordinary Sinkhole scopes. A client outside the selected subnets receives no Bypass DNS answer.
 
-<img src={bypassProtection} alt="Bypass tab showing LAN selected, plain-DNS redirect off, encrypted-DNS and tunnel protections on, Discovery set to Answer with no records, one demo exempt source and exempt destination, and three demo Bypass Lists" width={1024} height={1744} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass tab for Global showing LAN selected, plain-DNS redirect off, three demo Bypass Lists selected, encrypted-DNS and tunnel protections on, Discovery set to Answer with no records, and one demo exempt source and exempt destination" width={1024} height={1677} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Set Protections per Network and Device \{#set-protections-per-network-and-device}
 
@@ -36,19 +36,21 @@ A client follows the most specific settings that exist: its device's first, then
 
 - **Apply to** interfaces.
 - **Plain DNS** redirect and its exemptions.
-- Bypass List sources, **Add from Catalog**, and list updates.
 
-A network or device holds:
+A network or device also holds **Enable**, which turns its protections on.
 
-- **Enable**, which turns its protections on.
-- **Bypass Lists**, the enabled sources it uses.
+Global and each network or device hold:
+
+- **Bypass Lists**, the enabled sources it uses. Sources are added, enabled, and updated on [Lists → Bypass](/docs/configure/lists#add-bypass-lists). With no enabled source, the field shows one line with an **Open Lists** link instead.
 - The encrypted-DNS settings, **Discovery**, the tunnel blocks, and **Block Exemptions**.
 
-A network or device without settings of its own shows one line, such as "Not set for this network; Global applies.", above an empty form. A device names its network there when that network has settings of its own. Saving the form creates the settings, and **Remove settings for this network** or **Remove settings for this device** deletes them so the broader settings apply again. Deleting a network or device on the Clients tab deletes its settings too.
+A network or device without settings of its own shows one line, such as "Not set for this network; Global applies.", above an empty form. A device names its network there when that network has settings of its own that are turned on. A network or device whose settings are turned off shows "Turned off; Global applies." instead, naming the same broader settings. Saving the form creates the settings, and **Remove settings for this network** or **Remove settings for this device** deletes them so the broader settings apply again. Deleting a network or device on the Clients tab deletes its settings too.
 
 **All** lists Global and every network and device with settings of its own, with the protections that are on. Select a row to edit it.
 
 When Sinkhole is upgraded to 1.3.0, the existing settings stay in Global and are copied into every network and device. Each copy is independent from then on. A copy is turned on only when the network's interface, or an interface of one of the device's identifiers, was selected in **Apply to**; every other copy is saved turned off, so no client is filtered that wasn't filtered before.
+
+Global chooses its Bypass Lists like every network and device. When Sinkhole is upgraded to 1.3.1, Global's selection becomes every Bypass List that exists at that moment, so nothing changes until you edit it. A Bypass List added later is used nowhere until Global, a network, or a device selects it.
 
 Each network or device with turned-on settings gets its own client table in the `sinkhole/bypass` anchor. A device's addresses are removed from its network's table and from Global's, and a network's subnets from Global's, so a client is blocked only by its most specific settings. Sinkhole adds no pass rules for this.
 
@@ -82,7 +84,7 @@ The redirect rules load whenever Sinkhole is enabled on the General tab and the 
 The encrypted-DNS settings are independent:
 
 - **TLS and QUIC** blocks TCP and UDP port 853 to every destination except the firewall.
-- **Providers** blocks names and addresses from enabled Bypass Lists whose kind is **Encrypted DNS**.
+- **Providers** blocks names and addresses from the selected, enabled Bypass Lists whose kind is **Encrypted DNS**.
 - **Firefox** answers `use-application-dns.net` and its subdomains with `NXDOMAIN`, which turns off Firefox's automatic DNS over HTTPS selection.
 - **Private Relay** answers `mask.icloud.com` and `mask-h2.icloud.com` with `NXDOMAIN`, which tells compatible Apple devices that Private Relay isn't available on this network.
 
@@ -117,8 +119,8 @@ Turning Discovery off or removing Sinkhole removes the zone line. The same block
 
 ## Protect Against Tunnels \{#protect-against-tunnels}
 
-- **Tor → Block listed Tor relays** applies enabled Bypass Lists of kind **Tor**.
-- **VPN → Block listed VPN providers** applies enabled Bypass Lists of kind **VPN**.
+- **Tor → Block listed Tor relays** applies the selected, enabled Bypass Lists of kind **Tor**.
+- **VPN → Block listed VPN providers** applies the selected, enabled Bypass Lists of kind **VPN**.
 - **VPN → Block standard VPN ports** blocks TCP and UDP `1194`, UDP `51820`, UDP `500` and `4500`, and ESP to every destination except the firewall.
 
 Tor and VPN list names and addresses use the same DNS and firewall behavior as encrypted-DNS provider lists. These controls reduce common alternate paths, but they don't identify every encrypted or custom tunnel.
@@ -136,21 +138,9 @@ Exemptions cover only the firewall blocks. Provider, Tor, and VPN names from Byp
 
 If a saved block exemption becomes invalid, such as an alias that was renamed or deleted, Sinkhole keeps every block in place with no exemptions, writes one system log entry, and shows the value under **Invalid Saved Values** until it's fixed or removed.
 
-## Add from Catalog \{#add-from-catalog}
+## Manage Bypass Lists \{#manage-bypass-lists}
 
-Open **Add from Catalog** on the Bypass tab to search the AdGuard Home list registry and the DNS, IPv4, and IPv6 sections of pfBlockerNG's feed catalog. Results are limited to bypass feeds and have a fixed **Encrypted DNS**, **Tor**, or **VPN** kind.
-
-Each card's **Contents** line says **Domains**, **IPv4 addresses**, or **IPv6 addresses**. When you add a pfBlockerNG IPv4 or IPv6 result, Sinkhole appends ` (IPv4)` or ` (IPv6)` to its saved name; domain results keep the plain catalog name.
-
-The source catalogs are fetched only when the catalog is opened or **Refresh** is selected. Adding a result creates an enabled Bypass List; it joins scheduled updates only while its matching **Providers**, **Tor**, or **VPN** protection is on.
-
-## Add Bypass Lists \{#add-bypass-lists}
-
-Select **Add** beneath **Bypass Lists**, then enter a local name, kind, and HTTP or HTTPS URL. New rows are disabled until explicitly enabled.
-
-Each source accepts one entry per line. A list can mix domains, IPv4 addresses, IPv6 addresses, and CIDRs; text after `#` is a comment. Invalid and overlong lines are skipped. A download that exceeds the fixed byte or accepted-entry limit is rejected, leaving the last good copy in place.
-
-An enabled Bypass List updates on the configured list schedule, with the same bounded download client as other lists, only while its matching **Providers**, **Tor**, or **VPN** protection is on. A failed fetch keeps the last good saved copy from the same URL, and **Status → Bypass Lists** reports entries, last fetch, and the most recent error for each row. Sinkhole doesn't bundle or recommend a Bypass List.
+Bypass List sources are added, edited, enabled, and deleted on [Lists → Bypass](/docs/configure/lists#add-bypass-lists), which also has **Add from Catalog** and a **Used By** count for each list. The Bypass tab only chooses which enabled lists each context uses. An enabled Bypass List joins scheduled updates only while its matching **Providers**, **Tor**, or **VPN** protection is on.
 
 ## Verify the Active State \{#verify-the-active-state}
 

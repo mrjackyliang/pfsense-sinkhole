@@ -1040,6 +1040,71 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         return $records;
     }
 
+    /**
+     * pfSense Adapter - Prune Bypass Context Selections.
+     *
+     * Drops source identifiers that no longer name a saved Bypass List from every
+     * network and device selection. Only the in-memory configuration changes; the
+     * caller's next write saves it in the same revision.
+     *
+     * @param list<string> $sourceIdentifiers - Identifiers of the saved sources.
+     *
+     * @return void
+     *
+     * @since 1.3.1
+     * @private
+     */
+    private function pruneBypassContextSelections(array $sourceIdentifiers): void
+    {
+        $knownIdentifiers = array_fill_keys($sourceIdentifiers, true);
+        $contextRows = config_get_path(BypassConfiguration::CONTEXTS_PATH, []);
+
+        if (is_array($contextRows) && count($contextRows) === 1 && array_key_exists('item', $contextRows)) {
+            $contextRows = $contextRows['item'];
+        }
+
+        if (is_array($contextRows) && array_key_exists('context', $contextRows)) {
+            $contextRows = [$contextRows];
+        }
+
+        if (!is_array($contextRows) || $contextRows === []) {
+            return;
+        }
+
+        foreach ($contextRows as &$contextRow) {
+            if (!is_array($contextRow) || !array_key_exists('lists', $contextRow)) {
+                continue;
+            }
+
+            $contextSelection = $contextRow['lists'];
+
+            if (
+                is_array($contextSelection)
+                && count($contextSelection) === 1
+                && array_key_exists('item', $contextSelection)
+            ) {
+                $contextSelection = $contextSelection['item'];
+            }
+
+            if (is_string($contextSelection) && $contextSelection !== '') {
+                $contextSelection = [$contextSelection];
+            }
+
+            if (!is_array($contextSelection)) {
+                continue;
+            }
+
+            $contextRow['lists'] = ['item' => array_values(array_filter(
+                $contextSelection,
+                static fn(mixed $identifier): bool => !is_string($identifier)
+                    || isset($knownIdentifiers[$identifier]),
+            ))];
+        }
+        unset($contextRow);
+
+        config_set_path(BypassConfiguration::CONTEXTS_PATH, array_values($contextRows));
+    }
+
     /** @since 1.3.0 */
     private function bypassRuleContextRecord(
         array $policy,
@@ -2224,6 +2289,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @since 1.0.0
      * @since 1.2.0
      * @since 1.3.0
+     * @since 1.3.1
      */
     public function saveBypassConfiguration(
         array $storage,
@@ -2262,6 +2328,23 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             );
         }
 
+        $existingBypass = config_get_path(BypassConfiguration::SECTION_PATH, []);
+
+        foreach (
+            [
+                BypassConfiguration::CONTEXT_MIGRATION_FLAG,
+                BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG,
+            ] as $migrationFlag
+        ) {
+            if (
+                is_array($existingBypass)
+                && array_key_exists($migrationFlag, $existingBypass)
+                && !array_key_exists($migrationFlag, $storage)
+            ) {
+                $storage[$migrationFlag] = $existingBypass[$migrationFlag];
+            }
+        }
+
         $configuration = BypassConfiguration::partition(
             $storage,
             $redirect['interfaces'],
@@ -2293,15 +2376,13 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
         }
 
         config_set_path('installedpackages/sinkhole/redirect', $redirectStorage);
-        $existingBypass = config_get_path(BypassConfiguration::SECTION_PATH, []);
 
-        if (
-            is_array($existingBypass)
-            && array_key_exists(BypassConfiguration::CONTEXT_MIGRATION_FLAG, $existingBypass)
-        ) {
-            $storage[BypassConfiguration::CONTEXT_MIGRATION_FLAG] =
-                $existingBypass[BypassConfiguration::CONTEXT_MIGRATION_FLAG];
+        // A deleted source leaves every selection, Global's and each context's.
+        if (array_key_exists(BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG, $storage)) {
+            $storage['selected_lists'] = ['item' => $configuration['selected_lists']];
         }
+
+        $this->pruneBypassContextSelections(array_keys($configuration['lists']));
 
         config_set_path('installedpackages/sinkhole/bypass', $storage);
         $configuration = BypassConfiguration::withContexts(

@@ -1160,6 +1160,58 @@ function pfsensePackageSinkholeListUsageCounts(): array
 }
 
 /**
+ * pfSense Package Sinkhole - Bypass List Usage Counts.
+ *
+ * Counts Global plus each network and device context that selects every Bypass
+ * List, for the Lists table.
+ *
+ * @return array<string, int>
+ *
+ * @since 1.3.1
+ */
+function pfsensePackageSinkholeBypassListUsageCounts(): array
+{
+    return BypassConfiguration::listUsageCounts(
+        pfsensePackageSinkholeGetBypassConfiguration(),
+    );
+}
+
+/**
+ * pfSense Package Sinkhole - IP List Usage Counts.
+ *
+ * Counts Global plus each network and device context that selects every IP list,
+ * for the Lists table.
+ *
+ * @param array<string, array> $lists - Valid IP lists.
+ *
+ * @return array<string, int>
+ *
+ * @since 1.3.1
+ */
+function pfsensePackageSinkholeIpListUsageCounts(array $lists): array
+{
+    $counts = array_fill_keys(array_keys($lists), 0);
+    $storedSection = config_get_path('installedpackages/sinkhole/ip', []);
+    $storedRows = config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+    $section = is_array($storedSection) ? $storedSection : [];
+    $rows = is_array($storedRows) ? $storedRows : [];
+    $contexts = array_merge([Context::GLOBAL], IpConfiguration::contextKeys());
+
+    foreach ($contexts as $context) {
+        $settings = IpConfiguration::forContext($section, $rows, $context);
+        $selection = is_array($settings['list_ids'] ?? null) ? $settings['list_ids'] : [];
+
+        foreach (array_unique(array_filter($selection, 'is_string')) as $identifier) {
+            if (isset($counts[$identifier])) {
+                $counts[$identifier]++;
+            }
+        }
+    }
+
+    return $counts;
+}
+
+/**
  * pfSense Package Sinkhole - Save Scopes.
  *
  * Converts normalized boolean flags to pfSense checkbox storage before one save.
@@ -1356,6 +1408,7 @@ function pfsensePackageSinkholeGetBypassConfiguration(): array
  *
  * @since 1.0.0
  * @since 1.2.0
+ * @since 1.3.1
  */
 function pfsensePackageSinkholeBypassStorage(
     array $configuration,
@@ -1381,6 +1434,8 @@ function pfsensePackageSinkholeBypassStorage(
         }
     }
 
+    $explicitSelection = is_array($settings)
+        && is_array($settings['selected_lists'] ?? null);
     $settings ??= $configuration;
     $storage = ['lists' => ['item' => $rows]];
 
@@ -1408,6 +1463,29 @@ function pfsensePackageSinkholeBypassStorage(
     ) {
         $storage[BypassConfiguration::CONTEXT_MIGRATION_FLAG] =
             $existing[BypassConfiguration::CONTEXT_MIGRATION_FLAG];
+    }
+
+    // Global's own list selection is kept once it is explicit; before the
+    // one-time migration, Global still uses every source.
+    if (
+        $explicitSelection
+        || (
+            is_array($existing)
+            && array_key_exists(BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG, $existing)
+        )
+    ) {
+        $listIdentifiers = array_fill_keys(array_keys($lists), true);
+        $selection = is_array($settings['selected_lists'] ?? null)
+            ? $settings['selected_lists']
+            : [];
+        $storage['selected_lists'] = [
+            'item' => array_values(array_filter(
+                $selection,
+                static fn(mixed $identifier): bool => is_string($identifier)
+                    && isset($listIdentifiers[$identifier]),
+            )),
+        ];
+        $storage[BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG] = 'on';
     }
 
     return $storage;
@@ -1567,6 +1645,94 @@ function pfsensePackageSinkholeMigrateBypassContexts(?bool &$rowsAdded = null): 
     $section[BypassConfiguration::CONTEXT_MIGRATION_FLAG] = 'on';
     config_set_path(BypassConfiguration::SECTION_PATH, $section);
     config_set_path(BypassConfiguration::CONTEXTS_PATH, array_values($rows));
+
+    return true;
+}
+
+/**
+ * pfSense Package Sinkhole - Migrate Bypass Global Lists.
+ *
+ * Global used every Bypass source until 1.3.1. This stores that as Global's own
+ * selection once, with every source that exists at upgrade, so nothing changes.
+ * Sources added later are selected nowhere until a context selects them.
+ *
+ * @return bool Whether configuration changed.
+ *
+ * @since 1.3.1
+ */
+function pfsensePackageSinkholeMigrateBypassGlobalLists(): bool
+{
+    $section = config_get_path(BypassConfiguration::SECTION_PATH, []);
+
+    if ($section === null || $section === '') {
+        $section = [];
+    }
+
+    // A malformed saved section stays untouched for repair.
+    if (!is_array($section)) {
+        return false;
+    }
+
+    if (array_key_exists(BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG, $section)) {
+        return false;
+    }
+
+    $listValue = $section['lists'] ?? [];
+
+    if (is_array($listValue) && count($listValue) === 1 && array_key_exists('item', $listValue)) {
+        $listValue = $listValue['item'];
+    }
+
+    $listPartition = BypassConfiguration::partitionLists($listValue);
+    $section['selected_lists'] = ['item' => array_keys($listPartition['lists'])];
+    $section[BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG] = 'on';
+    config_set_path(BypassConfiguration::SECTION_PATH, $section);
+
+    return true;
+}
+
+/**
+ * pfSense Package Sinkhole - Migrate IP Global Lists.
+ *
+ * Until its form is saved, Global IP uses every enabled IP list, so a list added
+ * later would switch on for Global by itself. This stores that implicit choice as
+ * Global's own selection once (a stored list_ids key, even empty, is explicit), so
+ * nothing changes and later lists apply only where a context selects them.
+ *
+ * @return bool Whether configuration changed.
+ *
+ * @since 1.3.1
+ */
+function pfsensePackageSinkholeMigrateIpGlobalLists(): bool
+{
+    $section = config_get_path('installedpackages/sinkhole/ip', []);
+
+    if ($section === null || $section === '') {
+        $section = [];
+    }
+
+    // A malformed saved section stays untouched for repair.
+    if (!is_array($section) || array_key_exists('list_ids', $section)) {
+        return false;
+    }
+
+    $listValue = $section['lists'] ?? [];
+
+    if (is_array($listValue) && count($listValue) === 1 && array_key_exists('item', $listValue)) {
+        $listValue = $listValue['item'];
+    }
+
+    $listPartition = IpConfiguration::partitionLists($listValue);
+    $selected = [];
+
+    foreach ($listPartition['lists'] as $identifier => $list) {
+        if (($list['enabled'] ?? false) === true) {
+            $selected[] = $identifier;
+        }
+    }
+
+    $section['list_ids'] = ['item' => $selected];
+    config_set_path('installedpackages/sinkhole/ip', $section);
 
     return true;
 }
@@ -2852,6 +3018,7 @@ function pfsensePackageSinkholeClearRemovalRuntimeFiles(
  * @return void
  *
  * @since 1.0.0
+ * @since 1.3.1
  */
 function pfsensePackageSinkholeSync(
     int $lockTimeoutSeconds = Compiler::RUNTIME_LOCK_TIMEOUT_SECONDS,
@@ -2908,6 +3075,26 @@ function pfsensePackageSinkholeSync(
         } catch (Throwable $throwable) {
             pfsensePackageSinkholeAdapter()->log(
                 'Bypass context migration failed: ' . $throwable->getMessage(),
+            );
+        }
+
+        try {
+            if (pfsensePackageSinkholeMigrateBypassGlobalLists()) {
+                write_config(pfsensePackageSinkholeTranslate('revision_saved_bypass'));
+            }
+        } catch (Throwable $throwable) {
+            pfsensePackageSinkholeAdapter()->log(
+                'Bypass Global list migration failed: ' . $throwable->getMessage(),
+            );
+        }
+
+        try {
+            if (pfsensePackageSinkholeMigrateIpGlobalLists()) {
+                write_config(pfsensePackageSinkholeTranslate('revision_saved_ip_blocking'));
+            }
+        } catch (Throwable $throwable) {
+            pfsensePackageSinkholeAdapter()->log(
+                'IP Global list migration failed: ' . $throwable->getMessage(),
             );
         }
 

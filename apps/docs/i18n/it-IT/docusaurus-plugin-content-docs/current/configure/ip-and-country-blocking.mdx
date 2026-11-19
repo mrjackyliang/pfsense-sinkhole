@@ -35,9 +35,9 @@ Apri **Firewall → Sinkhole → IP** e seleziona **Enable** solo dopo aver scel
 | Inbound      | Blocca i pacchetti in arrivo da un indirizzo sorgente elencato, generalmente su una WAN.                  |
 | Outbound     | Blocca i pacchetti in arrivo verso un indirizzo di destinazione elencato, generalmente sulle reti client. |
 
-L’anchor contiene regole `block drop in quick` e nessuna regola pass. Sinkhole lo richiama tramite la posizione anticipata delle regole di pacchetto di pfSense, così i blocchi vengono eseguiti prima delle normali regole pass-quick. In **Global**, la pagina mostra prima i pannelli delle liste IP e dei cataloghi, seguiti dalle impostazioni IP e per paese con **Save** sotto il pannello.
+L’anchor contiene regole `block drop in quick` e nessuna regola pass. Sinkhole lo richiama tramite la posizione anticipata delle regole di pacchetto di pfSense, così i blocchi vengono eseguiti prima delle normali regole pass-quick. In **Global**, la pagina mostra le impostazioni IP e per paese con **Save** sotto il pannello.
 
-<img src={ipTab} alt="Scheda IP con due liste IP dimostrative, i pulsanti per aggiungere e aggiungere dal catalogo, e il blocco IP e per paese attivo su LAN in entrambe le direzioni" width={1024} height={1648} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Scheda IP per Global con il blocco IP e per paese attivo su LAN in entrambe le direzioni e due liste IP dimostrative selezionate" width={1024} height={1461} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Impostare il blocco per rete e dispositivo \{#set-blocking-per-network-and-device}
 
@@ -49,31 +49,22 @@ Solo **Global** contiene:
 
 - **Interfaces**, dove si applica il blocco di Global.
 - **MaxMind Account ID** e **MaxMind License Key**.
-- Le sorgenti delle liste IP, **Add from Catalog** e gli aggiornamenti delle liste.
 
-Global e ogni rete o dispositivo contengono **Enable**, **Directions**, **IP Lists** (le sorgenti usate lì), **Countries** e **IP Allowlist**. Per una rete o un dispositivo, **Outbound** impedisce ai suoi client di raggiungere una destinazione elencata e **Inbound** impedisce a una sorgente elencata di raggiungere i suoi client. I paesi di una rete o di un dispositivo usano l’account MaxMind di Global.
+Global e ogni rete o dispositivo contengono **Enable**, **Directions**, **IP Lists** (le sorgenti abilitate usate lì), **Countries** e **IP Allowlist**. Le sorgenti delle liste IP si aggiungono, si abilitano e si aggiornano in [Lists → IP](/docs/configure/lists#add-ip-lists); senza sorgenti abilitate, **IP Lists** mostra invece una riga con un link **Open Lists**. Per una rete o un dispositivo, **Outbound** impedisce ai suoi client di raggiungere una destinazione elencata e **Inbound** impedisce a una sorgente elencata di raggiungere i suoi client. I paesi di una rete o di un dispositivo usano l’account MaxMind di Global.
 
-Una rete o un dispositivo senza impostazioni proprie mostra una riga, come "Non impostato per questa rete; si applica Globale.", sopra un modulo vuoto. Un dispositivo vi indica la sua rete quando quella rete ha impostazioni proprie. Il salvataggio del modulo crea le impostazioni, e **Remove settings for this network** o **Remove settings for this device** le elimina, così si applicano di nuovo le impostazioni più ampie. Eliminando una rete o un dispositivo nella scheda Clients si eliminano anche le sue impostazioni.
+Una rete o un dispositivo senza impostazioni proprie mostra una riga, come "Non impostato per questa rete; si applica Globale.", sopra un modulo vuoto. Un dispositivo vi indica la sua rete quando quella rete ha impostazioni proprie attive. Una rete o un dispositivo con impostazioni disattivate mostra invece "Disattivato; si applica Globale.", indicando le stesse impostazioni più ampie. Il salvataggio del modulo crea le impostazioni, e **Remove settings for this network** o **Remove settings for this device** le elimina, così si applicano di nuovo le impostazioni più ampie. Eliminando una rete o un dispositivo nella scheda Clients si eliminano anche le sue impostazioni.
 
 **All** elenca Global e ogni rete e dispositivo con impostazioni proprie, con le relative direzioni, i paesi e il numero di liste IP. Seleziona una riga per modificarla.
 
 Quando Sinkhole viene aggiornato alla 1.3.0, le impostazioni esistenti restano in Global e vengono copiate in ogni rete e dispositivo. Da quel momento ogni copia è indipendente. Una copia viene attivata solo se l’interfaccia della rete, o un’interfaccia di uno degli identificatori del dispositivo, era selezionata in **Interfaces**; ogni altra copia viene salvata disattivata, così nessun client viene bloccato se non lo era già prima.
 
+Global sceglie le sue liste IP come ogni rete e dispositivo. Quando Sinkhole viene aggiornato alla 1.3.1, un Global che non ha mai salvato una propria selezione mantiene ogni lista IP abilitata in quel momento, quindi non cambia nulla finché non lo modifichi. Una lista IP aggiunta in seguito non viene usata da nessuna parte finché Global, una rete o un dispositivo non la seleziona.
+
 Ogni rete o dispositivo con impostazioni attive ottiene una propria tabella dei client nell’anchor `sinkhole/ip`. Gli indirizzi di un dispositivo vengono rimossi dalla tabella della sua rete e da quella di Global, e le sottoreti di una rete da quella di Global, così un client viene bloccato solo dalle sue impostazioni più specifiche.
 
-## Aggiungere liste IP \{#add-ip-lists}
+## Gestire le liste IP \{#manage-ip-lists}
 
-Seleziona **Add** sotto la tabella IP Lists per aprire l’editor delle liste IP. Una riga usa un URL HTTP o HTTPS, sceglie IPv4, IPv6 o entrambe le famiglie e controlla se la fonte è abilitata. Il salvataggio riporta alla scheda IP; seleziona la matita o fai doppio clic su una riga per modificarla.
-
-Le liste possono essere trovate anche nelle sezioni IP del catalogo dei feed di pfBlockerNG.
-
-Le righe valide sono singoli indirizzi IPv4 o IPv6 e reti CIDR. Le righe non valide vengono ignorate e contate; un download senza voci valide non sostituisce l’ultima copia valida salvata.
-
-Il catalogo viene scaricato solo quando la sua ricerca viene aperta o aggiornata e usa la stessa cache di un giorno dell’ultima copia valida della ricerca nel catalogo DNS. L’aggiunta di un risultato crea una normale riga di lista IP senza valutazione o consiglio.
-
-I feed di bypass per Encrypted DNS, Tor e VPN sono esclusi dal catalogo IP e compaiono solo nella scheda Bypass.
-
-La riga **Contents** di ogni scheda indica **IPv4 addresses** o **IPv6 addresses**. Quando aggiungi un risultato di pfBlockerNG, Sinkhole aggiunge ` (IPv4)` o ` (IPv6)` al nome salvato, accorciando solo il nome di base quando necessario.
+Le sorgenti delle liste IP si aggiungono, si modificano, si abilitano e si eliminano in [Lists → IP](/docs/configure/lists#add-ip-lists), che offre anche **Add from Catalog** e un conteggio **Used By** per ogni lista. La scheda IP sceglie solo quali liste abilitate usa ogni contesto. Le reti IPv4 più ampie di `/8` e le reti IPv6 più ampie di `/16` vengono ignorate nelle liste IP; questi limiti di prefisso non si applicano all’IP Allowlist perché le sue voci riducono soltanto il blocco.
 
 ## Aggiungere paesi \{#add-countries}
 

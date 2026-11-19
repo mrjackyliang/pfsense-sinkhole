@@ -704,25 +704,34 @@ function sinkholePageRenderFixture(string $name): array
 
     if ($name === 'ip-list') {
         return array_replace($base, [
-            'page' => 'sinkhole-ip.php',
-            'state' => [[
-                'path' => ['lists'],
-                'expected_count' => 3,
-            ]],
+            'page' => 'sinkhole-lists.php',
+            'get' => ['kind' => 'ip'],
+            'state' => [
+                [
+                    'path' => ['kind'],
+                    'expected' => 'ip',
+                ],
+                [
+                    'path' => ['lists'],
+                    'expected_count' => 3,
+                ],
+            ],
             'expected' => [
                 'Invented IPv4 list',
                 'Invented IPv6 list',
                 'sinkhole-ip_edit.php?id=' . $listOne,
+                'sinkhole-lists.php?kind=ip&amp;toggle=1&amp;list_id=' . $listOne,
                 'table-rowdblclickedit',
                 'class="disabled"',
+                '<th>Used By</th>',
             ],
         ]);
     }
 
     if ($name === 'ip-catalog') {
         return array_replace($base, [
-            'page' => 'sinkhole-ip.php',
-            'get' => ['catalog' => '1'],
+            'page' => 'sinkhole-lists.php',
+            'get' => ['kind' => 'ip', 'catalog' => '1'],
             'state' => [[
                 'path' => ['catalogResults'],
                 'expected_count' => 1,
@@ -751,13 +760,14 @@ function sinkholePageRenderFixture(string $name): array
         $emptyConfiguration['installedpackages']['sinkhole']['ip']['lists']['item'] = [];
 
         return array_replace($base, [
-            'page' => 'sinkhole-ip.php',
+            'page' => 'sinkhole-lists.php',
+            'get' => ['kind' => 'ip'],
             'configuration' => $emptyConfiguration,
             'state' => [[
                 'path' => ['lists'],
                 'expected_count' => 0,
             ]],
-            'expected' => ['<td colspan="5" class="text-muted">No IP lists are configured.</td>'],
+            'expected' => ['<td colspan="6" class="text-muted">No IP lists are configured.</td>'],
         ]);
     }
 
@@ -786,20 +796,28 @@ function sinkholePageRenderFixture(string $name): array
 
     if ($name === 'bypass-list') {
         return array_replace($base, [
-            'page' => 'sinkhole-bypass.php',
-            'state' => [[
-                'path' => ['lists'],
-                'expected_count' => 2,
-            ]],
+            'page' => 'sinkhole-lists.php',
+            'get' => ['kind' => 'bypass'],
+            'state' => [
+                [
+                    'path' => ['kind'],
+                    'expected' => 'bypass',
+                ],
+                [
+                    'path' => ['lists'],
+                    'expected_count' => 2,
+                ],
+            ],
             'expected' => [
                 'Invented encrypted DNS list',
                 'Invented VPN list',
                 'sinkhole-bypass_edit.php?id=' . $listOne,
+                'sinkhole-lists.php?kind=bypass&amp;delete=1&amp;list_id=' . $listOne,
                 'table-rowdblclickedit',
                 'class="disabled"',
-                "hideInput('redirect_exempt_sources'",
+                '<th>Used By</th>',
             ],
-            'unexpected' => ['Plain DNS Redirect is on, but'],
+            'unexpected' => ['name="save_bypass"'],
         ]);
     }
 
@@ -808,22 +826,243 @@ function sinkholePageRenderFixture(string $name): array
         $emptyConfiguration['installedpackages']['sinkhole']['bypass']['lists']['item'] = [];
 
         return array_replace($base, [
-            'page' => 'sinkhole-bypass.php',
+            'page' => 'sinkhole-lists.php',
+            'get' => ['kind' => 'bypass'],
             'configuration' => $emptyConfiguration,
             'state' => [[
                 'path' => ['lists'],
                 'expected_count' => 0,
             ]],
             'expected' => [
-                '<td colspan="7" class="text-muted">No Bypass Lists are configured.</td>',
+                '<td colspan="8" class="text-muted">No Bypass Lists are configured.</td>',
             ],
+        ]);
+    }
+
+    if ($name === 'lists-kind-tabs') {
+        return array_replace($base, [
+            'page' => 'sinkhole-lists.php',
+            'get' => ['kind' => 'invented-kind'],
+            'state' => [[
+                'path' => ['kind'],
+                'expected' => 'dns',
+            ]],
+            'expected' => [
+                '<li role="presentation" class="active"><a href="sinkhole-lists.php?kind=dns">DNS</a></li>',
+                '<li role="presentation"><a href="sinkhole-lists.php?kind=bypass">Bypass</a></li>',
+                '<li role="presentation"><a href="sinkhole-lists.php?kind=ip">IP</a></li>',
+                'Block Lists',
+            ],
+            'unexpected' => [
+                'sinkhole-context-banner',
+                'Bypass Lists',
+            ],
+        ]);
+    }
+
+    if ($name === 'lists-bypass-used-by') {
+        $usedByConfiguration = $configuration;
+        $usedByConfiguration['installedpackages']['sinkhole']['bypass']['global_lists_migrated_1_3_1'] = 'on';
+        $usedByConfiguration['installedpackages']['sinkhole']['bypass']['selected_lists'] = [
+            'item' => [$listOne],
+        ];
+        $usedByConfiguration['installedpackages']['sinkhole']['bypass_contexts'] = [
+            'item' => [
+                [
+                    'context' => 'network:' . $networkOne,
+                    'enabled' => 'on',
+                    'lists' => ['item' => [$listOne, $listTwo]],
+                ],
+                [
+                    'context' => 'device:' . $deviceOne,
+                    'enabled' => '',
+                    'lists' => ['item' => [$listOne]],
+                ],
+            ],
+        ];
+
+        return array_replace($base, [
+            'page' => 'sinkhole-lists.php',
+            'get' => ['kind' => 'bypass'],
+            'configuration' => $usedByConfiguration,
+            'state' => [
+                [
+                    'path' => ['usageCounts', $listOne],
+                    'expected' => 3,
+                ],
+                [
+                    'path' => ['usageCounts', $listTwo],
+                    'expected' => 1,
+                ],
+            ],
+            'expected' => [
+                '<li role="presentation" class="active"><a href="sinkhole-lists.php?kind=bypass">Bypass</a></li>',
+                '<td>3</td>',
+            ],
+        ]);
+    }
+
+    if ($name === 'lists-ip-used-by') {
+        $usedByConfiguration = $configuration;
+        $usedByConfiguration['installedpackages']['sinkhole']['ip']['list_ids'] = [
+            'item' => [$listThree],
+        ];
+        $usedByConfiguration['installedpackages']['sinkhole']['ip_contexts'] = [
+            'item' => [
+                [
+                    'context' => 'device:' . $deviceOne,
+                    'enabled' => 'on',
+                    'directions' => ['item' => ['outbound']],
+                    'list_ids' => ['item' => [$listOne, $listThree]],
+                    'countries' => ['item' => []],
+                    'allowlist' => ['item' => []],
+                ],
+            ],
+        ];
+
+        return array_replace($base, [
+            'page' => 'sinkhole-lists.php',
+            'get' => ['kind' => 'ip'],
+            'configuration' => $usedByConfiguration,
+            'state' => [
+                [
+                    'path' => ['usageCounts', $listOne],
+                    'expected' => 1,
+                ],
+                [
+                    'path' => ['usageCounts', $listTwo],
+                    'expected' => 0,
+                ],
+                [
+                    'path' => ['usageCounts', $listThree],
+                    'expected' => 2,
+                ],
+            ],
+            'expected' => [
+                '<li role="presentation" class="active"><a href="sinkhole-lists.php?kind=ip">IP</a></li>',
+            ],
+        ]);
+    }
+
+    if ($name === 'bypass-global') {
+        return array_replace($base, [
+            'page' => 'sinkhole-bypass.php',
+            'get' => ['context' => 'global'],
+            'state' => [[
+                'path' => ['displayListSelection'],
+                'expected' => [$listOne, $listTwo],
+            ]],
+            'expected' => [
+                'name="bypass_lists[]"',
+                '<option value="' . $listOne . '" selected>',
+                'name="bypass_interfaces[]"',
+                'name="redirect_enabled"',
+                'name="block_exempt_sources"',
+                "hideInput('redirect_exempt_sources'",
+            ],
+            'unexpected' => [
+                'Plain DNS Redirect is on, but',
+                'sinkhole-bypass_edit.php',
+                'name="catalog_query"',
+                'Invalid Saved Rows',
+                'Add from Catalog',
+                'Invented VPN list (VPN)',
+            ],
+        ]);
+    }
+
+    if ($name === 'bypass-global-selected') {
+        $selectedConfiguration = $configuration;
+        $selectedConfiguration['installedpackages']['sinkhole']['bypass']['global_lists_migrated_1_3_1'] = 'on';
+        $selectedConfiguration['installedpackages']['sinkhole']['bypass']['selected_lists'] = '';
+
+        return array_replace($base, [
+            'page' => 'sinkhole-bypass.php',
+            'get' => ['context' => 'global'],
+            'configuration' => $selectedConfiguration,
+            'state' => [[
+                'path' => ['displayListSelection'],
+                'expected' => [],
+            ]],
+            'expected' => [
+                '<option value="' . $listOne . '">',
+            ],
+            'unexpected' => [
+                '<option value="' . $listOne . '" selected>',
+            ],
+        ]);
+    }
+
+    if ($name === 'bypass-global-no-lists' || $name === 'ip-global-no-lists') {
+        $isBypass = $name === 'bypass-global-no-lists';
+        $disabledConfiguration = $configuration;
+
+        foreach (['bypass', 'ip'] as $section) {
+            foreach ($disabledConfiguration['installedpackages']['sinkhole'][$section]['lists']['item'] as &$disabledRow) {
+                $disabledRow['enabled'] = '';
+            }
+            unset($disabledRow);
+        }
+
+        return array_replace($base, [
+            'page' => ($isBypass) ? 'sinkhole-bypass.php' : 'sinkhole-ip.php',
+            'get' => ['context' => 'global'],
+            'configuration' => $disabledConfiguration,
+            'expected' => [
+                ($isBypass) ? 'No Bypass Lists are enabled.' : 'No IP lists are enabled.',
+                ($isBypass)
+                    ? '<a href="sinkhole-lists.php?kind=bypass">Open Lists</a>'
+                    : '<a href="sinkhole-lists.php?kind=ip">Open Lists</a>',
+            ],
+            'unexpected' => [
+                ($isBypass) ? '<select name="bypass_lists[]"' : '<select name="ip_lists[]"',
+            ],
+        ]);
+    }
+
+    if ($name === 'bypass-device-off' || $name === 'ip-device-off') {
+        $isBypass = $name === 'bypass-device-off';
+        $offConfiguration = $configuration;
+
+        if ($isBypass) {
+            $offConfiguration['installedpackages']['sinkhole']['bypass_contexts'] = [
+                'item' => [[
+                    'context' => 'device:' . $deviceOne,
+                    'enabled' => '',
+                    'block_tls_quic' => 'on',
+                    'lists' => ['item' => []],
+                ]],
+            ];
+        } else {
+            $offConfiguration['installedpackages']['sinkhole']['ip_contexts'] = [
+                'item' => [[
+                    'context' => 'device:' . $deviceOne,
+                    'enabled' => '',
+                    'directions' => ['item' => ['outbound']],
+                    'list_ids' => ['item' => []],
+                    'countries' => ['item' => []],
+                    'allowlist' => ['item' => []],
+                ]],
+            ];
+        }
+
+        return array_replace($base, [
+            'page' => ($isBypass) ? 'sinkhole-bypass.php' : 'sinkhole-ip.php',
+            'get' => ['context' => 'device:' . $deviceOne],
+            'configuration' => $offConfiguration,
+            'state' => [[
+                'path' => ['hasOwnSettings'],
+                'expected' => true,
+            ]],
+            'expected' => ['Turned off; Global applies.'],
+            'unexpected' => ['Not set for this device'],
         ]);
     }
 
     if ($name === 'bypass-catalog') {
         return array_replace($base, [
-            'page' => 'sinkhole-bypass.php',
-            'get' => ['catalog' => '1'],
+            'page' => 'sinkhole-lists.php',
+            'get' => ['kind' => 'bypass', 'catalog' => '1'],
             'state' => [
                 [
                     'path' => ['catalogResults'],
@@ -1194,7 +1433,8 @@ function sinkholePageRenderFixture(string $name): array
                     'expected' => 'ip_country_blocking',
                 ],
             ],
-            'expected' => ['Invalid Saved Values', 'No IP lists are configured.'],
+            'expected' => ['Invalid Saved Values', 'No IP lists are enabled.'],
+            'unexpected' => ['sinkhole-ip_edit.php', 'name="catalog_query"'],
         ]);
     }
 
@@ -2967,6 +3207,9 @@ $fixtures = [
     'lists-catalog',
     'lists-edit-add',
     'lists-edit',
+    'lists-kind-tabs',
+    'lists-bypass-used-by',
+    'lists-ip-used-by',
     'services',
     'safesearch',
     'clients-list',
@@ -2995,6 +3238,8 @@ $fixtures = [
     'ip-invalid-settings',
     'ip-network-unset',
     'ip-device',
+    'ip-device-off',
+    'ip-global-no-lists',
     'ip-all',
     'bypass-list',
     'bypass-empty',
@@ -3004,6 +3249,10 @@ $fixtures = [
     'bypass-network-unset',
     'bypass-device-unset',
     'bypass-network',
+    'bypass-device-off',
+    'bypass-global',
+    'bypass-global-selected',
+    'bypass-global-no-lists',
     'bypass-all',
     'bypass-redirect-fields',
     'bypass-redirect-collections',

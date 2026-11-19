@@ -565,6 +565,305 @@ sinkholeTestRun([
             sinkholeTestRemoveTemporaryDirectory($root);
         }
     },
+    'Global Bypass uses its own stored list selection' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+        $first = str_repeat('a', 32);
+        $second = str_repeat('b', 32);
+        $networkIdentifier = str_repeat('c', 32);
+        $rows = [
+            [
+                'id' => $first,
+                'descr' => 'Invented first source',
+                'url' => 'https://example.test/first.txt',
+                'kind' => BypassConfiguration::KIND_ENCRYPTED_DNS,
+                'enabled' => 'on',
+            ],
+            [
+                'id' => $second,
+                'descr' => 'Invented second source',
+                'url' => 'https://example.test/second.txt',
+                'kind' => BypassConfiguration::KIND_ENCRYPTED_DNS,
+                'enabled' => 'on',
+            ],
+        ];
+
+        try {
+            $legacy = BypassConfiguration::partition(
+                sinkholeBypassTestStorage($rows, ['block_encrypted_dns' => 'on']),
+                ['lan'],
+            );
+            sinkholeTestAssertSame(
+                [$first, $second],
+                $legacy['selected_lists'],
+                'Before the migration flag exists, Global keeps every source.',
+            );
+
+            $explicit = BypassConfiguration::partition(
+                sinkholeBypassTestStorage($rows, [
+                    'block_encrypted_dns' => 'on',
+                    BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG => 'on',
+                    'selected_lists' => ['item' => [$second, str_repeat('9', 32)]],
+                ]),
+                ['lan'],
+            );
+            sinkholeTestAssertSame(
+                [$second],
+                $explicit['selected_lists'],
+                'A migrated Global section uses only its stored, existing selection.',
+            );
+
+            $empty = BypassConfiguration::partition(
+                sinkholeBypassTestStorage($rows, [
+                    'block_encrypted_dns' => 'on',
+                    BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG => 'on',
+                    'selected_lists' => '',
+                ]),
+                ['lan'],
+            );
+            sinkholeTestAssertSame(
+                [],
+                $empty['selected_lists'],
+                'An empty stored selection selects nothing for Global.',
+            );
+
+            $withContexts = BypassConfiguration::withContexts($explicit, [[
+                'context' => 'network:' . $networkIdentifier,
+                'enabled' => 'on',
+                'block_encrypted_dns' => 'on',
+                'lists' => ['item' => [$first, $second]],
+            ]]);
+            sinkholeTestAssertSame(
+                false,
+                BypassConfiguration::sourceUsedAnywhere(
+                    BypassConfiguration::withContexts($explicit, []),
+                    $first,
+                    BypassConfiguration::KIND_ENCRYPTED_DNS,
+                ),
+                'A source Global does not select must not count as used by Global.',
+            );
+            sinkholeTestAssertSame(
+                true,
+                BypassConfiguration::sourceUsedAnywhere(
+                    $withContexts,
+                    $first,
+                    BypassConfiguration::KIND_ENCRYPTED_DNS,
+                ),
+                'A source a network selects must still count as used.',
+            );
+            sinkholeTestAssertSame(
+                [$first => 1, $second => 2],
+                BypassConfiguration::listUsageCounts($withContexts),
+                'Used By counts Global plus every context that selects each source.',
+            );
+
+            $submission = BypassConfiguration::submitContext(
+                'global',
+                [
+                    'block_encrypted_dns' => 'yes',
+                    'bypass_interfaces' => ['lan'],
+                    'bypass_lists' => [$first],
+                ],
+                ['lan' => 'LAN'],
+                [],
+                $legacy['lists'],
+            );
+            sinkholeTestAssertSame([], $submission['errors'], 'A valid Global selection must have no errors.');
+            sinkholeTestAssertSame(
+                [$first],
+                $submission['settings']['selected_lists'],
+                'The Global form must store its own selection.',
+            );
+            sinkholeTestAssertSame(
+                true,
+                in_array('bypass_lists', BypassConfiguration::fieldsForContext('global'), true),
+                'Global must expose its list selection.',
+            );
+
+            $missing = BypassConfiguration::submitContext(
+                'global',
+                ['bypass_lists' => [str_repeat('9', 32)]],
+                ['lan' => 'LAN'],
+                [],
+                $legacy['lists'],
+            );
+            sinkholeTestAssertTrue(
+                $missing['errors'] !== [],
+                'A Global selection naming a missing source must be refused.',
+            );
+
+            $paths = sinkholeBypassTestPaths($root);
+            mkdir($paths->bypassListDirectory, 0700, true);
+
+            foreach ($rows as $row) {
+                file_put_contents(
+                    $paths->bypassListFile($row['id']),
+                    "D\tS\t" . $row['id'] . ".example.test\n",
+                );
+                file_put_contents(
+                    $paths->bypassMetadataFile($row['id']),
+                    json_encode(['url' => $row['url']]) . PHP_EOL,
+                );
+            }
+
+            $compiler = new Compiler(
+                $paths,
+                new SavedListStore($paths),
+                new StateStore($paths->stateFile, $paths->statusFile),
+                null,
+                new BypassListStore($paths),
+            );
+            $compiler->compile([], [], configuredBypass: BypassConfiguration::withContexts($explicit, []));
+            $manifest = json_decode(
+                (string) file_get_contents($paths->runtimeDataDirectory . '/manifest.json'),
+                true,
+                16,
+                JSON_THROW_ON_ERROR,
+            );
+            sinkholeTestAssertSame(
+                [$second],
+                $manifest['bypass']['global']['lists'],
+                'The compiled Global policy must use only the stored selection.',
+            );
+            sinkholeTestAssertSame(
+                [$second],
+                array_keys($manifest['bypass']['lists']),
+                'A source no context selects must not compile.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'Bypass Global list migration selects every existing source once' => static function (): void {
+        global $sinkholeStubInterfaces;
+
+        $root = sinkholeTestTemporaryDirectory();
+        $first = str_repeat('a', 32);
+        $second = str_repeat('b', 32);
+        $added = str_repeat('d', 32);
+        $networkIdentifier = str_repeat('c', 32);
+        $rows = [
+            [
+                'id' => $first,
+                'descr' => 'Invented first source',
+                'url' => 'https://example.test/first.txt',
+                'kind' => BypassConfiguration::KIND_TOR,
+                'enabled' => 'on',
+            ],
+            [
+                'id' => $second,
+                'descr' => 'Invented second source',
+                'url' => 'https://example.test/second.txt',
+                'kind' => BypassConfiguration::KIND_VPN,
+                'enabled' => '',
+            ],
+            [
+                'id' => 'invented-invalid',
+                'descr' => '',
+                'url' => 'not a url',
+                'kind' => 'invented',
+                'enabled' => 'on',
+            ],
+        ];
+
+        try {
+            sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+                'redirect' => ['interfaces' => ['item' => ['lan']]],
+                'bypass' => sinkholeBypassTestStorage($rows),
+                'bypass_contexts' => ['item' => [[
+                    'context' => 'network:' . $networkIdentifier,
+                    'enabled' => 'on',
+                    'lists' => ['item' => [$first, $second]],
+                ]]],
+            ]]]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN'];
+            $paths = sinkholeBypassTestPaths($root);
+            $adapter = new PfSenseAdapter(
+                $paths,
+                new StateStore($paths->stateFile, $paths->statusFile),
+            );
+            pfsensePackageSinkholeAdapter($adapter);
+
+            sinkholeTestAssertSame(
+                true,
+                pfsensePackageSinkholeMigrateBypassGlobalLists(),
+                'The first migration must update configuration.',
+            );
+            sinkholeTestAssertSame(
+                [$first, $second],
+                config_get_path(BypassConfiguration::SECTION_PATH . '/selected_lists/item'),
+                'Global must select every valid source that exists at upgrade.',
+            );
+            sinkholeTestAssertSame(
+                'on',
+                config_get_path(
+                    BypassConfiguration::SECTION_PATH . '/' . BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG,
+                ),
+                'The migration flag must be stored in the Global section.',
+            );
+
+            $section = config_get_path(BypassConfiguration::SECTION_PATH, []);
+            $section['lists']['item'][] = [
+                'id' => $added,
+                'descr' => 'Invented later source',
+                'url' => 'https://example.test/later.txt',
+                'kind' => BypassConfiguration::KIND_TOR,
+                'enabled' => 'on',
+            ];
+            config_set_path(BypassConfiguration::SECTION_PATH, $section);
+
+            sinkholeTestAssertSame(
+                false,
+                pfsensePackageSinkholeMigrateBypassGlobalLists(),
+                'The flag must prevent a second migration.',
+            );
+
+            $configuration = $adapter->getBypassConfiguration();
+            sinkholeTestAssertSame(
+                [$first, $second],
+                $configuration['selected_lists'],
+                'A source added after the upgrade must not be selected for Global.',
+            );
+
+            $lists = $configuration['lists'];
+            unset($lists[$first]);
+            $adapter->saveBypassConfiguration(
+                pfsensePackageSinkholeBypassStorage(
+                    $configuration,
+                    $lists,
+                    $configuration['invalid_lists'],
+                ),
+                [
+                    'enabled' => false,
+                    'interfaces' => ['lan'],
+                    'exempt_sources' => [],
+                    'exempt_destinations' => [],
+                ],
+            );
+            $saved = $adapter->getBypassConfiguration();
+            sinkholeTestAssertSame(
+                [$second],
+                $saved['selected_lists'],
+                'Deleting a source must remove it from Global\'s selection.',
+            );
+            sinkholeTestAssertSame(
+                [$second],
+                config_get_path(BypassConfiguration::CONTEXTS_PATH)[0]['lists']['item'],
+                'Deleting a source must remove it from every context selection.',
+            );
+            sinkholeTestAssertSame(
+                [],
+                $saved['contexts']['network:' . $networkIdentifier]['invalid_values'],
+                'A pruned context selection must stay valid.',
+            );
+            sinkholeTestAssertSame(
+                1,
+                count($saved['invalid_lists']),
+                'An invalid source row must be kept for repair.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
     'Bypass context tables encode device network Global precedence without passes' => static function (): void {
         global $sinkholeStubInterfaceAddresses;
         global $sinkholeStubInterfaces;

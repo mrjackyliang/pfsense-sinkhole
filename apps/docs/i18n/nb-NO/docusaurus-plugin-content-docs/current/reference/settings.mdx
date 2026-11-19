@@ -63,6 +63,8 @@ Hver nye versjon som blir funnet av en planlagt kontroll, oppretter ett lokalt p
 
 Omgåelsesfeeder er utelatt fra denne katalogen.
 
+Lists bytter mellom typene **DNS**, **Bypass** og **IP**. Tabellen ovenfor er DNS-typen; [Bypass Lists](#bypass-lists) og [IP-listerader](#ip-and-country-blocking) administreres også der, og tabellen for hver type har et **Used By**-antall for Global pluss hvert nettverk og hver enhet som velger listen.
+
 ## Blocking \{#blocking}
 
 Hver kontekst (Global, ett nettverk eller én enhet) har sine egne to felt:
@@ -122,13 +124,14 @@ Minuttprosessoren sender høyst 20 meldinger per kjøring og 60 meldinger per re
 | Redirect                               | Off      | Sender vanlig UDP- og TCP-trafikk på port 53 på valgte grensesnitt til brannmuren.                                                          |
 | Exempt Sources                         | Empty    | Én IPv4- eller IPv6-adresse, ett CIDR-nettverk eller ett eksisterende verts-/nettverksalias per linje som omgår omdirigering av vanlig DNS. |
 | Exempt Destinations                    | Empty    | Én mål-IP-adresse, CIDR eller alias per linje som omgår omdirigering av vanlig DNS.                                                         |
+| Bypass Lists                           | Empty    | Aktiverte Bypass Lists som denne konteksten bruker; selve kildene administreres på Lists.                                                   |
 | TLS and QUIC                           | Off      | Blokkerer TCP- og UDP-port 853 til andre mål enn brannmuren.                                                                                |
-| Providers                              | Off      | Blokkerer navn og adresser fra aktiverte **Encrypted DNS** Bypass Lists.                                                                    |
+| Providers                              | Off      | Blokkerer navn og adresser fra de valgte **Encrypted DNS** Bypass Lists.                                                                    |
 | Firefox                                | Off      | Returnerer `NXDOMAIN` for Firefox' kanarinavn for automatisk DNS-over-HTTPS og underdomenene.                                               |
 | Private Relay                          | Off      | Returnerer `NXDOMAIN` for Apples to tilgjengelighetsnavn for Private Relay.                                                                 |
 | Discovery                              | Off      | Lar DDR være urørt, annonserer brannmurens DNS over TLS eller svarer `NOERROR` uten poster.                                                 |
-| Tor                                    | Off      | Blokkerer navn og adresser fra aktiverte **Tor** Bypass Lists.                                                                              |
-| VPN (Block listed VPN providers)       | Off      | Blokkerer navn og adresser fra aktiverte **VPN** Bypass Lists.                                                                              |
+| Tor                                    | Off      | Blokkerer navn og adresser fra de valgte **Tor** Bypass Lists.                                                                              |
+| VPN (Block listed VPN providers)       | Off      | Blokkerer navn og adresser fra de valgte **VPN** Bypass Lists.                                                                              |
 | VPN (Block standard VPN ports)         | Off      | Blokkerer UDP-porter for OpenVPN, WireGuard og IPsec samt ESP til andre mål enn brannmuren.                                                 |
 | Block Exemptions → Exempt Sources      | Empty    | Én IP-adresse, CIDR eller alias per linje der trafikken slipper forbi alle Bypass-brannmurblokkeringer.                                     |
 | Block Exemptions → Exempt Destinations | Empty    | Én mål-IP-adresse, CIDR eller alias per linje som ingen Bypass-brannmurblokkering stopper.                                                  |
@@ -139,9 +142,11 @@ Blokkeringsunntak legger ikke til noen pass-regel, så unntatt trafikk møter fo
 
 ### Bypass Lists \{#bypass-lists}
 
+Rader i Bypass Lists administreres på **Lists → Bypass**.
+
 | Felt    | Standard      | Beskrivelse                                                                                |
 |---------|---------------|--------------------------------------------------------------------------------------------|
-| Name    | Empty         | Lokal etikett som vises i Bypass og Status.                                                |
+| Name    | Empty         | Lokal etikett som vises i Lists, Bypass og Status.                                         |
 | Kind    | Encrypted DNS | Velger policyen **Encrypted DNS**, **Tor** eller **VPN**.                                  |
 | URL     | Empty         | HTTP- eller HTTPS-kilde som inneholder en blanding av domener, adresser og CIDR-er.        |
 | Enabled | Off           | Tar med den lagrede listen i planlagte hentinger og den tilhørende aktiverte beskyttelsen. |
@@ -163,7 +168,7 @@ Inndata for en Bypass List bruker én oppføring per linje og `#`-kommentarer. E
 | Clear License Key   | Off      | Sletter den lagrede MaxMind-nøkkelen når innstillingene lagres.                                                                                         |
 | IP Allowlist        | Empty    | Én IPv4- eller IPv6-adresse, ett CIDR-nettverk eller ett eksisterende verts-/nettverksalias per linje som trekkes fra de endelige blokkeringstabellene. |
 
-Hver IP-listerad har navn, URL, valg av IPv4/IPv6/Both og en Enabled-bryter. Sinkhole fjerner også adresser for brannmurgrensesnitt, gateway og DNS fra de endelige tabellene, slik at egne regler ikke blokkerer beskyttet infrastruktur.
+Hver IP-listerad har navn, URL, valg av IPv4/IPv6/Both og en Enabled-bryter, og administreres på **Lists → IP**. Feltet **IP Lists** i hver kontekst velger hvilke aktiverte IP-lister den bruker. Sinkhole fjerner også adresser for brannmurgrensesnitt, gateway og DNS fra de endelige tabellene, slik at egne regler ikke blokkerer beskyttet infrastruktur.
 
 IP-katalogen utelater alle feeder for Encrypted DNS, Tor og VPN som tilhører Bypass-katalogen.
 

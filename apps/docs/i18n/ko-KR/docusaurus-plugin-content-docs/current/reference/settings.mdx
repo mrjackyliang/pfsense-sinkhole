@@ -63,6 +63,8 @@ Rebind Exceptions에는 도메인을 최대 100개까지 입력할 수 있습니
 
 우회 피드는 이 카탈로그에서 제외됩니다.
 
+Lists는 **DNS**, **Bypass**, **IP** 종류 사이를 전환합니다. 위 표는 DNS 종류이며, [Bypass Lists](#bypass-lists)와 [IP 목록 행](#ip-and-country-blocking)도 이곳에서 관리합니다. 모든 종류의 표에는 Global과 해당 목록을 선택한 각 네트워크 및 장치를 세는 **Used By** 개수가 있습니다.
+
 ## Blocking \{#blocking}
 
 각 컨텍스트(Global, 네트워크 하나 또는 장치 하나)에는 고유한 두 필드가 있습니다.
@@ -122,13 +124,14 @@ Rebind Exceptions에는 도메인을 최대 100개까지 입력할 수 있습니
 | Redirect                               | Off   | 선택한 인터페이스의 일반 UDP 및 TCP 포트 53 트래픽을 방화벽으로 보냅니다.                                  |
 | Exempt Sources                         | Empty | 일반 DNS 리디렉션을 우회하는 IPv4 또는 IPv6 주소, CIDR 네트워크 또는 기존 호스트/네트워크 별칭을 한 줄에 하나씩 지정합니다. |
 | Exempt Destinations                    | Empty | 일반 DNS 리디렉션을 우회하는 목적지 IP 주소, CIDR 또는 별칭을 한 줄에 하나씩 지정합니다.                        |
+| Bypass Lists                           | Empty | 이 컨텍스트가 사용하는 활성화된 Bypass Lists입니다. 소스 자체는 Lists에서 관리합니다.                        |
 | TLS and QUIC                           | Off   | 방화벽 이외의 목적지로 향하는 TCP 및 UDP 포트 853을 차단합니다.                                       |
-| Providers                              | Off   | 활성화된 **Encrypted DNS** Bypass Lists의 이름과 주소를 차단합니다.                             |
+| Providers                              | Off   | 선택된 **Encrypted DNS** Bypass Lists의 이름과 주소를 차단합니다.                              |
 | Firefox                                | Off   | Firefox의 자동 DNS-over-HTTPS 카나리아 이름과 그 하위 도메인에 `NXDOMAIN`을 반환합니다.                |
 | Private Relay                          | Off   | Apple의 두 Private Relay 가용성 이름에 `NXDOMAIN`을 반환합니다.                               |
 | Discovery                              | Off   | DDR을 그대로 두거나, 방화벽의 DNS over TLS를 광고하거나, 레코드 없이 `NOERROR`로 응답합니다.                |
-| Tor                                    | Off   | 활성화된 **Tor** Bypass Lists의 이름과 주소를 차단합니다.                                       |
-| VPN (Block listed VPN providers)       | Off   | 활성화된 **VPN** Bypass Lists의 이름과 주소를 차단합니다.                                       |
+| Tor                                    | Off   | 선택된 **Tor** Bypass Lists의 이름과 주소를 차단합니다.                                        |
+| VPN (Block listed VPN providers)       | Off   | 선택된 **VPN** Bypass Lists의 이름과 주소를 차단합니다.                                        |
 | VPN (Block standard VPN ports)         | Off   | 방화벽 이외의 목적지로 향하는 OpenVPN, WireGuard, IPsec UDP 포트 및 ESP를 차단합니다.                 |
 | Block Exemptions → Exempt Sources      | Empty | 모든 Bypass 방화벽 차단을 건너뛰는 IP 주소, CIDR 또는 별칭을 한 줄에 하나씩 지정합니다.                       |
 | Block Exemptions → Exempt Destinations | Empty | 어떤 Bypass 방화벽 차단도 막지 않는 대상 IP 주소, CIDR 또는 별칭을 한 줄에 하나씩 지정합니다.                   |
@@ -139,9 +142,11 @@ Rebind Exceptions에는 도메인을 최대 100개까지 입력할 수 있습니
 
 ### Bypass Lists \{#bypass-lists}
 
+Bypass List 행은 **Lists → Bypass**에서 관리합니다.
+
 | 필드      | 기본값           | 설명                                               |
 |---------|---------------|--------------------------------------------------|
-| Name    | Empty         | Bypass와 Status에 표시되는 로컬 레이블입니다.                  |
+| Name    | Empty         | Lists, Bypass 및 Status에 표시되는 로컬 레이블입니다.          |
 | Kind    | Encrypted DNS | **Encrypted DNS**, **Tor** 또는 **VPN** 정책을 선택합니다. |
 | URL     | Empty         | 도메인, 주소 및 CIDR이 혼합된 HTTP 또는 HTTPS 소스입니다.         |
 | Enabled | Off           | 저장된 목록을 예약된 가져오기와 그에 대응하는 활성화된 보호에 포함합니다.        |
@@ -163,7 +168,7 @@ Bypass List 입력은 한 줄에 하나의 항목과 `#` 주석을 사용합니�
 | Clear License Key   | Off   | 저장할 때 저장된 MaxMind 키를 삭제합니다.                                                   |
 | IP Allowlist        | Empty | 최종 차단 테이블에서 제외할 IPv4 또는 IPv6 주소, CIDR 네트워크 또는 기존 호스트/네트워크 별칭을 한 줄에 하나씩 지정합니다. |
 
-각 IP 목록 행에는 이름, URL, IPv4/IPv6/Both 패밀리 선택 및 Enabled 스위치가 있습니다. 또한 Sinkhole은 자체 규칙이 보호 인프라를 차단하지 않도록 최종 테이블에서 방화벽 인터페이스, 게이트웨이 및 DNS 주소를 제거합니다.
+각 IP 목록 행에는 이름, URL, IPv4/IPv6/Both 패밀리 선택 및 Enabled 스위치가 있으며, 이 행은 **Lists → IP**에서 관리합니다. 각 컨텍스트의 **IP Lists** 필드에서 사용할 활성화된 IP 목록을 선택합니다. 또한 Sinkhole은 자체 규칙이 보호 인프라를 차단하지 않도록 최종 테이블에서 방화벽 인터페이스, 게이트웨이 및 DNS 주소를 제거합니다.
 
 IP 카탈로그에서는 Bypass 카탈로그가 담당하는 모든 Encrypted DNS, Tor 및 VPN 피드를 제외합니다.
 

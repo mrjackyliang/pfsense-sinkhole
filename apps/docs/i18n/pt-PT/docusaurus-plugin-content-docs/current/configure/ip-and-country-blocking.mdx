@@ -35,9 +35,9 @@ Abra **Firewall → Sinkhole → IP** e selecione **Enable** apenas depois de es
 | Inbound      | Bloqueia pacotes que chegam de um endereço de origem listado, normalmente em uma WAN.            |
 | Outbound     | Bloqueia pacotes que chegam com destino a um endereço listado, normalmente em redes de clientes. |
 
-A âncora contém regras `block drop in quick` e nenhuma regra pass. O Sinkhole faz referência a ela pela posição inicial das regras de pacote do pfSense, para que os bloqueios sejam executados antes das regras pass-quick comuns. Em **Global**, a página mostra primeiro os painéis de listas de IP e catálogo, seguidos das definições de IP e país, com **Save** abaixo do painel.
+A âncora contém regras `block drop in quick` e nenhuma regra pass. O Sinkhole faz referência a ela pela posição inicial das regras de pacote do pfSense, para que os bloqueios sejam executados antes das regras pass-quick comuns. Em **Global**, a página mostra as definições de IP e país, com **Save** abaixo do painel.
 
-<img src={ipTab} alt="Separador IP mostrando duas listas de IP de demonstração, os botões para adicionar e adicionar a partir do catálogo, e o bloqueio de IP e países ativado na LAN nos dois sentidos" width={1024} height={1648} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Separador IP para Global com o bloqueio de IP e países ativado na LAN nos dois sentidos e duas listas de IP de demonstração selecionadas" width={1024} height={1461} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Defina o bloqueio por rede e dispositivo \{#set-blocking-per-network-and-device}
 
@@ -49,31 +49,22 @@ Apenas **Global** contém:
 
 - **Interfaces**, onde se aplica o bloqueio de Global.
 - **MaxMind Account ID** e **MaxMind License Key**.
-- As fontes de listas de IP, **Add from Catalog** e as atualizações das listas.
 
-Global e cada rede ou dispositivo contêm **Enable**, **Directions**, **IP Lists** (as fontes utilizadas aí), **Countries** e **IP Allowlist**. Numa rede ou num dispositivo, **Outbound** impede que os respetivos clientes alcancem um destino listado, e **Inbound** impede que uma origem listada alcance os respetivos clientes. Os países de uma rede ou de um dispositivo utilizam a conta MaxMind de Global.
+Global e cada rede ou dispositivo contêm **Enable**, **Directions**, **IP Lists** (as fontes ativadas utilizadas aí), **Countries** e **IP Allowlist**. As fontes de listas de IP são adicionadas, ativadas e atualizadas em [Lists → IP](/docs/configure/lists#add-ip-lists); sem nenhuma fonte ativada, **IP Lists** mostra em vez disso uma linha com uma ligação **Open Lists**. Numa rede ou num dispositivo, **Outbound** impede que os respetivos clientes alcancem um destino listado, e **Inbound** impede que uma origem listada alcance os respetivos clientes. Os países de uma rede ou de um dispositivo utilizam a conta MaxMind de Global.
 
-Uma rede ou um dispositivo sem definições próprias mostra uma linha, como "Não definido para esta rede; aplica-se Global.", acima de um formulário vazio. Um dispositivo indica aí a sua rede quando essa rede tem definições próprias. Guardar o formulário cria as definições, e **Remove settings for this network** ou **Remove settings for this device** elimina-as, para que as definições mais abrangentes voltem a aplicar-se. Eliminar uma rede ou um dispositivo no separador Clients também elimina as respetivas definições.
+Uma rede ou um dispositivo sem definições próprias mostra uma linha, como "Não definido para esta rede; aplica-se Global.", acima de um formulário vazio. Um dispositivo indica aí a sua rede quando essa rede tem definições próprias que estão ativadas. Uma rede ou um dispositivo cujas definições estão desativadas mostra em vez disso "Desativado; aplica-se Global.", indicando as mesmas definições mais abrangentes. Guardar o formulário cria as definições, e **Remove settings for this network** ou **Remove settings for this device** elimina-as, para que as definições mais abrangentes voltem a aplicar-se. Eliminar uma rede ou um dispositivo no separador Clients também elimina as respetivas definições.
 
 **All** lista Global e todas as redes e dispositivos com definições próprias, juntamente com as respetivas direções, países e número de listas de IP. Selecione uma linha para a editar.
 
 Quando o Sinkhole é atualizado para a versão 1.3.0, as definições existentes permanecem em Global e são copiadas para todas as redes e dispositivos. A partir daí, cada cópia é independente. Uma cópia só é ativada quando a interface da rede, ou uma interface de um dos identificadores do dispositivo, estava selecionada em **Interfaces**; todas as outras cópias são guardadas desativadas, para que nenhum cliente que não era bloqueado antes passe a ser bloqueado.
 
+Global escolhe as suas listas de IP tal como cada rede e cada dispositivo. Quando o Sinkhole é atualizado para a versão 1.3.1, um Global que nunca guardou a sua própria seleção mantém todas as listas de IP ativadas nesse momento, pelo que nada muda até o editar. Uma lista de IP adicionada mais tarde não é utilizada em lado nenhum até que Global, uma rede ou um dispositivo a selecione.
+
 Cada rede ou dispositivo com definições ativadas recebe a sua própria tabela de clientes na âncora `sinkhole/ip`. Os endereços de um dispositivo são removidos da tabela da sua rede e da tabela de Global, e as sub-redes de uma rede são removidas da tabela de Global, para que um cliente seja bloqueado apenas pelas suas definições mais específicas.
 
-## Adicione listas de IP \{#add-ip-lists}
+## Faça a gestão das listas de IP \{#manage-ip-lists}
 
-Selecione **Add** abaixo da tabela IP Lists para abrir o editor de listas de IP. Uma linha usa uma URL HTTP ou HTTPS, escolhe IPv4, IPv6 ou as duas famílias e controla se a fonte está ativada. Ao guardar, regressa ao separador IP; selecione o lápis ou faça duplo clique numa linha para editá-la.
-
-As listas também podem ser encontradas nas secções de IP do catálogo de fontes do pfBlockerNG.
-
-As linhas válidas são endereços IPv4 ou IPv6 individuais e redes CIDR. Linhas inválidas são ignoradas e contadas; uma transferência sem nenhuma entrada válida não substitui a última cópia válida guardada.
-
-O catálogo só é transferido quando sua pesquisa é aberta ou atualizada e usa o mesmo cache de um dia com a última cópia válida da pesquisa do catálogo DNS. Adicionar um resultado cria uma linha comum de lista de IP, sem avaliação nem recomendação.
-
-As fontes de bypass de Encrypted DNS, Tor e VPN são excluídas do catálogo de IP e aparecem apenas no separador Bypass.
-
-A linha **Contents** de cada cartão apresenta **IPv4 addresses** ou **IPv6 addresses**. Ao adicionar um resultado do pfBlockerNG, o Sinkhole acrescenta ` (IPv4)` ou ` (IPv6)` ao nome guardado, encurtando apenas o nome base quando necessário.
+As fontes de listas de IP são adicionadas, editadas, ativadas e eliminadas em [Lists → IP](/docs/configure/lists#add-ip-lists), que também tem **Add from Catalog** e uma contagem **Used By** para cada lista. O separador IP apenas escolhe que listas ativadas cada contexto utiliza. As redes IPv4 mais abrangentes do que `/8` e as redes IPv6 mais abrangentes do que `/16` são ignoradas nas listas de IP; estes limites de prefixo não se aplicam à IP Allowlist, porque as entradas da lista de permissões apenas reduzem o bloqueio.
 
 ## Adicione países \{#add-countries}
 

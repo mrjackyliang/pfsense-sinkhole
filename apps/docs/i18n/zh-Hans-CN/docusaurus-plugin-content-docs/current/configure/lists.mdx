@@ -1,7 +1,7 @@
 ---
 id: lists
 title: 列表和已保存副本
-description: 通过 URL 或目录添加 DNS 列表，使用 hosts、域名和 adblock 风格格式，并在失败时保留最后一份有效副本。
+description: 通过 URL 或目录管理 DNS、Bypass 和 IP 列表，查看每个列表的使用位置，并在失败时保留最后一份有效副本。
 keywords:
   - sinkhole for pfsense
   - 阻止列表
@@ -25,9 +25,23 @@ import catalogSearch from './_assets_/lists-2.png';
 3. 新下载或解析失败时保留上一份有效副本，因此损坏的输入不会替换可用策略。
 4. 在后台更新列表，因此 Resolver 重启或重新加载永远不必等待网络。
 
+## 选择列表种类 \{#choose-a-list-kind}
+
+Lists 是添加、编辑、启用和删除所有列表来源的唯一位置。选项卡下方的一行可在三种种类之间切换：
+
+| 种类     | 包含                             | 选择位置                                                                               |
+|--------|--------------------------------|------------------------------------------------------------------------------------|
+| DNS    | 域名阻止列表。                        | [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains)                |
+| Bypass | Encrypted DNS、Tor 和 VPN 提供商列表。 | [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device) |
+| IP     | IPv4 和 IPv6 地址及网络列表。           | [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device)  |
+
+每种种类都有自己的表格、**Add**、**Add from Catalog**，以及用于修复无效已保存行的面板。Lists 没有 Global、网络或设备行；这些选择属于使用这些列表的选项卡。
+
+每个表格都有 **Used By** 列，计入 Global 以及设置中选择该列表的每个网络和设备。任何种类的新列表在某个上下文选择它之前都不会阻止任何内容。
+
 ## 通过 URL 添加列表 \{#add-a-list-by-url}
 
-打开 **Firewall → Sinkhole → Lists**，选择阻止列表表格下方的 **Add**，然后在编辑页面填写 **Add Block List**：
+打开 **Firewall → Sinkhole → Lists → DNS**，选择阻止列表表格下方的 **Add**，然后在编辑页面填写 **Add Block List**：
 
 | 字段      | 说明                                   |
 |---------|--------------------------------------|
@@ -37,7 +51,7 @@ import catalogSearch from './_assets_/lists-2.png';
 
 保存后会返回 Lists 选项卡，并启动同一条经过验证的后台应用路径。选择某行的铅笔图标或双击该行即可编辑。禁用的行仍保留配置，但会在表格中显示为灰色，更新程序和编译策略也不会使用它。
 
-Lists 只是列表管理器。哪些列表应用于 Global、某个网络或某台设备，需在 [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains) 中选择；**Used By** 列会计入 Global 以及每个选择该列表的网络和设备。
+哪些 DNS 列表应用于 Global、某个网络或某台设备，需在 [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains) 中选择。
 
 ## 可接受的 DNS 格式 \{#accepted-dns-formats}
 
@@ -55,7 +69,7 @@ Sinkhole 接受以下标准格式，并将有效名称规范化为一个已保�
 
 ## 搜索目录 \{#search-the-catalogs}
 
-在 Lists 选项卡选择 **Add from Catalog**，搜索 AdGuard Home 的列表注册表和 pfBlockerNG 源目录的 DNS 部分。Sinkhole 仅在搜索打开或您选择 **Refresh** 时获取两者；不会捆绑目录，也不会按计划下载目录。
+在 **DNS** 下选择 **Add from Catalog**，搜索 AdGuard Home 的列表注册表和 pfBlockerNG 源目录的 DNS 部分。Sinkhole 仅在搜索打开或您选择 **Refresh** 时获取两者；不会捆绑目录，也不会按计划下载目录。
 
 结果以卡片形式显示。组合使用搜索、来源和维护者控件，选择类别芯片，并在 **Category** 和 **Maintainer** 之间切换 **Group by**。类别芯片显示当前搜索、来源和维护者筛选器的计数，而维护者菜单会把匹配列表最多的所有者排在最前面。
 
@@ -69,7 +83,31 @@ Sinkhole 接受以下标准格式，并将有效名称规范化为一个已保�
 
 <img src={catalogSearch} alt="Lists 选项卡的 Add from Catalog 面板显示目录搜索控件和获取状态" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
-分配给 Encrypted DNS、Tor 或 VPN 绕过防护的订阅源不会显示在此处。它们只能通过 Bypass 标签页上的 **Add from Catalog** 获取。
+分配给 Encrypted DNS、Tor 或 VPN 绕过防护的订阅源不会显示在此处。它们只能通过 **Bypass** 下的 **Add from Catalog** 获取。
+
+## 添加 Bypass Lists \{#add-bypass-lists}
+
+打开 **Lists → Bypass**，选择 **Bypass Lists** 下方的 **Add**，然后输入本地名称、种类以及 HTTP 或 HTTPS URL。新行在明确启用之前保持禁用。保存后会返回 **Lists → Bypass**。表格还会显示每一行的已保存条目数和上次获取时间。
+
+每个来源每行接受一个条目。列表可混合域名、IPv4 地址、IPv6 地址和 CIDR；`#` 后面的文本是注释。无效和过长的行会被跳过。超过固定字节数或已接受条目数限制的下载会被拒绝，并保留最后的有效副本。
+
+已启用的 Bypass List 仅在其对应的 **Providers**、**Tor** 或 **VPN** 保护开启时，才会使用与其他列表相同的受限下载客户端，按照配置的列表计划更新。获取失败时会保留来自同一 URL 的最后有效保存副本，**Status → Bypass Lists** 会报告每一行的条目数、上次获取时间和最新错误。Sinkhole 不捆绑或推荐任何 Bypass List。
+
+**Bypass** 下的 **Add from Catalog** 会搜索 AdGuard Home 列表注册表以及 pfBlockerNG 订阅源目录的 DNS、IPv4 和 IPv6 部分。结果仅包含绕过订阅源，类型固定为 **Encrypted DNS**、**Tor** 或 **VPN**，可使用卡片上方的芯片按类型筛选。
+
+每张卡片的 **Contents** 行显示 **Domains**、**IPv4 addresses** 或 **IPv6 addresses**。添加 pfBlockerNG IPv4 或 IPv6 结果时，Sinkhole 会在保存的名称后附加 ` (IPv4)` 或 ` (IPv6)`；域名结果保留未加后缀的目录名称。添加结果会创建一个已启用的 Bypass List。
+
+Global、每个网络和每台设备在 [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device) 中选择各自使用的 Bypass Lists。
+
+## 添加 IP 列表 \{#add-ip-lists}
+
+打开 **Lists → IP**，选择 IP Lists 表格下方的 **Add** 以打开 IP 列表编辑器。每行使用 HTTP 或 HTTPS URL，选择 IPv4、IPv6 或两个地址族，并控制是否启用来源。保存后会返回 **Lists → IP**；选择铅笔图标或双击某行即可编辑。
+
+有效行是单个 IPv4 或 IPv6 地址以及 CIDR 网络。比 IPv4 `/8` 或 IPv6 `/16` 更宽的网络会被跳过，并与其他无效行一起计数；边界网络 `/8` 和 `/16` 可以接受。没有有效条目的下载不会替换最后一份有效副本。
+
+**IP** 下的 **Add from Catalog** 会搜索 pfBlockerNG 源目录的 IP 部分。Encrypted DNS、Tor 和 VPN 绕过订阅源会被排除，只显示在 **Bypass** 下。每张卡片的 **Contents** 行显示 **IPv4 addresses** 或 **IPv6 addresses**。添加结果时，Sinkhole 会在保存的名称后附加 ` (IPv4)` 或 ` (IPv6)`，并在必要时仅截短基础名称。
+
+Global、每个网络和每台设备在 [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device) 中选择各自使用的 IP 列表。
 
 ## 设置全局允许域名 \{#set-global-allowed-domains}
 

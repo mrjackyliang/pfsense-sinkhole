@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Liste i sačuvane kopije
-description: Dodajte DNS liste URL-om ili iz kataloga, koristite formate hosts, domena i adblock pravila i čuvajte posljednje ispravne kopije.
+description: Upravljajte DNS, Bypass i IP listama URL-om ili iz kataloga, pogledajte gdje se svaka lista koristi i čuvajte posljednje ispravne kopije.
 keywords:
   - sinkhole for pfsense
   - liste za blokiranje
@@ -25,9 +25,23 @@ Dodajte izvore lista kojima vjerujete i dopustite Sinkholeu da na zaštitnom zid
 3. Čuva prethodnu važeću kopiju kada novo preuzimanje ili parsiranje ne uspije, tako da neispravan unos ne zamijeni pravila koja rade.
 4. Ažurira liste u pozadini, pa ponovno pokretanje ili učitavanje Resolvera nikada ne čeka mrežu.
 
+## Odaberite vrstu liste \{#choose-a-list-kind}
+
+Lists je jedino mjesto gdje se svaki izvor liste dodaje, uređuje, uključuje i briše. Red ispod kartica prebacuje između tri vrste:
+
+| Vrsta  | Sadrži                                          | Bira se na                                                                         |
+|--------|-------------------------------------------------|------------------------------------------------------------------------------------|
+| DNS    | Liste za blokiranje naziva domena.              | [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains)                |
+| Bypass | Liste pružalaca šifriranog DNS-a, Tora i VPN-a. | [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device) |
+| IP     | Liste IPv4 i IPv6 adresa i mreža.               | [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device)  |
+
+Svaka vrsta ima vlastitu tabelu, **Add**, **Add from Catalog** i panel za popravku nevažećih sačuvanih redova. Lists nema red za Global, mrežu ili uređaj; ti izbori pripadaju karticama koje koriste liste.
+
+Svaka tabela ima kolonu **Used By** koja broji Global i svaku mrežu i uređaj čije postavke odabiru tu listu. Nova lista bilo koje vrste ništa ne blokira dok je neki kontekst ne odabere.
+
 ## Dodajte listu putem URL-a \{#add-a-list-by-url}
 
-Otvorite **Firewall → Sinkhole → Lists**, odaberite **Add** ispod tabele lista za blokiranje, a zatim popunite **Add Block List** na stranici uređivača:
+Otvorite **Firewall → Sinkhole → Lists → DNS**, odaberite **Add** ispod tabele lista za blokiranje, a zatim popunite **Add Block List** na stranici uređivača:
 
 | Polje   | Opis                                                             |
 |---------|------------------------------------------------------------------|
@@ -37,7 +51,7 @@ Otvorite **Firewall → Sinkhole → Lists**, odaberite **Add** ispod tabele lis
 
 Spremanje vraća na karticu Lists i pokreće isti provjereni put primjene u pozadini. Odaberite olovku u redu ili dvaput kliknite red da biste ga uredili. Onemogućeni red ostaje konfiguriran, ali je prigušen u tabeli i ne koriste ga program za ažuriranje ni kompajlirana pravila.
 
-Lists je samo upravitelj lista. Koje se liste primjenjuju na Global, mrežu ili uređaj bira se na kartici [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), a kolona **Used By** broji Global i svaku mrežu i uređaj koji odabire tu listu.
+Koje se DNS liste primjenjuju na Global, mrežu ili uređaj bira se na kartici [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains).
 
 ## Prihvaćeni DNS formati \{#accepted-dns-formats}
 
@@ -55,7 +69,7 @@ Kozmetički filteri i neispravni redovi ne postaju DNS pravila. Status prijavlju
 
 ## Pretražite kataloge \{#search-the-catalogs}
 
-Odaberite **Add from Catalog** na kartici Lists da biste pretražili registar lista AdGuard Homea i DNS odjeljak kataloga izvora pfBlockerNG-a. Sinkhole dohvaća oba samo kada se pretraga otvori ili odaberete **Refresh**; nijedan katalog nije uključen u paket niti se preuzima prema rasporedu.
+Odaberite **Add from Catalog** pod **DNS** da biste pretražili registar lista AdGuard Homea i DNS odjeljak kataloga izvora pfBlockerNG-a. Sinkhole dohvaća oba samo kada se pretraga otvori ili odaberete **Refresh**; nijedan katalog nije uključen u paket niti se preuzima prema rasporedu.
 
 Rezultati se prikazuju kao kartice. Zajedno koristite kontrole pretrage, izvora i održavaoca, odaberite oznaku kategorije i prebacujte **Group by** između **Category** i **Maintainer**. Oznake kategorija prikazuju broj za trenutne filtere pretrage, izvora i održavaoca, dok meni održavaoca prvo navodi vlasnike s najviše odgovarajućih lista.
 
@@ -69,7 +83,31 @@ Kopije kataloga čuvaju se jedan dan u predmemoriji pod `/var/db`. Neuspjelo osv
 
 <img src={catalogSearch} alt="Panel Add from Catalog na kartici Lists prikazuje kontrole pretrage kataloga i stanje dohvatanja" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
-Izvori dodijeljeni zaštiti od zaobilaženja Encrypted DNS, Tor ili VPN ne prikazuju se ovdje. Dostupni su samo kroz **Add from Catalog** na kartici Bypass.
+Izvori dodijeljeni zaštiti od zaobilaženja Encrypted DNS, Tor ili VPN ne prikazuju se ovdje. Dostupni su samo kroz **Add from Catalog** pod **Bypass**.
+
+## Dodajte Bypass liste \{#add-bypass-lists}
+
+Otvorite **Lists → Bypass**, odaberite **Add** ispod **Bypass Lists**, a zatim unesite lokalni naziv, vrstu i HTTP ili HTTPS URL. Novi redovi su isključeni dok se izričito ne uključe. Spremanje vraća na **Lists → Bypass**. Tabela prikazuje i broj sačuvanih unosa i posljednje preuzimanje za svaki red.
+
+Svaki izvor prihvata jedan unos po redu. Lista može miješati domene, IPv4 adrese, IPv6 adrese i CIDR-ove; tekst nakon `#` je komentar. Nevažeći i predugi redovi se preskaču. Preuzimanje koje premašuje fiksno ograničenje bajtova ili prihvaćenih unosa se odbija, a posljednja dobra kopija ostaje na mjestu.
+
+Omogućena Bypass lista ažurira se prema konfigurisanom rasporedu lista pomoću istog ograničenog klijenta za preuzimanje kao i druge liste, ali samo dok je uključena njena odgovarajuća zaštita **Providers**, **Tor** ili **VPN**. Neuspjelo preuzimanje zadržava posljednju dobru sačuvanu kopiju s istog URL-a, a **Status → Bypass Lists** prikazuje unose, posljednje preuzimanje i najnoviju grešku za svaki red. Sinkhole ne uključuje niti preporučuje Bypass listu.
+
+**Add from Catalog** pod **Bypass** pretražuje registar lista AdGuard Homea i DNS, IPv4 i IPv6 odjeljke kataloga izvora pfBlockerNG-a. Rezultati su ograničeni na izvore za zaobilaženje i imaju fiksnu vrstu **Encrypted DNS**, **Tor** ili **VPN**, po kojoj filtriraju oznake iznad kartica.
+
+Red **Contents** na svakoj kartici prikazuje **Domains**, **IPv4 addresses** ili **IPv6 addresses**. Kada dodate IPv4 ili IPv6 rezultat iz pfBlockerNG-a, Sinkhole dodaje ` (IPv4)` ili ` (IPv6)` njegovom sačuvanom nazivu; rezultati s domenama zadržavaju obični naziv iz kataloga. Dodavanjem rezultata stvara se omogućena Bypass lista.
+
+Global, svaka mreža i svaki uređaj biraju Bypass liste koje koriste na kartici [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device).
+
+## Dodajte IP liste \{#add-ip-lists}
+
+Otvorite **Lists → IP** i odaberite **Add** ispod tabele IP Lists da otvorite uređivač IP lista. Red koristi HTTP ili HTTPS URL, bira IPv4, IPv6 ili obje porodice i određuje da li je izvor uključen. Spremanje vraća na **Lists → IP**; odaberite olovku ili dvaput kliknite red da ga uredite.
+
+Važeći redovi su pojedinačne IPv4 ili IPv6 adrese i CIDR mreže. IPv4 mreže šire od `/8` i IPv6 mreže šire od `/16` se preskaču i broje s drugim nevažećim redovima; granične mreže `/8` i `/16` se prihvataju. Preuzimanje bez ijednog važećeg unosa ne zamjenjuje posljednju dobru sačuvanu kopiju.
+
+**Add from Catalog** pod **IP** pretražuje IP odjeljke kataloga izvora pfBlockerNG-a. Izvori za zaobilaženje Encrypted DNS, Tor i VPN su isključeni i pojavljuju se samo pod **Bypass**. Red **Contents** na svakoj kartici prikazuje **IPv4 addresses** ili **IPv6 addresses**. Kada dodate rezultat, Sinkhole dodaje ` (IPv4)` ili ` (IPv6)` njegovom sačuvanom nazivu, skraćujući samo osnovni naziv kada je potrebno.
+
+Global, svaka mreža i svaki uređaj biraju IP liste koje koriste na kartici [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device).
 
 ## Postavite globalne dopuštene domene \{#set-global-allowed-domains}
 

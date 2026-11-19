@@ -63,6 +63,8 @@ Rebind Exceptions 最多接受 100 个域名。Expired Answer Lifetime 接受 `0
 
 绕过订阅源会从此目录中排除。
 
+Lists 可在 **DNS**、**Bypass** 和 **IP** 种类之间切换。上表对应 DNS 种类；[Bypass Lists](#bypass-lists) 和 [IP 列表行](#ip-and-country-blocking) 也在此处管理，每种种类的表格都有 **Used By** 计数，统计 Global 以及选择该列表的每个网络和设备。
+
 ## Blocking \{#blocking}
 
 每个上下文（Global、一个网络或一台设备）都有自己的两个字段：
@@ -122,13 +124,14 @@ Rebind Exceptions 最多接受 100 个域名。Expired Answer Lifetime 接受 `0
 | Redirect                               | Off   | 将选定接口上的普通 UDP 和 TCP 端口 53 流量发送到防火墙。                  |
 | Exempt Sources                         | Empty | 每行一个绕过普通 DNS 重定向的 IPv4 或 IPv6 地址、CIDR 网络或现有主机/网络别名。  |
 | Exempt Destinations                    | Empty | 每行一个绕过普通 DNS 重定向的目标 IP 地址、CIDR 或别名。                  |
+| Bypass Lists                           | Empty | 此上下文使用的已启用 Bypass Lists；来源本身在 Lists 中管理。             |
 | TLS and QUIC                           | Off   | 阻止前往防火墙以外目标的 TCP 和 UDP 端口 853 流量。                    |
-| Providers                              | Off   | 阻止已启用的 **Encrypted DNS** Bypass Lists 中的名称和地址。       |
+| Providers                              | Off   | 阻止所选 **Encrypted DNS** Bypass Lists 中的名称和地址。         |
 | Firefox                                | Off   | 对 Firefox 的自动 DNS-over-HTTPS 金丝雀名称及其子域返回 `NXDOMAIN`。 |
 | Private Relay                          | Off   | 对 Apple 的两个 Private Relay 可用性名称返回 `NXDOMAIN`。        |
 | Discovery                              | Off   | 保持 DDR 不变、通告防火墙的 DNS over TLS，或返回不含记录的 `NOERROR` 响应。 |
-| Tor                                    | Off   | 阻止已启用的 **Tor** Bypass Lists 中的名称和地址。                 |
-| VPN (Block listed VPN providers)       | Off   | 阻止已启用的 **VPN** Bypass Lists 中的名称和地址。                 |
+| Tor                                    | Off   | 阻止所选 **Tor** Bypass Lists 中的名称和地址。                   |
+| VPN (Block listed VPN providers)       | Off   | 阻止所选 **VPN** Bypass Lists 中的名称和地址。                   |
 | VPN (Block standard VPN ports)         | Off   | 阻止前往防火墙以外目标的 OpenVPN、WireGuard、IPsec UDP 端口和 ESP。    |
 | Block Exemptions → Exempt Sources      | Empty | 每行一个 IP 地址、CIDR 或别名，其流量跳过所有 Bypass 防火墙阻止。            |
 | Block Exemptions → Exempt Destinations | Empty | 每行一个目标 IP 地址、CIDR 或别名，任何 Bypass 防火墙阻止都不会拦下它。         |
@@ -139,9 +142,11 @@ Rebind Exceptions 最多接受 100 个域名。Expired Answer Lifetime 接受 `0
 
 ### Bypass Lists \{#bypass-lists}
 
+Bypass List 行在 **Lists → Bypass** 中管理。
+
 | 字段      | 默认值           | 说明                                         |
 |---------|---------------|--------------------------------------------|
-| Name    | Empty         | 在 Bypass 和 Status 上显示的本地标签。                |
+| Name    | Empty         | 在 Lists、Bypass 和 Status 上显示的本地标签。          |
 | Kind    | Encrypted DNS | 选择 **Encrypted DNS**、**Tor** 或 **VPN** 策略。 |
 | URL     | Empty         | 包含混合域名、地址和 CIDR 的 HTTP 或 HTTPS 源。          |
 | Enabled | Off           | 将已保存列表纳入计划获取及其对应的已启用保护。                    |
@@ -163,7 +168,7 @@ Bypass List 输入每行使用一个条目，并支持 `#` 注释。获取失败
 | Clear License Key   | Off   | 保存时删除已存储的 MaxMind 密钥。                           |
 | IP Allowlist        | Empty | 每行一个从最终阻止表扣除的 IPv4 或 IPv6 地址、CIDR 网络或现有主机/网络别名。 |
 
-每个 IP 列表行都有名称、URL、IPv4/IPv6/Both 地址族选择和 Enabled 开关。Sinkhole 还会从最终表中移除防火墙接口、网关和 DNS 地址，使自身规则不会阻止受保护基础设施。
+每个 IP 列表行都有名称、URL、IPv4/IPv6/Both 地址族选择和 Enabled 开关，并在 **Lists → IP** 中管理。每个上下文的 **IP Lists** 字段选择其使用的已启用 IP 列表。Sinkhole 还会从最终表中移除防火墙接口、网关和 DNS 地址，使自身规则不会阻止受保护基础设施。
 
 IP 目录会排除属于 Bypass 目录的所有 Encrypted DNS、Tor 和 VPN 订阅源。
 

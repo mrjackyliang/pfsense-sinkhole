@@ -794,6 +794,7 @@ final class Compiler
      *
      * @since 1.0.0
      * @since 1.3.0
+     * @since 1.3.1
      * @private
      */
     private function normalizeBypassConfiguration(mixed $value): array
@@ -934,7 +935,12 @@ final class Compiler
             $policy['lists'] = array_keys($effective);
             sort($policy['lists'], SORT_STRING);
         };
-        $selectSources($globalPolicy, array_keys($sourceLists));
+
+        // Global uses its own stored selection, like every network and device.
+        $globalSelection = is_array($configuration['selected_lists'] ?? null)
+            ? $configuration['selected_lists']
+            : array_keys($sourceLists);
+        $selectSources($globalPolicy, $globalSelection);
 
         foreach ($networkPolicies as $identifier => &$policy) {
             $context = $configuration['contexts']['network:' . $identifier] ?? [];

@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Listy i zapisane kopie
-description: Dodawaj listy DNS według adresu URL lub z katalogu, używaj formatów hosts, domen i stylu adblock i zachowuj ostatnie prawidłowe kopie w razie błędów.
+description: Zarządzaj listami DNS, Bypass i IP według adresu URL lub z katalogu, sprawdzaj, gdzie każda lista jest używana, i zachowuj ostatnie prawidłowe kopie w razie błędów.
 keywords:
   - sinkhole for pfsense
   - listy blokowania
@@ -25,9 +25,23 @@ Dodaj zaufane źródła list i pozwól Sinkhole przechowywać znormalizowane ost
 3. Zachowują poprzednią prawidłową kopię, gdy nowe pobranie lub analiza się nie powiedzie, aby uszkodzone dane wejściowe nie zastąpiły działających zasad.
 4. Aktualizują listy w tle, dzięki czemu ponowne uruchomienie lub przeładowanie Resolver nigdy nie czeka na sieć.
 
+## Wybór rodzaju listy \{#choose-a-list-kind}
+
+Karta Lists to jedyne miejsce, w którym dodaje się, edytuje, włącza i usuwa każde źródło list. Wiersz pod kartami przełącza między trzema rodzajami:
+
+| Rodzaj | Zawiera                                   | Wybierane na karcie                                                                |
+|--------|-------------------------------------------|------------------------------------------------------------------------------------|
+| DNS    | Listy blokowania nazw domen.              | [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains)                |
+| Bypass | Listy dostawców Encrypted DNS, Tor i VPN. | [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device) |
+| IP     | Listy adresów i sieci IPv4 oraz IPv6.     | [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device)  |
+
+Każdy rodzaj ma własną tabelę, **Add**, **Add from Catalog** i panel naprawy nieprawidłowych zapisanych wierszy. Karta Lists nie ma wiersza Global, sieci ani urządzenia; te wybory należą do kart, które używają list.
+
+Każda tabela ma kolumnę **Used By**, która zlicza Global oraz każdą sieć i każde urządzenie, których ustawienia wybierają listę. Nowa lista dowolnego rodzaju niczego nie blokuje, dopóki nie wybierze jej jakiś kontekst.
+
 ## Dodawanie listy według adresu URL \{#add-a-list-by-url}
 
-Otwórz **Firewall → Sinkhole → Lists**, wybierz **Add** pod tabelą list blokowania, a następnie wypełnij **Add Block List** na stronie edytora:
+Otwórz **Firewall → Sinkhole → Lists → DNS**, wybierz **Add** pod tabelą list blokowania, a następnie wypełnij **Add Block List** na stronie edytora:
 
 | Pole    | Opis                                                               |
 |---------|--------------------------------------------------------------------|
@@ -37,7 +51,7 @@ Otwórz **Firewall → Sinkhole → Lists**, wybierz **Add** pod tabelą list bl
 
 Zapisanie powoduje powrót do karty Lists i uruchamia tę samą zweryfikowaną ścieżkę stosowania w tle. Wybierz ołówek wiersza lub kliknij wiersz dwukrotnie, aby go edytować. Wyłączony wiersz pozostaje skonfigurowany, ale jest wyszarzony w tabeli i nie jest używany przez proces aktualizacji ani skompilowane zasady.
 
-Karta Lists służy wyłącznie do zarządzania listami. To, które listy dotyczą Global, sieci lub urządzenia, wybiera się na karcie [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), a kolumna **Used By** zlicza Global oraz każdą sieć i każde urządzenie, które wybierają listę.
+To, które listy DNS dotyczą Global, sieci lub urządzenia, wybiera się na karcie [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains).
 
 ## Obsługiwane formaty DNS \{#accepted-dns-formats}
 
@@ -55,7 +69,7 @@ Filtry kosmetyczne i nieprawidłowo sformatowane wiersze nie stają się zasadam
 
 ## Przeszukiwanie katalogów \{#search-the-catalogs}
 
-Wybierz **Add from Catalog** na karcie Lists, aby przeszukać rejestr list AdGuard Home i sekcję DNS katalogu źródeł pfBlockerNG. Sinkhole pobiera oba tylko po otwarciu wyszukiwania lub wybraniu **Refresh**; żaden katalog nie jest dołączony do pakietu ani pobierany według harmonogramu.
+Wybierz **Add from Catalog** w sekcji **DNS**, aby przeszukać rejestr list AdGuard Home i sekcję DNS katalogu źródeł pfBlockerNG. Sinkhole pobiera oba tylko po otwarciu wyszukiwania lub wybraniu **Refresh**; żaden katalog nie jest dołączony do pakietu ani pobierany według harmonogramu.
 
 Wyniki są wyświetlane jako karty. Użyj razem elementów sterujących wyszukiwaniem, źródłem i opiekunem, wybierz znacznik kategorii i przełączaj **Group by** między **Category** i **Maintainer**. Znaczniki kategorii pokazują liczby dla bieżących filtrów wyszukiwania, źródła i opiekuna, a menu opiekunów najpierw pokazuje właścicieli z największą liczbą pasujących list.
 
@@ -69,7 +83,31 @@ Kopie katalogów są buforowane przez jeden dzień w `/var/db`. Nieudane odświe
 
 <img src={catalogSearch} alt="Panel Add from Catalog na karcie Lists z elementami sterującymi wyszukiwaniem katalogu i stanem pobierania" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
-Źródła przypisane do ochrony przed obejściem Encrypted DNS, Tor lub VPN nie są tutaj wyświetlane. Są dostępne tylko przez **Add from Catalog** na karcie Bypass.
+Źródła przypisane do ochrony przed obejściem Encrypted DNS, Tor lub VPN nie są tutaj wyświetlane. Są dostępne tylko przez **Add from Catalog** w sekcji **Bypass**.
+
+## Dodawanie Bypass Lists \{#add-bypass-lists}
+
+Otwórz **Lists → Bypass**, wybierz **Add** pod **Bypass Lists**, a następnie podaj lokalną nazwę, rodzaj i adres URL HTTP lub HTTPS. Nowe wiersze są wyłączone do czasu ich jawnego włączenia. Zapisanie powoduje powrót do **Lists → Bypass**. Tabela pokazuje też liczbę zapisanych wpisów i ostatnie pobranie każdego wiersza.
+
+Każde źródło akceptuje jeden wpis na wiersz. Lista może łączyć domeny, adresy IPv4, adresy IPv6 i sieci CIDR; tekst po `#` jest komentarzem. Nieprawidłowe i zbyt długie wiersze są pomijane. Pobieranie przekraczające stały limit bajtów lub zaakceptowanych wpisów jest odrzucane, a ostatnia dobra kopia pozostaje na miejscu.
+
+Włączona Bypass List jest aktualizowana zgodnie ze skonfigurowanym harmonogramem list przy użyciu tego samego ograniczonego klienta pobierania co inne listy, ale tylko wtedy, gdy włączona jest odpowiadająca jej ochrona **Providers**, **Tor** lub **VPN**. Nieudane pobieranie zachowuje ostatnią dobrą zapisaną kopię z tego samego adresu URL, a **Status → Bypass Lists** podaje wpisy, ostatnie pobranie i najnowszy błąd dla każdego wiersza. Sinkhole nie dołącza ani nie poleca żadnej Bypass List.
+
+**Add from Catalog** w sekcji **Bypass** przeszukuje rejestr list AdGuard Home oraz sekcje DNS, IPv4 i IPv6 katalogu źródeł pfBlockerNG. Wyniki są ograniczone do źródeł obejścia i mają stały rodzaj: **Encrypted DNS**, **Tor** lub **VPN**, według którego filtrują znaczniki nad kartami.
+
+Wiersz **Contents** na każdej karcie wskazuje **Domains**, **IPv4 addresses** lub **IPv6 addresses**. Po dodaniu wyniku IPv4 lub IPv6 z pfBlockerNG Sinkhole dodaje ` (IPv4)` lub ` (IPv6)` do zapisanej nazwy; wyniki domen zachowują niezmienioną nazwę katalogową. Dodanie wyniku tworzy włączoną Bypass List.
+
+Global, każda sieć i każde urządzenie wybierają używane Bypass Lists na karcie [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device).
+
+## Dodawanie list IP \{#add-ip-lists}
+
+Otwórz **Lists → IP** i wybierz **Add** pod tabelą IP Lists, aby otworzyć edytor list IP. Wiersz używa adresu URL HTTP lub HTTPS, wybiera IPv4, IPv6 lub obie rodziny i określa, czy źródło jest włączone. Zapisanie powoduje powrót do **Lists → IP**; wybierz ołówek lub kliknij wiersz dwukrotnie, aby go edytować.
+
+Prawidłowe wiersze to pojedyncze adresy IPv4 lub IPv6 i sieci CIDR. Sieci IPv4 szersze niż `/8` i sieci IPv6 szersze niż `/16` są pomijane i liczone razem z innymi nieprawidłowymi wierszami; sieci graniczne `/8` i `/16` są akceptowane. Pobranie bez żadnego prawidłowego wpisu nie zastępuje ostatniej prawidłowej zapisanej kopii.
+
+**Add from Catalog** w sekcji **IP** przeszukuje sekcje IP katalogu źródeł pfBlockerNG. Źródła obejścia Encrypted DNS, Tor i VPN są wykluczone i pojawiają się tylko w sekcji **Bypass**. Wiersz **Contents** na każdej karcie wskazuje **IPv4 addresses** lub **IPv6 addresses**. Po dodaniu wyniku Sinkhole dodaje ` (IPv4)` lub ` (IPv6)` do zapisanej nazwy, w razie potrzeby skracając tylko nazwę bazową.
+
+Global, każda sieć i każde urządzenie wybierają używane listy IP na karcie [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device).
 
 ## Ustawianie globalnych dozwolonych domen \{#set-global-allowed-domains}
 

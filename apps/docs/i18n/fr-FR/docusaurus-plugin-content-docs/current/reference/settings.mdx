@@ -63,6 +63,8 @@ Chaque nouvelle version trouvée par un contrôle planifié crée un avis pfSens
 
 Les flux de contournement sont exclus de ce catalogue.
 
+Lists bascule entre les types **DNS**, **Bypass** et **IP**. La table ci-dessus correspond au type DNS ; les [Bypass Lists](#bypass-lists) et les [lignes de listes IP](#ip-and-country-blocking) y sont aussi gérées, et la table de chaque type possède un nombre **Used By** qui compte Global ainsi que chaque réseau et appareil qui sélectionne la liste.
+
 ## Blocking \{#blocking}
 
 Chaque contexte (Global, un réseau ou un appareil) possède ses deux propres champs :
@@ -122,13 +124,14 @@ Le processeur minute envoie au maximum 20 messages par exécution et 60 messages
 | Redirect                               | Off               | Envoie au pare-feu le trafic DNS ordinaire des ports UDP et TCP 53 sur les interfaces sélectionnées.                                        |
 | Exempt Sources                         | Empty             | Une adresse IPv4 ou IPv6, un réseau CIDR ou un alias d’hôte ou de réseau existant par ligne, qui contourne la redirection du DNS ordinaire. |
 | Exempt Destinations                    | Empty             | Une adresse IP de destination, un CIDR ou un alias par ligne qui contourne la redirection du DNS ordinaire.                                 |
+| Bypass Lists                           | Empty             | Bypass Lists activées qu’utilise ce contexte ; les sources elles-mêmes sont gérées dans Lists.                                              |
 | TLS and QUIC                           | Off               | Bloque les ports TCP et UDP 853 vers les destinations autres que le pare-feu.                                                               |
-| Providers                              | Off               | Bloque les noms et adresses des Bypass Lists **Encrypted DNS** activées.                                                                    |
+| Providers                              | Off               | Bloque les noms et adresses des Bypass Lists **Encrypted DNS** sélectionnées.                                                               |
 | Firefox                                | Off               | Renvoie `NXDOMAIN` pour le nom canari du DNS-over-HTTPS automatique de Firefox et ses sous-domaines.                                        |
 | Private Relay                          | Off               | Renvoie `NXDOMAIN` pour les deux noms de disponibilité du Private Relay d’Apple.                                                            |
 | Discovery                              | Off               | Laisse DDR inchangé, annonce le DNS over TLS du pare-feu ou répond `NOERROR` sans enregistrement.                                           |
-| Tor                                    | Off               | Bloque les noms et adresses des Bypass Lists **Tor** activées.                                                                              |
-| VPN (Block listed VPN providers)       | Off               | Bloque les noms et adresses des Bypass Lists **VPN** activées.                                                                              |
+| Tor                                    | Off               | Bloque les noms et adresses des Bypass Lists **Tor** sélectionnées.                                                                         |
+| VPN (Block listed VPN providers)       | Off               | Bloque les noms et adresses des Bypass Lists **VPN** sélectionnées.                                                                         |
 | VPN (Block standard VPN ports)         | Off               | Bloque les ports UDP d’OpenVPN, WireGuard et IPsec ainsi que ESP vers les destinations autres que le pare-feu.                              |
 | Block Exemptions → Exempt Sources      | Empty             | Une adresse IP, un CIDR ou un alias par ligne dont le trafic échappe à chaque blocage de pare-feu Bypass.                                   |
 | Block Exemptions → Exempt Destinations | Empty             | Une adresse IP de destination, un CIDR ou un alias par ligne qu’aucun blocage de pare-feu Bypass n’arrête.                                  |
@@ -139,9 +142,11 @@ Les exemptions de blocage n’ajoutent aucune règle pass ; le trafic exempté p
 
 ### Bypass Lists \{#bypass-lists}
 
+Les lignes des Bypass Lists sont gérées dans **Lists → Bypass**.
+
 | Champ   | Valeur par défaut | Description                                                                                      |
 |---------|-------------------|--------------------------------------------------------------------------------------------------|
-| Name    | Empty             | Libellé local affiché dans Bypass et Status.                                                     |
+| Name    | Empty             | Libellé local affiché dans Lists, Bypass et Status.                                              |
 | Kind    | Encrypted DNS     | Sélectionne la politique **Encrypted DNS**, **Tor** ou **VPN**.                                  |
 | URL     | Empty             | Source HTTP ou HTTPS contenant un mélange de domaines, d’adresses et de CIDR.                    |
 | Enabled | Off               | Inclut la liste enregistrée dans les récupérations planifiées et sa protection activée associée. |
@@ -163,7 +168,7 @@ La saisie d’une Bypass List utilise une entrée par ligne et des commentaires 
 | Clear License Key   | Off               | Supprime la clé MaxMind enregistrée lors de l’enregistrement.                                                                         |
 | IP Allowlist        | Empty             | Une adresse IPv4 ou IPv6, un réseau CIDR ou un alias d’hôte ou de réseau existant par ligne, soustrait des tables de blocage finales. |
 
-Chaque ligne de liste IP possède un nom, une URL, une sélection de famille IPv4/IPv6/Both et un commutateur Enabled. Sinkhole retire également les adresses des interfaces du pare-feu, des passerelles et des serveurs DNS des tables finales afin que ses propres règles ne bloquent pas l’infrastructure protégée.
+Chaque ligne de liste IP possède un nom, une URL, une sélection de famille IPv4/IPv6/Both et un commutateur Enabled, et elle est gérée dans **Lists → IP**. Le champ **IP Lists** de chaque contexte choisit les listes IP activées qu’il utilise. Sinkhole retire également les adresses des interfaces du pare-feu, des passerelles et des serveurs DNS des tables finales afin que ses propres règles ne bloquent pas l’infrastructure protégée.
 
 Le catalogue IP exclut tous les flux Encrypted DNS, Tor et VPN qui appartiennent au catalogue Bypass.
 

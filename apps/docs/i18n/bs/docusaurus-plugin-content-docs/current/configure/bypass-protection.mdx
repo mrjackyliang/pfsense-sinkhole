@@ -24,7 +24,7 @@ Otvorite **Firewall → Sinkhole → Bypass** i odaberite interfejse u polju **A
 
 Podudaranje mreža i uređaja koristi trenutne podmreže tih interfejsa, baš kao obični opsezi Sinkholea. Klijent izvan odabranih podmreža ne prima Bypass DNS odgovor.
 
-<img src={bypassProtection} alt="Kartica Bypass s odabranim LAN-om, isključenim preusmjeravanjem običnog DNS-a, uključenim zaštitama šifriranog DNS-a i tunela, opcijom Discovery postavljenom na Answer with no records, jednim demonstracijskim izuzetim izvorom i odredištem te tri demonstracijske Bypass liste" width={1024} height={1764} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Kartica Bypass za Global s odabranim LAN-om, isključenim preusmjeravanjem običnog DNS-a, tri odabrane demonstracijske Bypass liste, uključenim zaštitama šifriranog DNS-a i tunela, opcijom Discovery postavljenom na Answer with no records te jednim demonstracijskim izuzetim izvorom i odredištem" width={1024} height={1677} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Postavite zaštite po mreži i uređaju \{#set-protections-per-network-and-device}
 
@@ -36,19 +36,21 @@ Samo **Global** sadrži:
 
 - Interfejse u polju **Apply to**.
 - Preusmjeravanje **Plain DNS** i njegove izuzetke.
-- Izvore Bypass lista, **Add from Catalog** i ažuriranja lista.
 
-Mreža ili uređaj sadrži:
+Mreža ili uređaj sadrži i **Enable**, koji uključuje njihove zaštite.
 
-- **Enable**, koji uključuje njihove zaštite.
-- **Bypass Lists**, omogućene izvore koje koriste.
+Global i svaka mreža ili uređaj sadrže:
+
+- **Bypass Lists**, omogućene izvore koje koriste. Izvori se dodaju, uključuju i ažuriraju na [Lists → Bypass](/docs/configure/lists#add-bypass-lists). Bez ijednog omogućenog izvora polje umjesto toga prikazuje jedan red s vezom **Open Lists**.
 - Postavke šifriranog DNS-a, **Discovery**, blokiranja tunela i **Block Exemptions**.
 
-Mreža ili uređaj bez vlastitih postavki prikazuje jedan red, npr. "Nije postavljeno za ovu mrežu; primjenjuje se Globalno.", iznad praznog obrasca. Uređaj tu navodi svoju mrežu kada ta mreža ima vlastite postavke. Spremanjem obrasca postavke se kreiraju, a **Remove settings for this network** ili **Remove settings for this device** ih briše, tako da se ponovo primjenjuju šire postavke. Brisanjem mreže ili uređaja na kartici Clients brišu se i njihove postavke.
+Mreža ili uređaj bez vlastitih postavki prikazuje jedan red, npr. "Nije postavljeno za ovu mrežu; primjenjuje se Globalno.", iznad praznog obrasca. Uređaj tu navodi svoju mrežu kada ta mreža ima vlastite postavke koje su uključene. Mreža ili uređaj čije su postavke isključene umjesto toga prikazuje "Isključeno; primjenjuje se Globalno.", navodeći iste šire postavke. Spremanjem obrasca postavke se kreiraju, a **Remove settings for this network** ili **Remove settings for this device** ih briše, tako da se ponovo primjenjuju šire postavke. Brisanjem mreže ili uređaja na kartici Clients brišu se i njihove postavke.
 
 **All** navodi Global i svaku mrežu i uređaj s vlastitim postavkama, zajedno sa zaštitama koje su uključene. Odaberite red da ga uredite.
 
 Kada se Sinkhole nadogradi na 1.3.0, postojeće postavke ostaju u opsegu Global i kopiraju se u svaku mrežu i uređaj. Od tada je svaka kopija nezavisna. Kopija se uključuje samo ako je interfejs mreže, ili interfejs nekog od identifikatora uređaja, bio odabran u polju **Apply to**; svaka druga kopija sačuva se isključena, tako da se ne filtrira nijedan klijent koji ranije nije bio filtriran.
+
+Global bira svoje Bypass liste kao i svaka mreža i uređaj. Kada se Sinkhole nadogradi na 1.3.1, izbor opsega Global postaje svaka Bypass lista koja postoji u tom trenutku, pa se ništa ne mijenja dok ga ne uredite. Bypass lista dodana kasnije ne koristi se nigdje dok je ne odabere Global, mreža ili uređaj.
 
 Svaka mreža ili uređaj s uključenim postavkama dobija vlastitu tabelu klijenata u sidru `sinkhole/bypass`. Adrese uređaja uklanjaju se iz tabele njegove mreže i iz tabele opsega Global, a podmreže mreže iz tabele opsega Global, tako da klijenta blokiraju samo njegove najspecifičnije postavke. Sinkhole za to ne dodaje pravila propuštanja.
 
@@ -82,7 +84,7 @@ Pravila preusmjeravanja se učitavaju kad god je Sinkhole omogućen na kartici *
 Postavke šifriranog DNS-a su nezavisne:
 
 - **TLS and QUIC** blokira TCP i UDP port 853 prema svakom odredištu osim zaštitnog zida.
-- **Providers** blokira imena i adrese iz uključenih Bypass lista čija je vrsta **Encrypted DNS**.
+- **Providers** blokira imena i adrese iz odabranih, uključenih Bypass lista čija je vrsta **Encrypted DNS**.
 - **Firefox** odgovara sa `NXDOMAIN` za `use-application-dns.net` i njegove poddomene, čime se isključuje Firefoxov automatski odabir DNS-a preko HTTPS-a.
 - **Private Relay** odgovara sa `NXDOMAIN` za `mask.icloud.com` i `mask-h2.icloud.com`, čime kompatibilnim Apple uređajima poručuje da Private Relay nije dostupan na ovoj mreži.
 
@@ -117,8 +119,8 @@ Isključivanje opcije Discovery ili uklanjanje Sinkholea uklanja red zone. Isti 
 
 ## Zaštitite od tunela \{#protect-against-tunnels}
 
-- **Tor → Block listed Tor relays** primjenjuje uključene Bypass liste vrste **Tor**.
-- **VPN → Block listed VPN providers** primjenjuje uključene Bypass liste vrste **VPN**.
+- **Tor → Block listed Tor relays** primjenjuje odabrane, uključene Bypass liste vrste **Tor**.
+- **VPN → Block listed VPN providers** primjenjuje odabrane, uključene Bypass liste vrste **VPN**.
 - **VPN → Block standard VPN ports** blokira TCP i UDP `1194`, UDP `51820`, UDP `500` i `4500` te ESP prema svakom odredištu osim zaštitnog zida.
 
 Imena i adrese sa Tor i VPN lista koriste isto DNS ponašanje i ponašanje zaštitnog zida kao liste pružalaca šifriranog DNS-a. Ove kontrole smanjuju uobičajene alternativne putanje, ali ne prepoznaju svaki šifrirani ili prilagođeni tunel.
@@ -136,21 +138,9 @@ Izuzeci pokrivaju samo blokade zaštitnog zida. Imena pružalaca, Tor i VPN iz B
 
 Ako sačuvani izuzetak od blokiranja postane nevažeći, poput aliasa koji je preimenovan ili obrisan, Sinkhole zadržava svaku blokadu bez izuzetaka, upisuje jedan unos u sistemski zapisnik i prikazuje vrijednost pod **Invalid Saved Values** dok se ne ispravi ili ukloni.
 
-## Dodajte iz kataloga \{#add-from-catalog}
+## Upravljajte Bypass listama \{#manage-bypass-lists}
 
-Otvorite **Add from Catalog** na kartici Bypass da pretražite registar lista AdGuard Homea i DNS, IPv4 i IPv6 odjeljke kataloga izvora pfBlockerNG-a. Rezultati su ograničeni na izvore za zaobilaženje i imaju fiksnu vrstu **Encrypted DNS**, **Tor** ili **VPN**.
-
-Izvorni katalozi dohvaćaju se samo kada otvorite katalog ili odaberete **Refresh**. Dodavanjem rezultata stvara se omogućena Bypass lista; ona se uključuje u zakazana ažuriranja samo dok je uključena njena odgovarajuća zaštita **Providers**, **Tor** ili **VPN**.
-
-Red **Contents** na svakoj kartici prikazuje **Domains**, **IPv4 addresses** ili **IPv6 addresses**. Kada dodate IPv4 ili IPv6 rezultat iz pfBlockerNG-a, Sinkhole dodaje ` (IPv4)` ili ` (IPv6)` njegovom sačuvanom nazivu; rezultati s domenama zadržavaju obični naziv iz kataloga.
-
-## Dodajte Bypass liste \{#add-bypass-lists}
-
-Odaberite **Add** ispod **Bypass Lists**, a zatim unesite lokalni naziv, vrstu i HTTP ili HTTPS URL. Novi redovi su isključeni dok se izričito ne uključe.
-
-Svaki izvor prihvata jedan unos po redu. Lista može miješati domene, IPv4 adrese, IPv6 adrese i CIDR-ove; tekst nakon `#` je komentar. Nevažeći i predugi redovi se preskaču. Preuzimanje koje premašuje fiksno ograničenje bajtova ili prihvaćenih unosa se odbija, a posljednja dobra kopija ostaje na mjestu.
-
-Omogućena Bypass lista ažurira se prema konfigurisanom rasporedu lista pomoću istog ograničenog klijenta za preuzimanje kao i druge liste, ali samo dok je uključena njena odgovarajuća zaštita **Providers**, **Tor** ili **VPN**. Neuspjelo preuzimanje zadržava posljednju dobru sačuvanu kopiju s istog URL-a, a **Status → Bypass Lists** prikazuje unose, posljednje preuzimanje i najnoviju grešku za svaki red. Sinkhole ne uključuje niti preporučuje Bypass listu.
+Izvori Bypass lista dodaju se, uređuju, uključuju i brišu na [Lists → Bypass](/docs/configure/lists#add-bypass-lists), gdje se nalaze i **Add from Catalog** i broj **Used By** za svaku listu. Kartica Bypass samo bira koje omogućene liste koristi svaki kontekst. Omogućena Bypass lista uključuje se u zakazana ažuriranja samo dok je uključena njena odgovarajuća zaštita **Providers**, **Tor** ili **VPN**.
 
 ## Provjerite aktivno stanje \{#verify-the-active-state}
 

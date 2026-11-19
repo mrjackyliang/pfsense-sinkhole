@@ -35,9 +35,9 @@ Open **Firewall → Sinkhole → IP** en selecteer **Enable** pas nadat u interf
 | Inbound    | Blokkeert pakketten die aankomen vanaf een bronadres in de lijst, gewoonlijk op een WAN.                      |
 | Outbound   | Blokkeert pakketten die aankomen op weg naar een bestemmingsadres in de lijst, gewoonlijk op clientnetwerken. |
 
-Het anker bevat `block drop in quick`-regels en geen doorlaatregels. Sinkhole verwijst ernaar via de vroege positie voor pakketregels van pfSense, zodat de blokkeringen vóór gewone pass-quick-regels worden uitgevoerd. In **Global** toont de pagina eerst de panelen voor IP-lijsten en de catalogus, gevolgd door de instellingen voor IP en landen met **Save** onder het paneel.
+Het anker bevat `block drop in quick`-regels en geen doorlaatregels. Sinkhole verwijst ernaar via de vroege positie voor pakketregels van pfSense, zodat de blokkeringen vóór gewone pass-quick-regels worden uitgevoerd. In **Global** toont de pagina de instellingen voor IP en landen met **Save** onder het paneel.
 
-<img src={ipTab} alt="Tabblad IP met twee IP-demolijsten, de knoppen om toe te voegen en uit de catalogus toe te voegen, en IP- en landblokkering ingeschakeld op LAN in beide richtingen" width={1024} height={1648} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Tabblad IP voor Global met IP- en landblokkering ingeschakeld op LAN in beide richtingen en twee IP-demolijsten geselecteerd" width={1024} height={1461} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Blokkering per netwerk en apparaat instellen \{#set-blocking-per-network-and-device}
 
@@ -49,31 +49,22 @@ Alleen **Global** bevat:
 
 - **Interfaces**, waar de blokkering van Global geldt.
 - **MaxMind Account ID** en **MaxMind License Key**.
-- Bronnen voor IP-lijsten, **Add from Catalog** en lijstupdates.
 
-Global en elk netwerk of apparaat bevatten **Enable**, **Directions**, **IP Lists** (de bronnen die daar worden gebruikt), **Countries** en **IP Allowlist**. Voor een netwerk of apparaat voorkomt **Outbound** dat de clients ervan een bestemming in de lijst bereiken, en voorkomt **Inbound** dat een bron in de lijst de clients ervan bereikt. Landen in een netwerk of apparaat gebruiken het MaxMind-account van Global.
+Global en elk netwerk of apparaat bevatten **Enable**, **Directions**, **IP Lists** (de ingeschakelde bronnen die daar worden gebruikt), **Countries** en **IP Allowlist**. Bronnen voor IP-lijsten worden toegevoegd, ingeschakeld en bijgewerkt op [Lists → IP](/docs/configure/lists#add-ip-lists); zonder ingeschakelde bron toont **IP Lists** in plaats daarvan één regel met een link **Open Lists**. Voor een netwerk of apparaat voorkomt **Outbound** dat de clients ervan een bestemming in de lijst bereiken, en voorkomt **Inbound** dat een bron in de lijst de clients ervan bereikt. Landen in een netwerk of apparaat gebruiken het MaxMind-account van Global.
 
-Een netwerk of apparaat zonder eigen instellingen toont één regel, zoals "Niet ingesteld voor dit netwerk; Globaal is van toepassing.", boven een leeg formulier. Een apparaat noemt daar zijn netwerk wanneer dat netwerk eigen instellingen heeft. Door het formulier op te slaan worden de instellingen aangemaakt, en **Remove settings for this network** of **Remove settings for this device** verwijdert ze, zodat de bredere instellingen weer gelden. Als u een netwerk of apparaat op het tabblad Clients verwijdert, worden ook de instellingen ervan verwijderd.
+Een netwerk of apparaat zonder eigen instellingen toont één regel, zoals "Niet ingesteld voor dit netwerk; Globaal is van toepassing.", boven een leeg formulier. Een apparaat noemt daar zijn netwerk wanneer dat netwerk eigen instellingen heeft die zijn ingeschakeld. Een netwerk of apparaat waarvan de instellingen zijn uitgeschakeld, toont in plaats daarvan "Uitgeschakeld; Globaal is van toepassing." en noemt daarbij dezelfde bredere instellingen. Door het formulier op te slaan worden de instellingen aangemaakt, en **Remove settings for this network** of **Remove settings for this device** verwijdert ze, zodat de bredere instellingen weer gelden. Als u een netwerk of apparaat op het tabblad Clients verwijdert, worden ook de instellingen ervan verwijderd.
 
 **All** toont Global en elk netwerk en apparaat met eigen instellingen, samen met hun richtingen, landen en aantal IP-lijsten. Selecteer een rij om deze te bewerken.
 
 Wanneer Sinkhole naar 1.3.0 wordt bijgewerkt, blijven de bestaande instellingen in Global staan en worden ze naar elk netwerk en apparaat gekopieerd. Vanaf dat moment is elke kopie onafhankelijk. Een kopie wordt alleen ingeschakeld als de interface van het netwerk, of een interface van een van de identificatoren van het apparaat, bij **Interfaces** was geselecteerd; elke andere kopie wordt uitgeschakeld opgeslagen, zodat geen client wordt geblokkeerd die eerder niet werd geblokkeerd.
 
+Global kiest zijn IP-lijsten net als elk netwerk en apparaat. Wanneer Sinkhole naar 1.3.1 wordt bijgewerkt, behoudt een Global die nooit een eigen selectie heeft opgeslagen elke IP-lijst die op dat moment was ingeschakeld, zodat er niets verandert totdat u deze bewerkt. Een later toegevoegde IP-lijst wordt nergens gebruikt totdat Global, een netwerk of een apparaat deze selecteert.
+
 Elk netwerk of apparaat met ingeschakelde instellingen krijgt een eigen clienttabel in het anker `sinkhole/ip`. De adressen van een apparaat worden uit de tabel van zijn netwerk en uit die van Global verwijderd, en de subnetten van een netwerk uit die van Global, zodat een client alleen door zijn meest specifieke instellingen wordt geblokkeerd.
 
-## IP-lijsten toevoegen \{#add-ip-lists}
+## IP-lijsten beheren \{#manage-ip-lists}
 
-Selecteer **Add** onder de tabel IP Lists om de editor voor IP-lijsten te openen. Een rij gebruikt een HTTP- of HTTPS-URL, kiest IPv4, IPv6 of beide families en bepaalt of de bron is ingeschakeld. Na opslaan keert u terug naar het tabblad IP; selecteer het potlood of dubbelklik op een rij om deze te bewerken.
-
-Lijsten kunnen ook worden gevonden via de IP-secties van de feedcatalogus van pfBlockerNG.
-
-Geldige regels zijn afzonderlijke IPv4- of IPv6-adressen en CIDR-netwerken. Ongeldige regels worden overgeslagen en geteld; een download zonder geldige vermelding vervangt de laatste geldige opgeslagen kopie niet.
-
-De catalogus wordt alleen gedownload wanneer de zoekfunctie wordt geopend of vernieuwd en gebruikt dezelfde eendaagse cache met de laatste geldige kopie als de zoekfunctie voor de DNS-catalogus. Het toevoegen van een resultaat maakt een gewone IP-lijstrij zonder beoordeling of aanbeveling.
-
-Bypass-feeds voor Encrypted DNS, Tor en VPN zijn uitgesloten van de IP-catalogus en verschijnen alleen op het tabblad Bypass.
-
-De regel **Contents** op elke kaart toont **IPv4 addresses** of **IPv6 addresses**. Wanneer u een pfBlockerNG-resultaat toevoegt, voegt Sinkhole ` (IPv4)` of ` (IPv6)` toe aan de opgeslagen naam en kort het zo nodig alleen de basisnaam in.
+Bronnen voor IP-lijsten worden toegevoegd, bewerkt, ingeschakeld en verwijderd op [Lists → IP](/docs/configure/lists#add-ip-lists), waar ook **Add from Catalog** staat en een telling **Used By** voor elke lijst. Het tabblad IP kiest alleen welke ingeschakelde lijsten elke context gebruikt. IPv4-netwerken breder dan `/8` en IPv6-netwerken breder dan `/16` worden in IP-lijsten overgeslagen; deze prefixlimieten gelden niet voor de IP Allowlist, omdat vermeldingen op de toestaanlijst de blokkering alleen verminderen.
 
 ## Landen toevoegen \{#add-countries}
 

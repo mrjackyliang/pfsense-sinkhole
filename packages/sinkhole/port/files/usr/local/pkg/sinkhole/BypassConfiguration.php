@@ -27,6 +27,17 @@ final class BypassConfiguration
     /** @var string @since 1.3.0 */
     public const CONTEXT_MIGRATION_FLAG = 'contexts_migrated_1_3_0';
 
+    /**
+     * Marks a Global section whose `selected_lists` is an explicit selection.
+     * Before the flag exists, Global keeps the former behavior of using every
+     * source, so an upgrade changes nothing until the one-time migration runs.
+     *
+     * @var string
+     *
+     * @since 1.3.1
+     */
+    public const GLOBAL_LISTS_MIGRATION_FLAG = 'global_lists_migrated_1_3_1';
+
     /** @var string @since 1.0.0 */
     public const KIND_ENCRYPTED_DNS = 'encrypted_dns';
 
@@ -92,6 +103,7 @@ final class BypassConfiguration
      * @since 1.0.0
      * @since 1.2.0
      * @since 1.3.0
+     * @since 1.3.1
      */
     public static function partition(mixed $value, array $interfaces = [], array $aliases = []): array
     {
@@ -167,7 +179,7 @@ final class BypassConfiguration
 
         $listPartition = self::partitionLists($listValue);
         $result['lists'] = $listPartition['lists'];
-        $result['selected_lists'] = array_keys($listPartition['lists']);
+        $result['selected_lists'] = self::globalSelection($value, $listPartition['lists']);
         $result['invalid_lists'] = $listPartition['invalid_rows'];
 
         $sourcePartition = self::partitionExemptions(
@@ -297,6 +309,7 @@ final class BypassConfiguration
      * @return array{settings: array, errors: list<string>}
      *
      * @since 1.3.0
+     * @since 1.3.1
      */
     public static function submitContext(
         string $context,
@@ -395,7 +408,30 @@ final class BypassConfiguration
                 $storageLists[] = self::listStorageRow($identifier, $list);
             }
 
+            $globalSelection = $post['bypass_lists'] ?? $post['selected_lists'] ?? [];
+
+            if (!is_array($globalSelection)) {
+                $errors[] = (new ValidationException(
+                    'selected_block_lists_invalid',
+                ))->getMessage();
+                $globalSelection = [];
+            }
+
+            $selectedSources = [];
+
+            foreach ($globalSelection as $identifier) {
+                if (!is_string($identifier) || !isset($listSources[$identifier])) {
+                    $errors[] = (new ValidationException('bypass_list_missing'))->getMessage();
+
+                    continue;
+                }
+
+                $selectedSources[$identifier] = true;
+            }
+
             $stored['lists'] = ['item' => $storageLists];
+            $stored['selected_lists'] = ['item' => array_keys($selectedSources)];
+            $stored[self::GLOBAL_LISTS_MIGRATION_FLAG] = 'on';
             $settings = self::partition(
                 $stored,
                 array_keys($selectedInterfaces),
@@ -453,6 +489,7 @@ final class BypassConfiguration
      * @return void
      *
      * @since 1.3.0
+     * @since 1.3.1
      */
     public static function storeContext(string $context, array $settings): void
     {
@@ -476,6 +513,12 @@ final class BypassConfiguration
                 $values = is_array($settings[$field] ?? null) ? $settings[$field] : [];
                 $section[$field] = ['item' => array_values(array_filter($values, 'is_string'))];
             }
+
+            $selection = is_array($settings['selected_lists'] ?? null)
+                ? $settings['selected_lists']
+                : [];
+            $section['selected_lists'] = ['item' => array_values(array_filter($selection, 'is_string'))];
+            $section[self::GLOBAL_LISTS_MIGRATION_FLAG] = 'on';
 
             config_set_path(self::SECTION_PATH, $section);
 
@@ -576,6 +619,7 @@ final class BypassConfiguration
      * @return list<string>
      *
      * @since 1.3.0
+     * @since 1.3.1
      */
     public static function fieldsForContext(string $context): array
     {
@@ -585,7 +629,7 @@ final class BypassConfiguration
         );
 
         if ($context === 'global') {
-            return array_merge(['bypass_interfaces'], $fields);
+            return array_merge(['bypass_interfaces', 'bypass_lists'], $fields);
         }
 
         return self::validOwnedContext($context)
@@ -700,6 +744,7 @@ final class BypassConfiguration
      * @return bool
      *
      * @since 1.3.0
+     * @since 1.3.1
      */
     public static function sourceUsedAnywhere(
         array $configuration,
@@ -709,6 +754,10 @@ final class BypassConfiguration
         if (
             ($configuration['global_enabled'] ?? $configuration['enabled'] ?? false) === true
             && self::kindEnabled($configuration, $kind)
+            && (
+                !is_array($configuration['selected_lists'] ?? null) // Unpartitioned callers keep every source.
+                || in_array($identifier, $configuration['selected_lists'], true) // Global's stored selection.
+            )
         ) {
             return true;
         }
@@ -729,6 +778,44 @@ final class BypassConfiguration
         }
 
         return false;
+    }
+
+    /**
+     * Bypass Configuration - List Usage Counts.
+     *
+     * Counts Global plus every network and device context whose selection names
+     * each source, for the Used By column on the Lists page.
+     *
+     * @param array $configuration - Global configuration with context rows.
+     *
+     * @return array<string, int>
+     *
+     * @since 1.3.1
+     */
+    public static function listUsageCounts(array $configuration): array
+    {
+        $lists = is_array($configuration['lists'] ?? null) ? $configuration['lists'] : [];
+        $counts = array_fill_keys(array_keys($lists), 0);
+        $contexts = is_array($configuration['contexts'] ?? null) ? $configuration['contexts'] : [];
+        $selections = [
+            is_array($configuration['selected_lists'] ?? null) ? $configuration['selected_lists'] : [],
+        ];
+
+        foreach ($contexts as $context) {
+            if (is_array($context) && is_array($context['selected_lists'] ?? null)) {
+                $selections[] = $context['selected_lists'];
+            }
+        }
+
+        foreach ($selections as $selection) {
+            foreach (array_unique(array_filter($selection, 'is_string')) as $identifier) {
+                if (isset($counts[$identifier])) {
+                    $counts[$identifier]++;
+                }
+            }
+        }
+
+        return $counts;
     }
 
     /**
@@ -1141,6 +1228,48 @@ final class BypassConfiguration
         }
 
         return $storage;
+    }
+
+    /**
+     * Bypass Configuration - Global Selection.
+     *
+     * Reads Global's stored selection once the migration flag exists; before
+     * that, every source stays selected, as in 1.3.0. Identifiers that no longer
+     * name a valid source are ignored.
+     *
+     * @param array $section - Persisted Global Bypass section.
+     * @param array<string, array> $lists - Valid Bypass sources.
+     *
+     * @return list<string>
+     *
+     * @since 1.3.1
+     * @private
+     */
+    private static function globalSelection(array $section, array $lists): array
+    {
+        if (!array_key_exists(self::GLOBAL_LISTS_MIGRATION_FLAG, $section)) {
+            return array_keys($lists);
+        }
+
+        $selection = $section['selected_lists'] ?? [];
+
+        if (is_array($selection) && count($selection) === 1 && array_key_exists('item', $selection)) {
+            $selection = $selection['item'];
+        }
+
+        if (is_string($selection)) {
+            $selection = [$selection];
+        }
+
+        $selected = [];
+
+        foreach (is_array($selection) ? $selection : [] as $identifier) {
+            if (is_string($identifier) && isset($lists[$identifier])) {
+                $selected[$identifier] = true;
+            }
+        }
+
+        return array_keys($selected);
     }
 
     /** @since 1.3.0 */

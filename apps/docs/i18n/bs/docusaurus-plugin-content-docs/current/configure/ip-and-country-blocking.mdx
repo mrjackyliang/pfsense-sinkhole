@@ -35,9 +35,9 @@ Otvorite **Firewall → Sinkhole → IP** i odaberite **Enable** tek nakon odabi
 | Inbound    | Blokira pakete koji stižu s navedene izvorne adrese, obično na WAN-u.                     |
 | Outbound   | Blokira pakete koji stižu prema navedenoj odredišnoj adresi, obično na mrežama klijenata. |
 
-Sidro sadrži pravila `block drop in quick` i nema pravila propuštanja. Sinkhole ga navodi na ranom položaju pravila paketa u pfSenseu, tako da se blokiranja izvršavaju prije običnih pravila pass-quick. U opsegu **Global** stranica prvo prikazuje panele IP lista i kataloga, a nakon njih postavke IP adresa i država s dugmetom **Save** ispod panela.
+Sidro sadrži pravila `block drop in quick` i nema pravila propuštanja. Sinkhole ga navodi na ranom položaju pravila paketa u pfSenseu, tako da se blokiranja izvršavaju prije običnih pravila pass-quick. U opsegu **Global** stranica prikazuje postavke IP adresa i država s dugmetom **Save** ispod panela.
 
-<img src={ipTab} alt="Kartica IP prikazuje dvije demonstracijske IP liste s dugmadima za dodavanje i dodavanje iz kataloga te blokiranje IP adresa i zemalja uključeno na LAN-u u oba smjera" width={1024} height={1631} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Kartica IP za Global s blokiranjem IP adresa i zemalja uključenim na LAN-u u oba smjera i dvije odabrane demonstracijske IP liste" width={1024} height={1444} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Postavite blokiranje po mreži i uređaju \{#set-blocking-per-network-and-device}
 
@@ -49,31 +49,22 @@ Samo **Global** sadrži:
 
 - **Interfaces**, gdje se primjenjuje blokiranje opsega Global.
 - **MaxMind Account ID** i **MaxMind License Key**.
-- Izvore IP lista, **Add from Catalog** i ažuriranja lista.
 
-Global i svaka mreža ili uređaj sadrže **Enable**, **Directions**, **IP Lists** (izvore koji se tu koriste), **Countries** i **IP Allowlist**. Za mrežu ili uređaj, **Outbound** sprječava klijente te mreže ili uređaja da dođu do navedenog odredišta, a **Inbound** sprječava navedeni izvor da dođe do tih klijenata. Države u mreži ili uređaju koriste MaxMind račun opsega Global.
+Global i svaka mreža ili uređaj sadrže **Enable**, **Directions**, **IP Lists** (omogućene izvore koji se tu koriste), **Countries** i **IP Allowlist**. Izvori IP lista dodaju se, uključuju i ažuriraju na [Lists → IP](/docs/configure/lists#add-ip-lists); bez ijednog omogućenog izvora **IP Lists** umjesto toga prikazuje jedan red s vezom **Open Lists**. Za mrežu ili uređaj, **Outbound** sprječava klijente te mreže ili uređaja da dođu do navedenog odredišta, a **Inbound** sprječava navedeni izvor da dođe do tih klijenata. Države u mreži ili uređaju koriste MaxMind račun opsega Global.
 
-Mreža ili uređaj bez vlastitih postavki prikazuje jedan red, npr. "Nije postavljeno za ovu mrežu; primjenjuje se Globalno.", iznad praznog obrasca. Uređaj tu navodi svoju mrežu kada ta mreža ima vlastite postavke. Spremanjem obrasca postavke se kreiraju, a **Remove settings for this network** ili **Remove settings for this device** ih briše, tako da se ponovo primjenjuju šire postavke. Brisanjem mreže ili uređaja na kartici Clients brišu se i njihove postavke.
+Mreža ili uređaj bez vlastitih postavki prikazuje jedan red, npr. "Nije postavljeno za ovu mrežu; primjenjuje se Globalno.", iznad praznog obrasca. Uređaj tu navodi svoju mrežu kada ta mreža ima vlastite postavke koje su uključene. Mreža ili uređaj čije su postavke isključene umjesto toga prikazuje "Isključeno; primjenjuje se Globalno.", navodeći iste šire postavke. Spremanjem obrasca postavke se kreiraju, a **Remove settings for this network** ili **Remove settings for this device** ih briše, tako da se ponovo primjenjuju šire postavke. Brisanjem mreže ili uređaja na kartici Clients brišu se i njihove postavke.
 
 **All** navodi Global i svaku mrežu i uređaj s vlastitim postavkama, zajedno s njihovim smjerovima, državama i brojem IP lista. Odaberite red da ga uredite.
 
 Kada se Sinkhole nadogradi na 1.3.0, postojeće postavke ostaju u opsegu Global i kopiraju se u svaku mrežu i uređaj. Od tada je svaka kopija nezavisna. Kopija se uključuje samo ako je interfejs mreže, ili interfejs nekog od identifikatora uređaja, bio odabran u polju **Interfaces**; svaka druga kopija sačuva se isključena, tako da se ne blokira nijedan klijent koji ranije nije bio blokiran.
 
+Global bira svoje IP liste kao i svaka mreža i uređaj. Kada se Sinkhole nadogradi na 1.3.1, opseg Global koji nikad nije sačuvao vlastiti izbor zadržava svaku IP listu koja je u tom trenutku bila omogućena, pa se ništa ne mijenja dok ga ne uredite. IP lista dodana kasnije ne koristi se nigdje dok je ne odabere Global, mreža ili uređaj.
+
 Svaka mreža ili uređaj s uključenim postavkama dobija vlastitu tabelu klijenata u sidru `sinkhole/ip`. Adrese uređaja uklanjaju se iz tabele njegove mreže i iz tabele opsega Global, a podmreže mreže iz tabele opsega Global, tako da klijenta blokiraju samo njegove najspecifičnije postavke.
 
-## Dodajte IP liste \{#add-ip-lists}
+## Upravljajte IP listama \{#manage-ip-lists}
 
-Odaberite **Add** ispod tabele IP Lists da biste otvorili uređivač IP lista. Red koristi HTTP ili HTTPS URL, bira IPv4, IPv6 ili obje porodice i određuje je li izvor omogućen. Spremanje vraća na karticu IP; odaberite olovku ili dvaput kliknite red da biste ga uredili.
-
-Liste se mogu pronaći i u IP odjeljcima kataloga izvora pfBlockerNG-a.
-
-Važeći redovi su pojedinačne IPv4 ili IPv6 adrese i CIDR mreže. Nevažeći redovi se preskaču i broje; preuzimanje bez ijednog važećeg zapisa ne zamjenjuje posljednju ispravnu sačuvanu kopiju.
-
-Katalog se preuzima samo kada se otvori ili osvježi njegova pretraga i koristi istu jednodnevnu predmemoriju posljednje ispravne kopije kao pretraga DNS kataloga. Dodavanje rezultata kreira obični red IP liste bez ocjene ili preporuke.
-
-Izvori za zaobilaženje Encrypted DNS-a, Tora i VPN-a isključeni su iz IP kataloga i prikazuju se samo na kartici Bypass.
-
-Red **Contents** na svakoj kartici prikazuje **IPv4 addresses** ili **IPv6 addresses**. Kada dodate rezultat iz pfBlockerNG-a, Sinkhole dodaje ` (IPv4)` ili ` (IPv6)` njegovom sačuvanom nazivu i po potrebi skraćuje samo osnovni naziv.
+Izvori IP lista dodaju se, uređuju, uključuju i brišu na [Lists → IP](/docs/configure/lists#add-ip-lists), gdje se nalaze i **Add from Catalog** i broj **Used By** za svaku listu. Kartica IP samo bira koje omogućene liste koristi svaki kontekst. IPv4 mreže šire od `/8` i IPv6 mreže šire od `/16` preskaču se u IP listama; ova ograničenja prefiksa ne važe za IP Allowlist jer unosi u njoj samo smanjuju blokiranje.
 
 ## Dodajte države \{#add-countries}
 

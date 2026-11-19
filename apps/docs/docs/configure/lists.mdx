@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Lists and Saved Copies
-description: Add DNS lists by URL or catalog, use hosts, domain, and adblock-style formats, and keep last-good copies through failures.
+description: Manage DNS, Bypass, and IP lists by URL or catalog, see where each list is used, and keep last-good copies through failures.
 keywords:
   - sinkhole for pfsense
   - block lists
@@ -25,9 +25,23 @@ Add list sources you trust and let Sinkhole keep normalized, last-good copies on
 3. Preserves the previous valid copy when a new download or parse fails so broken input doesn't replace working policy.
 4. Updates lists in the background so a Resolver restart or reload never waits for the network.
 
+## Choose a List Kind \{#choose-a-list-kind}
+
+Lists is the one place where every list source is added, edited, enabled, and deleted. The row under the tabs switches between three kinds:
+
+| Kind   | Holds                                       | Selected on                                                                        |
+|--------|---------------------------------------------|------------------------------------------------------------------------------------|
+| DNS    | Block lists of domain names.                | [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains)                |
+| Bypass | Encrypted DNS, Tor, and VPN provider lists. | [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device) |
+| IP     | IPv4 and IPv6 address and network lists.    | [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device)  |
+
+Each kind has its own table, **Add**, **Add from Catalog**, and repair panel for invalid saved rows. Lists has no Global, network, or device row; those choices belong to the tabs that use the lists.
+
+Every table has a **Used By** column that counts Global plus every network and device whose settings select the list. A new list of any kind blocks nothing until a context selects it.
+
 ## Add a List by URL \{#add-a-list-by-url}
 
-Open **Firewall → Sinkhole → Lists**, select **Add** below the block-list table, then complete **Add Block List** on the editor page:
+Open **Firewall → Sinkhole → Lists → DNS**, select **Add** below the block-list table, then complete **Add Block List** on the editor page:
 
 | Field   | Description                                        |
 |---------|----------------------------------------------------|
@@ -37,7 +51,7 @@ Open **Firewall → Sinkhole → Lists**, select **Add** below the block-list ta
 
 Saving returns to the Lists tab and starts the same validated background apply path. Select a row's pencil or double-click the row to edit it. A disabled row remains configured but is muted in the table and isn't used by the updater or compiled policy.
 
-Lists is only the list manager. Which lists apply to Global, a network, or a device is chosen on [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), and the **Used By** column counts Global plus every network and device that selects the list.
+Which DNS lists apply to Global, a network, or a device is chosen on [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains).
 
 ## Accepted DNS Formats \{#accepted-dns-formats}
 
@@ -57,9 +71,9 @@ When a blocked subtree is queried with an unusual but valid DNS label, including
 
 ## Search the Catalogs \{#search-the-catalogs}
 
-Select **Add from Catalog** on the Lists tab to search AdGuard Home's list registry and the DNS section of pfBlockerNG's feed catalog. Sinkhole fetches both only when the search opens or you select **Refresh**; neither catalog is bundled or downloaded on a schedule.
+Select **Add from Catalog** under **DNS** to search AdGuard Home's list registry and the DNS section of pfBlockerNG's feed catalog. Sinkhole fetches both only when the search opens or you select **Refresh**; neither catalog is bundled or downloaded on a schedule.
 
-Feeds assigned to Encrypted DNS, Tor, or VPN bypass protection don't appear here. They are available only through **Add from Catalog** on the Bypass tab.
+Feeds assigned to Encrypted DNS, Tor, or VPN bypass protection don't appear here. They are available only through **Add from Catalog** under **Bypass**.
 
 Results appear as cards. Use the search, source, and maintainer controls together, select a category chip, and switch **Group by** between **Category** and **Maintainer**. Category chips show counts for the current search, source, and maintainer filters, while the maintainer menu puts the owners with the most matching lists first.
 
@@ -72,6 +86,30 @@ Each card's **Contents** line says **Domains**. Adding a catalog result keeps it
 Catalog copies are cached under `/var/db` for one day. A failed refresh keeps the last good catalog copy and shows the fetch error on Status.
 
 <img src={catalogSearch} alt="Lists tab Add from Catalog panel showing catalog search controls and fetch status" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Add Bypass Lists \{#add-bypass-lists}
+
+Open **Lists → Bypass**, select **Add** below **Bypass Lists**, then enter a local name, kind, and HTTP or HTTPS URL. New rows are disabled until explicitly enabled. Saving returns to **Lists → Bypass**. The table also shows each row's saved entry count and last fetch.
+
+Each source accepts one entry per line. A list can mix domains, IPv4 addresses, IPv6 addresses, and CIDRs; text after `#` is a comment. Invalid and overlong lines are skipped. A download that exceeds the fixed byte or accepted-entry limit is rejected, leaving the last good copy in place.
+
+An enabled Bypass List updates on the configured list schedule, with the same bounded download client as other lists, only while its matching **Providers**, **Tor**, or **VPN** protection is on. A failed fetch keeps the last good saved copy from the same URL, and **Status → Bypass Lists** reports entries, last fetch, and the most recent error for each row. Sinkhole doesn't bundle or recommend a Bypass List.
+
+**Add from Catalog** under **Bypass** searches the AdGuard Home list registry and the DNS, IPv4, and IPv6 sections of pfBlockerNG's feed catalog. Results are limited to bypass feeds and have a fixed **Encrypted DNS**, **Tor**, or **VPN** kind, which the chips above the cards filter.
+
+Each card's **Contents** line says **Domains**, **IPv4 addresses**, or **IPv6 addresses**. When you add a pfBlockerNG IPv4 or IPv6 result, Sinkhole appends ` (IPv4)` or ` (IPv6)` to its saved name; domain results keep the plain catalog name. Adding a result creates an enabled Bypass List.
+
+Global, each network, and each device choose the Bypass Lists they use on [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device).
+
+## Add IP Lists \{#add-ip-lists}
+
+Open **Lists → IP** and select **Add** below the IP Lists table to open the IP-list editor. A row uses an HTTP or HTTPS URL, chooses IPv4, IPv6, or both families, and controls whether the source is enabled. Saving returns to **Lists → IP**; select the pencil or double-click a row to edit it.
+
+Valid lines are individual IPv4 or IPv6 addresses and CIDR networks. IPv4 networks broader than `/8` and IPv6 networks broader than `/16` are skipped and counted with other invalid lines; the boundary networks `/8` and `/16` are accepted. A download with no valid entry doesn't replace the last good saved copy.
+
+**Add from Catalog** under **IP** searches the IP sections of pfBlockerNG's feed catalog. Encrypted DNS, Tor, and VPN bypass feeds are excluded and appear only under **Bypass**. Each card's **Contents** line says **IPv4 addresses** or **IPv6 addresses**. When you add a result, Sinkhole appends ` (IPv4)` or ` (IPv6)` to its saved name, trimming only the base name when necessary.
+
+Global, each network, and each device choose the IP lists they use on [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device).
 
 ## Set Global Allowed Domains \{#set-global-allowed-domains}
 

@@ -785,6 +785,45 @@ RULES;
             'A later migration call must not change any row.',
         );
     },
+    'IP Global list migration stores the implicit enabled-list choice once' => static function (): void {
+        $enabledList = str_repeat('a', 32);
+        $disabledList = str_repeat('b', 32);
+        $laterList = str_repeat('c', 32);
+        $list = static fn(string $id, string $enabled): array => [
+            'id' => $id,
+            'descr' => 'Invented ' . $id[0],
+            'url' => 'https://example.test/' . $id[0] . '.txt',
+            'family' => 'both',
+            'enabled' => $enabled,
+        ];
+        sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+            'ip' => [
+                'enabled' => 'on',
+                'lists' => ['item' => [$list($enabledList, 'on'), $list($disabledList, '')]],
+            ],
+        ]]]);
+
+        sinkholeTestAssertSame(true, pfsensePackageSinkholeMigrateIpGlobalLists(), 'The first IP Global list migration must run.');
+        sinkholeTestAssertSame(
+            [$enabledList],
+            config_get_path('installedpackages/sinkhole/ip/list_ids/item'),
+            'Global must keep exactly the lists it used before: every enabled one.',
+        );
+        sinkholeTestAssertSame(false, pfsensePackageSinkholeMigrateIpGlobalLists(), 'The migration must never run twice.');
+
+        config_set_path('installedpackages/sinkhole/ip/lists/item', [
+            $list($enabledList, 'on'),
+            $list($disabledList, ''),
+            $list($laterList, 'on'),
+        ]);
+        $partition = IpConfiguration::partition(config_get_path('installedpackages/sinkhole/ip'), [], []);
+        sinkholeTestAssertSame([$enabledList], $partition['list_ids'], 'A list added after the migration must not apply to Global by itself.');
+
+        sinkholeStubReset(['installedpackages' => ['sinkhole' => [
+            'ip' => ['list_ids' => ['item' => []], 'lists' => ['item' => [$list($enabledList, 'on')]]],
+        ]]]);
+        sinkholeTestAssertSame(false, pfsensePackageSinkholeMigrateIpGlobalLists(), 'An explicit empty selection must stay empty.');
+    },
     'context tables use negation precedence and direction-specific client matches' => static function (): void {
         global $sinkholeStubInterfaceAddresses;
         global $sinkholeStubInterfaces;

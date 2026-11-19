@@ -24,7 +24,7 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 網路和設備比對與普通 Sinkhole 作用域一樣，使用這些介面的目前子網路。所選子網路以外的用戶端不會收到 Bypass DNS 回應。
 
-<img src={bypassProtection} alt="Bypass 分頁，其中已選取 LAN、已關閉普通 DNS 重定向、已啟用加密 DNS 和隧道保護、Discovery 設為 Answer with no records，並顯示一個示範豁免來源和豁免目的地以及三個示範 Bypass Lists" width={1024} height={1784} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Global 的 Bypass 分頁，其中已選取 LAN、已關閉普通 DNS 重定向、已選取三個示範 Bypass Lists、已啟用加密 DNS 和隧道保護、Discovery 設為 Answer with no records，並顯示一個示範豁免來源和豁免目的地" width={1024} height={1690} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 依網路和裝置設定保護 \{#set-protections-per-network-and-device}
 
@@ -36,19 +36,21 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 
 - **Apply to** 介面。
 - **Plain DNS** 重定向及其豁免。
-- Bypass List 來源、**Add from Catalog** 和列表更新。
 
-網路或裝置包含：
+網路或裝置還包含 **Enable**，用於開啟其保護功能。
 
-- **Enable**，用於開啟其保護功能。
-- **Bypass Lists**，即其使用的已啟用來源。
+Global 以及每個網路或裝置都包含：
+
+- **Bypass Lists**，即其使用的已啟用來源。來源在 [Lists → Bypass](/docs/configure/lists#add-bypass-lists) 中新增、啟用和更新。沒有任何已啟用來源時，該欄位改為顯示一行，並附上 **Open Lists** 連結。
 - 加密 DNS 設定、**Discovery**、隧道封鎖和 **Block Exemptions**。
 
-沒有自身設定的網路或裝置會在空白表單上方顯示一行，例如「此網路未單獨設定，將使用全域。」如果裝置所屬網路有自身設定，裝置會在此處註明該網路。儲存表單即可建立設定，**Remove settings for this network** 或 **Remove settings for this device** 會刪除設定，讓範圍更廣的設定重新生效。在 Clients 分頁上刪除網路或裝置也會刪除其設定。
+沒有自身設定的網路或裝置會在空白表單上方顯示一行，例如「此網路未單獨設定，將使用全域。」如果裝置所屬網路有自身設定且已開啟，裝置會在此處註明該網路。設定已關閉的網路或裝置則會改為顯示「已關閉，將使用全域。」，並註明同一個範圍更廣的設定。儲存表單即可建立設定，**Remove settings for this network** 或 **Remove settings for this device** 會刪除設定，讓範圍更廣的設定重新生效。在 Clients 分頁上刪除網路或裝置也會刪除其設定。
 
 **All** 列出 Global 以及每個有自身設定的網路和裝置，並顯示已開啟的保護功能。選取某列即可編輯。
 
 將 Sinkhole 升級到 1.3.0 時，現有設定會保留在 Global 中，並複製到每個網路和裝置。此後每份副本彼此獨立。只有當網路的介面，或裝置某個識別碼的介面，已在 **Apply to** 中選取時，該副本才會開啟；其他副本均以關閉狀態儲存，因此先前未被過濾的用戶端不會因此被過濾。
+
+Global 與每個網路和裝置一樣選擇自己的 Bypass Lists。將 Sinkhole 升級到 1.3.1 時，Global 的選擇會設為當時存在的所有 Bypass List，因此在您編輯之前不會有任何變化。之後新增的 Bypass List 在 Global、某個網路或某個裝置選取它之前，不會在任何地方使用。
 
 每個已開啟設定的網路或裝置都會在 `sinkhole/bypass` 錨點中取得自己的用戶端表。裝置的地址會從其網路的表和 Global 的表中移除，網路的子網路會從 Global 的表中移除，因此用戶端只會被其最具體的設定封鎖。Sinkhole 不會為此新增 pass 規則。
 
@@ -82,7 +84,7 @@ import bypassProtection from './_assets_/bypass-protection-1.png';
 各項加密 DNS 設定彼此獨立：
 
 - **TLS and QUIC** 封鎖傳送到防火牆以外任何目標的 TCP 和 UDP 端口 853。
-- **Providers** 封鎖種類為 **Encrypted DNS** 的已啟用 Bypass Lists 中的名稱和地址。
+- **Providers** 封鎖種類為 **Encrypted DNS** 且已選取、已啟用的 Bypass Lists 中的名稱和地址。
 - **Firefox** 對 `use-application-dns.net` 及其子網域傳回 `NXDOMAIN`，從而關閉 Firefox 自動選擇 DNS over HTTPS 的功能。
 - **Private Relay** 對 `mask.icloud.com` 和 `mask-h2.icloud.com` 傳回 `NXDOMAIN`，告知相容的 Apple 設備此網路不提供 Private Relay。
 
@@ -117,8 +119,8 @@ local-zone: "_dns.resolver.arpa." transparent
 
 ## 防範隧道 \{#protect-against-tunnels}
 
-- **Tor → Block listed Tor relays** 套用種類為 **Tor** 的已啟用 Bypass Lists。
-- **VPN → Block listed VPN providers** 套用種類為 **VPN** 的已啟用 Bypass Lists。
+- **Tor → Block listed Tor relays** 套用種類為 **Tor** 且已選取、已啟用的 Bypass Lists。
+- **VPN → Block listed VPN providers** 套用種類為 **VPN** 且已選取、已啟用的 Bypass Lists。
 - **VPN → Block standard VPN ports** 封鎖傳送到防火牆以外任何目標的 TCP 和 UDP `1194`、UDP `51820`、UDP `500` 和 `4500` 以及 ESP。
 
 Tor 和 VPN 列表中的名稱和地址使用與加密 DNS 供應商列表相同的 DNS 和防火牆行為。這些控制可以減少常見的替代路徑，但無法識別所有加密或自訂隧道。
@@ -136,21 +138,9 @@ Tor 和 VPN 列表中的名稱和地址使用與加密 DNS 供應商列表相同
 
 如果已儲存的封鎖豁免變為無效，例如別名被重新命名或刪除，Sinkhole 會保留所有封鎖且不套用任何豁免，寫入一筆系統記錄，並在 **Invalid Saved Values** 中顯示該值，直到它被修正或移除。
 
-## 從目錄新增 \{#add-from-catalog}
+## 管理 Bypass Lists \{#manage-bypass-lists}
 
-在 Bypass 分頁開啟 **Add from Catalog**，搜尋 AdGuard Home 清單登錄以及 pfBlockerNG 來源目錄的 DNS、IPv4 和 IPv6 區段。結果只包含繞過來源，種類固定為 **Encrypted DNS**、**Tor** 或 **VPN**。
-
-來源目錄只會在您開啟目錄或選取 **Refresh** 時擷取。新增結果會建立已啟用的 Bypass List；只有在其對應的 **Providers**、**Tor** 或 **VPN** 保護開啟時，它才會加入排程更新。
-
-每張卡片的 **Contents** 行顯示 **Domains**、**IPv4 addresses** 或 **IPv6 addresses**。新增 pfBlockerNG IPv4 或 IPv6 結果時，Sinkhole 會在儲存的名稱後附加 ` (IPv4)` 或 ` (IPv6)`；網域結果保留未加後綴的目錄名稱。
-
-## 新增 Bypass Lists \{#add-bypass-lists}
-
-選擇 **Bypass Lists** 下方的 **Add**，然後輸入本機名稱、種類以及 HTTP 或 HTTPS URL。新列在明確啟用之前保持停用。
-
-每個來源每行接受一個項目。列表可混合網域、IPv4 地址、IPv6 地址和 CIDR；`#` 後面的文字是註解。無效和過長的行會被略過。超過固定位元組數或已接受項目數限制的下載會被拒絕，並保留最後的有效副本。
-
-已啟用的 Bypass List 只有在其對應的 **Providers**、**Tor** 或 **VPN** 保護開啟時，才會使用與其他列表相同的受限下載用戶端，按照設定的列表排程更新。擷取失敗時會保留來自同一 URL 的最後有效儲存副本，**Status → Bypass Lists** 會報告每一列的項目數、上次擷取時間和最新錯誤。Sinkhole 不捆綁或推薦任何 Bypass List。
+Bypass List 來源在 [Lists → Bypass](/docs/configure/lists#add-bypass-lists) 中新增、編輯、啟用和刪除，該處也提供 **Add from Catalog**，並為每個列表顯示 **Used By** 計數。Bypass 分頁只選擇每個情境使用哪些已啟用的列表。已啟用的 Bypass List 只有在其對應的 **Providers**、**Tor** 或 **VPN** 保護開啟時，才會加入排程更新。
 
 ## 驗證活動狀態 \{#verify-the-active-state}
 

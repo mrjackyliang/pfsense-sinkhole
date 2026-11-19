@@ -17,12 +17,10 @@ declare(strict_types=1);
 use PfSense\Sinkhole\Domain\BypassConfiguration;
 use PfSense\Sinkhole\Domain\ListConfiguration;
 use PfSense\Sinkhole\Domain\ValidationException;
-use PfSense\Sinkhole\Runtime\Context;
 
 require_once('guiconfig.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
 require_once('/usr/local/pkg/sinkhole/BypassConfiguration.php');
-require_once('/usr/local/pkg/sinkhole/Context.php');
 require_once('/usr/local/pkg/sinkhole/ListConfiguration.php');
 
 /**
@@ -67,12 +65,6 @@ function sinkholeBypassEditorRedirectRecord(array $configuration): array
         'exempt_destinations' => $configuration['exempt_destinations'],
     ];
 }
-
-$scopeConfiguration = pfsensePackageSinkholeGetScopeConfiguration();
-$networks = $scopeConfiguration['networks'];
-$devices = $scopeConfiguration['devices'];
-
-Context::remember(Context::GLOBAL);
 
 $configuration = pfsensePackageSinkholeGetBypassConfiguration();
 $redirect = pfsensePackageSinkholeGetRedirectConfiguration();
@@ -177,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_bypass_list'])) 
             ),
             sinkholeBypassEditorRedirectRecord($redirect),
         );
-        header('Location: sinkhole-bypass.php?context=global&saved=1');
+        header('Location: sinkhole-lists.php?kind=bypass&saved=1');
         exit;
     } catch (Throwable $throwable) {
         $actionMessage = pfsensePackageSinkholeThrowableMessage($throwable);
@@ -200,13 +192,13 @@ $isEditing = $isEditMode;
 $pgtitle = [
     gettext('Firewall'),
     'Sinkhole',
-    pfsensePackageSinkholeTranslate('bypass'),
+    pfsensePackageSinkholeTranslate('lists'),
     $isEditing ? pfsensePackageSinkholeTranslate('edit') : pfsensePackageSinkholeTranslate('add'),
 ];
 $pglinks = [
     '',
     '/pkg_edit.php?xml=sinkhole.xml&id=0',
-    '/sinkhole-bypass.php?context=global',
+    '/sinkhole-lists.php?kind=bypass',
     '@self',
 ];
 
@@ -216,9 +208,7 @@ if (is_string($actionMessage)) {
     print_info_box(htmlspecialchars($actionMessage), $actionClass, false);
 }
 
-display_top_tabs(pfsensePackageSinkholeTabs('bypass'));
-
-print(Context::renderRow('sinkhole-bypass.php', Context::GLOBAL, $networks, $devices, true));
+display_top_tabs(pfsensePackageSinkholeTabs('lists'));
 
 $button = new Form_Button(
     'save_bypass_list',

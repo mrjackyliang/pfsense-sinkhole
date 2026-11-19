@@ -35,9 +35,9 @@ Blokker valgte IP-kilder eller -mål uavhengig av DNS-policyen med pakkestyrte t
 | Inbound     | Blokkerer pakker som kommer fra en oppført kildeadresse, vanligvis på et WAN.       |
 | Outbound    | Blokkerer pakker som kommer mot en oppført måladresse, vanligvis på klientnettverk. |
 
-Ankeret inneholder `block drop in quick`-regler og ingen pass-regler. Sinkhole refererer til det gjennom den tidlige posisjonen for pakkeregler i pfSense, slik at blokkeringene kjører før vanlige pass-quick-regler. I **Global** viser siden panelene for IP-lister og katalog først, etterfulgt av innstillingene for IP og land med **Save** under panelet.
+Ankeret inneholder `block drop in quick`-regler og ingen pass-regler. Sinkhole refererer til det gjennom den tidlige posisjonen for pakkeregler i pfSense, slik at blokkeringene kjører før vanlige pass-quick-regler. I **Global** viser siden innstillingene for IP og land med **Save** under panelet.
 
-<img src={ipTab} alt="Fanen IP viser to IP-demolister med knappene for å legge til og legge til fra katalog, og IP- og landblokkering slått på for LAN i begge retninger" width={1024} height={1651} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Fanen IP for Global med IP- og landblokkering slått på for LAN i begge retninger og to IP-demolister valgt" width={1024} height={1464} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Angi blokkering per nettverk og enhet \{#set-blocking-per-network-and-device}
 
@@ -49,31 +49,22 @@ Bare **Global** har:
 
 - **Interfaces**, der blokkeringen i Global gjelder.
 - **MaxMind Account ID** og **MaxMind License Key**.
-- Kilder for IP-lister, **Add from Catalog** og listeoppdateringer.
 
-Global og hvert nettverk eller hver enhet har **Enable**, **Directions**, **IP Lists** (kildene som brukes der), **Countries** og **IP Allowlist**. For et nettverk eller en enhet hindrer **Outbound** klientene i å nå et oppført mål, og **Inbound** hindrer en oppført kilde i å nå klientene. Land i et nettverk eller en enhet bruker MaxMind-kontoen i Global.
+Global og hvert nettverk eller hver enhet har **Enable**, **Directions**, **IP Lists** (de aktiverte kildene som brukes der), **Countries** og **IP Allowlist**. Kilder for IP-lister legges til, aktiveres og oppdateres på [Lists → IP](/docs/configure/lists#add-ip-lists); uten noen aktivert kilde viser **IP Lists** i stedet én linje med en **Open Lists**-lenke. For et nettverk eller en enhet hindrer **Outbound** klientene i å nå et oppført mål, og **Inbound** hindrer en oppført kilde i å nå klientene. Land i et nettverk eller en enhet bruker MaxMind-kontoen i Global.
 
-Et nettverk eller en enhet uten egne innstillinger viser én linje, for eksempel "Ikke angitt for dette nettverket; Global gjelder.", over et tomt skjema. En enhet oppgir nettverket sitt der når det nettverket har egne innstillinger. Når du lagrer skjemaet, opprettes innstillingene, og **Remove settings for this network** eller **Remove settings for this device** sletter dem, slik at de bredere innstillingene gjelder igjen. Sletter du et nettverk eller en enhet på fanen Clients, slettes også innstillingene.
+Et nettverk eller en enhet uten egne innstillinger viser én linje, for eksempel "Ikke angitt for dette nettverket; Global gjelder.", over et tomt skjema. En enhet oppgir nettverket sitt der når det nettverket har egne innstillinger som er slått på. Et nettverk eller en enhet med avslåtte innstillinger viser i stedet "Slått av; Global gjelder.", med de samme bredere innstillingene. Når du lagrer skjemaet, opprettes innstillingene, og **Remove settings for this network** eller **Remove settings for this device** sletter dem, slik at de bredere innstillingene gjelder igjen. Sletter du et nettverk eller en enhet på fanen Clients, slettes også innstillingene.
 
 **All** viser Global og hvert nettverk og hver enhet med egne innstillinger, sammen med retninger, land og antall IP-lister. Velg en rad for å redigere den.
 
 Når Sinkhole oppgraderes til 1.3.0, blir de eksisterende innstillingene værende i Global og kopieres til hvert nettverk og hver enhet. Fra da av er hver kopi uavhengig. En kopi slås bare på når nettverkets grensesnitt, eller et grensesnitt for en av enhetens identifikatorer, var valgt under **Interfaces**. Alle andre kopier lagres avslått, slik at ingen klient blokkeres som ikke ble blokkert før.
 
+Global velger sine IP-lister på samme måte som hvert nettverk og hver enhet. Når Sinkhole oppgraderes til 1.3.1, beholder en Global som aldri har lagret sitt eget utvalg, alle IP-lister som var aktivert på det tidspunktet, så ingenting endres før du redigerer det. En IP-liste som legges til senere, brukes ingen steder før Global, et nettverk eller en enhet velger den.
+
 Hvert nettverk og hver enhet med påslåtte innstillinger får sin egen klienttabell i ankeret `sinkhole/ip`. En enhets adresser fjernes fra nettverkets tabell og fra tabellen i Global, og et nettverks delnett fjernes fra tabellen i Global, slik at en klient bare blokkeres av de mest spesifikke innstillingene.
 
-## Legg til IP-lister \{#add-ip-lists}
+## Administrer IP-lister \{#manage-ip-lists}
 
-Velg **Add** under tabellen IP Lists for å åpne redigeringsprogrammet for IP-lister. En rad bruker en HTTP- eller HTTPS-URL, velger IPv4, IPv6 eller begge familier og styrer om kilden er aktivert. Når du lagrer, går du tilbake til fanen IP. Velg blyanten eller dobbeltklikk en rad for å redigere den.
-
-Lister kan også finnes i IP-delene av feedkatalogen til pfBlockerNG.
-
-Gyldige linjer er enkeltstående IPv4- eller IPv6-adresser og CIDR-nettverk. Ugyldige linjer hoppes over og telles. En nedlasting uten en gyldig oppføring erstatter ikke den siste gyldige lagrede kopien.
-
-Katalogen lastes bare ned når søket åpnes eller oppdateres, og bruker samme éndagsbuffer med siste gyldige kopi som DNS-katalogsøket. Når du legger til et resultat, opprettes en vanlig IP-listerad uten vurdering eller anbefaling.
-
-Omgåelsesfeeder for Encrypted DNS, Tor og VPN er utelatt fra IP-katalogen og vises bare på Bypass-fanen.
-
-Linjen **Contents** på hvert kort viser **IPv4 addresses** eller **IPv6 addresses**. Når du legger til et pfBlockerNG-resultat, legger Sinkhole til ` (IPv4)` eller ` (IPv6)` i det lagrede navnet og forkorter bare grunnnavnet når det er nødvendig.
+Kilder for IP-lister legges til, redigeres, aktiveres og slettes på [Lists → IP](/docs/configure/lists#add-ip-lists), som også har **Add from Catalog** og et **Used By**-antall for hver liste. IP-fanen velger bare hvilke aktiverte lister hver kontekst bruker. IPv4-nettverk som er bredere enn `/8`, og IPv6-nettverk som er bredere enn `/16`, hoppes over i IP-lister; disse prefiksgrensene gjelder ikke for IP Allowlist, fordi oppføringer i tillatelseslisten bare reduserer blokkering.
 
 ## Legg til land \{#add-countries}
 

@@ -17,11 +17,9 @@ declare(strict_types=1);
 use PfSense\Sinkhole\Domain\IpConfiguration;
 use PfSense\Sinkhole\Domain\ListConfiguration;
 use PfSense\Sinkhole\Domain\ValidationException;
-use PfSense\Sinkhole\Runtime\Context;
 
 require_once('guiconfig.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
-require_once('/usr/local/pkg/sinkhole/Context.php');
 require_once('/usr/local/pkg/sinkhole/IpConfiguration.php');
 require_once('/usr/local/pkg/sinkhole/ListConfiguration.php');
 
@@ -89,12 +87,6 @@ function sinkholeIpEditorStoreLists(
         'allowlist' => ['item' => array_values($configuration['stored_allowlist'])],
     ]);
 }
-
-$scopeConfiguration = pfsensePackageSinkholeGetScopeConfiguration();
-$networks = $scopeConfiguration['networks'];
-$devices = $scopeConfiguration['devices'];
-
-Context::remember(Context::GLOBAL);
 
 $configuration = pfsensePackageSinkholeGetIpConfiguration();
 $lists = $configuration['lists'];
@@ -198,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_ip_list'])) {
         }
 
         sinkholeIpEditorStoreLists($configuration, $lists, $invalidRows);
-        header('Location: sinkhole-ip.php?context=global&saved=1');
+        header('Location: sinkhole-lists.php?kind=ip&saved=1');
         exit;
     } catch (Throwable $throwable) {
         $actionMessage = pfsensePackageSinkholeThrowableMessage($throwable);
@@ -221,24 +213,22 @@ $isEditing = $isEditMode;
 $pgtitle = [
     gettext('Firewall'),
     'Sinkhole',
-    pfsensePackageSinkholeTranslate('ip'),
+    pfsensePackageSinkholeTranslate('lists'),
     $isEditing ? pfsensePackageSinkholeTranslate('edit') : pfsensePackageSinkholeTranslate('add'),
 ];
 $pglinks = [
     '',
     '/pkg_edit.php?xml=sinkhole.xml&id=0',
-    '/sinkhole-ip.php?context=global',
+    '/sinkhole-lists.php?kind=ip',
     '@self',
 ];
 
 include('head.inc');
-display_top_tabs(pfsensePackageSinkholeTabs('ip'));
+display_top_tabs(pfsensePackageSinkholeTabs('lists'));
 
 if (is_string($actionMessage)) {
     print_info_box(htmlspecialchars($actionMessage), $actionClass, false);
 }
-
-print(Context::renderRow('sinkhole-ip.php', Context::GLOBAL, $networks, $devices, true));
 
 $button = new Form_Button(
     'save_ip_list',

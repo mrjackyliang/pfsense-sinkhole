@@ -63,6 +63,8 @@ Elke nieuwe versie die door een geplande controle wordt gevonden, maakt één lo
 
 Bypass-feeds zijn uitgesloten van deze catalogus.
 
+Lists wisselt tussen de soorten **DNS**, **Bypass** en **IP**. De tabel hierboven is de soort DNS; [Bypass Lists](#bypass-lists) en [IP-lijstrijen](#ip-and-country-blocking) worden daar ook beheerd, en de tabel van elke soort heeft een telling **Used By** van Global plus elk netwerk en apparaat dat de lijst selecteert.
+
 ## Blocking \{#blocking}
 
 Elke context (Global, één netwerk of één apparaat) heeft zijn eigen twee velden:
@@ -122,13 +124,14 @@ Het proces per minuut verzendt maximaal 20 berichten per uitvoering en 60 berich
 | Redirect                               | Off       | Stuurt gewoon UDP- en TCP-poort 53-verkeer op geselecteerde interfaces naar de firewall.                          |
 | Exempt Sources                         | Empty     | Eén IPv4- of IPv6-adres, CIDR-netwerk of bestaande host-/netwerkalias per regel die gewone DNS-omleiding omzeilt. |
 | Exempt Destinations                    | Empty     | Eén IP-bestemmingsadres, CIDR of alias per regel die gewone DNS-omleiding omzeilt.                                |
+| Bypass Lists                           | Empty     | Ingeschakelde Bypass Lists die deze context gebruikt; de bronnen zelf worden op Lists beheerd.                    |
 | TLS and QUIC                           | Off       | Blokkeert TCP- en UDP-poort 853 naar andere bestemmingen dan de firewall.                                         |
-| Providers                              | Off       | Blokkeert namen en adressen uit ingeschakelde **Encrypted DNS** Bypass Lists.                                     |
+| Providers                              | Off       | Blokkeert namen en adressen uit de geselecteerde **Encrypted DNS** Bypass Lists.                                  |
 | Firefox                                | Off       | Geeft `NXDOMAIN` terug voor Firefox' canarynaam voor automatische DNS-over-HTTPS en de subdomeinen ervan.         |
 | Private Relay                          | Off       | Geeft `NXDOMAIN` terug voor de twee beschikbaarheidsnamen van Apple Private Relay.                                |
 | Discovery                              | Off       | Laat DDR ongemoeid, adverteert DNS over TLS van de firewall of antwoordt `NOERROR` zonder records.                |
-| Tor                                    | Off       | Blokkeert namen en adressen uit ingeschakelde **Tor** Bypass Lists.                                               |
-| VPN (Block listed VPN providers)       | Off       | Blokkeert namen en adressen uit ingeschakelde **VPN** Bypass Lists.                                               |
+| Tor                                    | Off       | Blokkeert namen en adressen uit de geselecteerde **Tor** Bypass Lists.                                            |
+| VPN (Block listed VPN providers)       | Off       | Blokkeert namen en adressen uit de geselecteerde **VPN** Bypass Lists.                                            |
 | VPN (Block standard VPN ports)         | Off       | Blokkeert OpenVPN-, WireGuard- en IPsec-UDP-poorten en ESP naar andere bestemmingen dan de firewall.              |
 | Block Exemptions → Exempt Sources      | Empty     | Eén IP-adres, CIDR of alias per regel waarvan het verkeer elke Bypass-firewallblokkade overslaat.                 |
 | Block Exemptions → Exempt Destinations | Empty     | Eén bestemmings-IP-adres, CIDR of alias per regel dat geen enkele Bypass-firewallblokkade tegenhoudt.             |
@@ -139,9 +142,11 @@ Blokkeringsuitzonderingen voegen geen pass-regel toe, dus uitgezonderd verkeer p
 
 ### Bypass Lists \{#bypass-lists}
 
+Rijen van Bypass Lists worden beheerd op **Lists → Bypass**.
+
 | Veld    | Standaard     | Beschrijving                                                                                        |
 |---------|---------------|-----------------------------------------------------------------------------------------------------|
-| Name    | Empty         | Lokaal label dat op Bypass en Status wordt weergegeven.                                             |
+| Name    | Empty         | Lokaal label dat op Lists, Bypass en Status wordt weergegeven.                                      |
 | Kind    | Encrypted DNS | Selecteert het beleid **Encrypted DNS**, **Tor** of **VPN**.                                        |
 | URL     | Empty         | HTTP- of HTTPS-bron met een combinatie van domeinen, adressen en CIDR's.                            |
 | Enabled | Off           | Neemt de opgeslagen lijst op in geplande ophaalacties en de bijbehorende ingeschakelde beveiliging. |
@@ -163,7 +168,7 @@ Invoer voor een Bypass List gebruikt één vermelding per regel en `#`-opmerking
 | Clear License Key   | Off       | Verwijdert de opgeslagen MaxMind-sleutel wanneer de instellingen worden opgeslagen.                                                          |
 | IP Allowlist        | Empty     | Eén IPv4- of IPv6-adres, CIDR-netwerk of bestaande host-/netwerkalias per regel dat van de uiteindelijke blokkeertabellen wordt afgetrokken. |
 
-Elke IP-lijstrij heeft een naam, URL, selectie voor IPv4/IPv6/Both en een schakelaar Enabled. Sinkhole verwijdert ook firewallinterface-, gateway- en DNS-adressen uit de uiteindelijke tabellen, zodat de eigen regels geen beschermde infrastructuur blokkeren.
+Elke IP-lijstrij heeft een naam, URL, selectie voor IPv4/IPv6/Both en een schakelaar Enabled, en wordt beheerd op **Lists → IP**. Het veld **IP Lists** van elke context kiest de ingeschakelde IP-lijsten die het gebruikt. Sinkhole verwijdert ook firewallinterface-, gateway- en DNS-adressen uit de uiteindelijke tabellen, zodat de eigen regels geen beschermde infrastructuur blokkeren.
 
 De IP-catalogus sluit alle feeds voor Encrypted DNS, Tor en VPN uit die bij de Bypass-catalogus horen.
 

@@ -63,6 +63,8 @@ Jede durch eine geplante Prüfung gefundene neue Version erzeugt einen lokalen p
 
 Bypass-Feeds sind aus diesem Katalog ausgeschlossen.
 
+Lists wechselt zwischen den Arten **DNS**, **Bypass** und **IP**. Die Tabelle oben ist die Art DNS; [Bypass Lists](#bypass-lists) und [IP-Listeneinträge](#ip-and-country-blocking) werden ebenfalls dort verwaltet, und die Tabelle jeder Art hat eine Anzahl unter **Used By** für Global sowie jedes Netzwerk und Gerät, das die Liste auswählt.
+
 ## Blocking \{#blocking}
 
 Jeder Kontext (Global, ein Netzwerk oder ein Gerät) hat zwei eigene Felder:
@@ -122,13 +124,14 @@ Der Minutenprozessor sendet höchstens 20 Nachrichten pro Lauf und 60 Nachrichte
 | Redirect                               | Off      | Leitet gewöhnlichen UDP- und TCP-Port-53-Verkehr auf ausgewählten Schnittstellen an die Firewall.                                        |
 | Exempt Sources                         | Empty    | Eine IPv4- oder IPv6-Adresse, ein CIDR-Netzwerk oder ein vorhandener Host-/Netzwerk-Alias pro Zeile, der die Plain-DNS-Umleitung umgeht. |
 | Exempt Destinations                    | Empty    | Eine Ziel-IP-Adresse, ein CIDR oder ein Alias pro Zeile, der die Plain-DNS-Umleitung umgeht.                                             |
+| Bypass Lists                           | Empty    | Aktivierte Bypass Lists, die dieser Kontext verwendet; die Quellen selbst werden unter Lists verwaltet.                                  |
 | TLS and QUIC                           | Off      | Blockiert TCP- und UDP-Port 853 zu anderen Zielen als der Firewall.                                                                      |
-| Providers                              | Off      | Blockiert Namen und Adressen aus aktivierten Bypass Lists des Typs **Encrypted DNS**.                                                    |
+| Providers                              | Off      | Blockiert Namen und Adressen aus den ausgewählten Bypass Lists des Typs **Encrypted DNS**.                                               |
 | Firefox                                | Off      | Gibt `NXDOMAIN` für Firefox' Canary-Namen für automatisches DNS-over-HTTPS und dessen Subdomains zurück.                                 |
 | Private Relay                          | Off      | Gibt `NXDOMAIN` für Apples zwei Verfügbarkeitsnamen von Private Relay zurück.                                                            |
 | Discovery                              | Off      | Lässt DDR unverändert, kündigt DNS over TLS der Firewall an oder antwortet mit `NOERROR` ohne Einträge.                                  |
-| Tor                                    | Off      | Blockiert Namen und Adressen aus aktivierten Bypass Lists des Typs **Tor**.                                                              |
-| VPN (Block listed VPN providers)       | Off      | Blockiert Namen und Adressen aus aktivierten Bypass Lists des Typs **VPN**.                                                              |
+| Tor                                    | Off      | Blockiert Namen und Adressen aus den ausgewählten Bypass Lists des Typs **Tor**.                                                         |
+| VPN (Block listed VPN providers)       | Off      | Blockiert Namen und Adressen aus den ausgewählten Bypass Lists des Typs **VPN**.                                                         |
 | VPN (Block standard VPN ports)         | Off      | Blockiert OpenVPN-, WireGuard- und IPsec-UDP-Ports sowie ESP zu anderen Zielen als der Firewall.                                         |
 | Block Exemptions → Exempt Sources      | Empty    | Eine IP-Adresse, ein CIDR oder ein Alias pro Zeile, dessen Verkehr jede Bypass-Firewall-Sperre umgeht.                                   |
 | Block Exemptions → Exempt Destinations | Empty    | Eine Ziel-IP-Adresse, ein CIDR oder ein Alias pro Zeile, den keine Bypass-Firewall-Sperre aufhält.                                       |
@@ -139,9 +142,11 @@ Sperr-Ausnahmen fügen keine Pass-Regel hinzu, daher durchläuft ausgenommener V
 
 ### Bypass Lists \{#bypass-lists}
 
+Bypass-List-Einträge werden unter **Lists → Bypass** verwaltet.
+
 | Feld    | Standard      | Beschreibung                                                                              |
 |---------|---------------|-------------------------------------------------------------------------------------------|
-| Name    | Empty         | Lokale Bezeichnung, die auf Bypass und Status angezeigt wird.                             |
+| Name    | Empty         | Lokale Bezeichnung, die auf Lists, Bypass und Status angezeigt wird.                      |
 | Kind    | Encrypted DNS | Wählt die Richtlinie **Encrypted DNS**, **Tor** oder **VPN**.                             |
 | URL     | Empty         | HTTP- oder HTTPS-Quelle mit gemischten Domains, Adressen und CIDRs.                       |
 | Enabled | Off           | Nimmt die gespeicherte Liste in geplante Abrufe und den passenden aktivierten Schutz auf. |
@@ -163,7 +168,7 @@ Die Eingabe für eine Bypass List verwendet einen Eintrag pro Zeile und `#`-Komm
 | Clear License Key   | Off      | Löscht den gespeicherten MaxMind-Schlüssel beim Speichern.                                                                                                   |
 | IP Allowlist        | Empty    | Eine IPv4- oder IPv6-Adresse, ein CIDR-Netzwerk oder ein vorhandener Host-/Netzwerk-Alias pro Zeile, die von den endgültigen Blocktabellen abgezogen werden. |
 
-Jeder IP-Listeneintrag besitzt einen Namen, eine URL, die Familienauswahl IPv4/IPv6/Both und den Schalter Enabled. Sinkhole entfernt außerdem Firewall-Schnittstellen-, Gateway- und DNS-Adressen aus den endgültigen Tabellen, damit die eigenen Regeln keine geschützte Infrastruktur blockieren.
+Jeder IP-Listeneintrag besitzt einen Namen, eine URL, die Familienauswahl IPv4/IPv6/Both und den Schalter Enabled und wird unter **Lists → IP** verwaltet. Das Feld **IP Lists** jedes Kontexts wählt die aktivierten IP-Listen, die er verwendet. Sinkhole entfernt außerdem Firewall-Schnittstellen-, Gateway- und DNS-Adressen aus den endgültigen Tabellen, damit die eigenen Regeln keine geschützte Infrastruktur blockieren.
 
 Der IP-Katalog schließt jeden Feed für Encrypted DNS, Tor und VPN aus, der zum Bypass-Katalog gehört.
 

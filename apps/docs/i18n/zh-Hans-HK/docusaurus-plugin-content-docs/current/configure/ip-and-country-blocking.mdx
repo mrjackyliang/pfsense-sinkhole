@@ -35,9 +35,9 @@ import ipTab from './_assets_/ip-and-country-blocking-1.png';
 | Inbound    | 阻止来自所列源地址的数据包，通常用于 WAN。   |
 | Outbound   | 阻止发往所列目标地址的数据包，通常用于客户端网络。 |
 
-锚点包含 `block drop in quick` 规则，不包含 pass 规则。Sinkhole 通过 pfSense 的早期软件包规则位置引用它，让阻止在普通 pass-quick 规则前执行。在 **Global** 中，该页面先显示 IP 列表和目录面板，再显示 IP 和国家/地区设置，并在面板下方提供 **Save**。
+锚点包含 `block drop in quick` 规则，不包含 pass 规则。Sinkhole 通过 pfSense 的早期软件包规则位置引用它，让阻止在普通 pass-quick 规则前执行。在 **Global** 中，该页面显示 IP 和国家/地区设置，并在面板下方提供 **Save**。
 
-<img src={ipTab} alt="IP 选项卡显示两个演示 IP 列表、添加和从目录添加按钮，以及在 LAN 上双向启用的 IP 和国家阻止" width={1024} height={1644} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={ipTab} alt="Global 的 IP 选项卡，在 LAN 上双向启用 IP 和国家阻止，并选择了两个演示 IP 列表" width={1024} height={1456} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## 按网络和设备设置阻止 \{#set-blocking-per-network-and-device}
 
@@ -49,31 +49,22 @@ import ipTab from './_assets_/ip-and-country-blocking-1.png';
 
 - **Interfaces**，即 Global 的阻止生效的位置。
 - **MaxMind Account ID** 和 **MaxMind License Key**。
-- IP 列表来源、**Add from Catalog** 和列表更新。
 
-Global 以及每个网络或设备都包含 **Enable**、**Directions**、**IP Lists**（在该处使用的来源）、**Countries** 和 **IP Allowlist**。对于网络或设备，**Outbound** 阻止其客户端访问所列目标，**Inbound** 阻止所列来源访问其客户端。网络或设备中的国家/地区使用 Global 的 MaxMind 账户。
+Global 以及每个网络或设备都包含 **Enable**、**Directions**、**IP Lists**（在该处使用的已启用来源）、**Countries** 和 **IP Allowlist**。IP 列表来源在 [Lists → IP](/docs/configure/lists#add-ip-lists) 中添加、启用和更新；没有已启用的来源时，**IP Lists** 会改为显示一行带有 **Open Lists** 链接的文字。对于网络或设备，**Outbound** 阻止其客户端访问所列目标，**Inbound** 阻止所列来源访问其客户端。网络或设备中的国家/地区使用 Global 的 MaxMind 账户。
 
-没有自身设置的网络或设备会在空白表单上方显示一行，例如“此网络未单独设置，将使用全局。”如果设备所属网络有自身设置，设备会在此处注明该网络。保存表单即可创建设置，**Remove settings for this network** 或 **Remove settings for this device** 会删除设置，让更宽泛的设置重新生效。在 Clients 选项卡上删除网络或设备也会删除其设置。
+没有自身设置的网络或设备会在空白表单上方显示一行，例如“此网络未单独设置，将使用全局。”如果设备所属网络有自身设置且已开启，设备会在此处注明该网络。设置已关闭的网络或设备则会改为显示“已关闭，将使用全局。”，并注明同样的更宽泛设置。保存表单即可创建设置，**Remove settings for this network** 或 **Remove settings for this device** 会删除设置，让更宽泛的设置重新生效。在 Clients 选项卡上删除网络或设备也会删除其设置。
 
 **All** 列出 Global 以及每个有自身设置的网络和设备，并显示其方向、国家/地区和 IP 列表数量。选择某行即可编辑。
 
 将 Sinkhole 升级到 1.3.0 时，现有设置会保留在 Global 中，并复制到每个网络和设备。此后每份副本相互独立。只有当网络的接口，或设备某个标识符的接口，已在 **Interfaces** 中选中时，该副本才会开启；其他副本均以关闭状态保存，因此之前未被阻止的客户端不会因此被阻止。
 
+Global 与每个网络和设备一样选择自己的 IP 列表。将 Sinkhole 升级到 1.3.1 时，从未保存过自己选择的 Global 会保留当时已启用的所有 IP 列表，因此在您编辑之前不会有任何变化。之后添加的 IP 列表在 Global、某个网络或某台设备选择它之前不会在任何地方使用。
+
 每个已开启设置的网络或设备都会在 `sinkhole/ip` 锚点中获得自己的客户端表。设备的地址会从其网络的表和 Global 的表中移除，网络的子网会从 Global 的表中移除，因此客户端只会被其最具体的设置阻止。
 
-## 添加 IP 列表 \{#add-ip-lists}
+## 管理 IP 列表 \{#manage-ip-lists}
 
-选择 IP Lists 表格下方的 **Add** 以打开 IP 列表编辑器。每行使用 HTTP 或 HTTPS URL，选择 IPv4、IPv6 或两个地址族，并控制是否启用来源。保存后会返回 IP 选项卡；选择铅笔图标或双击某行即可编辑。
-
-也可以通过 pfBlockerNG 源目录的 IP 部分查找列表。
-
-有效行是单个 IPv4 或 IPv6 地址以及 CIDR 网络。无效行会被跳过并计数；没有有效条目的下载不会替换最后一份有效副本。
-
-目录仅在其搜索打开或刷新时下载，并使用与 DNS 目录搜索相同的一天最后有效缓存。添加结果会创建普通 IP 列表行，不提供评分或推荐。
-
-Encrypted DNS、Tor 和 VPN 绕过订阅源会从 IP 目录中排除，并且只显示在 Bypass 标签页。
-
-每张卡片的 **Contents** 行显示 **IPv4 addresses** 或 **IPv6 addresses**。添加 pfBlockerNG 结果时，Sinkhole 会在保存的名称后附加 ` (IPv4)` 或 ` (IPv6)`，并在必要时仅截短基础名称。
+IP 列表来源在 [Lists → IP](/docs/configure/lists#add-ip-lists) 中添加、编辑、启用和删除，该处还提供 **Add from Catalog** 以及每个列表的 **Used By** 计数。IP 选项卡只选择每个上下文使用哪些已启用列表。IP 列表中比 IPv4 `/8` 或 IPv6 `/16` 更宽的网络会被跳过；这些前缀限制不适用于 IP Allowlist，因为允许列表条目只会缩小阻止范围。
 
 ## 添加国家/地区 \{#add-countries}
 

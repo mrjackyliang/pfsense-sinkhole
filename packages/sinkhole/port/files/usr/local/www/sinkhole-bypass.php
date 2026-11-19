@@ -15,68 +15,15 @@ declare(strict_types=1);
 ##|-PRIV
 
 use PfSense\Sinkhole\Domain\BypassConfiguration;
-use PfSense\Sinkhole\Domain\Catalog;
 use PfSense\Sinkhole\Domain\RedirectConfiguration;
 use PfSense\Sinkhole\Domain\ValidationException;
-use PfSense\Sinkhole\Runtime\BypassListStore;
-use PfSense\Sinkhole\Runtime\CatalogCache;
 use PfSense\Sinkhole\Runtime\Context;
-use PfSense\Sinkhole\Runtime\CurlDownloadClient;
-use PfSense\Sinkhole\Web\CatalogPresentation;
 
 require_once('guiconfig.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
 require_once('/usr/local/pkg/sinkhole/BypassConfiguration.php');
-require_once('/usr/local/pkg/sinkhole/BypassListStore.php');
-require_once('/usr/local/pkg/sinkhole/Catalog.php');
-require_once('/usr/local/pkg/sinkhole/CatalogCache.php');
-require_once('/usr/local/pkg/sinkhole/CatalogPresentation.php');
 require_once('/usr/local/pkg/sinkhole/Context.php');
-require_once('/usr/local/pkg/sinkhole/CurlDownloadClient.php');
 require_once('/usr/local/pkg/sinkhole/RedirectConfiguration.php');
-
-/**
- * Sinkhole Bypass - Require Repair.
- *
- * @param array $bypass - Partitioned Bypass configuration.
- * @param array $redirect - Partitioned redirect configuration.
- *
- * @return void
- *
- * @since 1.0.0
- * @since 1.2.0
- */
-function sinkholeBypassRequireRepair(array $bypass, array $redirect): void
-{
-    $invalidValues = array_merge(
-        $redirect['invalid_values'],
-        $redirect['invalid_exemptions'],
-        $bypass['invalid_values'],
-        $bypass['invalid_exemptions'],
-    );
-
-    if ($invalidValues === []) {
-        return;
-    }
-
-    $invalid = $invalidValues[0];
-
-    throw new ValidationException(
-        $invalid['reason_key'],
-        $invalid['reason_arguments'] ?? [],
-    );
-}
-
-/** @since 1.0.0 */
-function sinkholeBypassRedirectRecord(array $configuration): array
-{
-    return [
-        'enabled' => $configuration['enabled'],
-        'interfaces' => $configuration['interfaces'],
-        'exempt_sources' => $configuration['exempt_sources'],
-        'exempt_destinations' => $configuration['exempt_destinations'],
-    ];
-}
 
 /**
  * Sinkhole Bypass - Context Rows.
@@ -142,37 +89,6 @@ function sinkholeBypassPersist(): void
     write_config(pfsensePackageSinkholeTranslate('revision_saved_bypass'));
     pfsensePackageSinkholeInstallCron();
     pfsensePackageSinkholeAdapter()->runApplyInBackground();
-}
-
-/**
- * Sinkhole Bypass - Store Lists.
- *
- * Bypass List sources are package-wide and live in the Global section, which
- * the existing Bypass save keeps together with its migration marker.
- *
- * @param array $configuration - Partitioned Global Bypass configuration.
- * @param array $redirect - Partitioned redirect configuration.
- * @param array<string, array> $lists - Valid Bypass Lists.
- * @param list<array> $invalidRows - Malformed rows retained for repair.
- *
- * @return void
- *
- * @since 1.3.0
- */
-function sinkholeBypassStoreLists(
-    array $configuration,
-    array $redirect,
-    array $lists,
-    array $invalidRows,
-): void {
-    pfsensePackageSinkholeSaveBypass(
-        pfsensePackageSinkholeBypassStorage(
-            $configuration,
-            $lists,
-            $invalidRows,
-        ),
-        sinkholeBypassRedirectRecord($redirect),
-    );
 }
 
 /**
@@ -377,28 +293,7 @@ $displayBlockExemptDestinations = $displaySettings['stored_exempt_destinations']
     ?? $displaySettings['exempt_destinations']
     ?? [];
 $displaySettings['enabled'] = $displaySettings['stored_enabled'] ?? $displaySettings['enabled'] ?? false;
-$displayListSelection = ($isGlobal)
-    ? []
-    : sinkholeBypassListSelection($displaySettings['selected_lists'] ?? []);
-$catalogOpen = $isGlobal && (
-    (string) ($_GET['catalog'] ?? '') === '1'
-    || isset($_POST['refresh_catalog'])
-    || isset($_POST['add_catalog_list'])
-);
-$catalogQuery = Catalog::normalizeSearchQuery((string) (
-    $_POST['catalog_query'] ?? $_GET['catalog_query'] ?? ''
-));
-$catalogSource = Catalog::normalizeSourceFilter((string) (
-    $_POST['catalog_source'] ?? $_GET['catalog_source'] ?? ''
-));
-$catalogMaintainer = Catalog::normalizeMaintainerFilter((string) (
-    $_POST['catalog_maintainer'] ?? $_GET['catalog_maintainer'] ?? ''
-));
-$catalogKind = Catalog::normalizeBypassKindFilter((string) (
-    $_POST['catalog_kind'] ?? $_GET['catalog_kind'] ?? ''
-));
-$catalogCache = new CatalogCache($adapter->packagePaths(), new CurlDownloadClient());
-$catalogLoad = null;
+$displayListSelection = sinkholeBypassListSelection($displaySettings['selected_lists'] ?? []);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAll === false) {
     try {
@@ -500,73 +395,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAll === false) {
                 $actionMessage = pfsensePackageSinkholeTranslate('bypass_saved_applying');
                 $actionClass = 'success';
             }
-        } elseif (
-            $isGlobal
-            && (isset($_POST['toggle_bypass_list']) || isset($_POST['delete_bypass_list']))
-        ) {
-            sinkholeBypassRequireRepair($configuration, $redirect);
-            $identifier = (string) ($_POST['list_id'] ?? '');
-
-            if (!isset($lists[$identifier])) {
-                throw new ValidationException('bypass_list_missing');
-            }
-
-            if (isset($_POST['delete_bypass_list'])) {
-                unset($lists[$identifier]);
-            } else {
-                $lists[$identifier]['enabled'] = !$lists[$identifier]['enabled'];
-            }
-
-            sinkholeBypassStoreLists($configuration, $redirect, $lists, $invalidRows);
-
-            $actionMessage = pfsensePackageSinkholeTranslate('bypass_saved_applying');
-            $actionClass = 'success';
-        } elseif ($isGlobal && isset($_POST['delete_invalid_bypass_list'])) {
-            sinkholeBypassRequireRepair(
-                array_replace($configuration, ['invalid_lists' => []]),
-                $redirect,
-            );
-            $position = (int) ($_POST['invalid_position'] ?? -1);
-            $originalCount = count($invalidRows);
-            $invalidRows = array_values(array_filter(
-                $invalidRows,
-                static fn(array $row): bool => $row['position'] !== $position,
-            ));
-
-            if (count($invalidRows) === $originalCount) {
-                throw new ValidationException('invalid_bypass_list_row_missing');
-            }
-
-            sinkholeBypassStoreLists($configuration, $redirect, $lists, $invalidRows);
-
-            $actionMessage = pfsensePackageSinkholeTranslate('bypass_saved_applying');
-            $actionClass = 'success';
-        } elseif ($isGlobal && isset($_POST['refresh_catalog'])) {
-            $catalogLoad = $catalogCache->loadBypass(true);
-            $hasCatalogError = false;
-
-            foreach ($catalogLoad['statuses'] as $catalogStatus) {
-                if ($catalogStatus['last_error'] !== '') {
-                    $hasCatalogError = true;
-                    break;
-                }
-            }
-
-            $actionMessage = pfsensePackageSinkholeTranslate('catalog_refresh_finished');
-            $actionClass = ($hasCatalogError) ? 'warning' : 'success';
-        } elseif ($isGlobal && isset($_POST['add_catalog_list'])) {
-            sinkholeBypassRequireRepair($configuration, $redirect);
-            $catalogLoad = $catalogCache->loadBypass();
-            $lists = Catalog::addBypassList(
-                $catalogLoad['entries'],
-                $lists,
-                (string) ($_POST['catalog_entry'] ?? ''),
-            );
-
-            sinkholeBypassStoreLists($configuration, $redirect, $lists, $invalidRows);
-
-            $actionMessage = pfsensePackageSinkholeTranslate('bypass_saved_applying');
-            $actionClass = 'success';
         }
     } catch (Throwable $throwable) {
         $actionMessage = pfsensePackageSinkholeThrowableMessage($throwable);
@@ -591,9 +419,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isAll === false) {
             ?? $displaySettings['exempt_destinations']
             ?? [];
         $displaySettings['enabled'] = $displaySettings['stored_enabled'] ?? $displaySettings['enabled'] ?? false;
-        $displayListSelection = ($isGlobal)
-            ? []
-            : sinkholeBypassListSelection($displaySettings['selected_lists'] ?? []);
+        $displayListSelection = sinkholeBypassListSelection($displaySettings['selected_lists'] ?? []);
     }
 }
 
@@ -610,51 +436,6 @@ try {
     }
 }
 
-$catalogResults = [];
-$catalogGroups = [];
-$catalogKindCounts = array_fill_keys(
-    array_merge([''], BypassConfiguration::KINDS),
-    0,
-);
-$catalogMaintainers = [];
-$catalogStatuses = [];
-
-if ($catalogOpen) {
-    try {
-        $catalogLoad ??= $catalogCache->loadBypass();
-        $catalogStatuses = $catalogLoad['statuses'];
-        $catalogView = Catalog::bypassFacetedView(
-            $catalogLoad['entries'],
-            $catalogQuery,
-            $catalogSource,
-            $catalogMaintainer,
-            $catalogKind,
-        );
-        $matchingCatalogEntries = Catalog::markAdded($catalogView['entries'], $lists);
-        $catalogKindCounts = $catalogView['kind_counts'];
-        $catalogMaintainers = $catalogView['maintainers'];
-
-        foreach ($matchingCatalogEntries as $matchingCatalogEntry) {
-            $catalogResults[] = CatalogPresentation::entry($matchingCatalogEntry);
-        }
-
-        foreach ($catalogView['groups'] as $catalogGroup) {
-            $groupEntries = Catalog::markAdded($catalogGroup['entries'], $lists);
-            $catalogGroups[] = [
-                'key' => $catalogGroup['key'],
-                'count' => $catalogGroup['count'],
-                'entries' => array_map(
-                    static fn(array $entry): array => CatalogPresentation::entry($entry),
-                    $groupEntries,
-                ),
-            ];
-        }
-    } catch (Throwable $throwable) {
-        $actionMessage = pfsensePackageSinkholeThrowableMessage($throwable);
-        $actionClass = 'danger';
-    }
-}
-
 $interfaceOptions = $interfaces;
 
 foreach ($displayInterfaces as $interface) {
@@ -662,33 +443,6 @@ foreach ($displayInterfaces as $interface) {
         $interfaceOptions[$interface] = pfsensePackageSinkholeTranslate('unavailable_interface')
             . ' — '
             . $interface;
-    }
-}
-
-$rows = [];
-
-if ($isGlobal) {
-    $store = new BypassListStore($adapter->packagePaths());
-
-    foreach ($lists as $identifier => $list) {
-        $metadata = [];
-
-        try {
-            $metadata = $store->metadata($identifier);
-        } catch (Throwable $throwable) {
-            $metadata['last_error'] = pfsensePackageSinkholeThrowableMessage($throwable);
-        }
-
-        $rows[$identifier] = [
-            'list' => $list,
-            'entries' => is_int($metadata['entries'] ?? null) ? $metadata['entries'] : 0,
-            'fetched_at' => is_string($metadata['fetched_at'] ?? null)
-                ? $metadata['fetched_at']
-                : '',
-            'last_error' => is_string($metadata['last_error'] ?? null)
-                ? $metadata['last_error']
-                : '',
-        ];
     }
 }
 
@@ -804,13 +558,27 @@ include('foot.inc');
 return;
 endif;
 
+$enabledContextKeys = array_values(array_filter(
+    $contextKeys,
+    static fn(string $contextKey): bool => $contextKey === Context::GLOBAL
+        || (sinkholeBypassContextSettings($configuration, $contextKey)['stored_enabled'] ?? false) === true,
+));
+
 if ($hasOwnSettings === false) {
-    $broaderLabel = sinkholeBypassBroaderLabel($context, $networks, $devices, $contextKeys);
+    $broaderLabel = sinkholeBypassBroaderLabel($context, $networks, $devices, $enabledContextKeys);
 
     print_info_box(
         htmlspecialchars(($contextType === 'device')
             ? pfsensePackageSinkholeTranslate('bxpage_not_set_device', [$broaderLabel])
             : pfsensePackageSinkholeTranslate('bxpage_not_set_network', [$broaderLabel])),
+        'info',
+        false,
+    );
+} elseif ($isGlobal === false && ($contextSettings['stored_enabled'] ?? false) !== true) {
+    $broaderLabel = sinkholeBypassBroaderLabel($context, $networks, $devices, $enabledContextKeys);
+
+    print_info_box(
+        htmlspecialchars(pfsensePackageSinkholeTranslate('context_turned_off', [$broaderLabel])),
         'info',
         false,
     );
@@ -927,30 +695,48 @@ if ($isGlobal) {
     $form->add($plainSection);
 }
 
-if ($isGlobal === false) {
-    $contextSection = new Form_Section(pfsensePackageSinkholeTranslate('bypass'));
-    $contextSectionInputs = 0;
+$contextSection = new Form_Section(pfsensePackageSinkholeTranslate('bypass'));
+$contextSectionInputs = 0;
 
-    if ($showField('enabled') || $showField('bypass_enabled')) {
-        $contextSection->addInput(new Form_Checkbox(
-            'bypass_enabled',
-            pfsensePackageSinkholeTranslate('enable'),
-            pfsensePackageSinkholeTranslate('bxpage_bypass_enable_help'),
-            ($displaySettings['enabled'] ?? false) === true,
-        ));
-        $contextSectionInputs++;
-    }
+if ($isGlobal === false && ($showField('enabled') || $showField('bypass_enabled'))) {
+    $contextSection->addInput(new Form_Checkbox(
+        'bypass_enabled',
+        pfsensePackageSinkholeTranslate('enable'),
+        pfsensePackageSinkholeTranslate('bxpage_bypass_enable_help'),
+        ($displaySettings['enabled'] ?? false) === true,
+    ));
+    $contextSectionInputs++;
+}
 
-    if ($showField('bypass_lists')) {
-        $listOptions = [];
+if ($showField('bypass_lists')) {
+    $listOptions = [];
+    $hiddenListSelection = [];
 
-        foreach ($lists as $listIdentifier => $list) {
-            $listOptions[$listIdentifier] = $list['name']
-                . ' ('
-                . pfsensePackageSinkholeTranslateMapped('bypass_kind', $list['kind'])
-                . ')';
+    foreach ($lists as $listIdentifier => $list) {
+        if ($list['enabled'] !== true) {
+            // A disabled source stays selected until a context deselects it.
+            if (in_array($listIdentifier, $displayListSelection, true)) {
+                $hiddenListSelection[] = $listIdentifier;
+            }
+
+            continue;
         }
 
+        $listOptions[$listIdentifier] = $list['name']
+            . ' ('
+            . pfsensePackageSinkholeTranslateMapped('bypass_kind', $list['kind'])
+            . ')';
+    }
+
+    if ($listOptions === []) {
+        $contextSection->addInput(new Form_StaticText(
+            pfsensePackageSinkholeTranslate('bypass_lists'),
+            htmlspecialchars(pfsensePackageSinkholeTranslate('no_enabled_bypass_lists'))
+                . ' <a href="sinkhole-lists.php?kind=bypass">'
+                . htmlspecialchars(pfsensePackageSinkholeTranslate('open_lists'))
+                . '</a>',
+        ));
+    } else {
         $listInput = new Form_Select(
             'bypass_lists',
             pfsensePackageSinkholeTranslate('bypass_lists'),
@@ -960,12 +746,23 @@ if ($isGlobal === false) {
         );
         $listInput->setHelp(pfsensePackageSinkholeTranslate('bxpage_bypass_lists_help'));
         $contextSection->addInput($listInput);
-        $contextSectionInputs++;
     }
 
-    if ($contextSectionInputs > 0) {
-        $form->add($contextSection);
+    foreach ($hiddenListSelection as $hiddenListPosition => $hiddenListIdentifier) {
+        $form->addGlobal(new Form_Input(
+            'bypass_lists[]',
+            null,
+            'hidden',
+            $hiddenListIdentifier,
+            ['id' => 'bypass_lists_kept_' . $hiddenListPosition],
+        ));
     }
+
+    $contextSectionInputs++;
+}
+
+if ($contextSectionInputs > 0) {
+    $form->add($contextSection);
 }
 
 $encryptedSection = new Form_Section(pfsensePackageSinkholeTranslate('encrypted_dns'));
@@ -1090,298 +887,7 @@ if ($blockExemptionsSectionInputs > 0) {
 }
 
 print($form);
-
-if ($isGlobal):
 ?>
-<div class="panel panel-default">
-	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('bypass_lists'))?></h2></div>
-	<div class="panel-body table-responsive">
-		<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap table-rowdblclickedit" data-sortable>
-			<thead><tr>
-				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('name'))?></th>
-				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('kind'))?></th>
-				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('url'))?></th>
-				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('entries'))?></th>
-				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('last_fetch'))?></th>
-				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('enabled'))?></th>
-				<th data-sortable="false"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('actions'))?></th>
-			</tr></thead>
-			<tbody>
-<?php if ($rows === []): ?>
-				<tr><td colspan="7" class="text-muted"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('no_bypass_lists_configured'))?></td></tr>
-<?php else: ?>
-<?php foreach ($rows as $identifier => $row): $list = $row['list']; ?>
-				<tr<?=($list['enabled']) ? '' : ' class="disabled"'?>>
-					<td><?=htmlspecialchars($list['name'])?></td>
-					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslateMapped('bypass_kind', $list['kind']))?></td>
-					<td><a href="<?=htmlspecialchars($list['url'])?>" target="_blank" rel="noopener noreferrer"><?=htmlspecialchars($list['url'])?></a></td>
-					<td><?=htmlspecialchars((string) $row['entries'])?></td>
-					<td>
-						<?=htmlspecialchars($row['fetched_at'] === '' ? pfsensePackageSinkholeTranslate('never') : $row['fetched_at'])?>
-<?php if ($row['last_error'] !== ''): ?>
-						<br><span class="text-danger"><?=htmlspecialchars($row['last_error'])?></span>
-<?php endif; ?>
-					</td>
-					<td><?=htmlspecialchars(pfsensePackageSinkholeTranslateMapped('boolean', $list['enabled'] ? 'true' : 'false'))?></td>
-					<td class="text-nowrap">
-						<a class="fa-solid fa-pencil" title="<?=htmlspecialchars(pfsensePackageSinkholeTranslate('edit'))?>" href="sinkhole-bypass_edit.php?id=<?=urlencode($identifier)?>"></a>
-						<a class="<?=$list['enabled'] ? 'fa-solid fa-ban' : 'fa-regular fa-square-check'?>" title="<?=htmlspecialchars(pfsensePackageSinkholeTranslateMapped('toggle_action', $list['enabled'] ? 'enabled' : 'disabled'))?>" href="sinkhole-bypass.php?context=global&amp;toggle_bypass_list=1&amp;list_id=<?=urlencode($identifier)?>" usepost></a>
-						<a class="fa-solid fa-trash-can" title="<?=htmlspecialchars(pfsensePackageSinkholeTranslate('delete'))?>" href="sinkhole-bypass.php?context=global&amp;delete_bypass_list=1&amp;list_id=<?=urlencode($identifier)?>" usepost></a>
-					</td>
-				</tr>
-<?php endforeach; ?>
-<?php endif; ?>
-			</tbody>
-		</table>
-	</div>
-</div>
-<nav class="action-buttons">
-	<a href="sinkhole-bypass_edit.php" role="button" class="btn btn-success btn-sm">
-		<i class="fa-solid fa-plus icon-embed-btn"></i>
-		<?=htmlspecialchars(pfsensePackageSinkholeTranslate('add'))?>
-	</a>
-<?php if ($catalogOpen === false): ?>
-	<a href="sinkhole-bypass.php?context=global&amp;catalog=1" role="button" class="btn btn-primary btn-sm">
-		<i class="fa-solid fa-search icon-embed-btn"></i>
-		<?=htmlspecialchars(pfsensePackageSinkholeTranslate('add_from_catalog'))?>
-	</a>
-<?php endif; ?>
-</nav>
-<?php endif; ?>
-<?php if ($catalogOpen === true): ?>
-<?php
-$catalogStateParameters = [
-    'catalog' => '1',
-    'catalog_query' => $catalogQuery,
-    'catalog_source' => $catalogSource,
-    'catalog_maintainer' => $catalogMaintainer,
-    'catalog_kind' => $catalogKind,
-];
-$catalogSourceOptions = [
-    '' => pfsensePackageSinkholeTranslate('all_sources'),
-];
-
-foreach (Catalog::sourceLabels() as $catalogSourceLabel) {
-    $catalogSourceOptions[$catalogSourceLabel] = $catalogSourceLabel;
-}
-$catalogMaintainerOptions = [
-    '' => pfsensePackageSinkholeTranslate('all_maintainers'),
-];
-
-foreach ($catalogMaintainers as $catalogMaintainerOption) {
-    $catalogMaintainerName = $catalogMaintainerOption['name'];
-    $catalogMaintainerOptions[$catalogMaintainerName] = sprintf(
-        '%s (%d)',
-        ($catalogMaintainerName === '')
-            ? pfsensePackageSinkholeTranslate('unknown')
-            : $catalogMaintainerName,
-        $catalogMaintainerOption['count'],
-    );
-}
-$catalogSearchButton = new Form_Button(
-    'search_catalog',
-    pfsensePackageSinkholeTranslate('search'),
-    null,
-    'fa-solid fa-search',
-);
-$catalogSearchButton->addClass('btn-primary', 'btn-sm');
-$catalogRefreshButton = new Form_Button(
-    'refresh_catalog',
-    pfsensePackageSinkholeTranslate('refresh'),
-    null,
-    'fa-solid fa-arrows-rotate',
-);
-$catalogRefreshButton->addClass('btn-info', 'btn-sm');
-$catalogRefreshButton->setAttribute('form', 'sinkhole-bypass-refresh-form');
-$catalogFilterForm = new Form(false);
-$catalogFilterForm->setMethod('get');
-$catalogFilterForm->setAction('sinkhole-bypass.php');
-$catalogFilterSection = new Form_Section(
-    pfsensePackageSinkholeTranslate('add_from_catalog'),
-);
-$catalogFilterGroup = new Form_Group(pfsensePackageSinkholeTranslate('search'));
-$catalogQueryInput = new Form_Input('catalog_query', null, 'text', $catalogQuery);
-$catalogQueryInput->setAttribute('maxlength', Catalog::MAXIMUM_SEARCH_BYTES);
-$catalogQueryInput->setWidth(3);
-$catalogQueryInput->setHelp(pfsensePackageSinkholeTranslate('search'));
-$catalogSourceInput = new Form_Select(
-    'catalog_source',
-    null,
-    $catalogSource,
-    $catalogSourceOptions,
-);
-$catalogSourceInput->setWidth(2);
-$catalogSourceInput->setHelp(pfsensePackageSinkholeTranslate('source'));
-$catalogMaintainerInput = new Form_Select(
-    'catalog_maintainer',
-    null,
-    $catalogMaintainer,
-    $catalogMaintainerOptions,
-);
-$catalogMaintainerInput->setWidth(2);
-$catalogMaintainerInput->setHelp(pfsensePackageSinkholeTranslate('maintainer'));
-$catalogButtonInput = new Form_StaticText(
-    '',
-    (string) $catalogSearchButton . ' ' . (string) $catalogRefreshButton,
-);
-$catalogButtonInput->setWidth(3);
-$catalogFilterGroup->add($catalogQueryInput);
-$catalogFilterGroup->add($catalogSourceInput);
-$catalogFilterGroup->add($catalogMaintainerInput);
-$catalogFilterGroup->add($catalogButtonInput);
-$catalogFilterGroup->setHelp(pfsensePackageSinkholeTranslate('catalog_search_help'));
-$catalogFilterSection->add($catalogFilterGroup);
-$catalogShowGroup = new Form_Group(pfsensePackageSinkholeTranslate('show'));
-$catalogKindLinks = '<div class="sinkhole-catalog-chips">';
-
-foreach (array_merge([''], BypassConfiguration::KINDS) as $catalogKindKey) {
-    $catalogKindUrl = 'sinkhole-bypass.php?' . http_build_query(array_merge(
-        $catalogStateParameters,
-        ['catalog_kind' => $catalogKindKey],
-    ));
-    $catalogKindLabel = ($catalogKindKey === '')
-        ? pfsensePackageSinkholeTranslate('all')
-        : pfsensePackageSinkholeTranslateMapped('bypass_kind', $catalogKindKey);
-    $catalogKindLinks .= sprintf(
-        '<a class="btn btn-xs %s" href="%s">%s (%d)</a>',
-        ($catalogKind === $catalogKindKey) ? 'btn-primary' : 'btn-default',
-        htmlspecialchars($catalogKindUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-        htmlspecialchars($catalogKindLabel),
-        $catalogKindCounts[$catalogKindKey] ?? 0,
-    );
-}
-$catalogKindLinks .= '</div>';
-$catalogKindInput = new Form_StaticText('', $catalogKindLinks);
-$catalogKindInput->setWidth(10);
-$catalogShowGroup->add($catalogKindInput);
-$catalogFilterSection->add($catalogShowGroup);
-$catalogFilterForm->add($catalogFilterSection);
-$catalogFilterForm->addGlobal(new Form_Input('catalog', null, 'hidden', '1'));
-$catalogFilterForm->addGlobal(new Form_Input(
-    'catalog_kind',
-    null,
-    'hidden',
-    $catalogKind,
-));
-print($catalogFilterForm);
-?>
-<form id="sinkhole-bypass-refresh-form" method="post" action="sinkhole-bypass.php?context=global">
-	<input type="hidden" name="catalog_query" value="<?=htmlspecialchars($catalogQuery, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
-	<input type="hidden" name="catalog_source" value="<?=htmlspecialchars($catalogSource, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
-	<input type="hidden" name="catalog_maintainer" value="<?=htmlspecialchars($catalogMaintainer, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
-	<input type="hidden" name="catalog_kind" value="<?=htmlspecialchars($catalogKind, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
-</form>
-<div class="panel panel-default">
-	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('popular_list_catalogs'))?></h2></div>
-	<div class="panel-body table-responsive">
-		<table class="table table-striped table-hover table-condensed sortable-theme-bootstrap" data-sortable>
-			<thead>
-				<tr>
-					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('source'))?></th>
-					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('last_fetch'))?></th>
-					<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('last_error'))?></th>
-				</tr>
-			</thead>
-			<tbody>
-<?php foreach ($catalogStatuses as $catalogStatus): ?>
-<?php
-$catalogFetchedAt = is_int($catalogStatus['fetched_at'])
-    ? gmdate('Y-m-d H:i:s \U\T\C', $catalogStatus['fetched_at'])
-    : pfsensePackageSinkholeTranslate('never');
-$catalogLastError = ($catalogStatus['last_error'] === '')
-    ? pfsensePackageSinkholeTranslate('none')
-    : $catalogStatus['last_error'];
-?>
-				<tr>
-					<td><?=htmlspecialchars($catalogStatus['source'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?></td>
-					<td><?=htmlspecialchars($catalogFetchedAt, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?></td>
-					<td><?=htmlspecialchars($catalogLastError, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?></td>
-				</tr>
-<?php endforeach; ?>
-			</tbody>
-		</table>
-	</div>
-</div>
-<?php if (count($catalogResults) === 0): ?>
-<?php print_info_box(htmlspecialchars(pfsensePackageSinkholeTranslate('no_catalog_results')), 'warning', false); ?>
-<?php else: ?>
-<?php foreach ($catalogGroups as $catalogGroup): ?>
-<?php
-$catalogGroupTitle = pfsensePackageSinkholeTranslateMapped(
-    'bypass_kind',
-    $catalogGroup['key'],
-);
-?>
-	<div class="panel panel-default">
-		<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars($catalogGroupTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?> (<?=htmlspecialchars((string) $catalogGroup['count'])?>)</h2></div>
-		<div class="panel-body">
-			<div class="form-group">
-				<div class="col-sm-12">
-					<div class="sinkhole-catalog-grid">
-<?php foreach ($catalogGroup['entries'] as $catalogResult): ?>
-						<article class="sinkhole-catalog-card">
-							<h4><?=$catalogResult['name']?></h4>
-							<div class="sinkhole-catalog-meta">
-								<?=htmlspecialchars(pfsensePackageSinkholeTranslate('maintainer'))?>: <?=($catalogResult['maintainer'] === '') ? htmlspecialchars(pfsensePackageSinkholeTranslate('unknown')) : $catalogResult['maintainer']?>
-								<br><?=htmlspecialchars(pfsensePackageSinkholeTranslate('source'))?>: <?=$catalogResult['source']?>
-								<br><?=htmlspecialchars(pfsensePackageSinkholeTranslate('contents'))?>: <?=htmlspecialchars(pfsensePackageSinkholeTranslateMapped('catalog_contents', html_entity_decode($catalogResult['contents'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')))?>
-							</div>
-							<p class="sinkhole-catalog-description"><?=$catalogResult['description']?></p>
-							<div class="sinkhole-catalog-actions">
-<?php if ($catalogResult['homepage'] === ''): ?>
-								<span><?=htmlspecialchars(pfsensePackageSinkholeTranslate('no_homepage'))?></span>
-<?php else: ?>
-								<a href="<?=$catalogResult['homepage']?>" target="_blank" rel="noopener noreferrer"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('homepage'))?></a>
-<?php endif; ?>
-<?php if ($catalogResult['added']): ?>
-								<button class="btn btn-xs btn-default" type="button" disabled><?=htmlspecialchars(pfsensePackageSinkholeTranslate('added'))?></button>
-<?php else: ?>
-								<form method="post" action="sinkhole-bypass.php?context=global">
-									<input type="hidden" name="catalog_entry" value="<?=$catalogResult['identifier']?>">
-									<input type="hidden" name="catalog_query" value="<?=htmlspecialchars($catalogQuery, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
-									<input type="hidden" name="catalog_source" value="<?=htmlspecialchars($catalogSource, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
-									<input type="hidden" name="catalog_maintainer" value="<?=htmlspecialchars($catalogMaintainer, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
-									<input type="hidden" name="catalog_kind" value="<?=htmlspecialchars($catalogKind, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?>">
-									<button class="btn btn-xs btn-success" type="submit" name="add_catalog_list" value="1"><i class="fa-solid fa-plus icon-embed-btn"></i> <?=htmlspecialchars(pfsensePackageSinkholeTranslate('add'))?></button>
-								</form>
-<?php endif; ?>
-							</div>
-						</article>
-<?php endforeach; ?>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-<?php endforeach; ?>
-<?php endif; ?>
-<?php endif; ?>
-<?php if ($isGlobal && $invalidRows !== []): ?>
-<div class="panel panel-danger">
-	<div class="panel-heading"><h2 class="panel-title"><?=htmlspecialchars(pfsensePackageSinkholeTranslate('invalid_saved_rows'))?></h2></div>
-	<div class="panel-body table-responsive">
-		<table class="table table-striped table-hover table-condensed">
-			<thead><tr>
-				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('name'))?></th>
-				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('reason'))?></th>
-				<th><?=htmlspecialchars(pfsensePackageSinkholeTranslate('actions'))?></th>
-			</tr></thead>
-			<tbody>
-<?php foreach ($invalidRows as $invalidRow): ?>
-				<tr>
-					<td><?=htmlspecialchars($invalidRow['name'])?></td>
-					<td><?=htmlspecialchars(pfsensePackageSinkholeInvalidReason($invalidRow))?></td>
-					<td class="text-nowrap">
-						<a class="fa-solid fa-pencil" title="<?=htmlspecialchars(pfsensePackageSinkholeTranslate('fix'))?>" href="sinkhole-bypass_edit.php?invalid_position=<?=urlencode((string) $invalidRow['position'])?>"></a>
-						<a class="fa-solid fa-trash-can" title="<?=htmlspecialchars(pfsensePackageSinkholeTranslate('delete'))?>" href="sinkhole-bypass.php?context=global&amp;delete_invalid_bypass_list=1&amp;invalid_position=<?=urlencode((string) $invalidRow['position'])?>" usepost></a>
-					</td>
-				</tr>
-<?php endforeach; ?>
-			</tbody>
-		</table>
-	</div>
-</div>
-<?php endif; ?>
 <?php if ($isGlobal): ?>
 <script>
 events.push(function () {

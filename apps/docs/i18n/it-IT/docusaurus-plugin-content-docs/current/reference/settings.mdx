@@ -63,6 +63,8 @@ Ogni nuova versione trovata da un controllo pianificato crea un avviso pfSense l
 
 I feed di bypass sono esclusi da questo catalogo.
 
+Lists passa tra i tipi **DNS**, **Bypass** e **IP**. La tabella sopra corrisponde al tipo DNS; anche le [Bypass Lists](#bypass-lists) e le [righe delle liste IP](#ip-and-country-blocking) si gestiscono lì, e la tabella di ogni tipo ha un conteggio **Used By** di Global più ogni rete e dispositivo che seleziona la lista.
+
 ## Blocking \{#blocking}
 
 Ogni contesto (Global, una rete o un dispositivo) ha i propri due campi:
@@ -122,13 +124,14 @@ Il processore al minuto invia al massimo 20 messaggi per esecuzione e 60 messagg
 | Redirect                               | Off         | Invia al firewall il normale traffico DNS sulle porte UDP e TCP 53 delle interfacce selezionate.                           |
 | Exempt Sources                         | Empty       | Un indirizzo IPv4 o IPv6, una rete CIDR o un alias host/rete esistente per riga che evita il reindirizzamento DNS normale. |
 | Exempt Destinations                    | Empty       | Un indirizzo IP di destinazione, CIDR o alias per riga che evita il reindirizzamento DNS normale.                          |
+| Bypass Lists                           | Empty       | Bypass Lists abilitate usate da questo contesto; le sorgenti stesse si gestiscono in Lists.                                |
 | TLS and QUIC                           | Off         | Blocca le porte TCP e UDP 853 verso destinazioni diverse dal firewall.                                                     |
-| Providers                              | Off         | Blocca nomi e indirizzi delle Bypass Lists **Encrypted DNS** abilitate.                                                    |
+| Providers                              | Off         | Blocca nomi e indirizzi delle Bypass Lists **Encrypted DNS** selezionate.                                                  |
 | Firefox                                | Off         | Restituisce `NXDOMAIN` per il nome canary del DNS-over-HTTPS automatico di Firefox e i suoi sottodomini.                   |
 | Private Relay                          | Off         | Restituisce `NXDOMAIN` per i due nomi di disponibilità di Private Relay di Apple.                                          |
 | Discovery                              | Off         | Lascia DDR invariato, pubblicizza il DNS over TLS del firewall o risponde `NOERROR` senza record.                          |
-| Tor                                    | Off         | Blocca nomi e indirizzi delle Bypass Lists **Tor** abilitate.                                                              |
-| VPN (Block listed VPN providers)       | Off         | Blocca nomi e indirizzi delle Bypass Lists **VPN** abilitate.                                                              |
+| Tor                                    | Off         | Blocca nomi e indirizzi delle Bypass Lists **Tor** selezionate.                                                            |
+| VPN (Block listed VPN providers)       | Off         | Blocca nomi e indirizzi delle Bypass Lists **VPN** selezionate.                                                            |
 | VPN (Block standard VPN ports)         | Off         | Blocca le porte UDP di OpenVPN, WireGuard e IPsec ed ESP verso destinazioni diverse dal firewall.                          |
 | Block Exemptions → Exempt Sources      | Empty       | Un indirizzo IP, CIDR o alias per riga il cui traffico evita ogni blocco firewall di Bypass.                               |
 | Block Exemptions → Exempt Destinations | Empty       | Un indirizzo IP di destinazione, CIDR o alias per riga che nessun blocco firewall di Bypass ferma.                         |
@@ -139,9 +142,11 @@ Le esenzioni dai blocchi non aggiungono regole pass, quindi il traffico esente p
 
 ### Bypass Lists \{#bypass-lists}
 
+Le righe delle Bypass Lists si gestiscono in **Lists → Bypass**.
+
 | Campo   | Predefinito   | Descrizione                                                                                    |
 |---------|---------------|------------------------------------------------------------------------------------------------|
-| Name    | Empty         | Etichetta locale visualizzata in Bypass e Status.                                              |
+| Name    | Empty         | Etichetta locale visualizzata in Lists, Bypass e Status.                                       |
 | Kind    | Encrypted DNS | Seleziona il criterio **Encrypted DNS**, **Tor** o **VPN**.                                    |
 | URL     | Empty         | Fonte HTTP o HTTPS contenente domini, indirizzi e CIDR misti.                                  |
 | Enabled | Off           | Include la lista salvata nei recuperi pianificati e nella protezione abilitata corrispondente. |
@@ -163,7 +168,7 @@ L’input di una Bypass List usa una voce per riga e commenti `#`. Un recupero n
 | Clear License Key   | Off         | Elimina la chiave MaxMind salvata al salvataggio.                                                                          |
 | IP Allowlist        | Empty       | Un indirizzo IPv4 o IPv6, una rete CIDR o un alias host/rete esistente per riga, sottratto dalle tabelle di blocco finali. |
 
-Ogni riga di lista IP ha un nome, un URL, una selezione della famiglia IPv4/IPv6/Both e l’interruttore Enabled. Sinkhole rimuove inoltre gli indirizzi delle interfacce del firewall, dei gateway e dei server DNS dalle tabelle finali, così le proprie regole non bloccano l’infrastruttura protetta.
+Ogni riga di lista IP ha un nome, un URL, una selezione della famiglia IPv4/IPv6/Both e l’interruttore Enabled, e si gestisce in **Lists → IP**. Il campo **IP Lists** di ogni contesto sceglie le liste IP abilitate che usa. Sinkhole rimuove inoltre gli indirizzi delle interfacce del firewall, dei gateway e dei server DNS dalle tabelle finali, così le proprie regole non bloccano l’infrastruttura protetta.
 
 Il catalogo IP esclude tutti i feed Encrypted DNS, Tor e VPN appartenenti al catalogo Bypass.
 

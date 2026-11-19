@@ -24,7 +24,7 @@ Hold DNS-forespørsler fra valgte klientgrensesnitt på baner som Sinkhole kan i
 
 Nettverks- og enhetssamsvar bruker de gjeldende delnettene til disse grensesnittene, akkurat som vanlige Sinkhole-omfang. En klient utenfor de valgte delnettene mottar ikke noe Bypass-DNS-svar.
 
-<img src={bypassProtection} alt="Bypass-fanen med LAN valgt, omdirigering av vanlig DNS slått av, beskyttelse for kryptert DNS og tunneler slått på, Discovery satt til Answer with no records, én unntatt demokilde og ett unntatt demomål, og tre demonstrasjonslister for Bypass" width={1024} height={1844} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Bypass-fanen for Global med LAN valgt, omdirigering av vanlig DNS slått av, tre demonstrasjonslister for Bypass valgt, beskyttelse for kryptert DNS og tunneler slått på, Discovery satt til Answer with no records, og én unntatt demokilde og ett unntatt demomål" width={1024} height={1697} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Angi beskyttelse per nettverk og enhet \{#set-protections-per-network-and-device}
 
@@ -36,19 +36,21 @@ Bare **Global** har:
 
 - Grensesnitt under **Apply to**.
 - Omdirigering av **Plain DNS** og unntakene for den.
-- Kilder for Bypass Lists, **Add from Catalog** og listeoppdateringer.
 
-Et nettverk eller en enhet har:
+Et nettverk eller en enhet har også **Enable**, som slår på beskyttelsen.
 
-- **Enable**, som slår på beskyttelsen.
-- **Bypass Lists**, de aktiverte kildene som brukes.
+Global og hvert nettverk eller hver enhet har:
+
+- **Bypass Lists**, de aktiverte kildene som brukes. Kilder legges til, aktiveres og oppdateres på [Lists → Bypass](/docs/configure/lists#add-bypass-lists). Uten noen aktivert kilde viser feltet i stedet én linje med en **Open Lists**-lenke.
 - Innstillingene for kryptert DNS, **Discovery**, tunnelblokkeringene og **Block Exemptions**.
 
-Et nettverk eller en enhet uten egne innstillinger viser én linje, for eksempel "Ikke angitt for dette nettverket; Global gjelder.", over et tomt skjema. En enhet oppgir nettverket sitt der når det nettverket har egne innstillinger. Når du lagrer skjemaet, opprettes innstillingene, og **Remove settings for this network** eller **Remove settings for this device** sletter dem, slik at de bredere innstillingene gjelder igjen. Sletter du et nettverk eller en enhet på fanen Clients, slettes også innstillingene.
+Et nettverk eller en enhet uten egne innstillinger viser én linje, for eksempel "Ikke angitt for dette nettverket; Global gjelder.", over et tomt skjema. En enhet oppgir nettverket sitt der når det nettverket har egne innstillinger som er slått på. Et nettverk eller en enhet med avslåtte innstillinger viser i stedet "Slått av; Global gjelder.", med de samme bredere innstillingene. Når du lagrer skjemaet, opprettes innstillingene, og **Remove settings for this network** eller **Remove settings for this device** sletter dem, slik at de bredere innstillingene gjelder igjen. Sletter du et nettverk eller en enhet på fanen Clients, slettes også innstillingene.
 
 **All** viser Global og hvert nettverk og hver enhet med egne innstillinger, sammen med beskyttelsen som er slått på. Velg en rad for å redigere den.
 
 Når Sinkhole oppgraderes til 1.3.0, blir de eksisterende innstillingene værende i Global og kopieres til hvert nettverk og hver enhet. Fra da av er hver kopi uavhengig. En kopi slås bare på når nettverkets grensesnitt, eller et grensesnitt for en av enhetens identifikatorer, var valgt under **Apply to**. Alle andre kopier lagres avslått, slik at ingen klient filtreres som ikke ble filtrert før.
+
+Global velger sine Bypass Lists på samme måte som hvert nettverk og hver enhet. Når Sinkhole oppgraderes til 1.3.1, blir utvalget i Global alle Bypass Lists som finnes på det tidspunktet, så ingenting endres før du redigerer det. En Bypass List som legges til senere, brukes ingen steder før Global, et nettverk eller en enhet velger den.
 
 Hvert nettverk og hver enhet med påslåtte innstillinger får sin egen klienttabell i ankeret `sinkhole/bypass`. En enhets adresser fjernes fra nettverkets tabell og fra tabellen i Global, og et nettverks delnett fjernes fra tabellen i Global, slik at en klient bare blokkeres av de mest spesifikke innstillingene. Sinkhole legger ikke til noen pass-regler for dette.
 
@@ -82,7 +84,7 @@ Omdirigeringsreglene lastes når Sinkhole er aktivert på fanen **General** og D
 Innstillingene for kryptert DNS er uavhengige:
 
 - **TLS and QUIC** blokkerer TCP- og UDP-port 853 til alle mål unntatt brannmuren.
-- **Providers** blokkerer navn og adresser fra aktiverte Bypass Lists av typen **Encrypted DNS**.
+- **Providers** blokkerer navn og adresser fra de valgte, aktiverte Bypass Lists av typen **Encrypted DNS**.
 - **Firefox** svarer på `use-application-dns.net` og underdomenene med `NXDOMAIN`, noe som slår av Firefox' automatiske valg av DNS over HTTPS.
 - **Private Relay** svarer på `mask.icloud.com` og `mask-h2.icloud.com` med `NXDOMAIN`, noe som forteller kompatible Apple-enheter at Private Relay ikke er tilgjengelig på dette nettverket.
 
@@ -117,8 +119,8 @@ Når Discovery slås av eller Sinkhole fjernes, blir sonelinjen fjernet. Den sam
 
 ## Beskytt mot tunneler \{#protect-against-tunnels}
 
-- **Tor → Block listed Tor relays** bruker aktiverte Bypass Lists av typen **Tor**.
-- **VPN → Block listed VPN providers** bruker aktiverte Bypass Lists av typen **VPN**.
+- **Tor → Block listed Tor relays** bruker de valgte, aktiverte Bypass Lists av typen **Tor**.
+- **VPN → Block listed VPN providers** bruker de valgte, aktiverte Bypass Lists av typen **VPN**.
 - **VPN → Block standard VPN ports** blokkerer TCP og UDP `1194`, UDP `51820`, UDP `500` og `4500`, samt ESP til alle mål unntatt brannmuren.
 
 Navn og adresser i Tor- og VPN-lister bruker samme DNS- og brannmuratferd som leverandørlister for kryptert DNS. Disse kontrollene reduserer vanlige alternative baner, men identifiserer ikke alle krypterte eller egendefinerte tunneler.
@@ -136,21 +138,9 @@ Unntak gjelder bare brannmurblokkeringene. Leverandør-, Tor- og VPN-navn fra By
 
 Hvis et lagret blokkeringsunntak blir ugyldig, for eksempel et alias som ble omdøpt eller slettet, beholder Sinkhole alle blokkeringer uten unntak, skriver én oppføring i systemloggen og viser verdien under **Invalid Saved Values** til den rettes eller fjernes.
 
-## Legg til fra katalogen \{#add-from-catalog}
+## Administrer Bypass Lists \{#manage-bypass-lists}
 
-Åpne **Add from Catalog** på Bypass-fanen for å søke i listeregisteret til AdGuard Home og DNS-, IPv4- og IPv6-delene av feedkatalogen til pfBlockerNG. Resultatene er begrenset til omgåelsesfeeder og har en fast type: **Encrypted DNS**, **Tor** eller **VPN**.
-
-Kildekatalogene hentes bare når du åpner katalogen eller velger **Refresh**. Når du legger til et resultat, opprettes en aktivert Bypass List; den blir med i planlagte oppdateringer bare mens den tilhørende **Providers**-, **Tor**- eller **VPN**-beskyttelsen er på.
-
-Linjen **Contents** på hvert kort viser **Domains**, **IPv4 addresses** eller **IPv6 addresses**. Når du legger til et IPv4- eller IPv6-resultat fra pfBlockerNG, legger Sinkhole til ` (IPv4)` eller ` (IPv6)` i det lagrede navnet; domeneresultater beholder det uendrede katalognavnet.
-
-## Legg til Bypass Lists \{#add-bypass-lists}
-
-Velg **Add** under **Bypass Lists**, og skriv deretter inn et lokalt navn, en type og en HTTP- eller HTTPS-URL. Nye rader er deaktivert til de uttrykkelig aktiveres.
-
-Hver kilde godtar én oppføring per linje. En liste kan blande domener, IPv4-adresser, IPv6-adresser og CIDR-er. Tekst etter `#` er en kommentar. Ugyldige og for lange linjer hoppes over. En nedlasting som overskrider den faste bytegrensen eller grensen for godkjente oppføringer, avvises, og den siste gode kopien beholdes.
-
-En aktivert Bypass List oppdateres etter den konfigurerte listeplanen, med den samme begrensede nedlastingsklienten som andre lister, bare mens den tilhørende **Providers**-, **Tor**- eller **VPN**-beskyttelsen er på. En mislykket henting beholder den siste gode lagrede kopien fra samme URL, og **Status → Bypass Lists** viser oppføringer, siste henting og den nyeste feilen for hver rad. Sinkhole leverer eller anbefaler ingen Bypass List.
+Kilder for Bypass Lists legges til, redigeres, aktiveres og slettes på [Lists → Bypass](/docs/configure/lists#add-bypass-lists), som også har **Add from Catalog** og et **Used By**-antall for hver liste. Bypass-fanen velger bare hvilke aktiverte lister hver kontekst bruker. En aktivert Bypass List blir med i planlagte oppdateringer bare mens den tilhørende **Providers**-, **Tor**- eller **VPN**-beskyttelsen er på.
 
 ## Verifiser aktiv tilstand \{#verify-the-active-state}
 

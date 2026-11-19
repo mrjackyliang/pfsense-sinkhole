@@ -1,5 +1,11 @@
 # pfsense-pkg-sinkhole
 
+## 1.3.1 - 2026-11-19
+
+### UPDATED
+- Lists manages every list source in DNS, Bypass, and IP tabs with a Used By column, and the Bypass and IP tabs only choose which lists each context uses.
+- Global Bypass protection and Global IP blocking choose their own lists like every network and device; upgrading keeps the lists Global already used, so nothing changes until you edit it, and a list added later applies only where you select it.
+
 ## 1.3.0 - 2026-11-18
 
 ### UPDATED

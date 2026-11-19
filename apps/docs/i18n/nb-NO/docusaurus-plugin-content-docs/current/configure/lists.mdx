@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Lister og lagrede kopier
-description: Legg til DNS-lister via URL eller katalog, bruk hosts-, domene- og adblock-lignende formater, og behold siste gyldige kopier gjennom feil.
+description: Administrer DNS-, Bypass- og IP-lister via URL eller katalog, se hvor hver liste brukes, og behold siste gyldige kopier gjennom feil.
 keywords:
   - sinkhole for pfsense
   - blokkeringslister
@@ -25,9 +25,23 @@ Legg til listekilder du stoler på, og la Sinkhole beholde normaliserte, siste g
 3. Beholder den forrige gyldige kopien når en ny nedlasting eller analyse mislykkes, slik at ødelagte inndata ikke erstatter fungerende policy.
 4. Oppdaterer lister i bakgrunnen, slik at en omstart eller omlasting av Resolver aldri venter på nettverket.
 
+## Velg en listetype \{#choose-a-list-kind}
+
+Lists er det ene stedet der alle listekilder legges til, redigeres, aktiveres og slettes. Raden under fanene bytter mellom tre typer:
+
+| Type   | Inneholder                                      | Velges på                                                                          |
+|--------|-------------------------------------------------|------------------------------------------------------------------------------------|
+| DNS    | Blokkeringslister med domenenavn.               | [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains)                |
+| Bypass | Leverandørlister for Encrypted DNS, Tor og VPN. | [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device) |
+| IP     | Lister med IPv4- og IPv6-adresser og -nettverk. | [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device)  |
+
+Hver type har sin egen tabell, **Add**, **Add from Catalog** og et reparasjonspanel for ugyldige lagrede rader. Lists har ingen rad for Global, nettverk eller enhet; disse valgene hører til fanene som bruker listene.
+
+Hver tabell har en **Used By**-kolonne som teller Global pluss hvert nettverk og hver enhet der innstillingene velger listen. En ny liste av hvilken som helst type blokkerer ingenting før en kontekst velger den.
+
 ## Legg til en liste via URL \{#add-a-list-by-url}
 
-Åpne **Firewall → Sinkhole → Lists**, velg **Add** under tabellen med blokkeringslister, og fyll deretter ut **Add Block List** på redigeringssiden:
+Åpne **Firewall → Sinkhole → Lists → DNS**, velg **Add** under tabellen med blokkeringslister, og fyll deretter ut **Add Block List** på redigeringssiden:
 
 | Felt    | Beskrivelse                                            |
 |---------|--------------------------------------------------------|
@@ -37,7 +51,7 @@ Legg til listekilder du stoler på, og la Sinkhole beholde normaliserte, siste g
 
 Når du lagrer, går du tilbake til fanen Lists, og den samme validerte bruksprosessen starter i bakgrunnen. Velg blyanten på en rad eller dobbeltklikk raden for å redigere den. En deaktivert rad forblir konfigurert, men vises dempet i tabellen og brukes ikke av oppdateringsprosessen eller den kompilerte policyen.
 
-Lists er bare listebehandleren. Hvilke lister som gjelder for Global, et nettverk eller en enhet, velges på [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), og kolonnen **Used By** teller Global pluss hvert nettverk og hver enhet som velger listen.
+Hvilke DNS-lister som gjelder for Global, et nettverk eller en enhet, velges på [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains).
 
 ## Støttede DNS-formater \{#accepted-dns-formats}
 
@@ -55,7 +69,7 @@ Kosmetiske filtre og feilformede linjer blir ikke DNS-policy. Status rapporterer
 
 ## Søk i katalogene \{#search-the-catalogs}
 
-Velg **Add from Catalog** på fanen Lists for å søke i listeregisteret til AdGuard Home og DNS-delen av feedkatalogen til pfBlockerNG. Sinkhole henter begge bare når søket åpnes eller du velger **Refresh**. Ingen av katalogene følger med i pakken eller lastes ned etter en tidsplan.
+Velg **Add from Catalog** under **DNS** for å søke i listeregisteret til AdGuard Home og DNS-delen av feedkatalogen til pfBlockerNG. Sinkhole henter begge bare når søket åpnes eller du velger **Refresh**. Ingen av katalogene følger med i pakken eller lastes ned etter en tidsplan.
 
 Resultatene vises som kort. Bruk kontrollene for søk, kilde og vedlikeholder sammen, velg en kategoribrikke, og bytt **Group by** mellom **Category** og **Maintainer**. Kategoribrikkene viser antall for gjeldende filtre for søk, kilde og vedlikeholder, mens vedlikeholdermenyen viser eierne med flest samsvarende lister først.
 
@@ -69,7 +83,31 @@ Katalogkopier bufres under `/var/db` i én dag. En mislykket oppdatering beholde
 
 <img src={catalogSearch} alt="Panelet Add from Catalog på fanen Lists viser kontroller for katalogsøk og hentestatus" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
-Feeder som er tilordnet omgåelsesbeskyttelse for Encrypted DNS, Tor eller VPN, vises ikke her. De er bare tilgjengelige gjennom **Add from Catalog** på Bypass-fanen.
+Feeder som er tilordnet omgåelsesbeskyttelse for Encrypted DNS, Tor eller VPN, vises ikke her. De er bare tilgjengelige gjennom **Add from Catalog** under **Bypass**.
+
+## Legg til Bypass Lists \{#add-bypass-lists}
+
+Åpne **Lists → Bypass**, velg **Add** under **Bypass Lists**, og skriv deretter inn et lokalt navn, en type og en HTTP- eller HTTPS-URL. Nye rader er deaktivert til de uttrykkelig aktiveres. Når du lagrer, går du tilbake til **Lists → Bypass**. Tabellen viser også antall lagrede oppføringer og siste henting for hver rad.
+
+Hver kilde godtar én oppføring per linje. En liste kan blande domener, IPv4-adresser, IPv6-adresser og CIDR-er. Tekst etter `#` er en kommentar. Ugyldige og for lange linjer hoppes over. En nedlasting som overskrider den faste bytegrensen eller grensen for godkjente oppføringer, avvises, og den siste gode kopien beholdes.
+
+En aktivert Bypass List oppdateres etter den konfigurerte listeplanen, med den samme begrensede nedlastingsklienten som andre lister, bare mens den tilhørende **Providers**-, **Tor**- eller **VPN**-beskyttelsen er på. En mislykket henting beholder den siste gode lagrede kopien fra samme URL, og **Status → Bypass Lists** viser oppføringer, siste henting og den nyeste feilen for hver rad. Sinkhole leverer eller anbefaler ingen Bypass List.
+
+**Add from Catalog** under **Bypass** søker i listeregisteret til AdGuard Home og DNS-, IPv4- og IPv6-delene av feedkatalogen til pfBlockerNG. Resultatene er begrenset til omgåelsesfeeder og har en fast type, **Encrypted DNS**, **Tor** eller **VPN**, som brikkene over kortene filtrerer på.
+
+Linjen **Contents** på hvert kort viser **Domains**, **IPv4 addresses** eller **IPv6 addresses**. Når du legger til et IPv4- eller IPv6-resultat fra pfBlockerNG, legger Sinkhole til ` (IPv4)` eller ` (IPv6)` i det lagrede navnet; domeneresultater beholder det uendrede katalognavnet. Når du legger til et resultat, opprettes en aktivert Bypass List.
+
+Global, hvert nettverk og hver enhet velger hvilke Bypass Lists de bruker på [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device).
+
+## Legg til IP-lister \{#add-ip-lists}
+
+Åpne **Lists → IP** og velg **Add** under tabellen IP Lists for å åpne redigeringsprogrammet for IP-lister. En rad bruker en HTTP- eller HTTPS-URL, velger IPv4, IPv6 eller begge familiene og styrer om kilden er aktivert. Når du lagrer, går du tilbake til **Lists → IP**. Velg blyanten eller dobbeltklikk en rad for å redigere den.
+
+Gyldige linjer er enkeltstående IPv4- eller IPv6-adresser og CIDR-nettverk. IPv4-nettverk som er bredere enn `/8`, og IPv6-nettverk som er bredere enn `/16`, hoppes over og telles sammen med andre ugyldige linjer; grensenettverkene `/8` og `/16` godtas. En nedlasting uten gyldige oppføringer erstatter ikke den siste gyldige lagrede kopien.
+
+**Add from Catalog** under **IP** søker i IP-delene av feedkatalogen til pfBlockerNG. Omgåelsesfeeder for Encrypted DNS, Tor og VPN er utelatt og vises bare under **Bypass**. Linjen **Contents** på hvert kort viser **IPv4 addresses** eller **IPv6 addresses**. Når du legger til et resultat, legger Sinkhole til ` (IPv4)` eller ` (IPv6)` i det lagrede navnet og forkorter bare grunnnavnet når det er nødvendig.
+
+Global, hvert nettverk og hver enhet velger hvilke IP-lister de bruker på [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device).
 
 ## Angi globale tillatte domener \{#set-global-allowed-domains}
 

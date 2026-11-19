@@ -24,7 +24,7 @@ Ouvrez **Firewall → Sinkhole → Bypass** et sélectionnez les interfaces dans
 
 La correspondance réseau et appareil utilise les sous-réseaux actuels de ces interfaces, comme les portées Sinkhole ordinaires. Un client hors des sous-réseaux sélectionnés ne reçoit aucune réponse DNS Bypass.
 
-<img src={bypassProtection} alt="Onglet Bypass avec le LAN sélectionné, la redirection du DNS en clair désactivée, les protections du DNS chiffré et des tunnels activées, Discovery réglé sur Answer with no records, une source et une destination exemptées de démonstration, et trois Bypass Lists de démonstration" width={1024} height={1804} style={{maxWidth: '100%', height: 'auto'}} />
+<img src={bypassProtection} alt="Onglet Bypass pour Global avec le LAN sélectionné, la redirection du DNS en clair désactivée, trois Bypass Lists de démonstration sélectionnées, les protections du DNS chiffré et des tunnels activées, Discovery réglé sur Answer with no records, et une source et une destination exemptées de démonstration" width={1024} height={1697} style={{maxWidth: '100%', height: 'auto'}} />
 
 ## Définir les protections par réseau et par appareil \{#set-protections-per-network-and-device}
 
@@ -36,19 +36,21 @@ Seul **Global** contient :
 
 - Les interfaces de **Apply to**.
 - La redirection **Plain DNS** et ses exemptions.
-- Les sources des Bypass Lists, **Add from Catalog** et les mises à jour des listes.
 
-Un réseau ou un appareil contient :
+Un réseau ou un appareil contient aussi **Enable**, qui active ses protections.
 
-- **Enable**, qui active ses protections.
-- **Bypass Lists**, les sources activées qu’il utilise.
+Global et chaque réseau ou appareil contiennent :
+
+- **Bypass Lists**, les sources activées qu’il utilise. Les sources s’ajoutent, s’activent et se mettent à jour dans [Lists → Bypass](/docs/configure/lists#add-bypass-lists). Sans source activée, le champ affiche à la place une ligne avec un lien **Open Lists**.
 - Les réglages du DNS chiffré, **Discovery**, les blocages de tunnels et **Block Exemptions**.
 
-Un réseau ou un appareil sans réglages propres affiche une ligne, comme « Non défini pour ce réseau ; Global s’applique. », au-dessus d’un formulaire vide. Un appareil y nomme son réseau lorsque ce réseau a ses propres réglages. Enregistrer le formulaire crée les réglages, et **Remove settings for this network** ou **Remove settings for this device** les supprime pour que les réglages plus larges s’appliquent à nouveau. Supprimer un réseau ou un appareil dans l’onglet Clients supprime aussi ses réglages.
+Un réseau ou un appareil sans réglages propres affiche une ligne, comme « Non défini pour ce réseau ; Global s’applique. », au-dessus d’un formulaire vide. Un appareil y nomme son réseau lorsque ce réseau a ses propres réglages et qu’ils sont activés. Un réseau ou un appareil dont les réglages sont désactivés affiche plutôt « Désactivé ; Global s’applique. », en nommant les mêmes réglages plus larges. Enregistrer le formulaire crée les réglages, et **Remove settings for this network** ou **Remove settings for this device** les supprime pour que les réglages plus larges s’appliquent à nouveau. Supprimer un réseau ou un appareil dans l’onglet Clients supprime aussi ses réglages.
 
 **All** liste Global et chaque réseau et appareil ayant ses propres réglages, avec les protections activées. Sélectionnez une ligne pour la modifier.
 
 Lors de la mise à niveau de Sinkhole vers 1.3.0, les réglages existants restent dans Global et sont copiés dans chaque réseau et appareil. Chaque copie est ensuite indépendante. Une copie n’est activée que si l’interface du réseau, ou une interface de l’un des identifiants de l’appareil, était sélectionnée dans **Apply to** ; toutes les autres copies sont enregistrées désactivées, de sorte qu’aucun client n’est filtré s’il ne l’était pas auparavant.
+
+Global choisit ses Bypass Lists comme chaque réseau et appareil. Lors de la mise à niveau de Sinkhole vers 1.3.1, la sélection de Global devient chaque Bypass List existante à ce moment-là ; rien ne change donc tant que vous ne la modifiez pas. Une Bypass List ajoutée ensuite n’est utilisée nulle part tant que Global, un réseau ou un appareil ne la sélectionne pas.
 
 Chaque réseau ou appareil dont les réglages sont activés reçoit sa propre table de clients dans l’ancre `sinkhole/bypass`. Les adresses d’un appareil sont retirées de la table de son réseau et de celle de Global, et les sous-réseaux d’un réseau de celle de Global, de sorte qu’un client n’est bloqué que par ses réglages les plus spécifiques. Sinkhole n’ajoute aucune règle pass pour cela.
 
@@ -82,7 +84,7 @@ Les règles de redirection se chargent dès que Sinkhole est activé dans l’on
 Les réglages du DNS chiffré sont indépendants :
 
 - **TLS and QUIC** bloque le port 853 TCP et UDP vers toutes les destinations sauf le pare-feu.
-- **Providers** bloque les noms et adresses des Bypass Lists activées dont le type est **Encrypted DNS**.
+- **Providers** bloque les noms et adresses des Bypass Lists sélectionnées et activées dont le type est **Encrypted DNS**.
 - **Firefox** répond à `use-application-dns.net` et à ses sous-domaines par `NXDOMAIN`, ce qui désactive la sélection automatique de DNS over HTTPS de Firefox.
 - **Private Relay** répond à `mask.icloud.com` et `mask-h2.icloud.com` par `NXDOMAIN`, ce qui indique aux appareils Apple compatibles que Private Relay n’est pas disponible sur ce réseau.
 
@@ -117,8 +119,8 @@ La désactivation de Discovery ou la suppression de Sinkhole retire la ligne de 
 
 ## Se protéger contre les tunnels \{#protect-against-tunnels}
 
-- **Tor → Block listed Tor relays** applique les Bypass Lists activées de type **Tor**.
-- **VPN → Block listed VPN providers** applique les Bypass Lists activées de type **VPN**.
+- **Tor → Block listed Tor relays** applique les Bypass Lists sélectionnées et activées de type **Tor**.
+- **VPN → Block listed VPN providers** applique les Bypass Lists sélectionnées et activées de type **VPN**.
 - **VPN → Block standard VPN ports** bloque TCP et UDP `1194`, UDP `51820`, UDP `500` et `4500`, ainsi qu’ESP vers toutes les destinations sauf le pare-feu.
 
 Les noms et adresses des listes Tor et VPN utilisent le même comportement DNS et de pare-feu que les listes de fournisseurs de DNS chiffré. Ces contrôles réduisent les chemins alternatifs courants, mais n’identifient pas tous les tunnels chiffrés ou personnalisés.
@@ -136,21 +138,9 @@ Les exemptions ne couvrent que les blocages de pare-feu. Les noms de fournisseur
 
 Si une exemption de blocage enregistrée devient non valide, par exemple un alias renommé ou supprimé, Sinkhole conserve tous les blocages sans exemption, écrit une entrée dans le journal système et affiche la valeur sous **Invalid Saved Values** jusqu’à ce qu’elle soit corrigée ou supprimée.
 
-## Ajouter depuis le catalogue \{#add-from-catalog}
+## Gérer les Bypass Lists \{#manage-bypass-lists}
 
-Ouvrez **Add from Catalog** dans l'onglet Bypass pour rechercher dans le registre de listes d'AdGuard Home et dans les sections DNS, IPv4 et IPv6 du catalogue de flux de pfBlockerNG. Les résultats sont limités aux flux de contournement et leur type est fixé à **Encrypted DNS**, **Tor** ou **VPN**.
-
-Les catalogues sources ne sont récupérés que lorsque vous ouvrez le catalogue ou sélectionnez **Refresh**. L'ajout d'un résultat crée une Bypass List activée ; elle ne participe aux mises à jour planifiées que tant que sa protection correspondante **Providers**, **Tor** ou **VPN** est activée.
-
-La ligne **Contents** de chaque carte indique **Domains**, **IPv4 addresses** ou **IPv6 addresses**. Lorsque vous ajoutez un résultat IPv4 ou IPv6 de pfBlockerNG, Sinkhole ajoute ` (IPv4)` ou ` (IPv6)` au nom enregistré ; les résultats de domaines conservent le nom simple du catalogue.
-
-## Ajouter des Bypass Lists \{#add-bypass-lists}
-
-Sélectionnez **Add** sous **Bypass Lists**, puis saisissez un nom local, un type et une URL HTTP ou HTTPS. Les nouvelles lignes sont désactivées jusqu’à leur activation explicite.
-
-Chaque source accepte une entrée par ligne. Une liste peut mélanger des domaines, des adresses IPv4, des adresses IPv6 et des CIDR ; le texte après `#` est un commentaire. Les lignes non valides ou trop longues sont ignorées. Un téléchargement qui dépasse la limite fixe d’octets ou d’entrées acceptées est rejeté, et la dernière copie valide reste en place.
-
-Une Bypass List activée est mise à jour selon la planification configurée des listes, avec le même client de téléchargement limité que les autres listes, uniquement tant que sa protection correspondante **Providers**, **Tor** ou **VPN** est activée. Un échec de récupération conserve la dernière copie valide enregistrée depuis la même URL et **Status → Bypass Lists** indique les entrées, la dernière récupération et l’erreur la plus récente de chaque ligne. Sinkhole n’inclut ni ne recommande aucune Bypass List.
+Les sources des Bypass Lists s’ajoutent, se modifient, s’activent et se suppriment dans [Lists → Bypass](/docs/configure/lists#add-bypass-lists), qui propose aussi **Add from Catalog** et un nombre **Used By** pour chaque liste. L’onglet Bypass choisit seulement les listes activées qu’utilise chaque contexte. Une Bypass List activée ne participe aux mises à jour planifiées que tant que sa protection correspondante **Providers**, **Tor** ou **VPN** est activée.
 
 ## Vérifier l’état actif \{#verify-the-active-state}
 

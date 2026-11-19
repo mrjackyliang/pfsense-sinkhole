@@ -1,7 +1,7 @@
 ---
 id: lists
 title: Listes et copies enregistrées
-description: Ajoutez des listes DNS par URL ou catalogue, utilisez les formats hosts, domaine et adblock, et conservez les dernières copies valides.
+description: Gérez les listes DNS, Bypass et IP par URL ou catalogue, voyez où chaque liste est utilisée et conservez les dernières copies valides en cas d’échec.
 keywords:
   - sinkhole for pfsense
   - listes de blocage
@@ -25,9 +25,23 @@ Ajoutez des sources de listes fiables et laissez Sinkhole conserver sur le pare-
 3. Conserve la copie valide précédente en cas d’échec d’un nouveau téléchargement ou de son analyse afin qu’une entrée défectueuse ne remplace pas une politique fonctionnelle.
 4. Met les listes à jour en arrière-plan afin qu’un redémarrage ou un rechargement du Resolver n’attende jamais le réseau.
 
+## Choisir un type de liste \{#choose-a-list-kind}
+
+Lists est l’unique endroit où chaque source de liste est ajoutée, modifiée, activée et supprimée. La ligne sous les onglets bascule entre trois types :
+
+| Type   | Contient                                          | Sélectionné dans                                                                   |
+|--------|---------------------------------------------------|------------------------------------------------------------------------------------|
+| DNS    | Listes de blocage de noms de domaine.             | [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains)                |
+| Bypass | Listes de fournisseurs Encrypted DNS, Tor et VPN. | [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device) |
+| IP     | Listes d’adresses et de réseaux IPv4 et IPv6.     | [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device)  |
+
+Chaque type possède sa propre table, ses boutons **Add** et **Add from Catalog** et son panneau de réparation des lignes enregistrées non valides. Lists n’a aucune ligne Global, réseau ou appareil ; ces choix appartiennent aux onglets qui utilisent les listes.
+
+Chaque table possède une colonne **Used By** qui compte Global ainsi que chaque réseau et appareil dont les réglages sélectionnent la liste. Une nouvelle liste, quel que soit son type, ne bloque rien tant qu’un contexte ne la sélectionne pas.
+
 ## Ajouter une liste par URL \{#add-a-list-by-url}
 
-Ouvrez **Firewall → Sinkhole → Lists**, sélectionnez **Add** sous la table des listes de blocage, puis remplissez **Add Block List** dans la page d’édition :
+Ouvrez **Firewall → Sinkhole → Lists → DNS**, sélectionnez **Add** sous la table des listes de blocage, puis remplissez **Add Block List** dans la page d’édition :
 
 | Champ   | Description                                               |
 |---------|-----------------------------------------------------------|
@@ -37,7 +51,7 @@ Ouvrez **Firewall → Sinkhole → Lists**, sélectionnez **Add** sous la table 
 
 L’enregistrement revient à l’onglet Lists et lance le même chemin d’application validé en arrière-plan. Sélectionnez le crayon d’une ligne ou double-cliquez dessus pour la modifier. Une ligne désactivée reste configurée, mais apparaît atténuée dans la table et n’est utilisée ni par la mise à jour ni par la politique compilée.
 
-Lists n’est que le gestionnaire de listes. Les listes qui s’appliquent à Global, à un réseau ou à un appareil se choisissent dans [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains), et la colonne **Used By** compte Global ainsi que chaque réseau et appareil qui sélectionne la liste.
+Les listes DNS qui s’appliquent à Global, à un réseau ou à un appareil se choisissent dans [Blocking](/docs/configure/scopes#choose-lists-and-allowed-domains).
 
 ## Formats DNS acceptés \{#accepted-dns-formats}
 
@@ -55,7 +69,7 @@ Les filtres cosmétiques et les lignes mal formées ne deviennent pas une politi
 
 ## Rechercher dans les catalogues \{#search-the-catalogs}
 
-Sélectionnez **Add from Catalog** dans l’onglet Lists pour rechercher dans le registre de listes d’AdGuard Home et dans la section DNS du catalogue de flux de pfBlockerNG. Sinkhole ne récupère les deux que lorsque la recherche s’ouvre ou lorsque vous sélectionnez **Refresh** ; aucun catalogue n’est intégré ni téléchargé selon un calendrier.
+Sélectionnez **Add from Catalog** sous **DNS** pour rechercher dans le registre de listes d’AdGuard Home et dans la section DNS du catalogue de flux de pfBlockerNG. Sinkhole ne récupère les deux que lorsque la recherche s’ouvre ou lorsque vous sélectionnez **Refresh** ; aucun catalogue n’est intégré ni téléchargé selon un calendrier.
 
 Les résultats apparaissent sous forme de cartes. Utilisez ensemble les contrôles de recherche, de source et de responsable, sélectionnez une puce de catégorie et basculez **Group by** entre **Category** et **Maintainer**. Les puces de catégorie affichent les nombres correspondant aux filtres actuels de recherche, de source et de responsable, tandis que le menu des responsables place en premier ceux qui possèdent le plus de listes correspondantes.
 
@@ -69,7 +83,31 @@ Les copies des catalogues sont mises en cache sous `/var/db` pendant un jour. Un
 
 <img src={catalogSearch} alt="Panneau Add from Catalog de l’onglet Lists avec les contrôles de recherche du catalogue et l’état de récupération" width={1024} height={900} style={{maxWidth: '100%', height: 'auto'}} />
 
-Les flux attribués à la protection contre le contournement Encrypted DNS, Tor ou VPN n'apparaissent pas ici. Ils sont disponibles uniquement avec **Add from Catalog** dans l'onglet Bypass.
+Les flux attribués à la protection contre le contournement Encrypted DNS, Tor ou VPN n'apparaissent pas ici. Ils sont disponibles uniquement avec **Add from Catalog** sous **Bypass**.
+
+## Ajouter des Bypass Lists \{#add-bypass-lists}
+
+Ouvrez **Lists → Bypass**, sélectionnez **Add** sous **Bypass Lists**, puis saisissez un nom local, un type et une URL HTTP ou HTTPS. Les nouvelles lignes sont désactivées jusqu’à leur activation explicite. L’enregistrement revient à **Lists → Bypass**. La table affiche aussi le nombre d’entrées enregistrées et la dernière récupération de chaque ligne.
+
+Chaque source accepte une entrée par ligne. Une liste peut mélanger des domaines, des adresses IPv4, des adresses IPv6 et des CIDR ; le texte après `#` est un commentaire. Les lignes non valides ou trop longues sont ignorées. Un téléchargement qui dépasse la limite fixe d’octets ou d’entrées acceptées est rejeté, et la dernière copie valide reste en place.
+
+Une Bypass List activée est mise à jour selon la planification configurée des listes, avec le même client de téléchargement limité que les autres listes, uniquement tant que sa protection correspondante **Providers**, **Tor** ou **VPN** est activée. Un échec de récupération conserve la dernière copie valide enregistrée depuis la même URL et **Status → Bypass Lists** indique les entrées, la dernière récupération et l’erreur la plus récente de chaque ligne. Sinkhole n’inclut ni ne recommande aucune Bypass List.
+
+**Add from Catalog** sous **Bypass** recherche dans le registre de listes d’AdGuard Home et dans les sections DNS, IPv4 et IPv6 du catalogue de flux de pfBlockerNG. Les résultats sont limités aux flux de contournement et leur type est fixé à **Encrypted DNS**, **Tor** ou **VPN**, que les puces au-dessus des cartes permettent de filtrer.
+
+La ligne **Contents** de chaque carte indique **Domains**, **IPv4 addresses** ou **IPv6 addresses**. Lorsque vous ajoutez un résultat IPv4 ou IPv6 de pfBlockerNG, Sinkhole ajoute ` (IPv4)` ou ` (IPv6)` au nom enregistré ; les résultats de domaines conservent le nom simple du catalogue. L’ajout d’un résultat crée une Bypass List activée.
+
+Global, chaque réseau et chaque appareil choisissent les Bypass Lists qu’ils utilisent dans [Bypass](/docs/configure/bypass-protection#set-protections-per-network-and-device).
+
+## Ajouter des listes IP \{#add-ip-lists}
+
+Ouvrez **Lists → IP** et sélectionnez **Add** sous la table IP Lists pour ouvrir l’éditeur de liste IP. Une ligne utilise une URL HTTP ou HTTPS, choisit IPv4, IPv6 ou les deux familles et indique si la source est activée. L’enregistrement revient à **Lists → IP** ; sélectionnez le crayon ou double-cliquez sur une ligne pour la modifier.
+
+Les lignes valides sont des adresses IPv4 ou IPv6 individuelles et des réseaux CIDR. Les réseaux IPv4 plus larges que `/8` et les réseaux IPv6 plus larges que `/16` sont ignorés et comptés avec les autres lignes non valides ; les réseaux limites `/8` et `/16` sont acceptés. Un téléchargement sans entrée valide ne remplace pas la dernière copie valide enregistrée.
+
+**Add from Catalog** sous **IP** recherche dans les sections IP du catalogue de flux de pfBlockerNG. Les flux de contournement Encrypted DNS, Tor et VPN en sont exclus et apparaissent uniquement sous **Bypass**. La ligne **Contents** de chaque carte indique **IPv4 addresses** ou **IPv6 addresses**. Lorsque vous ajoutez un résultat, Sinkhole ajoute ` (IPv4)` ou ` (IPv6)` au nom enregistré et tronque uniquement le nom de base si nécessaire.
+
+Global, chaque réseau et chaque appareil choisissent les listes IP qu’ils utilisent dans [IP](/docs/configure/ip-and-country-blocking#set-blocking-per-network-and-device).
 
 ## Définir les domaines autorisés globaux \{#set-global-allowed-domains}
 
