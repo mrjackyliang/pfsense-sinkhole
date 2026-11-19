@@ -419,6 +419,30 @@ function sinkholeUpdateRelease(bool $withDigest = true, bool $withSignature = tr
 }
 
 $cases = [
+    'a release is offered only once its package, checksum, and signature are attached' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+
+        try {
+            file_put_contents(
+                $root . '/keys.pub',
+                'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEcEuM8O7kQQkKHAgao93cat1D9++Xd8gX4JXKEza6HH' . PHP_EOL,
+            );
+            $signed = new UpdateManager(installedVersion: '2.0.0', signingKeysFile: $root . '/keys.pub');
+            $complete = sinkholeUpdateRelease();
+            $bare = $complete;
+            $bare['assets'] = [];
+
+            sinkholeTestAssertSame(true, $signed->releaseInstallable($complete), 'A release with its package, checksum, and signature is installable.');
+            sinkholeTestAssertSame(false, $signed->releaseInstallable($bare), 'A release whose build hasn\'t attached files yet must not be offered.');
+            sinkholeTestAssertSame(
+                false,
+                $signed->releaseInstallable(sinkholeUpdateRelease(true, false)),
+                'With signing keys installed, a release without its signature must not be offered.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
     'stable schedules map every configured frequency' => static function (): void {
         $values = [17, 4, 2, 23];
         $calls = 0;

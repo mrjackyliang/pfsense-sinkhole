@@ -1,5 +1,10 @@
 # pfsense-pkg-sinkhole
 
+## 1.3.2 - 2026-11-19
+
+### FIXED
+- Check for Updates offers a new version only once its package, checksum, and signature are attached to the release, so Update never fails while a release is still being built.
+
 ## 1.3.1 - 2026-11-19
 
 ### UPDATED
