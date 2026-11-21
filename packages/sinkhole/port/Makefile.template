@@ -36,6 +36,8 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/priv/sinkhole.priv.inc \
 		${STAGEDIR}${PREFIX}/pkg/priv
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/AdGuardRegistrySource.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/AtomicFile.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/BypassConfiguration.php \
@@ -78,6 +80,8 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/GeoLite2.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/GitHubReleaseSource.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/IpConfiguration.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/IpListStore.php \
@@ -96,11 +100,17 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/PackagePaths.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/PfBlockerNgFeedSource.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/PfSenseAdapter.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/Platform.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/PlatformAdapter.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/RedirectConfiguration.php \
+		${STAGEDIR}${PREFIX}/pkg/sinkhole
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/ReleaseSource.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/sinkhole/RestoreHeal.php \
 		${STAGEDIR}${PREFIX}/pkg/sinkhole

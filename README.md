@@ -37,7 +37,7 @@
 <!-- nova-region: introduction -->
 ## Introduction
 
-Sinkhole for pfSense is a native package that blocks unwanted websites with block lists for the whole network, each VLAN or a single device. It keeps the lists on the firewall, so DNS answers right after a restart or reload while updates download in the background, and alerts arrive through pfSense's own notifications only where you set them.
+A pfBlockerNG alternative that keeps block lists on the firewall, so DNS answers right after a restart while updates download in the background. Add IP and country blocking, optional DNS redirection, and alerts for only the networks or devices you choose.
 <!-- nova-region-end: introduction -->
 
 <!-- nova-region: documentation -->

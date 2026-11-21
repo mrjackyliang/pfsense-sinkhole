@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace PfSense\Sinkhole\Domain;
 
+use PfSense\Sinkhole\Runtime\Platform;
+
 require_once(__DIR__ . '/ListConfiguration.php');
+require_once(__DIR__ . '/Platform.php');
 require_once(__DIR__ . '/RedirectConfiguration.php');
 require_once(__DIR__ . '/ValidationException.php');
 
@@ -327,8 +330,8 @@ final class BypassConfiguration
 
         if ($listSources === []) {
             $global = self::partition(
-                function_exists('config_get_path')
-                    ? config_get_path(self::SECTION_PATH, [])
+                Platform::adapter()->canReadConfiguration()
+                    ? Platform::adapter()->readConfigurationPath(self::SECTION_PATH, [])
                     : [],
             );
             $listSources = $global['lists'];
@@ -493,12 +496,12 @@ final class BypassConfiguration
      */
     public static function storeContext(string $context, array $settings): void
     {
-        if (!function_exists('config_get_path') || !function_exists('config_set_path')) {
+        if (!Platform::adapter()->canReadConfiguration() || !Platform::adapter()->canWriteConfiguration()) {
             return;
         }
 
         if ($context === 'global') {
-            $section = config_get_path(self::SECTION_PATH, []);
+            $section = Platform::adapter()->readConfigurationPath(self::SECTION_PATH, []);
             $section = is_array($section) ? $section : [];
 
             foreach (self::BOOLEAN_FIELDS as $field) {
@@ -520,10 +523,10 @@ final class BypassConfiguration
             $section['selected_lists'] = ['item' => array_values(array_filter($selection, 'is_string'))];
             $section[self::GLOBAL_LISTS_MIGRATION_FLAG] = 'on';
 
-            config_set_path(self::SECTION_PATH, $section);
+            Platform::adapter()->writeConfigurationPath(self::SECTION_PATH, $section);
 
             if (is_array($settings['interfaces'] ?? null)) {
-                config_set_path(
+                Platform::adapter()->writeConfigurationPath(
                     'installedpackages/sinkhole/redirect/interfaces',
                     ['item' => array_values(array_filter($settings['interfaces'], 'is_string'))],
                 );
@@ -536,7 +539,7 @@ final class BypassConfiguration
             return;
         }
 
-        $rows = self::unwrapRows(config_get_path(self::CONTEXTS_PATH, []));
+        $rows = self::unwrapRows(Platform::adapter()->readConfigurationPath(self::CONTEXTS_PATH, []));
         $storage = self::contextStorage($context, $settings);
         $replaced = false;
 
@@ -553,7 +556,7 @@ final class BypassConfiguration
             $rows[] = $storage;
         }
 
-        config_set_path(self::CONTEXTS_PATH, array_values($rows));
+        Platform::adapter()->writeConfigurationPath(self::CONTEXTS_PATH, array_values($rows));
     }
 
     /**
@@ -569,19 +572,19 @@ final class BypassConfiguration
     {
         if (
             self::validOwnedContext($context) === false
-            || !function_exists('config_get_path')
-            || !function_exists('config_set_path')
+            || !Platform::adapter()->canReadConfiguration()
+            || !Platform::adapter()->canWriteConfiguration()
         ) {
             return;
         }
 
-        $rows = self::unwrapRows(config_get_path(self::CONTEXTS_PATH, []));
+        $rows = self::unwrapRows(Platform::adapter()->readConfigurationPath(self::CONTEXTS_PATH, []));
         $rows = array_values(array_filter(
             $rows,
             static fn (mixed $row): bool => !is_array($row)
                 || ($row['context'] ?? null) !== $context,
         ));
-        config_set_path(self::CONTEXTS_PATH, $rows);
+        Platform::adapter()->writeConfigurationPath(self::CONTEXTS_PATH, $rows);
     }
 
     /**
@@ -594,8 +597,8 @@ final class BypassConfiguration
     public static function contextKeys(): array
     {
         $keys = ['global' => true];
-        $rows = function_exists('config_get_path')
-            ? self::unwrapRows(config_get_path(self::CONTEXTS_PATH, []))
+        $rows = Platform::adapter()->canReadConfiguration()
+            ? self::unwrapRows(Platform::adapter()->readConfigurationPath(self::CONTEXTS_PATH, []))
             : [];
 
         foreach ($rows as $row) {
@@ -1316,8 +1319,8 @@ final class BypassConfiguration
     {
         $value = $section['interfaces'] ?? [];
 
-        if ($value === [] && function_exists('config_get_path')) {
-            $value = config_get_path(
+        if ($value === [] && Platform::adapter()->canReadConfiguration()) {
+            $value = Platform::adapter()->readConfigurationPath(
                 'installedpackages/sinkhole/redirect/interfaces',
                 [],
             );
@@ -1361,11 +1364,11 @@ final class BypassConfiguration
     /** @since 1.3.0 */
     private static function configuredAliases(array $fallbackSection): array
     {
-        if (!function_exists('config_get_path')) {
+        if (!Platform::adapter()->canReadConfiguration()) {
             return self::storedAliases($fallbackSection);
         }
 
-        $rows = config_get_path('aliases/alias', []);
+        $rows = Platform::adapter()->readConfigurationPath('aliases/alias', []);
 
         if (is_array($rows) && array_key_exists('name', $rows)) {
             $rows = [$rows];

@@ -6,6 +6,8 @@ namespace PfSense\Sinkhole\Runtime;
 
 use RuntimeException;
 
+require_once(__DIR__ . '/Platform.php');
+
 /**
  * Translator.
  *
@@ -392,13 +394,10 @@ final class Translator
     public static function currentLocale(): string
     {
         $locale = self::DEFAULT_LOCALE;
+        $configuredLocale = Platform::adapter()->configuredLanguage();
 
-        if (function_exists('config_get_path')) {
-            $configuredLocale = config_get_path('system/language', self::DEFAULT_LOCALE);
-
-            if (is_string($configuredLocale) && $configuredLocale !== '') {
-                $locale = $configuredLocale;
-            }
+        if (is_string($configuredLocale) && $configuredLocale !== '') {
+            $locale = $configuredLocale;
         }
 
         return array_key_exists($locale, self::catalogs()) ? $locale : self::DEFAULT_LOCALE;

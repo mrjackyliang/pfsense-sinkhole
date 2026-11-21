@@ -61,6 +61,17 @@ final class SinkholeServicesTestDownloadClient implements DownloadClient
             'error' => is_int($bytes) ? null : 'Invented write failure.',
         ];
     }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function request(
+        string $url,
+        array $headers,
+        string $userAgent,
+        ?string $destinationPath = null,
+        int $maximumBytes = 0,
+    ): array {
+        throw new RuntimeException('Release requests are not part of the services tests.');
+    }
 }
 
 /** @since 1.0.0 */

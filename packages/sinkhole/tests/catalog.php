@@ -5,9 +5,11 @@ declare(strict_types=1);
 use PfSense\Sinkhole\Domain\BypassConfiguration;
 use PfSense\Sinkhole\Domain\Catalog;
 use PfSense\Sinkhole\Domain\ValidationException;
+use PfSense\Sinkhole\Runtime\AdGuardRegistrySource;
 use PfSense\Sinkhole\Runtime\CatalogCache;
 use PfSense\Sinkhole\Runtime\DownloadClient;
 use PfSense\Sinkhole\Runtime\PackagePaths;
+use PfSense\Sinkhole\Runtime\PfBlockerNgFeedSource;
 use PfSense\Sinkhole\Web\CatalogPresentation;
 
 require_once(__DIR__ . '/TestSupport.php');
@@ -78,6 +80,17 @@ final class SinkholeCatalogTestDownloadClient implements DownloadClient
             'bytes' => $bytes,
             'error' => null,
         ];
+    }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function request(
+        string $url,
+        array $headers,
+        string $userAgent,
+        ?string $destinationPath = null,
+        int $maximumBytes = 0,
+    ): array {
+        throw new RuntimeException('Release requests are not part of the catalog tests.');
     }
 }
 
@@ -260,6 +273,59 @@ function sinkholeCatalogTestAssertParseFails(
 }
 
 sinkholeTestRun([
+    'catalog source adapters own their URLs and upstream formats' => static function (): void {
+        $registryDocument = sinkholeCatalogTestRegistryDocument([
+            sinkholeCatalogTestRegistryRow(
+                'Registry Gamma Example',
+                'https://example.com/registry-gamma.txt',
+            ),
+        ]);
+        $feedDocument = sinkholeCatalogTestFeedDocument([
+            'Invented Group' => sinkholeCatalogTestDnsGroup(
+                'Invented group description',
+                [sinkholeCatalogTestFeedRow(
+                    'Feed Delta Example',
+                    'https://example.com/feed-delta.txt',
+                )],
+            ),
+        ]);
+        $registryEntries = AdGuardRegistrySource::parseFilters($registryDocument);
+        $feedEntries = PfBlockerNgFeedSource::parseDnsFeeds($feedDocument);
+
+        sinkholeTestAssertSame('Registry Gamma Example', $registryEntries[0]['name'] ?? null, 'The AdGuard source must read registry filters.');
+        sinkholeTestAssertSame(Catalog::SOURCE_ADGUARD_HOME, $registryEntries[0]['source_key'] ?? null, 'AdGuard entries must carry their project source key.');
+        sinkholeTestAssertSame('Feed Delta Example', $feedEntries[0]['name'] ?? null, 'The pfBlockerNG source must read DNS feeds.');
+        sinkholeTestAssertSame(Catalog::SOURCE_PFBLOCKERNG, $feedEntries[0]['source_key'] ?? null, 'pfBlockerNG entries must carry their project source key.');
+        sinkholeTestAssertSame(
+            $registryEntries,
+            Catalog::parse(Catalog::SOURCE_ADGUARD_HOME, $registryDocument),
+            'The catalog must route AdGuard documents through their source adapter.',
+        );
+        sinkholeTestAssertSame(
+            $feedEntries,
+            Catalog::parse(Catalog::SOURCE_PFBLOCKERNG, $feedDocument),
+            'The catalog must route pfBlockerNG documents through their source adapter.',
+        );
+        sinkholeTestAssertSame(
+            'https://adguardteam.github.io/HostlistsRegistry/assets/filters.json',
+            AdGuardRegistrySource::FILTERS_URL,
+            'The AdGuard source must own the filters URL.',
+        );
+        sinkholeTestAssertTrue(
+            str_starts_with(PfBlockerNgFeedSource::FEEDS_URL, 'https://raw.githubusercontent.com/pfsense/FreeBSD-ports/'),
+            'The pfBlockerNG source must own the FreeBSD-ports feed URL.',
+        );
+
+        $threw = false;
+
+        try {
+            PfBlockerNgFeedSource::parseIpFeeds('{"dnsbl":{}}');
+        } catch (RuntimeException) {
+            $threw = true;
+        }
+
+        sinkholeTestAssertTrue($threw, 'A feed document without IP sections must fail closed.');
+    },
     'popular catalog formats normalize to one entry shape' => static function (): void {
         $registryEntries = Catalog::parse(
             Catalog::SOURCE_ADGUARD_HOME,

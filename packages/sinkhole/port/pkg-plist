@@ -1,6 +1,7 @@
 pkg/sinkhole.inc
 pkg/sinkhole.xml
 pkg/priv/sinkhole.priv.inc
+pkg/sinkhole/AdGuardRegistrySource.php
 pkg/sinkhole/AlertConfiguration.php
 pkg/sinkhole/AlertProcessor.php
 pkg/sinkhole/AtomicFile.php
@@ -22,6 +23,7 @@ pkg/sinkhole/DownloadClient.php
 pkg/sinkhole/FileLock.php
 pkg/sinkhole/FileSystem.php
 pkg/sinkhole/GeoLite2.php
+pkg/sinkhole/GitHubReleaseSource.php
 pkg/sinkhole/IpConfiguration.php
 pkg/sinkhole/IpListStore.php
 pkg/sinkhole/IpNetwork.php
@@ -31,9 +33,12 @@ pkg/sinkhole/IpStatusStore.php
 pkg/sinkhole/IpUpdater.php
 pkg/sinkhole/ListConfiguration.php
 pkg/sinkhole/PackagePaths.php
+pkg/sinkhole/PfBlockerNgFeedSource.php
 pkg/sinkhole/PfSenseAdapter.php
+pkg/sinkhole/Platform.php
 pkg/sinkhole/PlatformAdapter.php
 pkg/sinkhole/RedirectConfiguration.php
+pkg/sinkhole/ReleaseSource.php
 pkg/sinkhole/RestoreHeal.php
 pkg/sinkhole/SafeSearchConfiguration.php
 pkg/sinkhole/SafeSearchEngines.php

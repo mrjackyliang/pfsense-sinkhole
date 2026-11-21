@@ -9,8 +9,10 @@ use RuntimeException;
 use stdClass;
 use Throwable;
 
+require_once(__DIR__ . '/AdGuardRegistrySource.php');
 require_once(__DIR__ . '/AtomicFile.php');
 require_once(__DIR__ . '/Catalog.php');
+require_once(__DIR__ . '/PfBlockerNgFeedSource.php');
 require_once(__DIR__ . '/DownloadClient.php');
 require_once(__DIR__ . '/FileSystem.php');
 require_once(__DIR__ . '/PackagePaths.php');
@@ -52,19 +54,16 @@ final class CatalogCache
     /**
      * Catalog Cache - Source URLs.
      *
-     * These fixed endpoints are never derived from request or downloaded data.
+     * Each source adapter owns its fixed endpoint, which is never derived from
+     * request or downloaded data.
      *
      * @var array<string, string>
      *
      * @since 1.0.0
      */
     private const SOURCE_URLS = [
-        Catalog::SOURCE_ADGUARD_HOME =>
-            'https://adguardteam.github.io/HostlistsRegistry/assets/filters.json',
-        Catalog::SOURCE_PFBLOCKERNG =>
-            'https://raw.githubusercontent.com/pfsense/FreeBSD-ports/devel/'
-            . 'net/pfSense-pkg-pfBlockerNG-devel/files/usr/local/www/pfblockerng/'
-            . 'pfblockerng_feeds.json',
+        Catalog::SOURCE_ADGUARD_HOME => AdGuardRegistrySource::FILTERS_URL,
+        Catalog::SOURCE_PFBLOCKERNG => PfBlockerNgFeedSource::FEEDS_URL,
     ];
 
     /**

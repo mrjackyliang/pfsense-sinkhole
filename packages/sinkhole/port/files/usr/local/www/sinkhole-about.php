@@ -14,6 +14,7 @@ declare(strict_types=1);
 ##|*MATCH=sinkhole-about.php*
 ##|-PRIV
 
+use PfSense\Sinkhole\Runtime\GitHubReleaseSource;
 use PfSense\Sinkhole\Runtime\PackagePaths;
 use PfSense\Sinkhole\Runtime\TestedReleases;
 use PfSense\Sinkhole\Runtime\UpdateManager;
@@ -21,6 +22,7 @@ use PfSense\Sinkhole\Runtime\UpdateManager;
 require_once('guiconfig.inc');
 require_once('pfsense-utils.inc');
 require_once('/usr/local/pkg/sinkhole.inc');
+require_once('/usr/local/pkg/sinkhole/GitHubReleaseSource.php');
 require_once('/usr/local/pkg/sinkhole/PackagePaths.php');
 require_once('/usr/local/pkg/sinkhole/TestedReleases.php');
 require_once('/usr/local/pkg/sinkhole/UpdateManager.php');
@@ -180,7 +182,7 @@ if (is_string($checkedAt) && $checkedAt !== '') {
 }
 
 $releaseUrl = $updateState['release_url'] ?? null;
-$releaseUrl = is_string($releaseUrl) && UpdateManager::isAllowedReleaseUrl($releaseUrl)
+$releaseUrl = is_string($releaseUrl) && GitHubReleaseSource::isAllowedReleaseUrl($releaseUrl)
     ? $releaseUrl
     : null;
 $updateAvailable = is_string($installedPackageVersion)

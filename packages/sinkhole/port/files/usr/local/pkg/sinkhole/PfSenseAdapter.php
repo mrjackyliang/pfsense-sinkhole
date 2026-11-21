@@ -5028,6 +5028,481 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     }
 
     /**
+     * pfSense Adapter - Can Read Configuration.
+     *
+     * @return bool
+     *
+     * @since 1.3.3
+     */
+    public function canReadConfiguration(): bool
+    {
+        return function_exists('config_get_path');
+    }
+
+    /**
+     * pfSense Adapter - Can Write Configuration.
+     *
+     * @return bool
+     *
+     * @since 1.3.3
+     */
+    public function canWriteConfiguration(): bool
+    {
+        return function_exists('config_set_path');
+    }
+
+    /**
+     * pfSense Adapter - Read Configuration Path.
+     *
+     * @param string $path - Configuration path.
+     * @param mixed $default - Value for a missing path.
+     *
+     * @return mixed
+     *
+     * @since 1.3.3
+     */
+    public function readConfigurationPath(string $path, mixed $default = null): mixed
+    {
+        return \config_get_path($path, $default);
+    }
+
+    /**
+     * pfSense Adapter - Write Configuration Path.
+     *
+     * @param string $path - Configuration path.
+     * @param mixed $value - New value.
+     *
+     * @return void
+     *
+     * @since 1.3.3
+     */
+    public function writeConfigurationPath(string $path, mixed $value): void
+    {
+        \config_set_path($path, $value);
+    }
+
+    /**
+     * pfSense Adapter - Remove Configuration Path.
+     *
+     * @param string $path - Configuration path.
+     *
+     * @return void
+     *
+     * @since 1.3.3
+     */
+    public function removeConfigurationPath(string $path): void
+    {
+        \config_del_path($path);
+    }
+
+    /**
+     * pfSense Adapter - Configuration Path Enabled.
+     *
+     * @param string $path - Configuration path.
+     * @param string $enableKey - Flag name.
+     *
+     * @return bool
+     *
+     * @since 1.3.3
+     */
+    public function configurationPathEnabled(string $path, string $enableKey = 'enable'): bool
+    {
+        return (bool) \config_path_enabled($path, $enableKey);
+    }
+
+    /**
+     * pfSense Adapter - Save Configuration.
+     *
+     * Uses pfSense's default write, with its own backup and synchronization, as
+     * package pages and lifecycle hooks always have.
+     *
+     * @param string $description - Revision description.
+     *
+     * @return void
+     *
+     * @since 1.3.3
+     */
+    public function saveConfiguration(string $description): void
+    {
+        \write_config($description);
+    }
+
+    /**
+     * pfSense Adapter - Install Cron Job.
+     *
+     * @param string $command - Command the job runs.
+     * @param bool $active - Whether the job is installed or removed.
+     * @param string $minute - Minute field.
+     * @param string $hour - Hour field.
+     * @param string $monthDay - Day-of-month field.
+     * @param string $month - Month field.
+     * @param string $weekDay - Day-of-week field.
+     * @param string $who - User the job runs as.
+     *
+     * @return void
+     *
+     * @since 1.3.3
+     */
+    public function installCronJob(
+        string $command,
+        bool $active,
+        string $minute = '0',
+        string $hour = '*',
+        string $monthDay = '*',
+        string $month = '*',
+        string $weekDay = '*',
+        string $who = 'root',
+    ): void {
+        \install_cron_job(
+            $command,
+            $active,
+            $minute,
+            $hour,
+            $monthDay,
+            $month,
+            $weekDay,
+            $who,
+        );
+    }
+
+    /**
+     * pfSense Adapter - Regenerate Crontab.
+     *
+     * @return void
+     *
+     * @since 1.3.3
+     */
+    public function regenerateCrontab(): void
+    {
+        \configure_cron();
+    }
+
+    /**
+     * pfSense Adapter - Require Notice API.
+     *
+     * Loads pfSense's notice include when a needed function is missing and readable,
+     * then names the first function that is still missing.
+     *
+     * @param bool $includeFiling - Whether filing notices is also required.
+     *
+     * @return string|null
+     *
+     * @since 1.3.3
+     */
+    public function requireNoticeApi(bool $includeFiling): ?string
+    {
+        $requiredFunctions = ($includeFiling)
+            ? ['get_notices', 'close_notice', 'file_notice']
+            : ['get_notices', 'close_notice'];
+        $missingFunctions = array_values(array_filter(
+            $requiredFunctions,
+            static fn(string $requiredFunction): bool => function_exists($requiredFunction) === false,
+        ));
+
+        if (count($missingFunctions) > 0 && is_readable('/etc/inc/notices.inc')) {
+            require_once('/etc/inc/notices.inc');
+        }
+
+        foreach ($requiredFunctions as $requiredFunction) {
+            if (function_exists($requiredFunction) === false) {
+                return $requiredFunction;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * pfSense Adapter - Get Notices.
+     *
+     * @param string|null $category - Optional notice category.
+     *
+     * @return mixed
+     *
+     * @since 1.3.3
+     */
+    public function getNotices(?string $category = null): mixed
+    {
+        if (function_exists('get_notices') === false) {
+            return false;
+        }
+
+        return ($category === null) ? \get_notices() : \get_notices($category);
+    }
+
+    /**
+     * pfSense Adapter - Close Notice.
+     *
+     * @param int|string $identifier - Queue key or stored identifier.
+     *
+     * @return void
+     *
+     * @since 1.3.3
+     */
+    public function closeNotice(int|string $identifier): void
+    {
+        if (function_exists('close_notice') === false) {
+            return;
+        }
+
+        \close_notice($identifier);
+    }
+
+    /**
+     * pfSense Adapter - File Notice.
+     *
+     * @param string $identifier - Notice identifier.
+     * @param string $message - Notice text.
+     * @param string $category - Notice category.
+     * @param string $url - Notice link.
+     * @param int $priority - Notice priority.
+     * @param bool $localOnly - Whether remote delivery is disabled.
+     *
+     * @return mixed
+     *
+     * @since 1.3.3
+     */
+    public function fileNotice(
+        string $identifier,
+        string $message,
+        string $category,
+        string $url,
+        int $priority,
+        bool $localOnly,
+    ): mixed {
+        return \file_notice($identifier, $message, $category, $url, $priority, $localOnly);
+    }
+
+    /**
+     * pfSense Adapter - Notify Remote.
+     *
+     * @param string $message - Notification text.
+     *
+     * @return mixed
+     *
+     * @since 1.3.3
+     */
+    public function notifyRemote(string $message): mixed
+    {
+        return \notify_all_remote($message);
+    }
+
+    /**
+     * pfSense Adapter - Product Label.
+     *
+     * @return string|null
+     *
+     * @since 1.3.3
+     */
+    public function productLabel(): ?string
+    {
+        if (function_exists('g_get') === false) {
+            return null;
+        }
+
+        $productLabel = \g_get('product_label');
+
+        return is_string($productLabel) ? $productLabel : '';
+    }
+
+    /**
+     * pfSense Adapter - Translate Platform Text.
+     *
+     * @param string $text - Platform source text.
+     *
+     * @return string
+     *
+     * @since 1.3.3
+     */
+    public function translatePlatformText(string $text): string
+    {
+        return \gettext($text);
+    }
+
+    /**
+     * pfSense Adapter - System Log.
+     *
+     * @param string $line - Complete log line.
+     *
+     * @return bool
+     *
+     * @since 1.3.3
+     */
+    public function systemLog(string $line): bool
+    {
+        if (function_exists('log_error') === false) {
+            return false;
+        }
+
+        \log_error($line);
+
+        return true;
+    }
+
+    /**
+     * pfSense Adapter - Process ID File Running.
+     *
+     * @param string $pidFile - PID file path.
+     *
+     * @return bool
+     *
+     * @since 1.3.3
+     */
+    public function processIdFileRunning(string $pidFile): bool
+    {
+        return (bool) \isvalidpid($pidFile);
+    }
+
+    /**
+     * pfSense Adapter - Configured Interface Descriptions.
+     *
+     * @return array<string, string>
+     *
+     * @since 1.3.3
+     */
+    public function configuredInterfaceDescriptions(): array
+    {
+        if (function_exists('get_configured_interface_with_descr') === false) {
+            return [];
+        }
+
+        $configured = \get_configured_interface_with_descr();
+
+        return is_array($configured) ? $configured : [];
+    }
+
+    /**
+     * pfSense Adapter - Reconfigure Filter.
+     *
+     * @return void
+     *
+     * @since 1.3.3
+     */
+    public function reconfigureFilter(): void
+    {
+        if (function_exists('filter_configure') === false) {
+            return;
+        }
+
+        \filter_configure();
+    }
+
+    /**
+     * pfSense Adapter - Assert Update Environment.
+     *
+     * @return void
+     *
+     * @throws RuntimeException When the host lacks a required pfSense boundary.
+     *
+     * @since 1.3.3
+     */
+    public function assertUpdateEnvironment(): void
+    {
+        if (PHP_OS_FAMILY !== 'BSD' || file_exists('/etc/version') === false) {
+            throw new RuntimeException(Translator::translate('unsupported_pfsense_system'));
+        }
+
+        $requiredFiles = [
+            '/etc/inc/config.inc',
+            '/etc/inc/notices.inc',
+            '/etc/inc/pfsense-utils.inc',
+        ];
+
+        foreach ($requiredFiles as $requiredFile) {
+            if (is_readable($requiredFile) === false) {
+                throw new RuntimeException(Translator::translate(
+                    'required_pfsense_dependency_unavailable',
+                    [$requiredFile],
+                ));
+            }
+
+            require_once($requiredFile);
+        }
+
+        $requiredFunctions = [
+            'close_notice',
+            'config_get_path',
+            'file_notice',
+            'log_error',
+            'set_curlproxy',
+        ];
+
+        foreach ($requiredFunctions as $requiredFunction) {
+            if (function_exists($requiredFunction) === false) {
+                throw new RuntimeException(Translator::translate(
+                    'required_pfsense_dependency_unavailable',
+                    [$requiredFunction],
+                ));
+            }
+        }
+
+        if (function_exists('curl_init') === false) {
+            throw new RuntimeException(Translator::translate('curl_support_unavailable'));
+        }
+    }
+
+    /**
+     * pfSense Adapter - Installed Packages.
+     *
+     * @return array
+     *
+     * @since 1.3.3
+     */
+    public function installedPackages(): array
+    {
+        if (function_exists('config_get_path') === false) {
+            return [];
+        }
+
+        $installedPackages = \config_get_path('installedpackages/package', []);
+
+        return is_array($installedPackages) ? $installedPackages : [];
+    }
+
+    /**
+     * pfSense Adapter - Parse Package XML.
+     *
+     * @param string $path - XML file path.
+     * @param string $rootElement - Expected root element.
+     *
+     * @return mixed
+     *
+     * @since 1.3.3
+     */
+    public function parsePackageXml(string $path, string $rootElement): mixed
+    {
+        if (function_exists('parse_xml_config_pkg') === false) {
+            $xmlParserPath = '/etc/inc/xmlparse.inc';
+
+            if (is_readable($xmlParserPath) === false) {
+                return null;
+            }
+
+            require_once($xmlParserPath);
+        }
+
+        return \parse_xml_config_pkg($path, $rootElement);
+    }
+
+    /**
+     * pfSense Adapter - Configured Language.
+     *
+     * @return string|null
+     *
+     * @since 1.3.3
+     */
+    public function configuredLanguage(): ?string
+    {
+        if (function_exists('config_get_path') === false) {
+            return null;
+        }
+
+        $configuredLanguage = \config_get_path('system/language', Translator::DEFAULT_LOCALE);
+
+        return is_string($configuredLanguage) ? $configuredLanguage : null;
+    }
+
+    /**
      * pfSense Adapter - Read Boot Restore Status.
      *
      * @return array{level: string, message: string}|null

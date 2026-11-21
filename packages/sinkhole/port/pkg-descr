@@ -1,2 +1,4 @@
-Sinkhole blocks unwanted websites on your pfSense network, with separate block
-lists for each network or device.
+A pfBlockerNG alternative that keeps block lists on the firewall, so DNS answers
+right after a restart while updates download in the background. Add IP and
+country blocking, optional DNS redirection, and alerts for only the networks or
+devices you choose.

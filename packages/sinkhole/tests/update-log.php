@@ -102,6 +102,17 @@ final class SinkholeUpdateLogFixtureDownloadClient implements DownloadClient
             ? ['success' => true, 'bytes' => $bytes, 'error' => null]
             : ['success' => false, 'bytes' => 0, 'error' => 'Invented fixture write failed.'];
     }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function request(
+        string $url,
+        array $headers,
+        string $userAgent,
+        ?string $destinationPath = null,
+        int $maximumBytes = 0,
+    ): array {
+        throw new RuntimeException('Release requests are not part of the update-log tests.');
+    }
 }
 
 /**

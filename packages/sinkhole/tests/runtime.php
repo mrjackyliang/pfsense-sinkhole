@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use PfSense\Sinkhole\Domain\BypassConfiguration;
 use PfSense\Sinkhole\Domain\BypassParser;
 use PfSense\Sinkhole\Domain\DomainParser;
 use PfSense\Sinkhole\Domain\IpNetwork;
@@ -12,11 +13,13 @@ use PfSense\Sinkhole\Runtime\Compiler;
 use PfSense\Sinkhole\Runtime\DownloadClient;
 use PfSense\Sinkhole\Runtime\FileLock;
 use PfSense\Sinkhole\Runtime\PackagePaths;
+use PfSense\Sinkhole\Runtime\Platform;
 use PfSense\Sinkhole\Runtime\PlatformAdapter;
 use PfSense\Sinkhole\Runtime\SafeSearchTargets;
 use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Domain\SafeSearchConfiguration;
 use PfSense\Sinkhole\Runtime\StateStore;
+use PfSense\Sinkhole\Runtime\Translator;
 use PfSense\Sinkhole\Runtime\UpdateLockRunner;
 use PfSense\Sinkhole\Runtime\UpdateLog;
 use PfSense\Sinkhole\Runtime\Updater;
@@ -24,6 +27,7 @@ use PfSense\Sinkhole\Domain\ScopeConfiguration;
 
 require_once(__DIR__ . '/TestSupport.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/AtomicFile.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/BypassConfiguration.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/BypassParser.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/ClientSource.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/ClientMap.php');
@@ -32,10 +36,12 @@ require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/DomainParser.php')
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/DownloadClient.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/FileSystem.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/PackagePaths.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Platform.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/PlatformAdapter.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/SafeSearchTargets.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/SavedListStore.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/StateStore.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Translator.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/Updater.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/ScopeConfiguration.php');
 
@@ -339,6 +345,195 @@ final class SinkholeRuntimeTestPlatformAdapter implements PlatformAdapter
     {
         $this->logs[] = $message;
     }
+
+    /**
+     * Sinkhole Runtime Test - Configuration Paths.
+     *
+     * Values by exact configuration path for the configuration primitives.
+     *
+     * @var array<string, mixed>
+     *
+     * @since 1.3.3
+     */
+    public array $configurationPaths = [];
+
+    /**
+     * Sinkhole Runtime Test - Platform Events.
+     *
+     * Ordered configuration, cron, notice, and filter calls.
+     *
+     * @var list<string>
+     *
+     * @since 1.3.3
+     */
+    public array $platformEvents = [];
+
+    /** @inheritDoc @since 1.3.3 */
+    public function canReadConfiguration(): bool
+    {
+        return true;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function canWriteConfiguration(): bool
+    {
+        return true;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function readConfigurationPath(string $path, mixed $default = null): mixed
+    {
+        return $this->configurationPaths[$path] ?? $default;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function writeConfigurationPath(string $path, mixed $value): void
+    {
+        $this->configurationPaths[$path] = $value;
+        $this->platformEvents[] = 'set:' . $path;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function removeConfigurationPath(string $path): void
+    {
+        unset($this->configurationPaths[$path]);
+        $this->platformEvents[] = 'delete:' . $path;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function configurationPathEnabled(string $path, string $enableKey = 'enable'): bool
+    {
+        $section = $this->configurationPaths[$path] ?? null;
+
+        return is_array($section) && isset($section[$enableKey]);
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function saveConfiguration(string $description): void
+    {
+        $this->platformEvents[] = 'save:' . $description;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function installCronJob(
+        string $command,
+        bool $active,
+        string $minute = '0',
+        string $hour = '*',
+        string $monthDay = '*',
+        string $month = '*',
+        string $weekDay = '*',
+        string $who = 'root',
+    ): void {
+        $this->platformEvents[] = ($active ? 'cron-install:' : 'cron-remove:') . $command;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function regenerateCrontab(): void
+    {
+        $this->platformEvents[] = 'crontab';
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function requireNoticeApi(bool $includeFiling): ?string
+    {
+        return null;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function getNotices(?string $category = null): mixed
+    {
+        return false;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function closeNotice(int|string $identifier): void
+    {
+        $this->platformEvents[] = 'close-notice:' . $identifier;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function fileNotice(
+        string $identifier,
+        string $message,
+        string $category,
+        string $url,
+        int $priority,
+        bool $localOnly,
+    ): mixed {
+        $this->platformEvents[] = 'file-notice:' . $identifier;
+
+        return null;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function notifyRemote(string $message): mixed
+    {
+        $this->platformEvents[] = 'notify-remote';
+
+        return null;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function productLabel(): ?string
+    {
+        return 'pfSense';
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function translatePlatformText(string $text): string
+    {
+        return $text;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function systemLog(string $line): bool
+    {
+        $this->logs[] = $line;
+
+        return true;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function processIdFileRunning(string $pidFile): bool
+    {
+        return false;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function configuredInterfaceDescriptions(): array
+    {
+        return [];
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function reconfigureFilter(): void
+    {
+        $this->platformEvents[] = 'filter';
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function assertUpdateEnvironment(): void
+    {
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function installedPackages(): array
+    {
+        return [];
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function parsePackageXml(string $path, string $rootElement): mixed
+    {
+        return null;
+    }
+
+    /** @inheritDoc @since 1.3.3 */
+    public function configuredLanguage(): ?string
+    {
+        return null;
+    }
 }
 
 /**
@@ -528,6 +723,17 @@ final class SinkholeRuntimeTestDownloadClient implements DownloadClient
             'error' => null,
         ];
     }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function request(
+        string $url,
+        array $headers,
+        string $userAgent,
+        ?string $destinationPath = null,
+        int $maximumBytes = 0,
+    ): array {
+        throw new RuntimeException('Release requests are not part of the runtime tests.');
+    }
 }
 
 /**
@@ -664,6 +870,35 @@ function sinkholeRuntimeTestIsBlocked(string $name, array $rows, array $allowed)
 }
 
 sinkholeTestRun([
+    'static helpers reach pfSense only through the shared platform adapter' => static function (): void {
+        $adapter = new SinkholeRuntimeTestPlatformAdapter([], []);
+
+        Platform::replace($adapter);
+
+        try {
+            BypassConfiguration::storeContext('global', [
+                'interfaces' => ['lan'],
+            ]);
+
+            sinkholeTestAssertSame(
+                [
+                    'set:' . BypassConfiguration::SECTION_PATH,
+                    'set:installedpackages/sinkhole/redirect/interfaces',
+                ],
+                $adapter->platformEvents,
+                'Bypass settings must be staged through the platform adapter.',
+            );
+            sinkholeTestAssertSame(
+                ['item' => ['lan']],
+                $adapter->readConfigurationPath('installedpackages/sinkhole/redirect/interfaces'),
+                'The shared interface selection must keep its repeated-item shape.',
+            );
+            sinkholeTestAssertSame(['global'], BypassConfiguration::contextKeys(), 'Context keys must be read through the platform adapter.');
+            sinkholeTestAssertSame(Translator::DEFAULT_LOCALE, Translator::currentLocale(), 'Without a configured language the translator must use English.');
+        } finally {
+            Platform::replace(null);
+        }
+    },
     'SafeSearch targets keep last good addresses' => static function (): void {
         $directory = sinkholeTestTemporaryDirectory();
 

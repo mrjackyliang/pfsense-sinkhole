@@ -33,14 +33,6 @@ require_once(__DIR__ . '/UpdateLog.php');
  */
 final class IpUpdater
 {
-    /** @var string @since 1.0.0 */
-    public const GEOLITE2_ARCHIVE_URL =
-        'https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip';
-
-    /** @var string @since 1.0.0 */
-    public const GEOLITE2_CHECKSUM_URL =
-        'https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip.sha256';
-
     /** @var int @since 1.0.0 */
     public const GEOLITE2_REFRESH_SECONDS = 604800;
 
@@ -616,7 +608,7 @@ final class IpUpdater
         if ($needsUpdate) {
             $this->updateLog?->line(
                 'Downloading GeoLite2 Country data from '
-                . UpdateLog::host(self::GEOLITE2_ARCHIVE_URL)
+                . UpdateLog::host(GeoLite2::ARCHIVE_URL)
                 . '.',
             );
 
@@ -626,39 +618,13 @@ final class IpUpdater
             $checksumPath = FileSystem::createTemporaryFile($directory, '.geolite2-sha-', 0600);
 
             try {
-                foreach ([
-                    [self::GEOLITE2_ARCHIVE_URL, $archivePath, GeoLite2::MAXIMUM_ARCHIVE_BYTES],
-                    [self::GEOLITE2_CHECKSUM_URL, $checksumPath, 4096],
-                ] as [$url, $path, $limit]) {
-                    $download = $this->downloadClient->download(
-                        $url,
-                        $path,
-                        $limit,
-                        $configuration['account_id'],
-                        $configuration['license_key'],
-                    );
-
-                    if ($download['success'] === false) {
-                        throw new RuntimeException($download['error'] ?? 'The GeoLite2 download failed.');
-                    }
-
-                    $actualBytes = filesize($path);
-
-                    if (
-                        !is_int($download['bytes'] ?? null)
-                        || $download['bytes'] <= 0
-                        || $download['bytes'] > $limit
-                        || !FileSystem::isRegularFile($path)
-                        || !is_int($actualBytes)
-                        || $actualBytes <= 0
-                        || $actualBytes > $limit
-                        || $actualBytes !== $download['bytes']
-                    ) {
-                        throw new RuntimeException(
-                            'A GeoLite2 download is empty or exceeds its size limit.',
-                        );
-                    }
-                }
+                GeoLite2::download(
+                    $this->downloadClient,
+                    $configuration['account_id'],
+                    $configuration['license_key'],
+                    $archivePath,
+                    $checksumPath,
+                );
 
                 $checksum = file_get_contents($checksumPath);
 

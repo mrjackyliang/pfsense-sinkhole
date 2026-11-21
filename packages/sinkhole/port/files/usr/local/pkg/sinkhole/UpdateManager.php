@@ -10,6 +10,9 @@ use Throwable;
 
 require_once(__DIR__ . '/PackagePaths.php');
 require_once(__DIR__ . '/FileLock.php');
+require_once(__DIR__ . '/GitHubReleaseSource.php');
+require_once(__DIR__ . '/Platform.php');
+require_once(__DIR__ . '/ReleaseSource.php');
 require_once(__DIR__ . '/RestoreHeal.php');
 require_once(__DIR__ . '/Translator.php');
 
@@ -131,18 +134,19 @@ final class ReleaseUpdateLockRunner
 /**
  * Update Manager.
  *
- * Scheduled checks, notices, and the About tab share this boundary so release
- * parsing and every verification step remain independently testable.
+ * Scheduled checks, notices, and the About tab share this boundary so every
+ * verification step remains independently testable. Releases come from a
+ * ReleaseSource and pfSense calls go through the platform adapter.
  *
  * @since 1.0.0
  */
 final class UpdateManager
 {
-    /** @var string @since 1.0.0 */
-    public const RELEASES_API = 'https://api.github.com/repos/mrjackyliang/pfsense-sinkhole/releases/latest';
+    /** @var string The GitHub release source owns this URL. @since 1.0.0 */
+    public const RELEASES_API = GitHubReleaseSource::RELEASES_API;
 
-    /** @var string @since 1.0.0 */
-    public const DOWNLOAD_PREFIX = 'https://github.com/mrjackyliang/pfsense-sinkhole/releases/download/';
+    /** @var string The GitHub release source owns this URL. @since 1.0.0 */
+    public const DOWNLOAD_PREFIX = GitHubReleaseSource::DOWNLOAD_PREFIX;
 
     /** @var string @since 1.0.0 */
     public const NOTICE_ID = 'sinkhole-update-available';
@@ -174,9 +178,6 @@ final class UpdateManager
     /** @var string @since 1.2.3 */
     public const RESTORE_NOTICE_ID = 'sinkhole-configuration-restore';
 
-    /** @var string @since 1.0.0 @private */
-    private const USER_AGENT = 'pfSense-pkg-Sinkhole';
-
     /** @var int @since 1.0.0 @private */
     private const PACKAGE_DOWNLOAD_LIMIT = 64 * 1024 * 1024;
 
@@ -189,12 +190,12 @@ final class UpdateManager
     /**
      * Update Manager - Constructor.
      *
-     * Production uses fixed endpoints and trust paths. Tests can isolate release
-     * state and command boundaries without exposing those overrides to the WebGUI.
+     * Production uses the GitHub release source and fixed trust paths. Tests can
+     * isolate releases, state, and command boundaries without exposing those
+     * overrides to the WebGUI.
      *
      * @param string $installedVersion - Installed package version.
-     * @param string $releasesApi - Latest-release API endpoint.
-     * @param string $downloadPrefix - Allowed release asset URL prefix.
+     * @param ReleaseSource $releaseSource - Where releases and their assets come from.
      * @param string $updatesFile - Persistent update metadata path.
      * @param string $statusFile - Background update status path.
      * @param string $signingKeysFile - Test release signing key path.
@@ -204,8 +205,7 @@ final class UpdateManager
      */
     public function __construct(
         private readonly string $installedVersion,
-        private readonly string $releasesApi = self::RELEASES_API,
-        private readonly string $downloadPrefix = self::DOWNLOAD_PREFIX,
+        private readonly ReleaseSource $releaseSource = new GitHubReleaseSource(),
         private readonly string $updatesFile = PackagePaths::UPDATES_FILE,
         private readonly string $statusFile = PackagePaths::UPDATE_STATUS_FILE,
         private readonly string $signingKeysFile = self::SIGNING_KEYS_FILE,
@@ -225,7 +225,7 @@ final class UpdateManager
      */
     public static function isAvailable(): bool
     {
-        return self::RELEASES_API !== '' && self::DOWNLOAD_PREFIX !== '';
+        return GitHubReleaseSource::isAvailable();
     }
 
     /**
@@ -263,47 +263,7 @@ final class UpdateManager
             throw new RuntimeException(self::translate('update_checks_unavailable_repository'));
         }
 
-        if (PHP_OS_FAMILY !== 'BSD' || file_exists('/etc/version') === false) {
-            throw new RuntimeException(self::translate('unsupported_pfsense_system'));
-        }
-
-        $requiredFiles = [
-            '/etc/inc/config.inc',
-            '/etc/inc/notices.inc',
-            '/etc/inc/pfsense-utils.inc',
-        ];
-
-        foreach ($requiredFiles as $requiredFile) {
-            if (is_readable($requiredFile) === false) {
-                throw new RuntimeException(self::translate(
-                    'required_pfsense_dependency_unavailable',
-                    [$requiredFile],
-                ));
-            }
-
-            require_once($requiredFile);
-        }
-
-        $requiredFunctions = [
-            'close_notice',
-            'config_get_path',
-            'file_notice',
-            'log_error',
-            'set_curlproxy',
-        ];
-
-        foreach ($requiredFunctions as $requiredFunction) {
-            if (function_exists($requiredFunction) === false) {
-                throw new RuntimeException(self::translate(
-                    'required_pfsense_dependency_unavailable',
-                    [$requiredFunction],
-                ));
-            }
-        }
-
-        if (function_exists('curl_init') === false) {
-            throw new RuntimeException(self::translate('curl_support_unavailable'));
-        }
+        Platform::adapter()->assertUpdateEnvironment();
     }
 
     /**
@@ -330,7 +290,7 @@ final class UpdateManager
         $checkedAt = gmdate(DATE_ATOM);
 
         try {
-            $release = $this->fetchLatestRelease();
+            $release = $this->releaseSource->fetchLatestRelease();
 
             // GitHub publishes the release before its build attaches the package. A newer
             // release that can't be installed yet stays unseen until its files are there.
@@ -411,7 +371,7 @@ final class UpdateManager
     public function releaseInstallable(array $release): bool
     {
         try {
-            $assets = self::selectUpdateAssets($release, $this->downloadPrefix);
+            $assets = self::selectUpdateAssets($release, $this->releaseSource->assetUrlPrefix());
 
             self::assertSignatureRequirements($assets, self::readSigningKeys($this->signingKeysFile));
         } catch (Throwable) {
@@ -460,24 +420,18 @@ final class UpdateManager
      */
     public static function installedVersion(): ?string
     {
-        if (function_exists('config_get_path')) {
-            $installedPackages = config_get_path('installedpackages/package', []);
+        foreach (Platform::adapter()->installedPackages() as $installedPackage) {
+            if (
+                !is_array($installedPackage)
+                || ($installedPackage['name'] ?? null) !== 'Sinkhole'
+            ) {
+                continue;
+            }
 
-            if (is_array($installedPackages)) {
-                foreach ($installedPackages as $installedPackage) {
-                    if (
-                        !is_array($installedPackage)
-                        || ($installedPackage['name'] ?? null) !== 'Sinkhole'
-                    ) {
-                        continue;
-                    }
+            $installedPackageVersion = $installedPackage['version'] ?? null;
 
-                    $installedPackageVersion = $installedPackage['version'] ?? null;
-
-                    if (is_string($installedPackageVersion) && $installedPackageVersion !== '') {
-                        return $installedPackageVersion;
-                    }
-                }
+            if (is_string($installedPackageVersion) && $installedPackageVersion !== '') {
+                return $installedPackageVersion;
             }
         }
 
@@ -487,17 +441,7 @@ final class UpdateManager
             return null;
         }
 
-        if (function_exists('parse_xml_config_pkg') === false) {
-            $xmlParserPath = '/etc/inc/xmlparse.inc';
-
-            if (is_readable($xmlParserPath) === false) {
-                return null;
-            }
-
-            require_once($xmlParserPath);
-        }
-
-        $packageInfo = parse_xml_config_pkg($packageInfoPath, 'pfsensepkgs');
+        $packageInfo = Platform::adapter()->parsePackageXml($packageInfoPath, 'pfsensepkgs');
         $packageInfoPackage = is_array($packageInfo)
             ? ($packageInfo['package'] ?? null)
             : null;
@@ -541,33 +485,6 @@ final class UpdateManager
     }
 
     /**
-     * Update Manager - Is Allowed Release URL.
-     *
-     * Persistent release links must remain under this repository's HTTPS release
-     * pages before the About tab renders them.
-     *
-     * @param string $url - Release page URL.
-     *
-     * @return bool
-     *
-     * @since 1.0.0
-     */
-    public static function isAllowedReleaseUrl(string $url): bool
-    {
-        if (!str_ends_with(self::DOWNLOAD_PREFIX, 'download/')) {
-            return false;
-        }
-
-        $releasePagePrefix = substr(
-            self::DOWNLOAD_PREFIX,
-            0,
-            -strlen('download/'),
-        );
-
-        return $releasePagePrefix !== '' && str_starts_with($url, $releasePagePrefix);
-    }
-
-    /**
      * Update Manager - Is Newer Version.
      *
      * Git tags may carry one leading letter while package metadata stores the
@@ -592,92 +509,6 @@ final class UpdateManager
             $normalizedInstalledVersion,
             '>',
         );
-    }
-
-    /**
-     * Update Manager - Parse Release JSON.
-     *
-     * Malformed external data fails closed before any release field reaches
-     * persistent package state or the About page.
-     *
-     * @param string $json - GitHub release JSON.
-     *
-     * @return array
-     *
-     * @throws RuntimeException When required release fields are invalid.
-     *
-     * @since 1.0.0
-     */
-    public static function parseReleaseJson(string $json): array
-    {
-        try {
-            $releaseData = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $jsonException) {
-            throw new RuntimeException(
-                self::translate('release_metadata_invalid'),
-                0,
-                $jsonException,
-            );
-        }
-
-        if (!is_array($releaseData)) {
-            throw new RuntimeException(self::translate('release_metadata_invalid'));
-        }
-
-        $tag = $releaseData['tag_name'] ?? null;
-        $releaseUrl = $releaseData['html_url'] ?? null;
-        $publishedAt = $releaseData['published_at'] ?? null;
-        $releaseAssets = $releaseData['assets'] ?? null;
-
-        if (
-            !is_string($tag)
-            || $tag === ''
-            || !is_string($releaseUrl)
-            || self::isAllowedReleaseUrl($releaseUrl) === false
-            || !is_string($publishedAt)
-            || $publishedAt === ''
-            || !is_array($releaseAssets)
-        ) {
-            throw new RuntimeException(self::translate('release_metadata_invalid'));
-        }
-
-        $version = self::normalizeVersion($tag);
-
-        if (preg_match('/^[0-9]+(?:\.[0-9]+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/', $version) !== 1) {
-            throw new RuntimeException(self::translate('release_tag_invalid'));
-        }
-
-        $assets = [];
-
-        foreach ($releaseAssets as $releaseAsset) {
-            if (!is_array($releaseAsset)) {
-                continue;
-            }
-
-            $releaseAssetName = $releaseAsset['name'] ?? null;
-            $releaseAssetUrl = $releaseAsset['browser_download_url'] ?? null;
-            $releaseAssetDigest = $releaseAsset['digest'] ?? null;
-
-            if (!is_string($releaseAssetName) || !is_string($releaseAssetUrl)) {
-                continue;
-            }
-
-            $assets[] = [
-                'name' => $releaseAssetName,
-                'url' => $releaseAssetUrl,
-                'digest' => is_string($releaseAssetDigest)
-                    ? $releaseAssetDigest
-                    : null,
-            ];
-        }
-
-        return [
-            'tag' => $tag,
-            'version' => $version,
-            'release_url' => $releaseUrl,
-            'published_at' => $publishedAt,
-            'assets' => $assets,
-        ];
     }
 
     /**
@@ -1107,11 +938,7 @@ final class UpdateManager
         }
 
         $packageFile = self::PACKAGE_NAME . '-' . $normalizedVersion . '.pkg';
-        $packageUrl = $downloadPrefix
-            . 'v'
-            . $normalizedVersion
-            . '/'
-            . $packageFile;
+        $packageUrl = GitHubReleaseSource::assetUrl($downloadPrefix, $normalizedVersion, $packageFile);
 
         if (self::isAllowedAssetUrl($packageUrl, $downloadPrefix) === false) {
             return null;
@@ -1178,14 +1005,12 @@ final class UpdateManager
         }
 
         $packageFile = self::PACKAGE_NAME . '-' . $normalizedVersion . '.pkg';
-        $checksumUrl = $this->downloadPrefix
-            . 'v'
-            . $normalizedVersion
-            . '/'
-            . $packageFile
-            . '.sha256';
+        $checksumUrl = $this->releaseSource->releaseAssetUrl(
+            $normalizedVersion,
+            $packageFile . '.sha256',
+        );
 
-        if (self::isAllowedAssetUrl($checksumUrl, $this->downloadPrefix) === false) {
+        if (self::isAllowedAssetUrl($checksumUrl, $this->releaseSource->assetUrlPrefix()) === false) {
             throw new RestoreHealReleaseNotVerifiableException(
                 'The installed release checksum URL is not verifiable.',
             );
@@ -1196,7 +1021,7 @@ final class UpdateManager
 
         try {
             try {
-                $this->downloadFile(
+                $this->releaseSource->downloadAsset(
                     $checksumUrl,
                     $checksumPath,
                     self::AUXILIARY_DOWNLOAD_LIMIT,
@@ -1227,7 +1052,7 @@ final class UpdateManager
             $metadata = self::restoreHealMetadataFromChecksum(
                 $normalizedVersion,
                 $checksum,
-                $this->downloadPrefix,
+                $this->releaseSource->assetUrlPrefix(),
             );
 
             if (!is_array($metadata)) {
@@ -1366,7 +1191,7 @@ final class UpdateManager
 
         try {
             $signingKeys = self::readSigningKeys($this->signingKeysFile);
-            $release = $this->fetchLatestRelease();
+            $release = $this->releaseSource->fetchLatestRelease();
             $version = $release['version'];
 
             if (self::isNewerVersion($this->installedVersion, $version) === false) {
@@ -1387,7 +1212,7 @@ final class UpdateManager
                 return $state;
             }
 
-            $assets = self::selectUpdateAssets($release, $this->downloadPrefix);
+            $assets = self::selectUpdateAssets($release, $this->releaseSource->assetUrlPrefix());
 
             self::assertSignatureRequirements($assets, $signingKeys);
 
@@ -1402,7 +1227,7 @@ final class UpdateManager
                 null,
             );
 
-            $this->downloadFile(
+            $this->releaseSource->downloadAsset(
                 $assets['package']['url'],
                 $packagePath,
                 self::PACKAGE_DOWNLOAD_LIMIT,
@@ -1413,7 +1238,7 @@ final class UpdateManager
             if (is_array($assets['checksum'])) {
                 $checksumPath = $temporaryDirectory . '/' . $assets['checksum']['name'];
 
-                $this->downloadFile(
+                $this->releaseSource->downloadAsset(
                     $assets['checksum']['url'],
                     $checksumPath,
                     self::AUXILIARY_DOWNLOAD_LIMIT,
@@ -1443,7 +1268,7 @@ final class UpdateManager
             if (count($signingKeys) > 0 && is_array($assets['signature'])) {
                 $signaturePath = $temporaryDirectory . '/' . $assets['signature']['name'];
 
-                $this->downloadFile(
+                $this->releaseSource->downloadAsset(
                     $assets['signature']['url'],
                     $signaturePath,
                     self::AUXILIARY_DOWNLOAD_LIMIT,
@@ -1597,9 +1422,7 @@ final class UpdateManager
         bool $fileNotice,
     ): array {
         if (self::isNewerVersion($installedVersion, $latestVersion) === false) {
-            if (function_exists('close_notice')) {
-                \close_notice(self::NOTICE_ID);
-            }
+            Platform::adapter()->closeNotice(self::NOTICE_ID);
 
             return $state;
         }
@@ -1614,7 +1437,7 @@ final class UpdateManager
             return $state;
         }
 
-        \file_notice(
+        Platform::adapter()->fileNotice(
             self::NOTICE_ID,
             self::translate('sinkhole_version_available', [$latestVersion]),
             'Sinkhole',
@@ -1730,221 +1553,10 @@ final class UpdateManager
     }
 
     /**
-     * Update Manager - Download File.
-     *
-     * pfSense proxy and TLS settings apply to a private destination with both cURL
-     * and progress-callback size enforcement.
-     *
-     * @param string $url - Validated asset URL.
-     * @param string $path - Private destination path.
-     * @param int $byteLimit - Maximum accepted size.
-     *
-     * @return void
-     *
-     * @throws RuntimeException When transport or HTTP validation fails.
-     *
-     * @since 1.0.0
-     * @private
-     */
-    private function downloadFile(string $url, string $path, int $byteLimit): void
-    {
-        $fileHandle = fopen($path, 'wb');
-
-        if ($fileHandle === false || chmod($path, 0600) === false) {
-            if (is_resource($fileHandle)) {
-                fclose($fileHandle);
-            }
-
-            throw new RuntimeException(self::translate('release_asset_private_file_failed'));
-        }
-
-        $curlHandle = curl_init($url);
-
-        if ($curlHandle === false) {
-            fclose($fileHandle);
-
-            throw new RuntimeException(self::translate('release_asset_private_file_failed'));
-        }
-
-        $downloadTooLarge = false;
-        $progressCallback = static function (
-            mixed $unusedHandle,
-            float $downloadTotal,
-            float $downloadedCount,
-            float $uploadTotal,
-            float $uploadedCount,
-        ) use (&$downloadTooLarge, $byteLimit): int {
-            if ($downloadedCount > $byteLimit) {
-                $downloadTooLarge = true;
-
-                return 1;
-            }
-
-            return 0;
-        };
-
-        $this->configureCurl($curlHandle, $url, [
-            CURLOPT_FILE => $fileHandle,
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/octet-stream',
-            ],
-            CURLOPT_MAXFILESIZE_LARGE => $byteLimit,
-            CURLOPT_NOPROGRESS => false,
-            CURLOPT_XFERINFOFUNCTION => $progressCallback,
-        ]);
-
-        $result = curl_exec($curlHandle);
-        $statusCode = (int) curl_getinfo($curlHandle, CURLINFO_RESPONSE_CODE);
-        $curlErrorCode = curl_errno($curlHandle);
-        $curlError = curl_error($curlHandle);
-
-        curl_close($curlHandle);
-        fclose($fileHandle);
-
-        if ($downloadTooLarge || $curlErrorCode === CURLE_FILESIZE_EXCEEDED) {
-            @unlink($path);
-
-            throw new RuntimeException(self::translate('release_asset_too_large'));
-        }
-
-        if ($result !== true || $statusCode < 200 || $statusCode >= 300) {
-            @unlink($path);
-
-            $detail = $curlError !== '' ? $curlError : (string) $statusCode;
-            $exceptionCode = $result === true ? $statusCode : 0;
-
-            throw new RuntimeException(self::translate(
-                'release_asset_download_failed',
-                [$detail],
-            ), $exceptionCode);
-        }
-    }
-
-    /**
-     * Update Manager - Fetch Latest Release.
-     *
-     * GitHub HTTP and rate-limit failures remain actionable without persisting any
-     * unvalidated external response fields.
-     *
-     * @return array
-     *
-     * @throws RuntimeException When the request or response is invalid.
-     *
-     * @since 1.0.0
-     * @private
-     */
-    private function fetchLatestRelease(): array
-    {
-        $responseHeaders = [];
-        $curlHandle = curl_init($this->releasesApi);
-
-        if ($curlHandle === false) {
-            throw new RuntimeException(self::translate('update_request_initialize_failed'));
-        }
-
-        $headerCallback = static function (
-            mixed $unusedHandle,
-            string $headerLine,
-        ) use (&$responseHeaders): int {
-            $separatorPosition = strpos($headerLine, ':');
-
-            if ($separatorPosition !== false) {
-                $headerName = strtolower(trim(substr($headerLine, 0, $separatorPosition)));
-                $headerValue = trim(substr($headerLine, $separatorPosition + 1));
-                $responseHeaders[$headerName] = $headerValue;
-            }
-
-            return strlen($headerLine);
-        };
-
-        $this->configureCurl($curlHandle, $this->releasesApi, [
-            CURLOPT_HEADERFUNCTION => $headerCallback,
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/vnd.github+json',
-                'X-GitHub-Api-Version: 2022-11-28',
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-        ]);
-
-        $response = curl_exec($curlHandle);
-        $statusCode = (int) curl_getinfo($curlHandle, CURLINFO_RESPONSE_CODE);
-        $curlError = curl_error($curlHandle);
-
-        curl_close($curlHandle);
-
-        if ($response === false) {
-            throw new RuntimeException(self::translate(
-                'update_connection_failed',
-                [$curlError],
-            ));
-        }
-
-        if ($statusCode === 403 || $statusCode === 429) {
-            throw new RuntimeException(
-                self::translate('github_rate_limited'),
-                $statusCode,
-            );
-        }
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(self::translate(
-                'github_http_status',
-                [$statusCode],
-            ), $statusCode);
-        }
-
-        if (!is_string($response)) {
-            throw new RuntimeException(self::translate('release_metadata_invalid'));
-        }
-
-        return self::parseReleaseJson($response);
-    }
-
-    /**
-     * Update Manager - Configure Curl.
-     *
-     * Every request uses bounded redirects, strict TLS, the pfSense proxy, and only
-     * protocols allowed by its validated initial endpoint.
-     *
-     * @param mixed $curlHandle - cURL handle.
-     * @param string $url - Initial URL.
-     * @param array $options - Operation-specific options.
-     *
-     * @return void
-     *
-     * @since 1.0.0
-     * @private
-     */
-    private function configureCurl(mixed $curlHandle, string $url, array $options): void
-    {
-        $scheme = parse_url($url, PHP_URL_SCHEME);
-        $allowedProtocols = $scheme === 'http'
-            ? CURLPROTO_HTTP | CURLPROTO_HTTPS
-            : CURLPROTO_HTTPS;
-        $sharedOptions = [
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 3,
-            CURLOPT_PROTOCOLS => $allowedProtocols,
-            CURLOPT_REDIR_PROTOCOLS => $allowedProtocols,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_USERAGENT => self::USER_AGENT,
-        ];
-
-        if (curl_setopt_array($curlHandle, $options + $sharedOptions) === false) {
-            throw new RuntimeException(self::translate('update_request_initialize_failed'));
-        }
-
-        \set_curlproxy($curlHandle);
-    }
-
-    /**
      * Update Manager - Log Failure.
      *
-     * Operator-visible failures reach pfSense's system log without recording release
-     * payloads, signing keys, or package contents.
+     * Operator-visible failures reach pfSense's system log through the platform
+     * adapter without recording release payloads, signing keys, or package contents.
      *
      * @param Throwable $throwable - Failure to log.
      *
@@ -1955,9 +1567,7 @@ final class UpdateManager
      */
     private function logFailure(Throwable $throwable): void
     {
-        if (function_exists('log_error')) {
-            \log_error('Sinkhole: ' . $throwable->getMessage());
-        }
+        Platform::adapter()->systemLog('Sinkhole: ' . $throwable->getMessage());
     }
 
     /**

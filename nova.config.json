@@ -5,8 +5,8 @@
       "title": "Sinkhole for pfSense"
     },
     "description": {
-      "short": "Sinkhole blocks unwanted websites on your pfSense network, with separate block lists for each network or device",
-      "long": "Sinkhole for pfSense is a native package that blocks unwanted websites with block lists for the whole network, each VLAN or a single device. It keeps the lists on the firewall, so DNS answers right after a restart or reload while updates download in the background, and alerts arrive through pfSense's own notifications only where you set them."
+      "short": "Block unwanted websites on pfSense, with separate block lists for each network or device",
+      "long": "A pfBlockerNG alternative that keeps block lists on the firewall, so DNS answers right after a restart while updates download in the background. Add IP and country blocking, optional DNS redirection, and alerts for only the networks or devices you choose."
     },
     "keywords": [
       "pfsense",
@@ -158,9 +158,170 @@
     ],
     "issueTemplate": {
       "bugReportFields": [
-        "php",
-        "pfsense"
-      ]
+        "pfsense",
+        "pfsense-package",
+        "web",
+        "screenshots",
+        "notifications"
+      ],
+      "customQuestions": {
+        "bug": [
+          {
+            "type": "dropdown",
+            "id": "affected-area",
+            "attributes": {
+              "label": "Affected Area",
+              "description": "Select the sinkhole area involved.",
+              "options": [
+                "DNS Lists",
+                "Blocked Services",
+                "Scopes",
+                "SafeSearch",
+                "Alerts",
+                "Bypass",
+                "IP Lists",
+                "Country Blocking",
+                "Popular List Search",
+                "DNS Resolver Integration",
+                "Status",
+                "Package Update",
+                "Other"
+              ]
+            },
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "type": "dropdown",
+            "id": "blocking-scope",
+            "attributes": {
+              "label": "Blocking Scope",
+              "description": "Select the scope affected by the blocking behavior.",
+              "options": [
+                "Global",
+                "Network",
+                "Device",
+                "Not Applicable"
+              ]
+            },
+            "validations": {
+              "required": false
+            }
+          },
+          {
+            "type": "dropdown",
+            "id": "list-format",
+            "attributes": {
+              "label": "List Format",
+              "description": "Select the affected source-list format.",
+              "options": [
+                "Hosts File",
+                "Domain List",
+                "Adblock-Style Rules",
+                "IP or CIDR List",
+                "Not Sure",
+                "Not Applicable"
+              ]
+            },
+            "validations": {
+              "required": false
+            }
+          }
+        ],
+        "feature": [
+          {
+            "type": "dropdown",
+            "id": "affected-area",
+            "attributes": {
+              "label": "Affected Area",
+              "description": "Select the sinkhole area involved.",
+              "options": [
+                "DNS Lists",
+                "Blocked Services",
+                "Scopes",
+                "SafeSearch",
+                "Alerts",
+                "Bypass",
+                "IP Lists",
+                "Country Blocking",
+                "Popular List Search",
+                "DNS Resolver Integration",
+                "Status",
+                "Package Update",
+                "Other"
+              ]
+            },
+            "validations": {
+              "required": true
+            }
+          }
+        ],
+        "support": [
+          {
+            "type": "dropdown",
+            "id": "affected-area",
+            "attributes": {
+              "label": "Affected Area",
+              "description": "Select the sinkhole area involved.",
+              "options": [
+                "DNS Lists",
+                "Blocked Services",
+                "Scopes",
+                "SafeSearch",
+                "Alerts",
+                "Bypass",
+                "IP Lists",
+                "Country Blocking",
+                "Popular List Search",
+                "DNS Resolver Integration",
+                "Status",
+                "Package Update",
+                "Other"
+              ]
+            },
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "type": "dropdown",
+            "id": "blocking-scope",
+            "attributes": {
+              "label": "Blocking Scope",
+              "description": "Select the scope affected by the blocking behavior.",
+              "options": [
+                "Global",
+                "Network",
+                "Device",
+                "Not Applicable"
+              ]
+            },
+            "validations": {
+              "required": false
+            }
+          },
+          {
+            "type": "dropdown",
+            "id": "list-format",
+            "attributes": {
+              "label": "List Format",
+              "description": "Select the affected source-list format.",
+              "options": [
+                "Hosts File",
+                "Domain List",
+                "Adblock-Style Rules",
+                "IP or CIDR List",
+                "Not Sure",
+                "Not Applicable"
+              ]
+            },
+            "validations": {
+              "required": false
+            }
+          }
+        ]
+      }
     }
   },
   "workflows": [
@@ -190,7 +351,7 @@
         "release"
       ],
       "runsOn": "ubuntu-24.04",
-      "timeoutMinutes": 15,
+      "timeoutMinutes": 30,
       "build": [
         "./packages/sinkhole",
         "./apps/docs"
@@ -218,7 +379,9 @@
     "fundSources": [
       "https://github.com/sponsors/mrjackyliang",
       "https://liang.nyc/paypal"
-    ]
+    ],
+    "privacyPolicy": "https://github.com/mrjackyliang/mrjackyliang/blob/HEAD/PRIVACY.md",
+    "termsOfUse": "https://github.com/mrjackyliang/mrjackyliang/blob/HEAD/TERMS.md"
   },
   "readme": {
     "badges": [
@@ -237,7 +400,10 @@
     "./packages/sinkhole": {
       "name": "pfsense-pkg-sinkhole",
       "role": "package",
-      "policy": "trackable"
+      "policy": "trackable",
+      "pfsense": {
+        "comment": "Block unwanted websites on pfSense networks"
+      }
     },
     "./apps/docs": {
       "name": "pfsense-sinkhole-docs",
@@ -338,6 +504,11 @@
         "enabled": true
       }
     },
+    "pfsense": {
+      "sync-identity": {
+        "enabled": true
+      }
+    },
     "read-me": {
       "update-badges": {
         "enabled": true
@@ -352,6 +523,11 @@
         "enabled": true
       },
       "update-introduction": {
+        "enabled": true
+      }
+    },
+    "tsconfig": {
+      "sync-references": {
         "enabled": true
       }
     },

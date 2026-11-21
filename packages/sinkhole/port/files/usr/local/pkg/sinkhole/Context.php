@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PfSense\Sinkhole\Runtime;
 
+require_once(__DIR__ . '/Platform.php');
 require_once(__DIR__ . '/Translator.php');
 
 /**
@@ -509,13 +510,9 @@ final class Context
 
         $descriptions = [];
 
-        if (function_exists('get_configured_interface_with_descr')) {
-            $configured = get_configured_interface_with_descr();
-
-            foreach (is_array($configured) ? $configured : [] as $interface => $description) {
-                if (is_string($interface) && is_string($description)) {
-                    $descriptions[$interface] = $description;
-                }
+        foreach (Platform::adapter()->configuredInterfaceDescriptions() as $interface => $description) {
+            if (is_string($interface) && is_string($description)) {
+                $descriptions[$interface] = $description;
             }
         }
 

@@ -16,6 +16,7 @@ require_once(__DIR__ . '/DomainParser.php');
 require_once(__DIR__ . '/ScopeConfiguration.php');
 require_once(__DIR__ . '/FileSystem.php');
 require_once(__DIR__ . '/PackagePaths.php');
+require_once(__DIR__ . '/Platform.php');
 require_once(__DIR__ . '/StateStore.php');
 require_once(__DIR__ . '/Translator.php');
 
@@ -113,10 +114,10 @@ final class AlertProcessor
             int $priority,
             bool $localOnly,
         ): mixed {
-            return file_notice($identifier, $message, $category, $url, $priority, $localOnly);
+            return Platform::adapter()->fileNotice($identifier, $message, $category, $url, $priority, $localOnly);
         });
         $this->remoteSender = Closure::fromCallable(
-            $remoteSender ?? static fn(string $message): mixed => notify_all_remote($message),
+            $remoteSender ?? static fn(string $message): mixed => Platform::adapter()->notifyRemote($message),
         );
         $this->clock = Closure::fromCallable($clock ?? static fn(): int => time());
         $this->noticeIdentifierFactory = Closure::fromCallable(
@@ -125,11 +126,7 @@ final class AlertProcessor
         );
         $this->noticeCounter = Closure::fromCallable(
             $noticeCounter ?? static function (): int {
-                if (!function_exists('get_notices')) {
-                    return 0;
-                }
-
-                $notices = get_notices('Sinkhole');
+                $notices = Platform::adapter()->getNotices('Sinkhole');
 
                 return is_array($notices) ? count($notices) : 0;
             },

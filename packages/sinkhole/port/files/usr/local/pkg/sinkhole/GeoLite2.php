@@ -7,18 +7,32 @@ namespace PfSense\Sinkhole\Runtime;
 use PfSense\Sinkhole\Domain\IpNetwork;
 use RuntimeException;
 
+require_once(__DIR__ . '/DownloadClient.php');
+require_once(__DIR__ . '/FileSystem.php');
 require_once(__DIR__ . '/IpNetwork.php');
 
 /**
  * GeoLite2 Country Importer.
  *
- * Verifies MaxMind's SHA-256 document and imports only the three named Country
- * CSV files. Tests can feed invented CSV fixtures directly without licensed data.
+ * The MaxMind GeoLite2 source adapter: owns MaxMind's download URLs, fetches the
+ * archive and its SHA-256 document, verifies them, and imports only the three named
+ * Country CSV files. Tests can feed invented CSV fixtures without licensed data.
  *
  * @since 1.0.0
  */
 final class GeoLite2
 {
+    /** @var string @since 1.3.3 */
+    public const ARCHIVE_URL =
+        'https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip';
+
+    /** @var string @since 1.3.3 */
+    public const CHECKSUM_URL =
+        'https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip.sha256';
+
+    /** @var int @since 1.3.3 */
+    public const MAXIMUM_CHECKSUM_BYTES = 4096;
+
     /** @var int @since 1.0.0 */
     public const MAXIMUM_ARCHIVE_BYTES = 134217728;
 
@@ -46,6 +60,67 @@ final class GeoLite2
         'GeoLite2-Country-Blocks-IPv4.csv',
         'GeoLite2-Country-Blocks-IPv6.csv',
     ];
+
+    /**
+     * GeoLite2 Country Importer - Download.
+     *
+     * Fetches the archive and its checksum document with the account's credentials
+     * into the caller's private temporary files, rejecting empty or oversized
+     * responses before anything is verified or imported.
+     *
+     * @param DownloadClient $downloadClient - Bounded HTTP transport.
+     * @param string $accountId - MaxMind account ID.
+     * @param string $licenseKey - MaxMind license key.
+     * @param string $archivePath - Temporary archive path.
+     * @param string $checksumPath - Temporary checksum path.
+     *
+     * @return void
+     *
+     * @throws RuntimeException When a download fails or has an invalid size.
+     *
+     * @since 1.3.3
+     */
+    public static function download(
+        DownloadClient $downloadClient,
+        string $accountId,
+        string $licenseKey,
+        string $archivePath,
+        string $checksumPath,
+    ): void {
+        foreach ([
+            [self::ARCHIVE_URL, $archivePath, self::MAXIMUM_ARCHIVE_BYTES],
+            [self::CHECKSUM_URL, $checksumPath, self::MAXIMUM_CHECKSUM_BYTES],
+        ] as [$url, $path, $limit]) {
+            $download = $downloadClient->download(
+                $url,
+                $path,
+                $limit,
+                $accountId,
+                $licenseKey,
+            );
+
+            if ($download['success'] === false) {
+                throw new RuntimeException($download['error'] ?? 'The GeoLite2 download failed.');
+            }
+
+            $actualBytes = filesize($path);
+
+            if (
+                !is_int($download['bytes'] ?? null)
+                || $download['bytes'] <= 0
+                || $download['bytes'] > $limit
+                || !FileSystem::isRegularFile($path)
+                || !is_int($actualBytes)
+                || $actualBytes <= 0
+                || $actualBytes > $limit
+                || $actualBytes !== $download['bytes']
+            ) {
+                throw new RuntimeException(
+                    'A GeoLite2 download is empty or exceeds its size limit.',
+                );
+            }
+        }
+    }
 
     /**
      * GeoLite2 Country Importer - Checksum.

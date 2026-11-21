@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace PfSense\Sinkhole\Domain;
 
+use PfSense\Sinkhole\Runtime\AdGuardRegistrySource;
 use RuntimeException;
-use stdClass;
 
+require_once(__DIR__ . '/AdGuardRegistrySource.php');
 require_once(__DIR__ . '/DomainParser.php');
 
 /**
  * Blocked Service Registry.
  *
- * Validates and bounds AdGuard Home's service registry while converting accepted
- * rules to the same normalized domain semantics used by downloaded lists.
+ * Holds the project's blocked-service registry shape, bounds, and presentation.
+ * The AdGuard registry source reads the upstream document into this shape and
+ * applies these bounds while converting rules to normalized domain semantics.
  *
  * @since 1.0.0
  */
@@ -53,13 +55,15 @@ final class ServiceRegistry
     private const MAXIMUM_IDENTIFIER_BYTES = 128;
 
     /** @var int @since 1.0.0 */
-    private const MAXIMUM_NAME_BYTES = 256;
+    public const MAXIMUM_NAME_BYTES = 256;
 
     /** @var int @since 1.0.0 */
-    private const MAXIMUM_RULE_BYTES = 8192;
+    public const MAXIMUM_RULE_BYTES = 8192;
 
     /**
      * Blocked Service Registry - Parse.
+     *
+     * Reads one AdGuard blocked-services document through its source adapter.
      *
      * @param string $contents - Complete untrusted registry document.
      *
@@ -71,140 +75,7 @@ final class ServiceRegistry
      */
     public static function parse(string $contents): array
     {
-        $document = json_decode($contents, false, 32, JSON_THROW_ON_ERROR);
-
-        if (
-            !$document instanceof stdClass
-            || !is_array($document->blocked_services ?? null)
-            || !is_array($document->groups ?? null)
-        ) {
-            throw new RuntimeException('The blocked-services registry is invalid.');
-        }
-
-        if (count($document->groups) > self::MAXIMUM_GROUPS) {
-            throw new RuntimeException('The blocked-services registry has too many groups.');
-        }
-
-        if (count($document->blocked_services) > self::MAXIMUM_SERVICES) {
-            throw new RuntimeException('The blocked-services registry has too many services.');
-        }
-
-        $groups = [];
-
-        foreach ($document->groups as $group) {
-            if (
-                !$group instanceof stdClass
-                || !is_string($group->id ?? null)
-                || (
-                    property_exists($group, 'name')
-                    && !is_string($group->name)
-                )
-            ) {
-                throw new RuntimeException('A blocked-services group is invalid.');
-            }
-
-            $identifier = self::normalizeIdentifier($group->id);
-
-            if ($identifier === null || isset($groups[$identifier])) {
-                throw new RuntimeException('A blocked-services group is invalid.');
-            }
-
-            $groups[$identifier] = true;
-        }
-
-        $parser = new DomainParser();
-        $services = [];
-        $serviceIdentifiers = [];
-        $totalRuleCount = 0;
-
-        foreach ($document->blocked_services as $service) {
-            if (
-                !$service instanceof stdClass
-                || !is_string($service->id ?? null)
-                || !is_string($service->name ?? null)
-                || !is_string($service->group ?? null)
-                || !is_array($service->rules ?? null)
-                || !is_string($service->icon_svg ?? null)
-            ) {
-                throw new RuntimeException('A blocked service is invalid.');
-            }
-
-            if (count($service->rules) > self::MAXIMUM_RULES_PER_SERVICE) {
-                throw new RuntimeException('A blocked service has too many rules.');
-            }
-
-            $totalRuleCount += count($service->rules);
-
-            if ($totalRuleCount > self::MAXIMUM_TOTAL_RULES) {
-                throw new RuntimeException('The blocked-services registry has too many rules.');
-            }
-
-            $identifier = self::normalizeIdentifier($service->id);
-            $name = self::normalizeText($service->name, self::MAXIMUM_NAME_BYTES);
-            $groupIdentifier = self::normalizeIdentifier($service->group);
-
-            if (
-                $identifier === null
-                || $name === null
-                || $name === ''
-                || $groupIdentifier === null
-                || !isset($groups[$groupIdentifier])
-                || isset($serviceIdentifiers[$identifier])
-            ) {
-                throw new RuntimeException('A blocked service is invalid.');
-            }
-
-            $serviceIdentifiers[$identifier] = true;
-
-            $rules = [];
-            $skippedRules = 0;
-
-            foreach ($service->rules as $rule) {
-                if (!is_string($rule) || strlen($rule) > self::MAXIMUM_RULE_BYTES) {
-                    throw new RuntimeException('A blocked-service rule is invalid or oversized.');
-                }
-
-                $entries = $parser->parseLineEntries($rule);
-
-                if ($entries === []) {
-                    $skippedRules++;
-                    continue;
-                }
-
-                foreach ($entries as $entry) {
-                    $rules[$entry['semantic'] . "\0" . $entry['domain']] = $entry;
-                }
-            }
-
-            $iconOversized = strlen($service->icon_svg) > self::MAXIMUM_ICON_BYTES;
-            $icon = $iconOversized ? '' : $service->icon_svg;
-
-            if ($icon !== '' && preg_match('//u', $icon) !== 1) {
-                throw new RuntimeException('A blocked-service icon is invalid.');
-            }
-
-            if (in_array($identifier, self::HIDDEN_SERVICE_IDENTIFIERS, true)) {
-                continue;
-            }
-
-            $services[$identifier] = [
-                'id' => $identifier,
-                'name' => $name,
-                'group' => $groupIdentifier,
-                'rules' => array_values($rules),
-                'skipped_rules' => $skippedRules,
-                'icon_svg' => $icon,
-                'icon_oversized' => $iconOversized,
-            ];
-        }
-
-        uasort($services, static fn(array $first, array $second): int =>
-            strcasecmp($first['name'], $second['name']) ?: strcmp($first['id'], $second['id']));
-
-        return [
-            'groups' => $groups,
-            'services' => $services,
-        ];
+        return AdGuardRegistrySource::parseServices($contents);
     }
 
     /**
@@ -330,8 +201,8 @@ final class ServiceRegistry
         ];
     }
 
-    /** @return string|null @since 1.0.0 @private */
-    private static function normalizeIdentifier(string $value): ?string
+    /** @return string|null @since 1.0.0 */
+    public static function normalizeIdentifier(string $value): ?string
     {
         $value = trim($value);
 
@@ -345,8 +216,8 @@ final class ServiceRegistry
         return $value;
     }
 
-    /** @return string|null @since 1.0.0 @private */
-    private static function normalizeText(string $value, int $maximumBytes): ?string
+    /** @return string|null @since 1.0.0 */
+    public static function normalizeText(string $value, int $maximumBytes): ?string
     {
         $value = trim($value);
 

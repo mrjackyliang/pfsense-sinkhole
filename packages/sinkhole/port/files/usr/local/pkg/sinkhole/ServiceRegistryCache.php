@@ -9,6 +9,7 @@ use RuntimeException;
 use stdClass;
 use Throwable;
 
+require_once(__DIR__ . '/AdGuardRegistrySource.php');
 require_once(__DIR__ . '/AtomicFile.php');
 require_once(__DIR__ . '/DownloadClient.php');
 require_once(__DIR__ . '/FileSystem.php');
@@ -25,9 +26,8 @@ require_once(__DIR__ . '/ServiceRegistry.php');
  */
 final class ServiceRegistryCache
 {
-    /** @var string @since 1.0.0 */
-    public const REGISTRY_URL =
-        'https://adguardteam.github.io/HostlistsRegistry/assets/services.json';
+    /** @var string The AdGuard registry source owns this URL. @since 1.0.0 */
+    public const REGISTRY_URL = AdGuardRegistrySource::SERVICES_URL;
 
     /** @var int @since 1.0.0 */
     public const MAXIMUM_REGISTRY_BYTES = 16777216;

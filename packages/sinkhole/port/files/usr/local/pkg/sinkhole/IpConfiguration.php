@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace PfSense\Sinkhole\Domain;
 
+use PfSense\Sinkhole\Runtime\Platform;
+
 require_once(__DIR__ . '/IpNetwork.php');
 require_once(__DIR__ . '/ListConfiguration.php');
+require_once(__DIR__ . '/Platform.php');
 require_once(__DIR__ . '/ValidationException.php');
 
 /**
@@ -405,8 +408,8 @@ final class IpConfiguration
 
         $packageSettings = ($context === 'global') ? $currentSettings : $globalSettings;
 
-        if ($packageSettings === [] && function_exists('config_get_path')) {
-            $storedSection = \config_get_path('installedpackages/sinkhole/ip', []);
+        if ($packageSettings === [] && Platform::adapter()->canReadConfiguration()) {
+            $storedSection = Platform::adapter()->readConfigurationPath('installedpackages/sinkhole/ip', []);
             $packageSettings = is_array($storedSection) ? $storedSection : [];
         }
 
@@ -491,8 +494,9 @@ final class IpConfiguration
     /**
      * IP Configuration - Store Context.
      *
-     * Writes one exact context in pfSense's repeated-item XML shape. The caller
-     * owns the single ``write_config()`` operation and any runtime apply handoff.
+     * Writes one exact context in pfSense's repeated-item XML shape through the
+     * platform adapter. The caller owns the single configuration save and any
+     * runtime apply handoff.
      *
      * @param string $context - Global, network, or device context key.
      * @param array $settings - Normalized exact-context settings.
@@ -503,12 +507,12 @@ final class IpConfiguration
      */
     public static function storeContext(string $context, array $settings): void
     {
-        if (function_exists('config_set_path') === false) {
+        if (Platform::adapter()->canWriteConfiguration() === false) {
             throw new \RuntimeException('The pfSense configuration writer is unavailable.');
         }
 
         if ($context === 'global') {
-            $storedSection = \config_get_path('installedpackages/sinkhole/ip', []);
+            $storedSection = Platform::adapter()->readConfigurationPath('installedpackages/sinkhole/ip', []);
             $section = is_array($storedSection) ? $storedSection : [];
             $section['enabled'] = (($settings['enabled'] ?? false) === true) ? 'on' : '';
             $section['interfaces'] = [
@@ -533,7 +537,7 @@ final class IpConfiguration
                 'item' => self::settingsValues($settings, 'allowlist', 'stored_allowlist'),
             ];
 
-            \config_set_path('installedpackages/sinkhole/ip', $section);
+            Platform::adapter()->writeConfigurationPath('installedpackages/sinkhole/ip', $section);
 
             return;
         }
@@ -542,7 +546,7 @@ final class IpConfiguration
             throw new \InvalidArgumentException('The IP context is invalid.');
         }
 
-        $storedRows = \config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+        $storedRows = Platform::adapter()->readConfigurationPath('installedpackages/sinkhole/ip_contexts/item', []);
         $rows = self::contextRows(is_array($storedRows) ? $storedRows : []);
         $replacement = self::contextStorage($context, $settings);
         $replaced = false;
@@ -565,7 +569,7 @@ final class IpConfiguration
             $result[] = $replacement;
         }
 
-        \config_set_path('installedpackages/sinkhole/ip_contexts/item', $result);
+        Platform::adapter()->writeConfigurationPath('installedpackages/sinkhole/ip_contexts/item', $result);
     }
 
     /**
@@ -586,7 +590,7 @@ final class IpConfiguration
             return;
         }
 
-        $storedRows = \config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+        $storedRows = Platform::adapter()->readConfigurationPath('installedpackages/sinkhole/ip_contexts/item', []);
         $rows = self::contextRows(is_array($storedRows) ? $storedRows : []);
         $remainingRows = array_values(array_filter(
             $rows,
@@ -594,7 +598,7 @@ final class IpConfiguration
                 || ($row['context'] ?? null) !== $context,
         ));
 
-        \config_set_path('installedpackages/sinkhole/ip_contexts/item', $remainingRows);
+        Platform::adapter()->writeConfigurationPath('installedpackages/sinkhole/ip_contexts/item', $remainingRows);
     }
 
     /**
@@ -609,7 +613,7 @@ final class IpConfiguration
      */
     public static function contextKeys(): array
     {
-        $storedRows = \config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+        $storedRows = Platform::adapter()->readConfigurationPath('installedpackages/sinkhole/ip_contexts/item', []);
         $keys = [];
 
         foreach (self::contextRows(is_array($storedRows) ? $storedRows : []) as $row) {

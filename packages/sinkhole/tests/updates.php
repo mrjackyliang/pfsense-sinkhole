@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use PfSense\Sinkhole\Runtime\DownloadClient;
 use PfSense\Sinkhole\Runtime\FileLock;
+use PfSense\Sinkhole\Runtime\GitHubReleaseSource;
 use PfSense\Sinkhole\Runtime\PackagePaths;
+use PfSense\Sinkhole\Runtime\ReleaseSource;
 use PfSense\Sinkhole\Runtime\ReleaseUpdateLockRunner;
 use PfSense\Sinkhole\Runtime\TestedReleases;
 use PfSense\Sinkhole\Runtime\Translator;
@@ -418,6 +421,113 @@ function sinkholeUpdateRelease(bool $withDigest = true, bool $withSignature = tr
     ];
 }
 
+/**
+ * Sinkhole Update Test - Release Download Client.
+ *
+ * Answers release requests from canned responses without a network and records
+ * each request, so tests can prove the endpoints, headers, and limits used.
+ *
+ * @since 1.3.3
+ */
+final class SinkholeUpdateReleaseDownloadClient implements DownloadClient
+{
+    /** @var list<array{url: string, headers: list<string>, user_agent: string, destination: string|null, maximum_bytes: int}> @since 1.3.3 */
+    public array $requests = [];
+
+    /** @var array Next request result. @since 1.3.3 */
+    public array $response = [
+        'started' => true,
+        'failure' => null,
+        'completed' => true,
+        'status' => 200,
+        'body' => '{}',
+        'error' => '',
+        'too_large' => false,
+    ];
+
+    /** @var string Body written to a destination file. @since 1.3.3 */
+    public string $fileBody = '';
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function download(
+        string $url,
+        string $destinationPath,
+        int $maximumBytes,
+        ?string $username = null,
+        ?string $password = null,
+    ): array {
+        throw new RuntimeException('List downloads are not part of the update tests.');
+    }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function request(
+        string $url,
+        array $headers,
+        string $userAgent,
+        ?string $destinationPath = null,
+        int $maximumBytes = 0,
+    ): array {
+        $this->requests[] = [
+            'url' => $url,
+            'headers' => $headers,
+            'user_agent' => $userAgent,
+            'destination' => $destinationPath,
+            'maximum_bytes' => $maximumBytes,
+        ];
+
+        if ($destinationPath !== null && $this->response['started'] === true) {
+            file_put_contents($destinationPath, $this->fileBody);
+        }
+
+        return $this->response;
+    }
+}
+
+/**
+ * Sinkhole Update Test - Release Source.
+ *
+ * Serves one canned project-owned release so update checks are proven to use only
+ * the release source.
+ *
+ * @since 1.3.3
+ */
+final class SinkholeUpdateFixtureReleaseSource implements ReleaseSource
+{
+    /** @var int @since 1.3.3 */
+    public int $latestRequests = 0;
+
+    /** @since 1.3.3 */
+    public function __construct(private readonly array $release)
+    {
+    }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function assetUrlPrefix(): string
+    {
+        return UpdateManager::DOWNLOAD_PREFIX;
+    }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function releaseAssetUrl(string $version, string $fileName): string
+    {
+        return UpdateManager::DOWNLOAD_PREFIX . 'v' . $version . '/' . $fileName;
+    }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function fetchLatestRelease(): array
+    {
+        $this->latestRequests++;
+
+        return $this->release;
+    }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function downloadAsset(string $url, string $path, int $byteLimit): void
+    {
+        throw new RuntimeException('Update checks must not download assets.');
+    }
+}
+
 $cases = [
     'a release is offered only once its package, checksum, and signature are attached' => static function (): void {
         $root = sinkholeTestTemporaryDirectory();
@@ -577,9 +687,9 @@ $cases = [
         $reflection = new ReflectionClass(UpdateManager::class);
         sinkholeTestAssertSame(64 * 1024 * 1024, $reflection->getReflectionConstant('PACKAGE_DOWNLOAD_LIMIT')?->getValue(), 'Packages must be capped at 64 MiB.');
         sinkholeTestAssertSame(64 * 1024, $reflection->getReflectionConstant('AUXILIARY_DOWNLOAD_LIMIT')?->getValue(), 'Small assets must be capped at 64 KiB.');
-        $source = (string) file_get_contents(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/UpdateManager.php');
-        sinkholeTestAssertContains('CURLOPT_MAXFILESIZE_LARGE => $byteLimit', $source, 'cURL must enforce the declared size limit.');
-        sinkholeTestAssertContains('$downloadedCount > $byteLimit', $source, 'The progress callback must enforce the size limit too.');
+        $source = (string) file_get_contents(__DIR__ . '/../port/files/usr/local/pkg/sinkhole/CurlDownloadClient.php');
+        sinkholeTestAssertContains('$options[CURLOPT_MAXFILESIZE_LARGE] = $maximumBytes;', $source, 'cURL must enforce the declared size limit.');
+        sinkholeTestAssertContains('$downloadedCount > $maximumBytes', $source, 'The progress callback must enforce the size limit too.');
     },
     'digest verification accepts only exact SHA-256 data' => static function (): void {
         $path = tempnam(sys_get_temp_dir(), 'sinkhole-digest-');
@@ -936,8 +1046,9 @@ PHP;
         sinkholeTestAssertContains("userHasPrivilege(\$currentUser, 'page-all')", $about, 'Update actions must permit page-all administrators.');
         sinkholeTestAssertContains('PackagePaths::MANUAL_UPDATE_CHECK_COMMAND', $about, 'The About page must use the notice-free check command.');
         sinkholeTestAssertContains("'release_operation_running'", $about, 'The About page must recognize a busy release lock.');
-        sinkholeTestAssertContains("config_get_path('installedpackages/package', [])", $manager, 'The update manager must read the installed package version first.');
-        sinkholeTestAssertContains("parse_xml_config_pkg(\$packageInfoPath, 'pfsensepkgs')", $manager, 'The update manager must fall back to the installed info.xml version.');
+        sinkholeTestAssertContains('Platform::adapter()->installedPackages()', $manager, 'The update manager must read the installed package version first.');
+        sinkholeTestAssertContains("Platform::adapter()->parsePackageXml(\$packageInfoPath, 'pfsensepkgs')", $manager, 'The update manager must fall back to the installed info.xml version.');
+        sinkholeTestAssertSame(false, (bool) preg_match('/\bcurl_[a-z_]+\s*\(/', $manager), 'The update manager must reach GitHub only through its release source.');
 
         foreach ([
             "'check_updates',",
@@ -1085,6 +1196,152 @@ PHP;
                 isset($catalog[$key]),
                 'The English catalog is missing About release key ' . $key . '.',
             );
+        }
+    },
+    'the GitHub release source owns the endpoints and parses releases' => static function (): void {
+        $client = new SinkholeUpdateReleaseDownloadClient();
+        $client->response['body'] = (string) json_encode([
+            'tag_name' => 'v2.1.0',
+            'html_url' => 'https://github.com/mrjackyliang/pfsense-sinkhole/releases/tag/v2.1.0',
+            'published_at' => '2026-11-06T12:00:00Z',
+            'assets' => [[
+                'name' => 'pfSense-pkg-Sinkhole-2.1.0.pkg',
+                'browser_download_url' => GitHubReleaseSource::DOWNLOAD_PREFIX . 'v2.1.0/pfSense-pkg-Sinkhole-2.1.0.pkg',
+                'digest' => 'sha256:' . str_repeat('a', 64),
+            ]],
+        ]);
+        $source = new GitHubReleaseSource(downloadClient: $client);
+        $release = $source->fetchLatestRelease();
+
+        sinkholeTestAssertSame('2.1.0', $release['version'], 'The source must normalize the release tag.');
+        sinkholeTestAssertSame(GitHubReleaseSource::RELEASES_API, $client->requests[0]['url'], 'The latest release must come from the GitHub API.');
+        sinkholeTestAssertSame(
+            ['Accept: application/vnd.github+json', 'X-GitHub-Api-Version: 2022-11-28'],
+            $client->requests[0]['headers'],
+            'Release metadata must ask for the GitHub API format.',
+        );
+        sinkholeTestAssertSame('pfSense-pkg-Sinkhole', $client->requests[0]['user_agent'], 'Release requests must identify the package.');
+        sinkholeTestAssertSame(null, $client->requests[0]['destination'], 'Release metadata must be returned in memory.');
+        sinkholeTestAssertSame(
+            GitHubReleaseSource::DOWNLOAD_PREFIX . 'v2.1.0/pfSense-pkg-Sinkhole-2.1.0.pkg.sha256',
+            $source->releaseAssetUrl('2.1.0', 'pfSense-pkg-Sinkhole-2.1.0.pkg.sha256'),
+            'Release files must live under their tag directory.',
+        );
+        sinkholeTestAssertSame(UpdateManager::RELEASES_API, GitHubReleaseSource::RELEASES_API, 'The update manager must reuse the source endpoint.');
+        sinkholeTestAssertSame(true, GitHubReleaseSource::isAllowedReleaseUrl($release['release_url']), 'Repository release pages must be allowed.');
+        sinkholeTestAssertSame(false, GitHubReleaseSource::isAllowedReleaseUrl('https://example.com/releases/tag/v2.1.0'), 'Other release pages must be rejected.');
+
+        $client->response['status'] = 404;
+
+        try {
+            $source->fetchLatestRelease();
+
+            throw new RuntimeException('A missing release must fail.');
+        } catch (RuntimeException $runtimeException) {
+            sinkholeTestAssertSame(true, UpdateManager::isNoPublicReleaseStatus($runtimeException->getCode()), 'HTTP 404 must stay recognizable as no public release.');
+        }
+
+        $client->response['status'] = 429;
+        sinkholeUpdateAssertFailure(
+            static fn (): array => $source->fetchLatestRelease(),
+            Translator::translate('github_rate_limited'),
+        );
+
+        $client->response = [
+            'started' => true,
+            'failure' => null,
+            'completed' => false,
+            'status' => 0,
+            'body' => null,
+            'error' => 'Invented transport failure',
+            'too_large' => false,
+        ];
+        sinkholeUpdateAssertFailure(
+            static fn (): array => $source->fetchLatestRelease(),
+            Translator::translate('update_connection_failed', ['Invented transport failure']),
+        );
+    },
+    'the GitHub release source downloads assets through the download client' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+        $client = new SinkholeUpdateReleaseDownloadClient();
+        $source = new GitHubReleaseSource(downloadClient: $client);
+        $path = $root . '/package.pkg';
+
+        try {
+            $client->fileBody = 'invented package bytes';
+            $source->downloadAsset('https://downloads.example.test/package.pkg', $path, 1024);
+
+            sinkholeTestAssertSame('invented package bytes', file_get_contents($path), 'A downloaded asset must reach its private path.');
+            sinkholeTestAssertSame(['Accept: application/octet-stream'], $client->requests[0]['headers'], 'Asset downloads must ask for the raw file.');
+            sinkholeTestAssertSame(1024, $client->requests[0]['maximum_bytes'], 'Asset downloads must pass their size limit.');
+
+            $client->response['too_large'] = true;
+            sinkholeUpdateAssertFailure(
+                static function () use ($source, $path): void {
+                    $source->downloadAsset('https://downloads.example.test/package.pkg', $path, 4);
+                },
+                Translator::translate('release_asset_too_large'),
+            );
+            sinkholeTestAssertSame(false, file_exists($path), 'An oversized asset must be removed.');
+
+            $client->response['too_large'] = false;
+            $client->response['status'] = 404;
+
+            try {
+                $source->downloadAsset('https://downloads.example.test/package.pkg', $path, 1024);
+
+                throw new RuntimeException('A missing asset must fail.');
+            } catch (RuntimeException $runtimeException) {
+                sinkholeTestAssertSame(404, $runtimeException->getCode(), 'A missing asset must keep its HTTP status.');
+                sinkholeTestAssertSame(false, file_exists($path), 'A missing asset download must be removed.');
+            }
+
+            $client->response = [
+                'started' => false,
+                'failure' => 'destination',
+                'completed' => false,
+                'status' => 0,
+                'body' => null,
+                'error' => '',
+                'too_large' => false,
+            ];
+            sinkholeUpdateAssertFailure(
+                static function () use ($source, $path): void {
+                    $source->downloadAsset('https://downloads.example.test/package.pkg', $path, 1024);
+                },
+                Translator::translate('release_asset_private_file_failed'),
+            );
+
+            $client->response['failure'] = 'configure';
+            sinkholeUpdateAssertFailure(
+                static function () use ($source, $path): void {
+                    $source->downloadAsset('https://downloads.example.test/package.pkg', $path, 1024);
+                },
+                Translator::translate('update_request_initialize_failed'),
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
+    'update checks read releases only from their release source' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+        $source = new SinkholeUpdateFixtureReleaseSource(sinkholeUpdateRelease());
+
+        try {
+            $manager = new UpdateManager(
+                installedVersion: '2.0.0',
+                releaseSource: $source,
+                updatesFile: $root . '/updates.json',
+                statusFile: $root . '/update-status.json',
+                signingKeysFile: $root . '/missing.pub',
+            );
+            $state = $manager->check(false, false);
+
+            sinkholeTestAssertSame(1, $source->latestRequests, 'The check must ask its release source once.');
+            sinkholeTestAssertSame('2.1.0', $state['latest_version'], 'The check must save the source release.');
+            sinkholeTestAssertSame($state, UpdateManager::readUpdatesState($root . '/updates.json'), 'The check must persist the state it returns.');
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
         }
     },
 ];

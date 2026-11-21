@@ -6,6 +6,8 @@ namespace PfSense\Sinkhole\Runtime;
 
 use RuntimeException;
 
+require_once(__DIR__ . '/Platform.php');
+
 /**
  * File System.
  *
@@ -528,9 +530,7 @@ final class FileSystem
         if (@rmdir($path) === false) {
             $message = 'Sinkhole: Unable to remove the non-empty runtime state directory.';
 
-            if (function_exists('log_error')) {
-                log_error($message);
-            } else {
+            if (Platform::adapter()->systemLog($message) === false) {
                 error_log($message);
             }
         }

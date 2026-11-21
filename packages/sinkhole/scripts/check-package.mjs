@@ -1,8 +1,10 @@
-import { access, readFile } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  curlCallPattern,
+  platformConfigurationCallPattern,
   releaseSigningKeyPattern,
   semanticVersionPattern,
 } from './regex.mjs';
@@ -35,6 +37,7 @@ const requiredFiles = [
   'port/files/usr/local/pkg/sinkhole.inc',
   'port/files/usr/local/pkg/sinkhole.xml',
   'port/files/usr/local/pkg/priv/sinkhole.priv.inc',
+  'port/files/usr/local/pkg/sinkhole/AdGuardRegistrySource.php',
   'port/files/usr/local/pkg/sinkhole/AlertConfiguration.php',
   'port/files/usr/local/pkg/sinkhole/AlertProcessor.php',
   'port/files/usr/local/pkg/sinkhole/AtomicFile.php',
@@ -56,6 +59,7 @@ const requiredFiles = [
   'port/files/usr/local/pkg/sinkhole/FileLock.php',
   'port/files/usr/local/pkg/sinkhole/FileSystem.php',
   'port/files/usr/local/pkg/sinkhole/GeoLite2.php',
+  'port/files/usr/local/pkg/sinkhole/GitHubReleaseSource.php',
   'port/files/usr/local/pkg/sinkhole/IpConfiguration.php',
   'port/files/usr/local/pkg/sinkhole/IpListStore.php',
   'port/files/usr/local/pkg/sinkhole/IpNetwork.php',
@@ -65,9 +69,12 @@ const requiredFiles = [
   'port/files/usr/local/pkg/sinkhole/IpUpdater.php',
   'port/files/usr/local/pkg/sinkhole/ListConfiguration.php',
   'port/files/usr/local/pkg/sinkhole/PackagePaths.php',
+  'port/files/usr/local/pkg/sinkhole/PfBlockerNgFeedSource.php',
   'port/files/usr/local/pkg/sinkhole/PfSenseAdapter.php',
+  'port/files/usr/local/pkg/sinkhole/Platform.php',
   'port/files/usr/local/pkg/sinkhole/PlatformAdapter.php',
   'port/files/usr/local/pkg/sinkhole/RedirectConfiguration.php',
+  'port/files/usr/local/pkg/sinkhole/ReleaseSource.php',
   'port/files/usr/local/pkg/sinkhole/RestoreHeal.php',
   'port/files/usr/local/pkg/sinkhole/SavedListStore.php',
   'port/files/usr/local/pkg/sinkhole/ScopeConfiguration.php',
@@ -382,7 +389,12 @@ if (packageLogo.equals(documentationLogo) === false) {
 }
 
 for (const catalogFile of [
+  'AdGuardRegistrySource.php',
   'Context.php',
+  'GitHubReleaseSource.php',
+  'PfBlockerNgFeedSource.php',
+  'Platform.php',
+  'ReleaseSource.php',
   'RestoreHeal.php',
   'ServiceConfiguration.php',
   'ServicePresentation.php',
@@ -568,6 +580,80 @@ if (
   || packageXml.includes('pfsensePackageSinkholeLocalizePackageGui($pkg);') === false
 ) {
   throw new Error('The package editor must localize the Sinkhole General page before rendering.');
+}
+
+/**
+ * Check Package - Class Directory.
+ *
+ * Holds every PHP class the package installs, so adapter boundaries can be
+ * checked file by file.
+ *
+ * @since 1.3.3
+ */
+const classDirectory = join(workspaceDirectory, 'port', 'files', 'usr', 'local', 'pkg', 'sinkhole');
+
+/**
+ * Check Package - Class Sources.
+ *
+ * Loads every installed PHP class, plus the lifecycle include, with its file
+ * name so a boundary failure names the file that crossed it.
+ *
+ * @since 1.3.3
+ */
+const classSources = await Promise.all([
+  ...(await readdir(classDirectory))
+    .filter((fileName) => fileName.endsWith('.php'))
+    .map(async (fileName) => ({
+      fileName,
+      source: await readFile(join(classDirectory, fileName), 'utf-8'),
+    })),
+  {
+    fileName: 'sinkhole.inc',
+    source: packageInclude,
+  },
+]);
+
+/**
+ * Check Package - External Source Owners.
+ *
+ * Maps each fixed external host to the only source adapter that may name it, so
+ * an upstream URL or format change stays inside that adapter.
+ *
+ * @since 1.3.3
+ */
+const externalSourceOwners = [
+  {
+    host: 'api.github.com',
+    owner: 'GitHubReleaseSource.php',
+  },
+  {
+    host: 'adguardteam.github.io',
+    owner: 'AdGuardRegistrySource.php',
+  },
+  {
+    host: 'raw.githubusercontent.com',
+    owner: 'PfBlockerNgFeedSource.php',
+  },
+  {
+    host: 'download.maxmind.com',
+    owner: 'GeoLite2.php',
+  },
+];
+
+for (const classSource of classSources) {
+  if (classSource.fileName !== 'CurlDownloadClient.php' && curlCallPattern.test(classSource.source) === true) {
+    throw new Error(`Only the cURL download client may call cURL: ${classSource.fileName}`);
+  }
+
+  if (classSource.fileName !== 'PfSenseAdapter.php' && platformConfigurationCallPattern.test(classSource.source) === true) {
+    throw new Error(`Only the pfSense adapter may read or write pfSense configuration: ${classSource.fileName}`);
+  }
+
+  for (const externalSourceOwner of externalSourceOwners) {
+    if (classSource.fileName !== externalSourceOwner.owner && classSource.source.includes(externalSourceOwner.host) === true) {
+      throw new Error(`Only ${externalSourceOwner.owner} may name ${externalSourceOwner.host}: ${classSource.fileName}`);
+    }
+  }
 }
 
 process.stdout.write('pfSense package sources are structurally valid.\n');

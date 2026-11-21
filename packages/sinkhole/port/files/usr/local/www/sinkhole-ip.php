@@ -56,8 +56,11 @@ function sinkholeIpLines(mixed $value, string $errorKey): array
  */
 function sinkholeIpContextSettings(string $context): ?array
 {
-    $section = config_get_path('installedpackages/sinkhole/ip', []);
-    $contextRows = config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+    $section = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/ip', []);
+    $contextRows = pfsensePackageSinkholeAdapter()->readConfigurationPath(
+        'installedpackages/sinkhole/ip_contexts/item',
+        [],
+    );
 
     return IpConfiguration::forContext(
         is_array($section) ? $section : [],
@@ -78,7 +81,7 @@ function sinkholeIpContextSettings(string $context): ?array
  */
 function sinkholeIpPersist(): void
 {
-    write_config(pfsensePackageSinkholeTranslate('revision_saved_ip_blocking'));
+    pfsensePackageSinkholeAdapter()->saveConfiguration(pfsensePackageSinkholeTranslate('revision_saved_ip_blocking'));
     pfsensePackageSinkholeInstallCron();
     pfsensePackageSinkholeAdapter()->runApplyInBackground();
 }

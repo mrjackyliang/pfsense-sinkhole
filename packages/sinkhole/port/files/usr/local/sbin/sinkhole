@@ -16,11 +16,13 @@ use PfSense\Sinkhole\Runtime\ClientMap;
 use PfSense\Sinkhole\Runtime\CurlDownloadClient;
 use PfSense\Sinkhole\Runtime\FileLock;
 use PfSense\Sinkhole\Runtime\GeoLite2;
+use PfSense\Sinkhole\Runtime\GitHubReleaseSource;
 use PfSense\Sinkhole\Runtime\IpListStore;
 use PfSense\Sinkhole\Runtime\IpStatusStore;
 use PfSense\Sinkhole\Runtime\IpUpdater;
 use PfSense\Sinkhole\Runtime\PackagePaths;
 use PfSense\Sinkhole\Runtime\PfSenseAdapter;
+use PfSense\Sinkhole\Runtime\Platform;
 use PfSense\Sinkhole\Runtime\ReleaseUpdateLockRunner;
 use PfSense\Sinkhole\Runtime\SavedListStore;
 use PfSense\Sinkhole\Runtime\StateStore;
@@ -38,6 +40,8 @@ require_once('/usr/local/pkg/sinkhole/BypassUpdater.php');
 require_once('/usr/local/pkg/sinkhole/ClientMap.php');
 require_once('/usr/local/pkg/sinkhole/ClientSource.php');
 require_once('/usr/local/pkg/sinkhole/CurlDownloadClient.php');
+require_once('/usr/local/pkg/sinkhole/GitHubReleaseSource.php');
+require_once('/usr/local/pkg/sinkhole/Platform.php');
 require_once('/usr/local/pkg/sinkhole/DomainParser.php');
 require_once('/usr/local/pkg/sinkhole/ListConfiguration.php');
 require_once('/usr/local/pkg/sinkhole/IpParser.php');
@@ -116,18 +120,19 @@ function sinkholeRunReleaseUpdate(
                     ));
                 }
 
-                $settings = config_get_path('installedpackages/sinkhole/config/0', []);
-                $settings = is_array($settings) ? $settings : [];
+                $settings = Platform::adapter()->getSettings();
                 $remoteNotifications = ($settings['update_remote_notifications'] ?? '') === 'on';
                 $manager = new UpdateManager(
                     $installedVersion,
-                    sinkholeEnvironmentOverride(
-                        'NOVA_PFSENSE_UPDATE_RELEASES_API',
-                        UpdateManager::RELEASES_API,
-                    ),
-                    sinkholeEnvironmentOverride(
-                        'NOVA_PFSENSE_UPDATE_DOWNLOAD_PREFIX',
-                        UpdateManager::DOWNLOAD_PREFIX,
+                    new GitHubReleaseSource(
+                        sinkholeEnvironmentOverride(
+                            'NOVA_PFSENSE_UPDATE_RELEASES_API',
+                            GitHubReleaseSource::RELEASES_API,
+                        ),
+                        sinkholeEnvironmentOverride(
+                            'NOVA_PFSENSE_UPDATE_DOWNLOAD_PREFIX',
+                            GitHubReleaseSource::DOWNLOAD_PREFIX,
+                        ),
                     ),
                     $paths->updatesFile,
                     $paths->updateStatusFile,

@@ -64,6 +64,17 @@ final class SinkholeIpTestDownloadClient implements DownloadClient
 
         return ['success' => false, 'bytes' => 0, 'error' => $this->error];
     }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function request(
+        string $url,
+        array $headers,
+        string $userAgent,
+        ?string $destinationPath = null,
+        int $maximumBytes = 0,
+    ): array {
+        throw new RuntimeException('Release requests are not part of the IP tests.');
+    }
 }
 
 /** @since 1.0.0 */
@@ -94,6 +105,17 @@ final class SinkholeIpFixtureDownloadClient implements DownloadClient
         return is_int($bytes)
             ? ['success' => true, 'bytes' => $bytes, 'error' => null]
             : ['success' => false, 'bytes' => 0, 'error' => 'Invented fixture write failed.'];
+    }
+
+    /** {@inheritDoc} @since 1.3.3 */
+    public function request(
+        string $url,
+        array $headers,
+        string $userAgent,
+        ?string $destinationPath = null,
+        int $maximumBytes = 0,
+    ): array {
+        throw new RuntimeException('Release requests are not part of the IP tests.');
     }
 }
 
@@ -193,6 +215,87 @@ if (($argv[1] ?? '') === '--missing-protected-address-helpers') {
 }
 
 sinkholeTestRun([
+    'the pfSense adapter passes configuration and cron calls through unchanged' => static function (): void {
+        global $sinkholeStubCronOperations;
+        global $sinkholeStubWrites;
+
+        sinkholeStubReset([]);
+
+        $adapter = new PfSenseAdapter();
+
+        sinkholeTestAssertTrue($adapter->canReadConfiguration(), 'The stubbed configuration API must be readable.');
+        sinkholeTestAssertTrue($adapter->canWriteConfiguration(), 'The stubbed configuration API must be writable.');
+
+        $adapter->writeConfigurationPath('installedpackages/sinkhole/ip/example', 'on');
+
+        sinkholeTestAssertSame('on', $adapter->readConfigurationPath('installedpackages/sinkhole/ip/example'), 'A staged value must read back.');
+
+        $adapter->removeConfigurationPath('installedpackages/sinkhole/ip/example');
+
+        sinkholeTestAssertSame('missing', $adapter->readConfigurationPath('installedpackages/sinkhole/ip/example', 'missing'), 'A removed path must read as its default.');
+
+        $adapter->saveConfiguration('Invented adapter revision');
+
+        sinkholeTestAssertSame(['Invented adapter revision'], $sinkholeStubWrites, 'Saves must keep their revision description.');
+
+        $adapter->installCronJob('/usr/local/sbin/example --update', false);
+
+        sinkholeTestAssertSame(
+            [['/usr/local/sbin/example --update', false, '0', '*', '*', '*', '*', 'root']],
+            $sinkholeStubCronOperations,
+            'A cron removal must pass pfSense\'s own default fields.',
+        );
+    },
+    'the GeoLite2 source owns the MaxMind URLs and download checks' => static function (): void {
+        $root = sinkholeTestTemporaryDirectory();
+
+        try {
+            $archivePath = $root . '/archive.zip';
+            $checksumPath = $root . '/archive.zip.sha256';
+            $client = new SinkholeIpFixtureDownloadClient([
+                GeoLite2::ARCHIVE_URL => 'invented archive bytes',
+                GeoLite2::CHECKSUM_URL => str_repeat('a', 64) . "  fixture.zip\n",
+            ]);
+
+            GeoLite2::download($client, '000000', 'invented-license', $archivePath, $checksumPath);
+
+            sinkholeTestAssertSame('invented archive bytes', file_get_contents($archivePath), 'The archive must download through the client.');
+            sinkholeTestAssertTrue(
+                str_starts_with(GeoLite2::ARCHIVE_URL, 'https://download.maxmind.com/'),
+                'The GeoLite2 source must own the MaxMind archive URL.',
+            );
+
+            $recordingClient = new SinkholeIpTestDownloadClient('Invented transport failure');
+            $threw = false;
+
+            try {
+                GeoLite2::download($recordingClient, '000000', 'invented-license', $archivePath, $checksumPath);
+            } catch (RuntimeException $runtimeException) {
+                $threw = $runtimeException->getMessage() === 'Invented transport failure';
+            }
+
+            sinkholeTestAssertTrue($threw, 'A failed MaxMind download must report the transport error.');
+            sinkholeTestAssertSame('000000', $recordingClient->calls[0]['username'] ?? null, 'The account ID must be the basic-auth user.');
+            sinkholeTestAssertSame('invented-license', $recordingClient->calls[0]['password'] ?? null, 'The license key must be the basic-auth password.');
+            sinkholeTestAssertSame(GeoLite2::MAXIMUM_ARCHIVE_BYTES, $recordingClient->calls[0]['maximumBytes'] ?? null, 'The archive must be capped.');
+
+            $emptyClient = new SinkholeIpFixtureDownloadClient([
+                GeoLite2::ARCHIVE_URL => 'invented archive bytes',
+                GeoLite2::CHECKSUM_URL => '',
+            ]);
+            $emptyThrew = false;
+
+            try {
+                GeoLite2::download($emptyClient, '000000', 'invented-license', $archivePath, $checksumPath);
+            } catch (RuntimeException $runtimeException) {
+                $emptyThrew = $runtimeException->getMessage() === 'A GeoLite2 download is empty or exceeds its size limit.';
+            }
+
+            sinkholeTestAssertTrue($emptyThrew, 'An empty MaxMind checksum must be rejected.');
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($root);
+        }
+    },
     'IP parser canonicalizes rows separates ignorable input and enforces families' => static function (): void {
         $root = sinkholeTestTemporaryDirectory();
 

@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace PfSense\Sinkhole\Domain;
 
+use PfSense\Sinkhole\Runtime\AdGuardRegistrySource;
+use PfSense\Sinkhole\Runtime\PfBlockerNgFeedSource;
 use RuntimeException;
 use stdClass;
 
+require_once(__DIR__ . '/AdGuardRegistrySource.php');
 require_once(__DIR__ . '/BypassConfiguration.php');
+require_once(__DIR__ . '/PfBlockerNgFeedSource.php');
 require_once(__DIR__ . '/ListConfiguration.php');
 require_once(__DIR__ . '/ValidationException.php');
 
 /**
  * Catalog.
  *
- * Converts both supported catalog formats into bounded, validated entries and
- * owns search, duplicate, ordinary-list, IP-list, and Bypass List creation policy.
+ * Routes each supported catalog to its source adapter, which reads the upstream
+ * format into bounded, validated entries, and owns search, duplicate,
+ * ordinary-list, IP-list, and Bypass List creation policy.
  *
  * @since 1.0.0
  */
@@ -232,8 +237,8 @@ final class Catalog
     public static function parse(string $source, string $contents): array
     {
         $entries = match ($source) {
-            self::SOURCE_ADGUARD_HOME => self::parseAdGuardHome($contents),
-            self::SOURCE_PFBLOCKERNG => self::parsePfBlockerNg($contents),
+            self::SOURCE_ADGUARD_HOME => AdGuardRegistrySource::parseFilters($contents),
+            self::SOURCE_PFBLOCKERNG => PfBlockerNgFeedSource::parseDnsFeeds($contents),
             default => throw new RuntimeException('The catalog source is invalid.'),
         };
 
@@ -254,7 +259,7 @@ final class Catalog
      */
     public static function parseIp(string $contents): array
     {
-        $entries = self::parseIpEntries($contents);
+        $entries = PfBlockerNgFeedSource::parseIpFeeds($contents);
 
         return self::withoutBypassEntries($entries);
     }
@@ -277,10 +282,10 @@ final class Catalog
     public static function parseBypass(string $source, string $contents): array
     {
         if ($source === self::SOURCE_ADGUARD_HOME) {
-            $entries = self::parseAdGuardHome($contents);
+            $entries = AdGuardRegistrySource::parseFilters($contents);
         } elseif ($source === self::SOURCE_PFBLOCKERNG) {
-            $dnsEntries = self::parsePfBlockerNg($contents);
-            $ipEntries = self::parseIpEntries($contents);
+            $dnsEntries = PfBlockerNgFeedSource::parseDnsFeeds($contents);
+            $ipEntries = PfBlockerNgFeedSource::parseIpFeeds($contents);
             $entries = array_merge($dnsEntries, $ipEntries);
         } else {
             throw new RuntimeException('The catalog source is invalid.');
@@ -1103,379 +1108,10 @@ final class Catalog
     }
 
     /**
-     * Catalog - Parse IP Entries.
-     *
-     * Keeps the full source-section parse separate so Bypass can select its fixed
-     * IP groups before the ordinary IP catalog removes them.
-     *
-     * @param string $contents - Complete pfBlockerNG JSON document.
-     *
-     * @return list<array>
-     *
-     * @since 1.0.0
-     * @private
-     */
-    private static function parseIpEntries(string $contents): array
-    {
-        $document = self::decodeDocument($contents);
-        $entries = [];
-        $groupCount = 0;
-        $feedCount = 0;
-
-        foreach (['ipv4', 'ipv6'] as $family) {
-            $section = $document->{$family} ?? null;
-
-            if (!$section instanceof stdClass) {
-                continue;
-            }
-
-            foreach (get_object_vars($section) as $groupNameValue => $groupValue) {
-                if ($groupCount >= self::MAXIMUM_GROUPS || $feedCount >= self::MAXIMUM_ENTRIES) {
-                    break 2;
-                }
-
-                $groupCount++;
-
-                if (
-                    !$groupValue instanceof stdClass
-                    || !is_string($groupValue->description ?? null)
-                    || !is_array($groupValue->feeds ?? null)
-                ) {
-                    continue;
-                }
-
-                $group = self::normalizeText($groupNameValue, self::MAXIMUM_GROUP_BYTES);
-                $description = self::normalizeText(
-                    $groupValue->description,
-                    self::MAXIMUM_DESCRIPTION_BYTES,
-                );
-
-                if ($group === null || $group === '' || $description === null) {
-                    continue;
-                }
-
-                foreach ($groupValue->feeds as $feed) {
-                    if ($feedCount >= self::MAXIMUM_ENTRIES) {
-                        break;
-                    }
-
-                    $feedCount++;
-
-                    if (
-                        !$feed instanceof stdClass
-                        || !is_string($feed->feed ?? null)
-                        || !is_string($feed->url ?? null)
-                    ) {
-                        continue;
-                    }
-
-                    $website = $feed->website ?? '';
-                    $name = self::normalizeText($feed->feed, self::MAXIMUM_NAME_BYTES);
-                    $url = self::normalizeListUrl($feed->url);
-
-                    if (!is_string($website) || $name === null || $name === '' || $url === null) {
-                        continue;
-                    }
-
-                    $homepage = self::normalizeHomepage($website);
-                    $entries[] = [
-                        'name' => $name,
-                        'description' => $description,
-                        'homepage' => $homepage,
-                        'url' => $url,
-                        'source' => self::sourceLabels()[self::SOURCE_PFBLOCKERNG],
-                        'contents' => self::contentsForSourceSection(
-                            self::SOURCE_PFBLOCKERNG,
-                            $family,
-                        ),
-                        'group' => $group,
-                        'tags' => [],
-                        'family' => $family,
-                        'category' => self::CATEGORY_OTHER,
-                        'maintainer' => self::maintainer($homepage),
-                        'source_key' => self::SOURCE_PFBLOCKERNG,
-                        'catalog_section' => $family,
-                        'catalog_key' => $group,
-                    ];
-                }
-            }
-        }
-
-        if ($entries === [] && !isset($document->ipv4) && !isset($document->ipv6)) {
-            throw new RuntimeException('The pfBlockerNG IP catalog is invalid.');
-        }
-
-        return $entries;
-    }
-
-    /**
-     * Catalog - Parse AdGuard Home.
-     *
-     * Uses only active filters and their download URL while keeping tag identifiers
-     * bounded for the common entry shape.
-     *
-     * @param string $contents - Complete JSON document.
-     *
-     * @return list<array>
-     *
-     * @since 1.0.0
-     * @private
-     */
-    private static function parseAdGuardHome(string $contents): array
-    {
-        $document = self::decodeDocument($contents);
-
-        if (!isset($document->filters) || !is_array($document->filters)) {
-            throw new RuntimeException('The AdGuard Home catalog is invalid.');
-        }
-
-        $groups = [];
-
-        if (isset($document->groups) && !is_array($document->groups)) {
-            throw new RuntimeException('The AdGuard Home catalog groups are invalid.');
-        }
-
-        foreach (array_slice($document->groups ?? [], 0, self::MAXIMUM_GROUPS) as $groupValue) {
-            $groupIdentifier = $groupValue instanceof stdClass
-                ? ($groupValue->groupId ?? $groupValue->id ?? null)
-                : null;
-            $groupNameValue = $groupValue instanceof stdClass
-                ? ($groupValue->groupName ?? $groupValue->name ?? null)
-                : null;
-
-            if (
-                !$groupValue instanceof stdClass
-                || (!is_int($groupIdentifier) && !is_string($groupIdentifier))
-                || !is_string($groupNameValue)
-            ) {
-                continue;
-            }
-
-            $groupName = self::normalizeText($groupNameValue, self::MAXIMUM_GROUP_BYTES);
-
-            if ($groupName !== null && $groupName !== '') {
-                $groups[(string) $groupIdentifier] = $groupName;
-            }
-        }
-
-        $entries = [];
-        $filterCount = 0;
-
-        foreach ($document->filters as $filter) {
-            if ($filterCount >= self::MAXIMUM_ENTRIES) {
-                break;
-            }
-
-            $filterCount++;
-
-            if (!$filter instanceof stdClass) {
-                continue;
-            }
-
-            $deprecated = $filter->deprecated ?? false;
-
-            if (!is_bool($deprecated) || $deprecated) {
-                continue;
-            }
-
-            if (
-                !is_string($filter->name ?? null)
-                || !is_string($filter->downloadUrl ?? null)
-            ) {
-                continue;
-            }
-
-            $descriptionValue = $filter->description ?? '';
-            $homepageValue = $filter->homepage ?? '';
-            $tagsValue = $filter->tags ?? [];
-            $groupIdValue = $filter->groupId ?? null;
-            $filterKeyValue = $filter->filterKey ?? '';
-
-            if (
-                !is_string($descriptionValue)
-                || !is_string($homepageValue)
-                || !is_array($tagsValue)
-                || ($groupIdValue !== null && !is_int($groupIdValue) && !is_string($groupIdValue))
-                || (!is_int($filterKeyValue) && !is_string($filterKeyValue))
-            ) {
-                continue;
-            }
-
-            $name = self::normalizeText($filter->name, self::MAXIMUM_NAME_BYTES);
-            $description = self::normalizeText(
-                $descriptionValue,
-                self::MAXIMUM_DESCRIPTION_BYTES,
-            );
-            $url = self::normalizeListUrl($filter->downloadUrl);
-
-            if ($name === null || $name === '' || $description === null || $url === null) {
-                continue;
-            }
-
-            $tags = [];
-            $tagCount = 0;
-
-            foreach ($tagsValue as $tagValue) {
-                if ($tagCount >= self::MAXIMUM_TAGS) {
-                    break;
-                }
-
-                $tagCount++;
-
-                if (!is_int($tagValue) && !is_string($tagValue)) {
-                    continue;
-                }
-
-                $tag = self::normalizeText((string) $tagValue, self::MAXIMUM_TAG_BYTES);
-
-                if ($tag !== null && $tag !== '') {
-                    $tags[] = $tag;
-                }
-            }
-
-            $homepage = self::normalizeHomepage($homepageValue);
-            $group = ($groupIdValue === null) ? null : ($groups[(string) $groupIdValue] ?? null);
-            $catalogKey = self::normalizeText(
-                (string) $filterKeyValue,
-                self::MAXIMUM_GROUP_BYTES,
-            ) ?? '';
-            $entries[] = [
-                'name' => $name,
-                'description' => $description,
-                'homepage' => $homepage,
-                'url' => $url,
-                'source' => self::sourceLabels()[self::SOURCE_ADGUARD_HOME],
-                'contents' => self::contentsForSourceSection(
-                    self::SOURCE_ADGUARD_HOME,
-                    'filters',
-                ),
-                'group' => $group,
-                'tags' => $tags,
-                'category' => self::categoryForGroup(self::SOURCE_ADGUARD_HOME, $group),
-                'maintainer' => self::maintainer($homepage),
-                'source_key' => self::SOURCE_ADGUARD_HOME,
-                'catalog_section' => 'filters',
-                'catalog_key' => $catalogKey,
-            ];
-        }
-
-        return $entries;
-    }
-
-    /**
-     * Catalog - Parse pfBlockerNG.
-     *
-     * Traverses only DNS groups, using each group description for its feeds and
-     * ignoring IP sections and alternate URLs reserved for later milestones.
-     *
-     * @param string $contents - Complete JSON document.
-     *
-     * @return list<array>
-     *
-     * @since 1.0.0
-     * @private
-     */
-    private static function parsePfBlockerNg(string $contents): array
-    {
-        $document = self::decodeDocument($contents);
-
-        if (!isset($document->dnsbl) || !$document->dnsbl instanceof stdClass) {
-            throw new RuntimeException('The pfBlockerNG catalog is invalid.');
-        }
-
-        $entries = [];
-        $groupCount = 0;
-        $feedCount = 0;
-
-        foreach (get_object_vars($document->dnsbl) as $groupNameValue => $groupValue) {
-            if (
-                $groupCount >= self::MAXIMUM_GROUPS
-                || $feedCount >= self::MAXIMUM_ENTRIES
-            ) {
-                break;
-            }
-
-            $groupCount++;
-
-            if (!$groupValue instanceof stdClass) {
-                continue;
-            }
-
-            if (
-                !is_string($groupValue->description ?? null)
-                || !is_array($groupValue->feeds ?? null)
-            ) {
-                continue;
-            }
-
-            $group = self::normalizeText($groupNameValue, self::MAXIMUM_GROUP_BYTES);
-            $description = self::normalizeText(
-                $groupValue->description,
-                self::MAXIMUM_DESCRIPTION_BYTES,
-            );
-
-            if ($group === null || $group === '' || $description === null) {
-                continue;
-            }
-
-            foreach ($groupValue->feeds as $feed) {
-                if ($feedCount >= self::MAXIMUM_ENTRIES) {
-                    break;
-                }
-
-                $feedCount++;
-
-                if (
-                    !$feed instanceof stdClass
-                    || !is_string($feed->feed ?? null)
-                    || !is_string($feed->url ?? null)
-                ) {
-                    continue;
-                }
-
-                $homepageValue = $feed->website ?? '';
-
-                if (!is_string($homepageValue)) {
-                    continue;
-                }
-
-                $name = self::normalizeText($feed->feed, self::MAXIMUM_NAME_BYTES);
-                $url = self::normalizeListUrl($feed->url);
-
-                if ($name === null || $name === '' || $url === null) {
-                    continue;
-                }
-
-                $homepage = self::normalizeHomepage($homepageValue);
-                $entries[] = [
-                    'name' => $name,
-                    'description' => $description,
-                    'homepage' => $homepage,
-                    'url' => $url,
-                    'source' => self::sourceLabels()[self::SOURCE_PFBLOCKERNG],
-                    'contents' => self::contentsForSourceSection(
-                        self::SOURCE_PFBLOCKERNG,
-                        'dnsbl',
-                    ),
-                    'group' => $group,
-                    'tags' => [],
-                    'category' => self::categoryForGroup(self::SOURCE_PFBLOCKERNG, $group),
-                    'maintainer' => self::maintainer($homepage),
-                    'source_key' => self::SOURCE_PFBLOCKERNG,
-                    'catalog_section' => 'dnsbl',
-                    'catalog_key' => $group,
-                ];
-            }
-        }
-
-        return $entries;
-    }
-
-    /**
      * Catalog - Decode Document.
      *
      * Object decoding preserves the distinction between required JSON objects and
-     * arrays before any source-specific traversal begins.
+     * arrays before a source adapter's traversal begins.
      *
      * @param string $contents - Complete JSON document.
      *
@@ -1484,9 +1120,8 @@ final class Catalog
      * @throws RuntimeException When the top-level value is not an object.
      *
      * @since 1.0.0
-     * @private
      */
-    private static function decodeDocument(string $contents): stdClass
+    public static function decodeDocument(string $contents): stdClass
     {
         $document = json_decode($contents, false, 32, JSON_THROW_ON_ERROR);
 
@@ -1509,9 +1144,8 @@ final class Catalog
      * @return string|null
      *
      * @since 1.0.0
-     * @private
      */
-    private static function normalizeText(string $value, int $maximumBytes): ?string
+    public static function normalizeText(string $value, int $maximumBytes): ?string
     {
         $value = trim($value);
 
@@ -1550,9 +1184,8 @@ final class Catalog
      * @return string|null
      *
      * @since 1.0.0
-     * @private
      */
-    private static function normalizeListUrl(string $url): ?string
+    public static function normalizeListUrl(string $url): ?string
     {
         try {
             $row = ListConfiguration::normalizeRow(
@@ -1579,9 +1212,8 @@ final class Catalog
      * @return string
      *
      * @since 1.0.0
-     * @private
      */
-    private static function normalizeHomepage(string $homepage): string
+    public static function normalizeHomepage(string $homepage): string
     {
         if (trim($homepage) === '') {
             return '';

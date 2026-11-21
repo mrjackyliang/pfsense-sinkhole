@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PfSense\Sinkhole\Runtime;
 
 require_once(__DIR__ . '/DownloadClient.php');
+require_once(__DIR__ . '/Platform.php');
 
 /**
  * Curl Download Client.
@@ -195,6 +196,135 @@ final class CurlDownloadClient implements DownloadClient
     }
 
     /**
+     * Curl Download Client - Request.
+     *
+     * Release requests keep their own short timeouts, three redirects, verified TLS,
+     * protocols limited by the initial URL, and pfSense's "set_curlproxy" helper. A
+     * streamed body is capped by both cURL and a progress callback.
+     *
+     * @param string $url - Validated HTTP or HTTPS URL.
+     * @param list<string> $headers - Request header lines.
+     * @param string $userAgent - User agent to send.
+     * @param string|null $destinationPath - Private file the body streams into.
+     * @param int $maximumBytes - Largest accepted streamed body; 0 means no limit.
+     *
+     * @return array{started: bool, failure: string|null, completed: bool, status: int, body: string|null, error: string, too_large: bool}
+     *
+     * @since 1.3.3
+     */
+    public function request(
+        string $url,
+        array $headers,
+        string $userAgent,
+        ?string $destinationPath = null,
+        int $maximumBytes = 0,
+    ): array {
+        $fileHandle = null;
+
+        if ($destinationPath !== null) {
+            $fileHandle = fopen($destinationPath, 'wb');
+
+            if ($fileHandle === false || chmod($destinationPath, 0600) === false) {
+                if (is_resource($fileHandle)) {
+                    fclose($fileHandle);
+                }
+
+                return self::requestFailure('destination');
+            }
+        }
+
+        $curlHandle = curl_init($url);
+
+        if ($curlHandle === false) {
+            if (is_resource($fileHandle)) {
+                fclose($fileHandle);
+            }
+
+            return self::requestFailure('initialize');
+        }
+
+        $tooLarge = false;
+        $options = [
+            CURLOPT_HTTPHEADER => $headers,
+        ];
+
+        if (is_resource($fileHandle)) {
+            $options[CURLOPT_FILE] = $fileHandle;
+
+            if ($maximumBytes > 0) {
+                $options[CURLOPT_MAXFILESIZE_LARGE] = $maximumBytes;
+                $options[CURLOPT_NOPROGRESS] = false;
+                $options[CURLOPT_XFERINFOFUNCTION] = static function (
+                    mixed $unusedHandle,
+                    float $downloadTotal,
+                    float $downloadedCount,
+                    float $uploadTotal,
+                    float $uploadedCount,
+                ) use (&$tooLarge, $maximumBytes): int {
+                    if ($downloadedCount > $maximumBytes) {
+                        $tooLarge = true;
+
+                        return 1;
+                    }
+
+                    return 0;
+                };
+            }
+        } else {
+            $options[CURLOPT_RETURNTRANSFER] = true;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $allowedProtocols = $scheme === 'http'
+            ? CURLPROTO_HTTP | CURLPROTO_HTTPS
+            : CURLPROTO_HTTPS;
+        $sharedOptions = [
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 3,
+            CURLOPT_PROTOCOLS => $allowedProtocols,
+            CURLOPT_REDIR_PROTOCOLS => $allowedProtocols,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_USERAGENT => $userAgent,
+        ];
+
+        if (curl_setopt_array($curlHandle, $options + $sharedOptions) === false) {
+            curl_close($curlHandle);
+
+            if (is_resource($fileHandle)) {
+                fclose($fileHandle);
+            }
+
+            return self::requestFailure('configure');
+        }
+
+        \set_curlproxy($curlHandle);
+
+        $result = curl_exec($curlHandle);
+        $statusCode = (int) curl_getinfo($curlHandle, CURLINFO_RESPONSE_CODE);
+        $curlErrorCode = curl_errno($curlHandle);
+        $curlError = curl_error($curlHandle);
+
+        curl_close($curlHandle);
+
+        if (is_resource($fileHandle)) {
+            fclose($fileHandle);
+        }
+
+        return [
+            'started' => true,
+            'failure' => null,
+            'completed' => $result !== false,
+            'status' => $statusCode,
+            'body' => is_string($result) ? $result : null,
+            'error' => $curlError,
+            'too_large' => $tooLarge || $curlErrorCode === CURLE_FILESIZE_EXCEEDED,
+        ];
+    }
+
+    /**
      * Curl Download Client - Request Settings.
      *
      * Exposes transport policy for offline tests while matching pfSense's
@@ -221,11 +351,13 @@ final class CurlDownloadClient implements DownloadClient
         $proxyUser = '';
         $proxyPassword = '';
 
-        if (function_exists('config_get_path')) {
-            $configuredProxyUrl = config_get_path('system/proxyurl', '');
-            $configuredProxyPort = config_get_path('system/proxyport', '');
-            $configuredProxyUser = config_get_path('system/proxyuser', '');
-            $configuredProxyPassword = config_get_path('system/proxypass', '');
+        $platformAdapter = Platform::adapter();
+
+        if ($platformAdapter->canReadConfiguration()) {
+            $configuredProxyUrl = $platformAdapter->readConfigurationPath('system/proxyurl', '');
+            $configuredProxyPort = $platformAdapter->readConfigurationPath('system/proxyport', '');
+            $configuredProxyUser = $platformAdapter->readConfigurationPath('system/proxyuser', '');
+            $configuredProxyPassword = $platformAdapter->readConfigurationPath('system/proxypass', '');
             $proxyUrl = is_string($configuredProxyUrl) ? $configuredProxyUrl : '';
             $proxyPort = is_string($configuredProxyPort) ? $configuredProxyPort : '';
             $proxyUser = is_string($configuredProxyUser) ? $configuredProxyUser : '';
@@ -268,5 +400,30 @@ final class CurlDownloadClient implements DownloadClient
         }
 
         return (string) $maximumBytes . ' bytes';
+    }
+
+    /**
+     * Curl Download Client - Request Failure.
+     *
+     * Describes a request that stopped before it was sent.
+     *
+     * @param string $failure - Step that failed.
+     *
+     * @return array{started: bool, failure: string, completed: bool, status: int, body: null, error: string, too_large: bool}
+     *
+     * @since 1.3.3
+     * @private
+     */
+    private static function requestFailure(string $failure): array
+    {
+        return [
+            'started' => false,
+            'failure' => $failure,
+            'completed' => false,
+            'status' => 0,
+            'body' => null,
+            'error' => '',
+            'too_large' => false,
+        ];
     }
 }

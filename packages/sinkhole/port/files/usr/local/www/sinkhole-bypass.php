@@ -34,7 +34,10 @@ require_once('/usr/local/pkg/sinkhole/RedirectConfiguration.php');
  */
 function sinkholeBypassContextRows(): array
 {
-    $contextRows = config_get_path('installedpackages/sinkhole/bypass_contexts/item', []);
+    $contextRows = pfsensePackageSinkholeAdapter()->readConfigurationPath(
+        'installedpackages/sinkhole/bypass_contexts/item',
+        [],
+    );
 
     return is_array($contextRows) ? $contextRows : [];
 }
@@ -86,7 +89,7 @@ function sinkholeBypassContextSettings(array $configuration, string $context): ?
  */
 function sinkholeBypassPersist(): void
 {
-    write_config(pfsensePackageSinkholeTranslate('revision_saved_bypass'));
+    pfsensePackageSinkholeAdapter()->saveConfiguration(pfsensePackageSinkholeTranslate('revision_saved_bypass'));
     pfsensePackageSinkholeInstallCron();
     pfsensePackageSinkholeAdapter()->runApplyInBackground();
 }

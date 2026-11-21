@@ -17,3 +17,23 @@ export const semanticVersionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
  * @since 1.0.0
  */
 export const releaseSigningKeyPattern = /^ssh-ed25519\s+AAAAC3NzaC1lZDI1NTE5AAAAI[A-Za-z0-9+/]{43}(?:\s.*)?$/;
+
+/**
+ * Regex - Curl Call Pattern.
+ *
+ * Matches one PHP cURL function call such as "curl_exec(". Function names inside
+ * strings and translation keys like "curl_support_unavailable" do not match.
+ *
+ * @since 1.3.3
+ */
+export const curlCallPattern = /\bcurl_[a-z_]+\s*\(/;
+
+/**
+ * Regex - Platform Configuration Call Pattern.
+ *
+ * Matches one direct pfSense configuration read, write, or save call, which only
+ * the platform adapter may make.
+ *
+ * @since 1.3.3
+ */
+export const platformConfigurationCallPattern = /(?<![>\w])\\?(?:config_(?:get|set|del)_path|write_config)\s*\(/;

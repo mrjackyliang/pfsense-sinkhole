@@ -17,6 +17,7 @@ use PfSense\Sinkhole\Runtime\Compiler;
 use PfSense\Sinkhole\Runtime\Context;
 use PfSense\Sinkhole\Runtime\FileLock;
 use PfSense\Sinkhole\Runtime\FileSystem;
+use PfSense\Sinkhole\Runtime\GitHubReleaseSource;
 use PfSense\Sinkhole\Runtime\PackagePaths;
 use PfSense\Sinkhole\Runtime\PfSenseAdapter;
 use PfSense\Sinkhole\Runtime\RestoreHeal;
@@ -40,6 +41,7 @@ require_once(__DIR__ . '/sinkhole/Context.php');
 require_once(__DIR__ . '/sinkhole/AlertConfiguration.php');
 require_once(__DIR__ . '/sinkhole/FileLock.php');
 require_once(__DIR__ . '/sinkhole/FileSystem.php');
+require_once(__DIR__ . '/sinkhole/GitHubReleaseSource.php');
 require_once(__DIR__ . '/sinkhole/ListConfiguration.php');
 require_once(__DIR__ . '/sinkhole/IpConfiguration.php');
 require_once(__DIR__ . '/sinkhole/RedirectConfiguration.php');
@@ -222,7 +224,7 @@ function pfsensePackageSinkholeLogNonFatalRestoreFailure(string $message): void
  */
 function pfsensePackageSinkholeRegisteredPackage(): ?array
 {
-    $packages = config_get_path('installedpackages/package', []);
+    $packages = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/package', []);
 
     if (!is_array($packages)) {
         return null;
@@ -274,7 +276,7 @@ function pfsensePackageSinkholeFalseRemovalNoticeTexts(
         return [];
     }
 
-    $translate ??= static fn(string $message): string => gettext($message);
+    $translate ??= static fn(string $message): string => pfsensePackageSinkholeAdapter()->translatePlatformText($message);
     $template = $translate(
         'Package %s does not exist in current %s version and it has been removed.',
     );
@@ -324,34 +326,21 @@ function pfsensePackageSinkholeReconcileRestoreNotice(
             return;
         }
 
-        if (
-            (
-                function_exists('get_notices') === false
-                || function_exists('close_notice') === false
-                || function_exists('file_notice') === false
-            )
-            && is_readable('/etc/inc/notices.inc')
-        ) {
-            require_once('/etc/inc/notices.inc');
-        }
+        $platformAdapter = pfsensePackageSinkholeAdapter();
+        $missingNoticeFunction = $platformAdapter->requireNoticeApi(true);
 
-        foreach (['get_notices', 'close_notice', 'file_notice'] as $noticeFunction) {
-            if (function_exists($noticeFunction) === false) {
-                throw new RuntimeException(
-                    'Required notice function is unavailable: ' . $noticeFunction,
-                );
-            }
+        if ($missingNoticeFunction !== null) {
+            throw new RuntimeException(
+                'Required notice function is unavailable: ' . $missingNoticeFunction,
+            );
         }
 
         if ($productLabel === null) {
-            if (function_exists('g_get') === false) {
+            $productLabel = $platformAdapter->productLabel();
+
+            if ($productLabel === null) {
                 throw new RuntimeException('The pfSense product label is unavailable.');
             }
-
-            $resolvedProductLabel = g_get('product_label');
-            $productLabel = is_string($resolvedProductLabel)
-                ? $resolvedProductLabel
-                : '';
         }
 
         $falseNoticeTexts = pfsensePackageSinkholeFalseRemovalNoticeTexts(
@@ -368,7 +357,7 @@ function pfsensePackageSinkholeReconcileRestoreNotice(
             static fn(string $falseNoticeText): string => htmlentities($falseNoticeText),
             $falseNoticeTexts,
         );
-        $notices = get_notices();
+        $notices = $platformAdapter->getNotices();
 
         if ($notices === false) {
             return;
@@ -409,14 +398,14 @@ function pfsensePackageSinkholeReconcileRestoreNotice(
         }
 
         foreach ($falseNoticeQueueKeys as $falseNoticeQueueKey) {
-            close_notice($falseNoticeQueueKey);
+            $platformAdapter->closeNotice($falseNoticeQueueKey);
         }
 
         if ($restoreNoticeExists) {
             return;
         }
 
-        file_notice(
+        $platformAdapter->fileNotice(
             UpdateManager::RESTORE_NOTICE_ID,
             pfsensePackageSinkholeTranslate('configuration_restore_reassurance'),
             'Sinkhole',
@@ -444,24 +433,13 @@ function pfsensePackageSinkholeReconcileRestoreNotice(
  */
 function pfsensePackageSinkholeClosePackageNotices(): void
 {
-    if (
-        (
-            function_exists('get_notices') === false
-            || function_exists('close_notice') === false
-        )
-        && is_readable('/etc/inc/notices.inc')
-    ) {
-        require_once('/etc/inc/notices.inc');
-    }
+    $platformAdapter = pfsensePackageSinkholeAdapter();
 
-    if (
-        function_exists('get_notices') === false
-        || function_exists('close_notice') === false
-    ) {
+    if ($platformAdapter->requireNoticeApi(false) !== null) {
         return;
     }
 
-    $notices = get_notices();
+    $notices = $platformAdapter->getNotices();
 
     if (!is_array($notices)) {
         return;
@@ -483,7 +461,7 @@ function pfsensePackageSinkholeClosePackageNotices(): void
             continue;
         }
 
-        close_notice((string) $noticeQueueKey);
+        $platformAdapter->closeNotice((string) $noticeQueueKey);
     }
 }
 
@@ -528,7 +506,7 @@ function pfsensePackageSinkholeInvalidReason(array $invalidValue): string
  */
 function pfsensePackageSinkholeLocalizePackageGui(array &$package): void
 {
-    $package['title'] = gettext('Firewall') . '/Sinkhole';
+    $package['title'] = pfsensePackageSinkholeAdapter()->translatePlatformText('Firewall') . '/Sinkhole';
     $package['aftersaveredirect'] = sprintf(
         '/pkg_edit.php?xml=sinkhole.xml&id=0&savemsg=%s',
         rawurlencode(pfsensePackageSinkholeTranslate('settings_saved_applying')),
@@ -609,7 +587,7 @@ function pfsensePackageSinkholeLocalizePackageGui(array &$package): void
         }
 
         if (($field['fieldname'] ?? null) === 'serve_expired_client_timeout') {
-            if (config_path_enabled('unbound', 'dnsrecordcache')) {
+            if (pfsensePackageSinkholeAdapter()->configurationPathEnabled('unbound', 'dnsrecordcache')) {
                 $field['description'] .= ' ' . pfsensePackageSinkholeTranslate('serve_expired_pfsense_on');
             } else {
                 $field['description'] .= ' ' . pfsensePackageSinkholeTranslate('serve_expired_pfsense_off');
@@ -719,7 +697,7 @@ function pfsensePackageSinkholeTabs(string $active): array
 function pfsensePackageSinkholeUpdateRunning(PackagePaths $paths): bool
 {
     return FileSystem::isRegularFile($paths->updateLockFile)
-        && isvalidpid($paths->updateLockFile);
+        && pfsensePackageSinkholeAdapter()->processIdFileRunning($paths->updateLockFile);
 }
 
 /**
@@ -1191,8 +1169,8 @@ function pfsensePackageSinkholeBypassListUsageCounts(): array
 function pfsensePackageSinkholeIpListUsageCounts(array $lists): array
 {
     $counts = array_fill_keys(array_keys($lists), 0);
-    $storedSection = config_get_path('installedpackages/sinkhole/ip', []);
-    $storedRows = config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+    $storedSection = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/ip', []);
+    $storedRows = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/ip_contexts/item', []);
     $section = is_array($storedSection) ? $storedSection : [];
     $rows = is_array($storedRows) ? $storedRows : [];
     $contexts = array_merge([Context::GLOBAL], IpConfiguration::contextKeys());
@@ -1297,21 +1275,21 @@ function pfsensePackageSinkholeRemoveContextSettings(string $context): void
 
     $kind = $parsed['type'] . 's';
     $services = ServiceConfiguration::partition(
-        config_get_path('installedpackages/sinkhole/services', []),
+        pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/services', []),
     );
 
     if (isset($services[$kind][$parsed['id']])) {
         unset($services[$kind][$parsed['id']]);
-        config_set_path('installedpackages/sinkhole/services', ServiceConfiguration::storage($services));
+        pfsensePackageSinkholeAdapter()->writeConfigurationPath('installedpackages/sinkhole/services', ServiceConfiguration::storage($services));
     }
 
     $safeSearch = SafeSearchConfiguration::partition(
-        config_get_path('installedpackages/sinkhole/safesearch', []),
+        pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/safesearch', []),
     );
 
     if (isset($safeSearch[$kind][$parsed['id']])) {
         unset($safeSearch[$kind][$parsed['id']]);
-        config_set_path('installedpackages/sinkhole/safesearch', SafeSearchConfiguration::storage($safeSearch));
+        pfsensePackageSinkholeAdapter()->writeConfigurationPath('installedpackages/sinkhole/safesearch', SafeSearchConfiguration::storage($safeSearch));
     }
 
     foreach ([BypassConfiguration::class, IpConfiguration::class] as $configurationClass) {
@@ -1455,7 +1433,7 @@ function pfsensePackageSinkholeBypassStorage(
         ];
     }
 
-    $existing = config_get_path(BypassConfiguration::SECTION_PATH, []);
+    $existing = pfsensePackageSinkholeAdapter()->readConfigurationPath(BypassConfiguration::SECTION_PATH, []);
 
     if (
         is_array($existing)
@@ -1508,7 +1486,7 @@ function pfsensePackageSinkholeBypassStorage(
 function pfsensePackageSinkholeMigrateBypassContexts(?bool &$rowsAdded = null): bool
 {
     $rowsAdded = false;
-    $section = config_get_path(BypassConfiguration::SECTION_PATH, []);
+    $section = pfsensePackageSinkholeAdapter()->readConfigurationPath(BypassConfiguration::SECTION_PATH, []);
     $section = is_array($section) ? $section : [];
 
     if (array_key_exists(BypassConfiguration::CONTEXT_MIGRATION_FLAG, $section)) {
@@ -1524,7 +1502,7 @@ function pfsensePackageSinkholeMigrateBypassContexts(?bool &$rowsAdded = null): 
     $applyInterfaces = array_fill_keys($global['interfaces'], true);
     $selectedSources = array_keys($global['lists']);
     $globalEnabled = $global['enabled'] && $global['invalid_values'] === [];
-    $rowsValue = config_get_path(BypassConfiguration::CONTEXTS_PATH, []);
+    $rowsValue = pfsensePackageSinkholeAdapter()->readConfigurationPath(BypassConfiguration::CONTEXTS_PATH, []);
 
     if (is_array($rowsValue) && count($rowsValue) === 1 && array_key_exists('item', $rowsValue)) {
         $rowsValue = $rowsValue['item'];
@@ -1562,7 +1540,7 @@ function pfsensePackageSinkholeMigrateBypassContexts(?bool &$rowsAdded = null): 
 
         return $row;
     };
-    $networkRows = config_get_path('installedpackages/sinkhole/networks/item', []);
+    $networkRows = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/networks/item', []);
 
     if (is_array($networkRows) && array_key_exists('id', $networkRows)) {
         $networkRows = [$networkRows];
@@ -1587,7 +1565,7 @@ function pfsensePackageSinkholeMigrateBypassContexts(?bool &$rowsAdded = null): 
         $existing[$context] = true;
     }
 
-    $deviceRows = config_get_path('installedpackages/sinkhole/devices/item', []);
+    $deviceRows = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/devices/item', []);
 
     if (is_array($deviceRows) && array_key_exists('id', $deviceRows)) {
         $deviceRows = [$deviceRows];
@@ -1643,8 +1621,8 @@ function pfsensePackageSinkholeMigrateBypassContexts(?bool &$rowsAdded = null): 
 
     $rowsAdded = count($rows) > $existingRowCount;
     $section[BypassConfiguration::CONTEXT_MIGRATION_FLAG] = 'on';
-    config_set_path(BypassConfiguration::SECTION_PATH, $section);
-    config_set_path(BypassConfiguration::CONTEXTS_PATH, array_values($rows));
+    pfsensePackageSinkholeAdapter()->writeConfigurationPath(BypassConfiguration::SECTION_PATH, $section);
+    pfsensePackageSinkholeAdapter()->writeConfigurationPath(BypassConfiguration::CONTEXTS_PATH, array_values($rows));
 
     return true;
 }
@@ -1662,7 +1640,7 @@ function pfsensePackageSinkholeMigrateBypassContexts(?bool &$rowsAdded = null): 
  */
 function pfsensePackageSinkholeMigrateBypassGlobalLists(): bool
 {
-    $section = config_get_path(BypassConfiguration::SECTION_PATH, []);
+    $section = pfsensePackageSinkholeAdapter()->readConfigurationPath(BypassConfiguration::SECTION_PATH, []);
 
     if ($section === null || $section === '') {
         $section = [];
@@ -1686,7 +1664,7 @@ function pfsensePackageSinkholeMigrateBypassGlobalLists(): bool
     $listPartition = BypassConfiguration::partitionLists($listValue);
     $section['selected_lists'] = ['item' => array_keys($listPartition['lists'])];
     $section[BypassConfiguration::GLOBAL_LISTS_MIGRATION_FLAG] = 'on';
-    config_set_path(BypassConfiguration::SECTION_PATH, $section);
+    pfsensePackageSinkholeAdapter()->writeConfigurationPath(BypassConfiguration::SECTION_PATH, $section);
 
     return true;
 }
@@ -1705,7 +1683,7 @@ function pfsensePackageSinkholeMigrateBypassGlobalLists(): bool
  */
 function pfsensePackageSinkholeMigrateIpGlobalLists(): bool
 {
-    $section = config_get_path('installedpackages/sinkhole/ip', []);
+    $section = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/ip', []);
 
     if ($section === null || $section === '') {
         $section = [];
@@ -1732,7 +1710,7 @@ function pfsensePackageSinkholeMigrateIpGlobalLists(): bool
     }
 
     $section['list_ids'] = ['item' => $selected];
-    config_set_path('installedpackages/sinkhole/ip', $section);
+    pfsensePackageSinkholeAdapter()->writeConfigurationPath('installedpackages/sinkhole/ip', $section);
 
     return true;
 }
@@ -1783,7 +1761,7 @@ function pfsensePackageSinkholeGetIpConfiguration(): array
  */
 function pfsensePackageSinkholeMigrateIpContexts(): bool
 {
-    $storedSection = config_get_path('installedpackages/sinkhole/ip', []);
+    $storedSection = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/ip', []);
     $section = is_array($storedSection) ? $storedSection : [];
     $migrationVersion = $section[IpConfiguration::CONTEXT_MIGRATION_FIELD] ?? '';
 
@@ -1839,7 +1817,7 @@ function pfsensePackageSinkholeMigrateIpContexts(): bool
 
     $globalEnabled = ($section['enabled'] ?? '') === 'on'
         || ($section['enabled'] ?? null) === true;
-    $storedContextRows = config_get_path('installedpackages/sinkhole/ip_contexts/item', []);
+    $storedContextRows = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/ip_contexts/item', []);
     $contextRows = $unwrapItems(is_array($storedContextRows) ? $storedContextRows : []);
     $existingContexts = [];
 
@@ -1867,7 +1845,7 @@ function pfsensePackageSinkholeMigrateIpContexts(): bool
             'allowlist' => ['item' => $allowlist],
         ];
     };
-    $networkRows = config_get_path('installedpackages/sinkhole/networks/item', []);
+    $networkRows = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/networks/item', []);
 
     foreach ($unwrapItems(is_array($networkRows) ? $networkRows : []) as $network) {
         if (!is_array($network)) {
@@ -1894,7 +1872,7 @@ function pfsensePackageSinkholeMigrateIpContexts(): bool
         $existingContexts[$context] = true;
     }
 
-    $deviceRows = config_get_path('installedpackages/sinkhole/devices/item', []);
+    $deviceRows = pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole/devices/item', []);
 
     foreach ($unwrapItems(is_array($deviceRows) ? $deviceRows : []) as $device) {
         if (!is_array($device)) {
@@ -1934,8 +1912,8 @@ function pfsensePackageSinkholeMigrateIpContexts(): bool
     $section[IpConfiguration::CONTEXT_MIGRATION_FIELD] =
         IpConfiguration::CONTEXT_MIGRATION_VERSION;
 
-    config_set_path('installedpackages/sinkhole/ip', $section);
-    config_set_path('installedpackages/sinkhole/ip_contexts/item', $contextRows);
+    pfsensePackageSinkholeAdapter()->writeConfigurationPath('installedpackages/sinkhole/ip', $section);
+    pfsensePackageSinkholeAdapter()->writeConfigurationPath('installedpackages/sinkhole/ip_contexts/item', $contextRows);
 
     return true;
 }
@@ -2106,7 +2084,7 @@ function pfsensePackageSinkholeGetCronFields(string $frequency, ?int $minute = n
  */
 function pfsensePackageSinkholeGetUpdateSchedule(): array
 {
-    $storedSchedule = config_get_path(PackagePaths::UPDATE_SCHEDULE_PATH, []);
+    $storedSchedule = pfsensePackageSinkholeAdapter()->readConfigurationPath(PackagePaths::UPDATE_SCHEDULE_PATH, []);
     $storedSchedule = is_array($storedSchedule) ? $storedSchedule : [];
     $schedule = UpdateManager::stableCronSchedule($storedSchedule);
     $normalizedStoredSchedule = [];
@@ -2132,8 +2110,8 @@ function pfsensePackageSinkholeGetUpdateSchedule(): array
     }
 
     if ($removing === false && $normalizedStoredSchedule !== $schedule) {
-        config_set_path(PackagePaths::UPDATE_SCHEDULE_PATH, $schedule);
-        write_config(pfsensePackageSinkholeTranslate('stable_update_schedule_saved'));
+        pfsensePackageSinkholeAdapter()->writeConfigurationPath(PackagePaths::UPDATE_SCHEDULE_PATH, $schedule);
+        pfsensePackageSinkholeAdapter()->saveConfiguration(pfsensePackageSinkholeTranslate('stable_update_schedule_saved'));
     }
 
     return $schedule;
@@ -2151,7 +2129,7 @@ function pfsensePackageSinkholeGetUpdateSchedule(): array
  */
 function pfsensePackageSinkholeInstallUpdateCron(): void
 {
-    install_cron_job(PackagePaths::UPDATE_CHECK_COMMAND, false);
+    pfsensePackageSinkholeAdapter()->installCronJob(PackagePaths::UPDATE_CHECK_COMMAND, false);
 
     if (UpdateManager::isAvailable() === false) {
         return;
@@ -2173,7 +2151,7 @@ function pfsensePackageSinkholeInstallUpdateCron(): void
         return;
     }
 
-    install_cron_job(
+    pfsensePackageSinkholeAdapter()->installCronJob(
         PackagePaths::UPDATE_CHECK_COMMAND,
         true,
         $fields[0],
@@ -2221,11 +2199,11 @@ function pfsensePackageSinkholeBuildRestoreHealCommand(array $metadata): string
     }
 
     $expectedPackageFile = UpdateManager::PACKAGE_NAME . '-' . $version . '.pkg';
-    $expectedPackageUrl = UpdateManager::DOWNLOAD_PREFIX
-        . 'v'
-        . $version
-        . '/'
-        . $expectedPackageFile;
+    $expectedPackageUrl = GitHubReleaseSource::assetUrl(
+        UpdateManager::DOWNLOAD_PREFIX,
+        $version,
+        $expectedPackageFile,
+    );
 
     if (
         $packageFile !== $expectedPackageFile
@@ -2235,12 +2213,11 @@ function pfsensePackageSinkholeBuildRestoreHealCommand(array $metadata): string
         throw new InvalidArgumentException('Restore-heal release coordinates are invalid.');
     }
 
-    $scriptUrl = 'https://github.com/'
-        . RestoreHeal::REPOSITORY
-        . '/releases/download/v'
-        . $version
-        . '/'
-        . $expectedPackageFile;
+    $scriptUrl = GitHubReleaseSource::assetUrl(
+        GitHubReleaseSource::repositoryDownloadPrefix(RestoreHeal::REPOSITORY),
+        $version,
+        $expectedPackageFile,
+    );
 
     if ($scriptUrl !== $packageUrl) {
         throw new InvalidArgumentException('Restore-heal release coordinates are invalid.');
@@ -2320,7 +2297,7 @@ function pfsensePackageSinkholeHasCurrentRestoreHealCron(string $installedVersio
         return false;
     }
 
-    $storedItems = config_get_path('cron/item', []);
+    $storedItems = pfsensePackageSinkholeAdapter()->readConfigurationPath('cron/item', []);
 
     if (!is_array($storedItems)) {
         return false;
@@ -2379,7 +2356,7 @@ function pfsensePackageSinkholeReconcileRestoreHealCron(?array $metadata): void
         }
     }
 
-    $storedItems = config_get_path('cron/item', []);
+    $storedItems = pfsensePackageSinkholeAdapter()->readConfigurationPath('cron/item', []);
     $storedItems = is_array($storedItems) ? array_values($storedItems) : [];
     $desiredItems = [];
 
@@ -2414,13 +2391,13 @@ function pfsensePackageSinkholeReconcileRestoreHealCron(?array $metadata): void
     }
 
     if (count($desiredItems) === 0) {
-        config_del_path('cron/item');
+        pfsensePackageSinkholeAdapter()->removeConfigurationPath('cron/item');
     } else {
-        config_set_path('cron/item', $desiredItems);
+        pfsensePackageSinkholeAdapter()->writeConfigurationPath('cron/item', $desiredItems);
     }
 
-    write_config(pfsensePackageSinkholeTranslate('revision_restore_heal_cron'));
-    configure_cron();
+    pfsensePackageSinkholeAdapter()->saveConfiguration(pfsensePackageSinkholeTranslate('revision_restore_heal_cron'));
+    pfsensePackageSinkholeAdapter()->regenerateCrontab();
 }
 
 /**
@@ -2682,7 +2659,7 @@ function pfsensePackageSinkholeInstallCron(): void
         pfsensePackageSinkholeAdapter()->log($throwable->getMessage());
     }
 
-    install_cron_job(
+    pfsensePackageSinkholeAdapter()->installCronJob(
         PackagePaths::COMMAND . ' --update',
         $updateEnabled,
         $fields[0],
@@ -2692,7 +2669,7 @@ function pfsensePackageSinkholeInstallCron(): void
         $fields[4],
         'root',
     );
-    install_cron_job(
+    pfsensePackageSinkholeAdapter()->installCronJob(
         PackagePaths::COMMAND . ' --refresh-clients',
         $clientRefreshEnabled,
         '*',
@@ -2702,7 +2679,7 @@ function pfsensePackageSinkholeInstallCron(): void
         '*',
         'root',
     );
-    install_cron_job(
+    pfsensePackageSinkholeAdapter()->installCronJob(
         PackagePaths::COMMAND . ' --alerts',
         $enabled && $alertsEnabled,
         '*',
@@ -2712,7 +2689,7 @@ function pfsensePackageSinkholeInstallCron(): void
         '*',
         'root',
     );
-    install_cron_job(
+    pfsensePackageSinkholeAdapter()->installCronJob(
         PackagePaths::COMMAND . ' --redirect-check',
         $redirectCheckEnabled,
         '*',
@@ -2874,11 +2851,11 @@ function pfsensePackageSinkholeClearAlertHistory(
  */
 function pfsensePackageSinkholeDisableCron(bool $clearAlertHistory = true): void
 {
-    install_cron_job(PackagePaths::COMMAND . ' --update', false);
-    install_cron_job(PackagePaths::COMMAND . ' --refresh-clients', false);
-    install_cron_job(PackagePaths::COMMAND . ' --alerts', false);
-    install_cron_job(PackagePaths::COMMAND . ' --redirect-check', false);
-    install_cron_job(PackagePaths::UPDATE_CHECK_COMMAND, false);
+    pfsensePackageSinkholeAdapter()->installCronJob(PackagePaths::COMMAND . ' --update', false);
+    pfsensePackageSinkholeAdapter()->installCronJob(PackagePaths::COMMAND . ' --refresh-clients', false);
+    pfsensePackageSinkholeAdapter()->installCronJob(PackagePaths::COMMAND . ' --alerts', false);
+    pfsensePackageSinkholeAdapter()->installCronJob(PackagePaths::COMMAND . ' --redirect-check', false);
+    pfsensePackageSinkholeAdapter()->installCronJob(PackagePaths::UPDATE_CHECK_COMMAND, false);
 
     pfsensePackageSinkholeClearRedirectCheckFiles(40);
 
@@ -2913,7 +2890,7 @@ function pfsensePackageSinkholeInstall(): void
         );
     }
 
-    write_config(pfsensePackageSinkholeTranslate('revision_registered_redirect_hook'));
+    pfsensePackageSinkholeAdapter()->saveConfiguration(pfsensePackageSinkholeTranslate('revision_registered_redirect_hook'));
     pfsensePackageSinkholeSync();
 
     try {
@@ -3050,7 +3027,7 @@ function pfsensePackageSinkholeSync(
     if ($removing === false) {
         try {
             if (pfsensePackageSinkholeMigrateIpContexts()) {
-                write_config(pfsensePackageSinkholeTranslate('revision_saved_ip_blocking'));
+                pfsensePackageSinkholeAdapter()->saveConfiguration(pfsensePackageSinkholeTranslate('revision_saved_ip_blocking'));
             }
         } catch (Throwable $throwable) {
             pfsensePackageSinkholeAdapter()->log(
@@ -3066,7 +3043,7 @@ function pfsensePackageSinkholeSync(
             $bypassRowsAdded = false;
 
             if (pfsensePackageSinkholeMigrateBypassContexts($bypassRowsAdded)) {
-                write_config(pfsensePackageSinkholeTranslate('revision_saved_bypass'));
+                pfsensePackageSinkholeAdapter()->saveConfiguration(pfsensePackageSinkholeTranslate('revision_saved_bypass'));
 
                 if ($bypassRowsAdded) {
                     $stateStore->markCompileNeeded();
@@ -3080,7 +3057,7 @@ function pfsensePackageSinkholeSync(
 
         try {
             if (pfsensePackageSinkholeMigrateBypassGlobalLists()) {
-                write_config(pfsensePackageSinkholeTranslate('revision_saved_bypass'));
+                pfsensePackageSinkholeAdapter()->saveConfiguration(pfsensePackageSinkholeTranslate('revision_saved_bypass'));
             }
         } catch (Throwable $throwable) {
             pfsensePackageSinkholeAdapter()->log(
@@ -3090,7 +3067,7 @@ function pfsensePackageSinkholeSync(
 
         try {
             if (pfsensePackageSinkholeMigrateIpGlobalLists()) {
-                write_config(pfsensePackageSinkholeTranslate('revision_saved_ip_blocking'));
+                pfsensePackageSinkholeAdapter()->saveConfiguration(pfsensePackageSinkholeTranslate('revision_saved_ip_blocking'));
             }
         } catch (Throwable $throwable) {
             pfsensePackageSinkholeAdapter()->log(
@@ -3402,7 +3379,7 @@ function pfsensePackageSinkholeRemove(
 
     // A repeated pre-deinstall callback must not recreate the deleted state store.
     if (
-        config_get_path('installedpackages/sinkhole', null) === null
+        pfsensePackageSinkholeAdapter()->readConfigurationPath('installedpackages/sinkhole', null) === null
         && file_exists($paths->persistentDirectory) === false
         && is_link($paths->persistentDirectory) === false
     ) {
@@ -3672,7 +3649,7 @@ function pfsensePackageSinkholeValidate(array $post, array &$inputErrors): void
         return;
     }
 
-    if (config_path_enabled('unbound') === false) {
+    if (pfsensePackageSinkholeAdapter()->configurationPathEnabled('unbound') === false) {
         $inputErrors[] = pfsensePackageSinkholeTranslate('dns_resolver_disabled');
 
         return;

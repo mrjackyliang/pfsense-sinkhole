@@ -1,5 +1,12 @@
 # pfsense-pkg-sinkhole
 
+## 1.3.3 - 2026-11-21
+
+### UPDATED
+- Nova 0.49.0, which type-checks the package's scripts and tests without `skipLibCheck` and keeps error stack traces on one line in non-interactive output such as CI logs.
+- Package Manager listing and package description, which now match the project's short and long descriptions.
+- pfSense configuration, cron, notice, and filter calls in the lifecycle hooks, CLI, pages, and settings helpers, which now all go through the platform adapter, while GitHub releases, MaxMind GeoLite2, the AdGuard registry, and the pfBlockerNG feed list each sit behind their own source adapter that reaches the network only through the download client. The package check fails when any other file makes those calls directly.
+
 ## 1.3.2 - 2026-11-19
 
 ### FIXED

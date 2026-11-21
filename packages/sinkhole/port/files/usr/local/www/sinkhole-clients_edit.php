@@ -264,9 +264,7 @@ function sinkholeClientEditorApply(
     pfsensePackageSinkholeAdapter()->runApplyInBackground();
     pfsensePackageSinkholeAdapter()->runClientRefreshInBackground();
 
-    if (function_exists('filter_configure')) {
-        filter_configure();
-    }
+    pfsensePackageSinkholeAdapter()->reconfigureFilter();
 }
 
 $adapter = pfsensePackageSinkholeAdapter();
