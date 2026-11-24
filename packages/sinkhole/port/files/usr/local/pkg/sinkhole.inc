@@ -1937,14 +1937,15 @@ function pfsensePackageSinkholeSaveIp(array $storage): void
 /**
  * pfSense Package Sinkhole - Filter Rules.
  *
- * Supplies independent IP and Bypass anchor references to pfearly, nothing to filter, and keeps
- * DNS redirect text isolated to the NAT pass.
+ * Supplies independent IP and Bypass anchor references plus local DNS redirect
+ * pass rules to pfearly, nothing to filter, and NAT redirects to the NAT pass.
  *
  * @param string $ruleType - pfSense rule-discovery type.
  *
  * @return string
  *
  * @since 1.0.0
+ * @since 1.3.4
  */
 function pfsensePackageSinkholeFilterRules(string $ruleType): string
 {
@@ -1971,6 +1972,12 @@ function pfsensePackageSinkholeFilterRules(string $ruleType): string
             $ruleText .= $adapter->bypassRuleText();
         } catch (Throwable $throwable) {
             $adapter->log('Bypass blocking rules were omitted: ' . $throwable->getMessage());
+        }
+
+        try {
+            $ruleText .= $adapter->redirectFilterRuleText();
+        } catch (Throwable $throwable) {
+            $adapter->log('Local DNS redirect rules were omitted: ' . $throwable->getMessage());
         }
 
         if ($ruleText !== '') {

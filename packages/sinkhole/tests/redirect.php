@@ -842,15 +842,23 @@ sinkholeTestRun([
                 is_file($paths->redirectRuleErrorFile),
                 'A filter discovery call must leave the package error file alone.',
             );
+            $expectedEarlyRules = $adapter->redirectFilterRuleText();
+            sinkholeTestAssertContains(
+                'pass in quick on em0 inet proto { tcp udp } from any to (em0) port 53 keep state',
+                $expectedEarlyRules,
+                'An enabled redirect with a local Resolver listener must produce early local-pass rules.',
+            );
             sinkholeTestAssertSame(
-                '',
+                $expectedEarlyRules,
                 pfsensePackageSinkholeFilterRules('pfearly'),
-                'The package hook must return nothing for early rules.',
+                'The early hook must return the local DNS pass rules when redirect is active.',
             );
-            sinkholeTestAssertTrue(
-                is_file($paths->redirectRuleErrorFile),
-                'An early discovery call must leave the package error file alone.',
+            sinkholeTestAssertSame(
+                false,
+                file_exists($paths->redirectRuleErrorFile),
+                'An active early discovery call must delete a leftover package error file.',
             );
+            file_put_contents($paths->redirectRuleErrorFile, "leftover\n");
             $expectedNatRules = $adapter->redirectRuleText();
             sinkholeTestAssertContains(
                 'rdr pass on em0',
@@ -902,6 +910,11 @@ sinkholeTestRun([
                 '',
                 pfsensePackageSinkholeFilterRules('nat'),
                 'A stopped Resolver must suppress every redirect rule.',
+            );
+            sinkholeTestAssertSame(
+                '',
+                pfsensePackageSinkholeFilterRules('pfearly'),
+                'A stopped Resolver must suppress every local DNS pass rule.',
             );
             $sinkholeStubRunningProcesses['unbound'] = true;
 
@@ -1190,7 +1203,17 @@ sinkholeTestRun([
             );
 
             $currentRuleText = $adapter->redirectRuleText();
+            $currentFilterRuleText = $adapter->redirectFilterRuleText();
             file_put_contents($rulesPath, '# generated' . PHP_EOL . $currentRuleText);
+            sinkholeTestAssertSame(
+                'mismatch',
+                $adapter->reconcileRedirectRules($rulesPath, $errorPath),
+                'Missing local-pass rules alongside NAT rules must register a mismatch.',
+            );
+            file_put_contents(
+                $rulesPath,
+                '# generated' . PHP_EOL . $currentRuleText . PHP_EOL . $currentFilterRuleText,
+            );
             file_put_contents($errorPath, "leftover parse error\n");
             sinkholeTestAssertSame(
                 'matching',
@@ -1208,7 +1231,10 @@ sinkholeTestRun([
                 '-> 192.0.2.99 port 53',
                 $currentRuleText,
             );
-            file_put_contents($rulesPath, '# generated' . PHP_EOL . $outdatedRuleText);
+            file_put_contents(
+                $rulesPath,
+                '# generated' . PHP_EOL . $outdatedRuleText . PHP_EOL . $currentFilterRuleText,
+            );
             sinkholeTestAssertSame(
                 'mismatch',
                 $adapter->reconcileRedirectRules($rulesPath, $errorPath),
@@ -1225,7 +1251,11 @@ sinkholeTestRun([
                 'The outdated text must request exactly one additional reload.',
             );
 
-            $windowsRuleText = str_replace("\n", "\r\n", $currentRuleText);
+            $windowsRuleText = str_replace(
+                "\n",
+                "\r\n",
+                $currentRuleText . "\n" . $currentFilterRuleText,
+            );
             file_put_contents($rulesPath, "# generated\r\n" . $windowsRuleText);
             sinkholeTestAssertSame(
                 'matching',
@@ -1677,6 +1707,182 @@ sinkholeTestRun([
                 'There was an error while parsing',
                 $rejected['parse_error'],
                 'Status must expose the current parse error while the block is missing.',
+            );
+
+            $loadedFilterRuleText = '# Sinkhole DNS redirect local' . PHP_EOL
+                . 'pass in quick on em0 inet proto { tcp udp } from any to (em0) port 53 keep state'
+                . PHP_EOL;
+            file_put_contents(
+                $rulesPath,
+                '# generated' . PHP_EOL . $loadedRuleText . PHP_EOL . $loadedFilterRuleText,
+            );
+            $bothLoaded = $adapter->redirectRuleStatus(
+                $rulesPath,
+                $errorPath,
+                $loadedRuleText,
+                $loadedFilterRuleText,
+            );
+            sinkholeTestAssertSame(
+                true,
+                $bothLoaded['loaded'],
+                'Matching NAT and local-pass blocks must count as loaded.',
+            );
+            sinkholeTestAssertSame(
+                false,
+                $bothLoaded['out_of_date'],
+                'Matching NAT and local-pass blocks must not be out of date.',
+            );
+            sinkholeTestAssertSame(
+                '',
+                $bothLoaded['parse_error'],
+                'A leftover parse error must stay hidden while both redirect blocks match.',
+            );
+
+            file_put_contents($rulesPath, '# generated' . PHP_EOL . $loadedRuleText);
+            $missingLocal = $adapter->redirectRuleStatus(
+                $rulesPath,
+                $errorPath,
+                $loadedRuleText,
+                $loadedFilterRuleText,
+            );
+            sinkholeTestAssertSame(
+                false,
+                $missingLocal['loaded'],
+                'A missing local-pass block must fail the loaded check.',
+            );
+            sinkholeTestAssertSame(
+                true,
+                $missingLocal['out_of_date'],
+                'NAT rules without their wanted local-pass block must count as out of date.',
+            );
+            sinkholeTestAssertContains(
+                'There was an error while parsing',
+                $missingLocal['parse_error'],
+                'A missing expected local-pass block must surface the current parse error.',
+            );
+
+            file_put_contents($rulesPath, '# generated' . PHP_EOL . $loadedFilterRuleText);
+            $localOnlyUnwanted = $adapter->redirectRuleStatus($rulesPath, $errorPath, '', '');
+            sinkholeTestAssertSame(
+                true,
+                $localOnlyUnwanted['loaded'],
+                'A leftover local-pass block must count as loaded when no rules are wanted.',
+            );
+            sinkholeTestAssertSame(
+                true,
+                $localOnlyUnwanted['out_of_date'],
+                'A leftover local-pass block must count as out of date when no rules are wanted.',
+            );
+        } finally {
+            sinkholeTestRemoveTemporaryDirectory($directory);
+        }
+    },
+    'local pass rules allow direct interface DNS only when the Resolver listens there' => static function (): void {
+        global $sinkholeStubInterfaceAddresses;
+        global $sinkholeStubInterfaces;
+        global $sinkholeStubRealInterfaces;
+        global $sinkholeStubRunningProcesses;
+
+        $dualStackRules = RedirectConfiguration::localPassRuleText([
+            [
+                'interface' => 'opt5',
+                'ipv4_interface' => 'igb1.30',
+                'ipv4_local_listener' => true,
+                'ipv6_interface' => 'igb1.30',
+            ],
+        ]);
+        sinkholeTestAssertSame(
+            '# Sinkhole DNS redirect local' . PHP_EOL
+                . 'pass in quick on igb1.30 inet proto { tcp udp } from any to (igb1.30) port 53 keep state'
+                . PHP_EOL
+                . 'pass in quick on igb1.30 inet6 proto { tcp udp } from any to (igb1.30) port 53 keep state'
+                . PHP_EOL,
+            $dualStackRules,
+            'A dual-stack interface with local listeners must emit IPv4 and IPv6 local-pass rules.',
+        );
+
+        $loopbackOnlyRules = RedirectConfiguration::localPassRuleText([
+            [
+                'interface' => 'lan',
+                'ipv4_interface' => 'em0',
+                'ipv4_local_listener' => false,
+                'ipv6_interface' => '',
+            ],
+        ]);
+        sinkholeTestAssertSame(
+            '',
+            $loopbackOnlyRules,
+            'An IPv4 localhost-only listener must not emit an interface local-pass rule.',
+        );
+
+        $directory = sinkholeTestTemporaryDirectory();
+
+        try {
+            sinkholeStubReset([
+                'installedpackages' => [
+                    'sinkhole' => [
+                        'config' => [[
+                            'enabled' => 'on',
+                            'update_frequency' => 'daily',
+                        ]],
+                        'redirect' => [
+                            'enabled' => 'on',
+                            'interfaces' => ['item' => ['lan']],
+                            'exempt_sources' => ['item' => []],
+                            'exempt_destinations' => ['item' => []],
+                        ],
+                        'bypass' => [
+                            'block_tls_quic' => 'on',
+                        ],
+                        'ip' => [
+                            'enabled' => 'on',
+                            'interfaces' => ['item' => ['lan']],
+                            'directions' => ['item' => ['outbound']],
+                            'lists' => ['item' => []],
+                            'countries' => ['item' => []],
+                            'account_id' => '',
+                            'license_key' => '',
+                            'allowlist' => ['item' => []],
+                        ],
+                    ],
+                ],
+                'unbound' => [
+                    'enable' => '',
+                    'active_interface' => 'lo0',
+                ],
+            ]);
+            $sinkholeStubInterfaces = ['lan' => 'LAN'];
+            $sinkholeStubInterfaceAddresses = [
+                'lan' => [
+                    'ipv4' => '192.0.2.1',
+                    'ipv6' => '2001:db8::1',
+                ],
+            ];
+            $sinkholeStubRealInterfaces = ['lan' => 'em0'];
+            $sinkholeStubRunningProcesses['unbound'] = true;
+            $paths = sinkholeRedirectTestPaths($directory);
+            $adapter = new PfSenseAdapter($paths, new StateStore($paths->stateFile));
+
+            pfsensePackageSinkholeAdapter($adapter);
+            sinkholeTestAssertContains(
+                '-> 127.0.0.1 port 53',
+                $adapter->redirectRuleText(),
+                'A localhost-only Resolver still redirects IPv4 port 53 to 127.0.0.1.',
+            );
+            sinkholeTestAssertSame(
+                '',
+                $adapter->redirectFilterRuleText(),
+                'A localhost-only Resolver must not emit local interface pass rules.',
+            );
+
+            config_set_path('unbound/active_interface', 'lo0,lan');
+            sinkholeTestAssertSame(
+                "anchor \"sinkhole/ip\"\nanchor \"sinkhole/bypass\"\n"
+                    . "# Sinkhole DNS redirect local\n"
+                    . "pass in quick on em0 inet proto { tcp udp } from any to (em0) port 53 keep state\n"
+                    . "pass in quick on em0 inet6 proto { tcp udp } from any to (em0) port 53 keep state\n",
+                pfsensePackageSinkholeFilterRules('pfearly'),
+                'Local DNS pass rules must follow the IP and Bypass anchors in pfearly.',
             );
         } finally {
             sinkholeTestRemoveTemporaryDirectory($directory);

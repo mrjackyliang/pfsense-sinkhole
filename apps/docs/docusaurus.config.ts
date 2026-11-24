@@ -629,10 +629,20 @@ const config: DocusaurusNovaConfig = {
             href: 'https://www.mrjackyliang.com/work/',
           },
         ],
-        legal: [{
-          label: 'License',
-          href: 'https://github.com/mrjackyliang/pfsense-sinkhole/blob/HEAD/LICENSE',
-        }],
+        legal: [
+          {
+            label: 'License',
+            href: 'https://github.com/mrjackyliang/pfsense-sinkhole/blob/HEAD/LICENSE',
+          },
+          {
+            label: 'Terms of Use',
+            href: 'https://mrjackyliang.github.io/mrjackyliang/terms/',
+          },
+          {
+            label: 'Privacy Policy',
+            href: 'https://mrjackyliang.github.io/mrjackyliang/privacy/',
+          },
+        ],
       },
       layout: {
         docs: {

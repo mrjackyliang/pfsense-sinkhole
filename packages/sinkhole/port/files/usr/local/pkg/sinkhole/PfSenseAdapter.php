@@ -1545,6 +1545,41 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     }
 
     /**
+     * pfSense Adapter - Redirect Filter Rule Text.
+     *
+     * Shares the exact active gates as the NAT redirect hook so direct port 53
+     * queries to each selected interface's own address pass ahead of VLAN blocks.
+     *
+     * @return string
+     *
+     * @since 1.3.4
+     */
+    public function redirectFilterRuleText(): string
+    {
+        $configuration = $this->getRedirectConfiguration();
+
+        if ($configuration['enabled'] === false) {
+            return '';
+        }
+
+        $inactiveReason = $this->redirectInactiveReason($configuration);
+
+        if ($inactiveReason !== null) {
+            return '';
+        }
+
+        if (count($configuration['interfaces']) === 0) {
+            return '';
+        }
+
+        $interfaceDetails = $this->getRedirectInterfaceDetails(
+            $configuration['interfaces'],
+        );
+
+        return RedirectConfiguration::localPassRuleText($interfaceDetails);
+    }
+
+    /**
      * pfSense Adapter - Configured Interfaces.
      *
      * Returns only configured, enabled interfaces using pfSense's canonical helper.
@@ -1588,6 +1623,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      *     interface: string,
      *     ipv4_interface: string,
      *     ipv4_target: string,
+     *     ipv4_local_listener: bool,
      *     ipv4_reason: string,
      *     ipv6_interface: string,
      *     ipv6_target: string,
@@ -1597,6 +1633,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
      * @throws RuntimeException When pfSense's interface resolver is unavailable.
      *
      * @since 1.0.0
+     * @since 1.3.4
      */
     public function getRedirectInterfaceDetails(array $interfaces): array
     {
@@ -1622,6 +1659,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             $ipv4Interface = '';
             $ipv6Interface = '';
             $ipv4Target = '';
+            $ipv4LocalListener = false;
             $ipv6Target = '';
             $ipv4Reason = 'no_address';
             $ipv6Reason = 'no_address';
@@ -1632,6 +1670,9 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             ) {
                 $normalizedIpv4Address = $this->normalizeAddress($ipv4Address);
                 $ipv4Reason = 'resolver_not_listening';
+                $ipv4LocalListener = $activeInterfaces['automatic']
+                    || in_array($interface, $activeInterfaces['values'], true)
+                    || in_array($normalizedIpv4Address, $activeInterfaces['values'], true);
 
                 if (
                     $activeInterfaces['automatic']
@@ -1639,10 +1680,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
                     || in_array('127.0.0.1', $activeInterfaces['values'], true)
                 ) {
                     $ipv4Target = '127.0.0.1';
-                } elseif (
-                    in_array($interface, $activeInterfaces['values'], true)
-                    || in_array($normalizedIpv4Address, $activeInterfaces['values'], true)
-                ) {
+                } elseif ($ipv4LocalListener) {
                     $ipv4Target = $normalizedIpv4Address;
                 }
 
@@ -1652,9 +1690,12 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
 
                     if ($ipv4Interface === '') {
                         $ipv4Target = '';
+                        $ipv4LocalListener = false;
                     } else {
                         $ipv4Reason = '';
                     }
+                } else {
+                    $ipv4LocalListener = false;
                 }
             }
 
@@ -1686,6 +1727,7 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
                 'interface' => $interface,
                 'ipv4_interface' => $ipv4Interface,
                 'ipv4_target' => $ipv4Target,
+                'ipv4_local_listener' => $ipv4LocalListener,
                 'ipv4_reason' => $ipv4Reason,
                 'ipv6_interface' => $ipv6Interface,
                 'ipv6_target' => $ipv6Target,
@@ -4361,22 +4403,25 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
     /**
      * pfSense Adapter - Redirect Rule Status.
      *
-     * The generated-rule comment locates Sinkhole's loaded block. When rules are
-     * wanted, the extracted block must exactly match the current hook text after
-     * line-ending normalization.
+     * The generated-rule comments locate Sinkhole's loaded NAT and local-pass
+     * blocks. When rules are wanted, each extracted block must exactly match the
+     * current hook text after line-ending normalization.
      *
-     * @param string $rulesPath - pfSense generated rules path.
-     * @param string $errorPath - pfSense package parse-error path.
-     * @param string|null $expectedRuleText - Current hook text or null to generate it.
+     * @param string      $rulesPath              - pfSense generated rules path.
+     * @param string      $errorPath              - pfSense package parse-error path.
+     * @param string|null $expectedRuleText       - Current NAT hook text or null to generate it.
+     * @param string|null $expectedFilterRuleText - Current early local-pass text or null to generate it.
      *
      * @return array{loaded: bool, comment_present: bool, out_of_date: bool, parse_error: string, rejected_text: string}
      *
      * @since 1.0.0
+     * @since 1.3.4
      */
     public function redirectRuleStatus(
         string $rulesPath = '/tmp/rules.debug',
         string $errorPath = '/tmp/rules.packages.sinkhole',
         ?string $expectedRuleText = null,
+        ?string $expectedFilterRuleText = null,
     ): array {
         $rules = '';
 
@@ -4385,25 +4430,53 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             $rules = (is_string($contents)) ? $contents : '';
         }
 
-        $commentPresent = str_contains($rules, '# Sinkhole DNS redirect');
-        $expectedRuleText ??= $this->redirectRuleText();
+        $normalizedRules = str_replace(["\r\n", "\r"], "\n", $rules);
+        $natCommentPresent = preg_match('/^# Sinkhole DNS redirect$/m', $normalizedRules) === 1;
+        $filterCommentPresent = preg_match('/^# Sinkhole DNS redirect local$/m', $normalizedRules) === 1;
+        $commentPresent = $natCommentPresent || $filterCommentPresent;
+
+        if ($expectedRuleText === null) {
+            $expectedRuleText = $this->redirectRuleText();
+            $expectedFilterRuleText ??= $this->redirectFilterRuleText();
+        } else {
+            $expectedFilterRuleText ??= '';
+        }
+
         $canonicalExpectedRuleText = $this->canonicalRuleText($expectedRuleText);
+        $canonicalExpectedFilterRuleText = $this->canonicalRuleText($expectedFilterRuleText);
         $loadedRuleText = $this->redirectBlockText($rules);
+        $loadedFilterRuleText = $this->redirectFilterBlockText($rules);
         $loaded = $commentPresent;
 
-        if ($canonicalExpectedRuleText !== '') {
-            $loaded = $loadedRuleText !== ''
-                && hash_equals(
-                    hash('sha256', $canonicalExpectedRuleText),
-                    hash('sha256', $loadedRuleText),
-                );
+        if ($canonicalExpectedRuleText !== '' || $canonicalExpectedFilterRuleText !== '') {
+            $natMatches = ($canonicalExpectedRuleText === '')
+                ? ($natCommentPresent === false)
+                : ($loadedRuleText !== ''
+                    && hash_equals(
+                        hash('sha256', $canonicalExpectedRuleText),
+                        hash('sha256', $loadedRuleText),
+                    ));
+            $filterMatches = ($canonicalExpectedFilterRuleText === '')
+                ? ($filterCommentPresent === false)
+                : ($loadedFilterRuleText !== ''
+                    && hash_equals(
+                        hash('sha256', $canonicalExpectedFilterRuleText),
+                        hash('sha256', $loadedFilterRuleText),
+                    ));
+            $loaded = $natMatches && $filterMatches;
         }
+
         $outOfDate = $commentPresent
-            && ($canonicalExpectedRuleText === '' || $loaded === false);
+            && (($canonicalExpectedRuleText === '' && $canonicalExpectedFilterRuleText === '') || $loaded === false);
+        $missingExpectedBlock = ($canonicalExpectedRuleText !== '' && $natCommentPresent === false)
+            || ($canonicalExpectedFilterRuleText !== '' && $filterCommentPresent === false);
         $parseError = '';
         $rejectedText = '';
 
-        if ($commentPresent === false && FileSystem::isRegularFile($errorPath)) {
+        if (
+            ($commentPresent === false || ($loaded === false && $missingExpectedBlock))
+            && FileSystem::isRegularFile($errorPath)
+        ) {
             $contents = file_get_contents($errorPath);
 
             if (is_string($contents)) {
@@ -4485,25 +4558,50 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
                 || $bypassReconciliation === 'reloaded'
             ) ? 'reloaded' : $ipReconciliation;
             $ruleText = $this->redirectRuleText();
+            $filterRuleText = $this->redirectFilterRuleText();
             $configuration = $this->getRedirectConfiguration();
             $pauseHash = (count($configuration['invalid_exemptions']) > 0)
                 ? $this->redirectInvalidExemptionsHash($configuration['invalid_exemptions'])
                 : '';
-            $wanted = $ruleText !== '';
-            $status = $this->redirectRuleStatus($rulesPath, $errorPath, $ruleText);
+            $wanted = $ruleText !== '' || $filterRuleText !== '';
+            $status = $this->redirectRuleStatus(
+                $rulesPath,
+                $errorPath,
+                $ruleText,
+                $filterRuleText,
+            );
             $loaded = $status['loaded'];
             $previous = $this->readRedirectCheckObservation();
             $rejectedText = $status['rejected_text'];
+            $rejectedMatchesCurrent = false;
 
-            if (
-                $wanted
-                && $loaded === false
-                && $rejectedText !== ''
-                && hash_equals(
-                    hash('sha256', $this->canonicalRuleText($ruleText)),
-                    hash('sha256', $rejectedText),
-                )
-            ) {
+            if ($wanted && $loaded === false && $rejectedText !== '') {
+                $rejectedCandidates = [];
+
+                if ($ruleText !== '') {
+                    $rejectedCandidates[] = $this->canonicalRuleText($ruleText);
+                }
+
+                if ($filterRuleText !== '') {
+                    $rejectedCandidates[] = $this->canonicalRuleText($filterRuleText);
+                    $earlyRuleText = $this->ipRuleText() . $this->bypassRuleText() . $filterRuleText;
+                    $rejectedCandidates[] = $this->canonicalRuleText($earlyRuleText);
+                }
+
+                $rejectedHashCandidate = hash('sha256', $rejectedText);
+
+                foreach ($rejectedCandidates as $candidate) {
+                    if (
+                        $candidate !== ''
+                        && hash_equals(hash('sha256', $candidate), $rejectedHashCandidate)
+                    ) {
+                        $rejectedMatchesCurrent = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($rejectedMatchesCurrent) {
                 $rejectedHash = hash('sha256', $rejectedText);
 
                 if (($previous['rejected_hash'] ?? '') !== $rejectedHash) {
@@ -5903,6 +6001,50 @@ final class PfSenseAdapter implements PlatformAdapter, ClientSource
             }
 
             if (str_starts_with($line, 'no rdr on ') || str_starts_with($line, 'rdr pass on ')) {
+                $blockLines[] = $line;
+
+                continue;
+            }
+
+            break;
+        }
+
+        return $this->canonicalRuleText(implode("\n", $blockLines));
+    }
+
+    /**
+     * pfSense Adapter - Redirect Filter Block Text.
+     *
+     * Extracts only the contiguous Sinkhole local-pass block from the complete
+     * generated ruleset so missing or stale pass rules fail exact-text checks.
+     *
+     * @param string $rules - Complete generated pfSense rules.
+     *
+     * @return string
+     *
+     * @since 1.3.4
+     * @private
+     */
+    private function redirectFilterBlockText(string $rules): string
+    {
+        $normalizedRules = str_replace(["\r\n", "\r"], "\n", $rules);
+        $lines = explode("\n", $normalizedRules);
+        $blockLines = [];
+        $inBlock = false;
+
+        foreach ($lines as $line) {
+            if ($line === '# Sinkhole DNS redirect local') {
+                $blockLines = [$line];
+                $inBlock = true;
+
+                continue;
+            }
+
+            if ($inBlock === false) {
+                continue;
+            }
+
+            if (str_starts_with($line, 'pass in quick on ')) {
                 $blockLines[] = $line;
 
                 continue;

@@ -1,5 +1,10 @@
 # pfsense-pkg-sinkhole
 
+## 1.3.4 - 2026-11-24
+
+### FIXED
+- Plain-DNS redirect now allows direct port 53 queries to each selected interface whenever the DNS Resolver listens there, so isolated VLANs that block private-network destinations keep normal client DNS working after manual port-forward rules are removed.
+
 ## 1.3.3 - 2026-11-21
 
 ### UPDATED

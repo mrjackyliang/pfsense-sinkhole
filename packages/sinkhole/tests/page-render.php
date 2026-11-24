@@ -2485,16 +2485,18 @@ function sinkholePageRenderPrepareRuntime(
 
     if ($runtime === 'active') {
         $redirectRules = $adapter->redirectRuleText();
+        $redirectFilterRules = $adapter->redirectFilterRuleText();
         $ipRules = $adapter->ipRuleText();
         $bypassRules = $adapter->bypassRuleText();
         sinkholeTestAssertTrue($redirectRules !== '', 'The active fixture needs redirect rules.');
+        sinkholeTestAssertTrue($redirectFilterRules !== '', 'The active fixture needs local redirect rules.');
         sinkholeTestAssertTrue($ipRules !== '', 'The active fixture needs IP rules.');
         sinkholeTestAssertTrue($bypassRules !== '', 'The active fixture needs Bypass rules.');
         $adapter->applyIpAnchor();
         $adapter->applyBypassAnchor();
         sinkholePageRenderWriteFile(
             $rulesPath,
-            $redirectRules . PHP_EOL . $ipRules . $bypassRules,
+            $redirectRules . PHP_EOL . $ipRules . $bypassRules . $redirectFilterRules,
         );
 
         return;

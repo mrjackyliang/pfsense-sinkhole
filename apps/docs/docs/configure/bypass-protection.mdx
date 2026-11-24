@@ -58,6 +58,8 @@ Each network or device with turned-on settings gets its own client table in the 
 
 Select **Redirect → Send port 53 to the firewall** to send ordinary TCP and UDP DNS traffic on the selected interfaces to pfSense. Sinkhole preserves the source address so network and device policy still applies.
 
+Whenever the DNS Resolver listens on a selected interface, Sinkhole also allows direct port 53 queries addressed to that interface ahead of your interface rules. This keeps normal DHCP DNS working on isolated VLANs that block private-network destinations after you remove manual port-forward rules.
+
 The redirect keeps its existing listener-aware targets and exemptions:
 
 | Family | Target                                                                                     |

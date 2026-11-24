@@ -418,6 +418,62 @@ final class RedirectConfiguration
     }
 
     /**
+     * Redirect Configuration - Local Pass Rule Text.
+     *
+     * Allows direct port 53 queries to each redirected interface's own address
+     * when the Resolver listens there, so private-network block rules on VLANs
+     * cannot drop normal client DNS after manual port-forward rules are removed.
+     *
+     * @param list<array{interface: string, ipv4_interface: string, ipv4_local_listener?: bool, ipv6_interface: string}> $interfaceDetails - Addressed real interfaces and listeners.
+     *
+     * @return string
+     *
+     * @since 1.3.4
+     */
+    public static function localPassRuleText(array $interfaceDetails): string
+    {
+        $rules = [];
+
+        foreach ($interfaceDetails as $interfaceDetail) {
+            $ipv4Interface = self::normalizeRealInterface(
+                (is_string($interfaceDetail['ipv4_interface'] ?? null))
+                    ? $interfaceDetail['ipv4_interface']
+                    : '',
+            );
+            $ipv4LocalListener = ($interfaceDetail['ipv4_local_listener'] ?? true) === true;
+            $ipv6Interface = self::normalizeRealInterface(
+                (is_string($interfaceDetail['ipv6_interface'] ?? null))
+                    ? $interfaceDetail['ipv6_interface']
+                    : '',
+            );
+
+            if ($ipv4Interface !== '' && $ipv4LocalListener) {
+                $rules[] = 'pass in quick on '
+                    . $ipv4Interface
+                    . ' inet proto { tcp udp } from any to ('
+                    . $ipv4Interface
+                    . ') port 53 keep state';
+            }
+
+            if ($ipv6Interface !== '') {
+                $rules[] = 'pass in quick on '
+                    . $ipv6Interface
+                    . ' inet6 proto { tcp udp } from any to ('
+                    . $ipv6Interface
+                    . ') port 53 keep state';
+            }
+        }
+
+        if (count($rules) === 0) {
+            return '';
+        }
+
+        return '# Sinkhole DNS redirect local' . PHP_EOL
+            . implode(PHP_EOL, $rules)
+            . PHP_EOL;
+    }
+
+    /**
      * Redirect Configuration - Partition Exemptions.
      *
      * Keeps valid normalized values, original display values, and repair reasons
