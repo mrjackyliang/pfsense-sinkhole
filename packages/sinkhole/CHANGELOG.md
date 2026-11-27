@@ -1,5 +1,10 @@
 # pfsense-pkg-sinkhole
 
+## 1.3.5 - 2026-11-27
+
+### UPDATED
+- The documentation site now loads Google Analytics and Microsoft Clarity directly instead of through Google Tag Manager and has its own fonts and colors, and the project uses Nova 0.54.0.
+
 ## 1.3.4 - 2026-11-24
 
 ### FIXED

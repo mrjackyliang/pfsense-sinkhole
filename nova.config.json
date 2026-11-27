@@ -441,7 +441,6 @@
         "nova"
       ],
       "patterns": [
-        "/assets/",
         "graphify-out/"
       ]
     }
